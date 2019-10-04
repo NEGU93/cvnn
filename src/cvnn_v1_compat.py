@@ -2,6 +2,8 @@ import tensorflow as tf
 import data_processing as dp
 from datetime import datetime
 import numpy as np
+import glob
+import os
 
 
 class Cvnn:
@@ -19,12 +21,24 @@ class Cvnn:
 
         # logs dir
         self.tensorboard = tensorboard
-        now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        root_logdir = "log"
-        self.logdir = "{}/run-{}/".format(root_logdir, now)
+        self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        self.root_logdir = "log"
+        self.logdir = "{}/run-{}/".format(self.root_logdir, self.now)
+
+        # Use date for creating different files at each run.
+        self.root_savedir = "saved_models"
+        self.savedir = "{}/run-{}/".format(self.root_savedir, self.now)
+        if not os.path.exists(self.root_savedir):
+            os.makedirs(self.root_savedir)
 
         self.create_linear_regression_graph()
         # self.create_2_layer_graph()
+
+        # create saver object
+        # TODO: here it's ok?
+        self.saver = tf.compat.v1.train.Saver()
+        for i, var in enumerate(self.saver._var_list):
+            print('Var {}: {}'.format(i, var))
 
     def create_linear_regression_graph(self):
         # Reset latest graph
@@ -67,7 +81,21 @@ class Cvnn:
 
     def train(self, x_train, y_train, x_test, y_test):
         with tf.compat.v1.Session() as sess:
-            sess.run(self.init)
+            if os.listdir(self.root_savedir):
+                print("Getting last model")
+                # get newest folder
+                list_of_folders = glob.glob(self.root_savedir + '/*')
+                latest_folder = max(list_of_folders, key=os.path.getctime)
+                # get newest file in the newest folder
+                list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
+                # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
+                latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
+                # import pdb; pdb.set_trace()
+                self.saver.restore(sess, latest_file)
+            else:
+                print("No model found, initializing weights")
+                sess.run(self.init)
+
             # Number of training iterations in each epoch
             num_tr_iter = int(len(y_train) / self.batch_size)
             for epoch in range(self.epochs):
@@ -84,6 +112,11 @@ class Cvnn:
                         # Calculate and display the batch loss and accuracy
                         loss_batch = sess.run(self.loss, feed_dict=feed_dict_batch)
                         print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
+                        # save the model
+                        modeldir = "{}epoch{}-iteration{}-loss{}.ckpt".format(self.savedir, epoch, iteration,
+                                                                         str(loss_batch).replace('.', ','))
+                        saved_path = self.saver.save(sess, modeldir)
+                        print('model saved in {}'.format(saved_path))
                         if self.tensorboard:
                             # add the summary to the writer (i.e. to the event file)
                             step = epoch * num_tr_iter + iteration

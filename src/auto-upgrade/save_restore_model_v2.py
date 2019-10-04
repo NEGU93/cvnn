@@ -47,11 +47,11 @@ def get_next_batch(x, y, start, end):
 
 
 # Reset latest graph
-tf.reset_default_graph()
+tf.compat.v1.reset_default_graph()
 
 # Define placeholders
-X = tf.placeholder(tf.complex64, shape=[None, input_size], name='X')
-y = tf.placeholder(tf.complex64, shape=[None, output_size], name='Y')
+X = tf.compat.v1.placeholder(tf.complex64, shape=[None, input_size], name='X')
+y = tf.compat.v1.placeholder(tf.complex64, shape=[None, output_size], name='Y')
 
 # Create weight matrix initialized randomely from N~(0, 0.01)
 W = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
@@ -60,30 +60,30 @@ W = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.flo
 y_out = tf.matmul(X, W, name="out")
 
 # Define Graph
-with tf.name_scope("loss") as scope:
+with tf.compat.v1.name_scope("loss") as scope:
     error = y - y_out
-    loss = tf.reduce_mean(tf.square(tf.abs(error)), name="mse")
+    loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="mse")
 
-with tf.name_scope("leargning_rule") as scope:
-    gradients = tf.gradients(loss, [W])[0]
-    training_op = tf.assign(W, W - learning_rate * gradients)
+with tf.compat.v1.name_scope("leargning_rule") as scope:
+    gradients = tf.gradients(ys=loss, xs=[W])[0]
+    training_op = tf.compat.v1.assign(W, W - learning_rate * gradients)
 
 # create saver object
-saver = tf.train.Saver()
+saver = tf.compat.v1.train.Saver()
 for i, var in enumerate(saver._var_list):
     print('Var {}: {}'.format(i, var))
 
 # crate writer object
-writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
-loss_summary = tf.summary.scalar(name='loss_summary', tensor=loss)
-real_weight_summary = tf.summary.histogram('real_weight_summary', tf.real(W))  # cannot pass complex
-imag_weight_summary = tf.summary.histogram('imag_weight_summary', tf.imag(W))
+writer = tf.compat.v1.summary.FileWriter(logdir, tf.compat.v1.get_default_graph())
+loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=loss)
+real_weight_summary = tf.compat.v1.summary.histogram('real_weight_summary', tf.math.real(W))  # cannot pass complex
+imag_weight_summary = tf.compat.v1.summary.histogram('imag_weight_summary', tf.math.imag(W))
 # TypeError: Value passed to parameter 'values' has DataType complex64 not in list of allowed values: float32, float64, int32, uint8, int16, int8, int64, bfloat16, uint16, float16, uint32, uint64
-merged = tf.summary.merge_all()
+merged = tf.compat.v1.summary.merge_all()
 
-init = tf.global_variables_initializer()
+init = tf.compat.v1.global_variables_initializer()
 
-with tf.Session() as sess:
+with tf.compat.v1.Session() as sess:
     if os.listdir(model_root_logdir):
         print("Getting last model")
         # get newest folder
