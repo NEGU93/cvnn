@@ -5,6 +5,8 @@ import numpy as np
 import glob
 import os
 
+DEBUGGER = False
+
 
 class Cvnn:
     def __init__(self, input_size=20, output_size=2, learning_rate=0.001, tensorboard=True):
@@ -37,8 +39,8 @@ class Cvnn:
         # create saver object
         # TODO: here it's ok?
         self.saver = tf.compat.v1.train.Saver()
-        for i, var in enumerate(self.saver._var_list):
-            print('Var {}: {}'.format(i, var))
+        # for i, var in enumerate(self.saver._var_list):
+        #     print('Var {}: {}'.format(i, var))
 
     def create_linear_regression_graph(self):
         # Reset latest graph
@@ -116,11 +118,12 @@ class Cvnn:
                         modeldir = "{}epoch{}-iteration{}-loss{}.ckpt".format(self.savedir, epoch, iteration,
                                                                          str(loss_batch).replace('.', ','))
                         saved_path = self.saver.save(sess, modeldir)
-                        print('model saved in {}'.format(saved_path))
+                        # print('model saved in {}'.format(saved_path))
                         if self.tensorboard:
                             # add the summary to the writer (i.e. to the event file)
                             step = epoch * num_tr_iter + iteration
-                            if step % num_tr_iter == 0:  # Under this case I can plot the x axis as the epoch for clarity
+                            if step % num_tr_iter == 0:
+                                # Under this case I can plot the x axis as the epoch for clarity
                                 step = epoch
                             summary = sess.run(self.merged, feed_dict=feed_dict_batch)
                             self.writer.add_summary(summary, step)
@@ -131,11 +134,31 @@ class Cvnn:
             print('---------------------------------------------------------')
             print("Epoch: {0}, validation loss: {1:.4f}".format(epoch + 1, loss_valid))
             print('---------------------------------------------------------')
-
-            print(y_test[:3])
-            print(self.y_out.eval(feed_dict=feed_dict_valid)[:3])
+            if DEBUGGER:
+                print(y_test[:3])
+                print(self.y_out.eval(feed_dict=feed_dict_valid)[:3])
         if self.tensorboard:
             self.writer.close()
+
+    def predict(self, x):
+        with tf.compat.v1.Session() as sess:
+            if os.listdir(self.root_savedir):
+                print("Getting last model")
+                # get newest folder
+                list_of_folders = glob.glob(self.root_savedir + '/*')
+                latest_folder = max(list_of_folders, key=os.path.getctime)
+                # get newest file in the newest folder
+                list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
+                # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
+                latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
+                # import pdb; pdb.set_trace()
+                self.saver.restore(sess, latest_file)
+            else:
+                print("No model found, please train your model first")
+                return None
+
+            feed_dict_valid = {self.X: x}
+            return self.y_out.eval(feed_dict=feed_dict_valid)
 
 
 if __name__ == "__main__":
@@ -162,3 +185,8 @@ if __name__ == "__main__":
     cvnn = Cvnn(input_size=n, output_size=output_size)
 
     cvnn.train(x_train, y_train, x_test, y_test)
+    y_out = cvnn.predict(x_test)
+    if y_out is not None:
+        print(y_out[:3])
+        print(y_test[:3])
+
