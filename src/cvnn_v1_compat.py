@@ -9,9 +9,11 @@ DEBUGGER = False
 
 
 class Cvnn:
-    def __init__(self, input_size=20, output_size=2, learning_rate=0.001, tensorboard=True):
+    def __init__(self, input_size=20, output_size=2, learning_rate=0.001, tensorboard=True, verbose=True):
         tf.compat.v1.disable_eager_execution()
 
+        self.verbose = verbose
+        self.tensorboard = tensorboard
         self.input_size = input_size
         self.output_size = output_size
 
@@ -22,7 +24,6 @@ class Cvnn:
         self.learning_rate = learning_rate      # The optimization initial learning rate
 
         # logs dir
-        self.tensorboard = tensorboard
         self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
         self.root_logdir = "log"
         self.logdir = "{}/run-{}/".format(self.root_logdir, self.now)
@@ -41,6 +42,14 @@ class Cvnn:
         self.saver = tf.compat.v1.train.Saver()
         # for i, var in enumerate(self.saver._var_list):
         #     print('Var {}: {}'.format(i, var))
+
+        # Launch the graph in a session.
+        self.sess = tf.compat.v1.Session()
+
+    def __del__(self):
+        if self.tensorboard:
+            self.writer.close()
+        self.sess.close()
 
     def create_linear_regression_graph(self):
         # Reset latest graph
@@ -81,10 +90,17 @@ class Cvnn:
 
         self.init = tf.compat.v1.global_variables_initializer()
 
-    def train(self, x_train, y_train, x_test, y_test):
-        with tf.compat.v1.Session() as sess:
+    def init_weights(self):
+        """
+        Check for any saved weights within the "saved_models" folder.
+        If no model available it initialized the weighs itself.
+        :return: None
+        """
+        with self.sess.as_default():
+            assert tf.compat.v1.get_default_session() is self.sess
             if os.listdir(self.root_savedir):
-                print("Getting last model")
+                if self.verbose:
+                    print("Cvnn::init_weights: Getting last model")
                 # get newest folder
                 list_of_folders = glob.glob(self.root_savedir + '/*')
                 latest_folder = max(list_of_folders, key=os.path.getctime)
@@ -93,10 +109,40 @@ class Cvnn:
                 # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
                 latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
                 # import pdb; pdb.set_trace()
-                self.saver.restore(sess, latest_file)
+                self.saver.restore(self.sess, latest_file)
             else:
-                print("No model found, initializing weights")
-                sess.run(self.init)
+                if self.verbose:
+                    print("Cvnn::init_weights: No model found, initializing weights")
+                self.sess.run(self.init)
+
+    def save_to_tensorboard(self, epoch, num_tr_iter, iteration, feed_dict_batch):
+        with self.sess.as_default():
+            assert tf.compat.v1.get_default_session() is self.sess
+            if self.tensorboard:
+                # add the summary to the writer (i.e. to the event file)
+                step = epoch * num_tr_iter + iteration
+                if step % num_tr_iter == 0:
+                    # Under this case I can plot the x axis as the epoch for clarity
+                    step = epoch
+                summary = self.sess.run(self.merged, feed_dict=feed_dict_batch)
+                self.writer.add_summary(summary, step)
+
+    def run_checkpoint(self, epoch, num_tr_iter, iteration, feed_dict_batch):
+        # Calculate and display the batch loss and accuracy
+        loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_batch)
+        if self.verbose:
+            print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
+        # save the model
+        modeldir = "{}epoch{}-iteration{}-loss{}.ckpt".format(self.savedir, epoch, iteration,
+                                                              str(loss_batch).replace('.', ','))
+        saved_path = self.saver.save(self.sess, modeldir)
+        # print('model saved in {}'.format(saved_path))
+        self.save_to_tensorboard(epoch, num_tr_iter, iteration, feed_dict_batch)
+
+    def train(self, x_train, y_train, x_test, y_test):
+        with self.sess.as_default():
+            assert tf.compat.v1.get_default_session() is self.sess
+            self.init_weights()
 
             # Number of training iterations in each epoch
             num_tr_iter = int(len(y_train) / self.batch_size)
@@ -109,54 +155,23 @@ class Cvnn:
                     x_batch, y_batch = dp.get_next_batch(x_train, y_train, start, end)
                     # Run optimization op (backprop)
                     feed_dict_batch = {self.X: x_batch, self.y: y_batch}
-                    sess.run(self.training_op, feed_dict=feed_dict_batch)
+                    self.sess.run(self.training_op, feed_dict=feed_dict_batch)
                     if (epoch * self.batch_size + iteration) % self.display_freq == 0:
-                        # Calculate and display the batch loss and accuracy
-                        loss_batch = sess.run(self.loss, feed_dict=feed_dict_batch)
-                        print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
-                        # save the model
-                        modeldir = "{}epoch{}-iteration{}-loss{}.ckpt".format(self.savedir, epoch, iteration,
-                                                                         str(loss_batch).replace('.', ','))
-                        saved_path = self.saver.save(sess, modeldir)
-                        # print('model saved in {}'.format(saved_path))
-                        if self.tensorboard:
-                            # add the summary to the writer (i.e. to the event file)
-                            step = epoch * num_tr_iter + iteration
-                            if step % num_tr_iter == 0:
-                                # Under this case I can plot the x axis as the epoch for clarity
-                                step = epoch
-                            summary = sess.run(self.merged, feed_dict=feed_dict_batch)
-                            self.writer.add_summary(summary, step)
+                        self.run_checkpoint(epoch, num_tr_iter, iteration, feed_dict_batch)
 
-            # Run validation after every epoch
+            # Run validation at the end
             feed_dict_valid = {self.X: x_test, self.y: y_test}
-            loss_valid = sess.run(self.loss, feed_dict=feed_dict_valid)
+            loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
             print('---------------------------------------------------------')
             print("Epoch: {0}, validation loss: {1:.4f}".format(epoch + 1, loss_valid))
             print('---------------------------------------------------------')
             if DEBUGGER:
                 print(y_test[:3])
                 print(self.y_out.eval(feed_dict=feed_dict_valid)[:3])
-        if self.tensorboard:
-            self.writer.close()
 
     def predict(self, x):
-        with tf.compat.v1.Session() as sess:
-            if os.listdir(self.root_savedir):
-                print("Getting last model")
-                # get newest folder
-                list_of_folders = glob.glob(self.root_savedir + '/*')
-                latest_folder = max(list_of_folders, key=os.path.getctime)
-                # get newest file in the newest folder
-                list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
-                # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
-                latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
-                # import pdb; pdb.set_trace()
-                self.saver.restore(sess, latest_file)
-            else:
-                print("No model found, please train your model first")
-                return None
-
+        with self.sess.as_default():
+            assert tf.compat.v1.get_default_session() is self.sess
             feed_dict_valid = {self.X: x}
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
