@@ -1,7 +1,12 @@
+# Project own folders
+saved_models/
+log/
+out/
+data/
+
 # python cache
 __pycache__/
 __pycache__/*
-
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839

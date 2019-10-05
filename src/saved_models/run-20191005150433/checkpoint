@@ -1,6 +1,0 @@
-model_checkpoint_path: "epoch90-iteration0-loss0,0022284838.ckpt"
-all_model_checkpoint_paths: "epoch50-iteration0-loss0,003049567.ckpt"
-all_model_checkpoint_paths: "epoch60-iteration0-loss0,0026753463.ckpt"
-all_model_checkpoint_paths: "epoch70-iteration0-loss0,0024380279.ckpt"
-all_model_checkpoint_paths: "epoch80-iteration0-loss0,0025372652.ckpt"
-all_model_checkpoint_paths: "epoch90-iteration0-loss0,0022284838.ckpt"

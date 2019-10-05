@@ -1,5 +1,0 @@
-model_checkpoint_path: "epoch30-iteration0-loss0,35226566.ckpt"
-all_model_checkpoint_paths: "epoch0-iteration0-loss7,058001.ckpt"
-all_model_checkpoint_paths: "epoch10-iteration0-loss0,92080575.ckpt"
-all_model_checkpoint_paths: "epoch20-iteration0-loss0,6027559.ckpt"
-all_model_checkpoint_paths: "epoch30-iteration0-loss0,35226566.ckpt"
