@@ -6,9 +6,11 @@ import glob
 import os
 
 DEBUGGER = False
+DEBUG_SAVER = False
 
 
 class Cvnn:
+    # Constructor and Destructor
     def __init__(self, input_size=20, output_size=2, learning_rate=0.001, tensorboard=True, verbose=True):
         tf.compat.v1.disable_eager_execution()
 
@@ -18,27 +20,22 @@ class Cvnn:
         self.output_size = output_size
 
         # Hyper-parameters
-        self.epochs = 100                       # Total number of training epochs
-        self.batch_size = 100                   # Training batch size
-        self.display_freq = 1000                # Display results frequency
         self.learning_rate = learning_rate      # The optimization initial learning rate
 
         # logs dir
         self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        self.root_logdir = "log"
+        self.root_logdir = "../log"
         self.logdir = "{}/run-{}/".format(self.root_logdir, self.now)
 
         # Use date for creating different files at each run.
-        self.root_savedir = "saved_models"
+        self.root_savedir = "../saved_models"
         self.savedir = "{}/run-{}/".format(self.root_savedir, self.now)
         if not os.path.exists(self.root_savedir):
             os.makedirs(self.root_savedir)
 
         self.create_linear_regression_graph()
-        # self.create_2_layer_graph()
 
         # create saver object
-        # TODO: here it's ok?
         self.saver = tf.compat.v1.train.Saver()
         # for i, var in enumerate(self.saver._var_list):
         #     print('Var {}: {}'.format(i, var))
@@ -51,6 +48,61 @@ class Cvnn:
             self.writer.close()
         self.sess.close()
 
+    # Train and predict models
+    def train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000):
+        """
+        Performs the training of the neural network
+        :param x_train: Training data
+        :param y_train: Labels of the training data
+        :param x_test: Test data to display accuracy at the end
+        :param y_test: Test labels
+        :param epochs: Total number of training epochs
+        :param batch_size: Training batch size
+        :param display_freq: Display results frequency
+        :return: None
+        """
+        with self.sess.as_default():
+            assert tf.compat.v1.get_default_session() is self.sess
+            self.init_weights()
+
+            # Number of training iterations in each epoch
+            num_tr_iter = int(len(y_train) / batch_size)
+            for epoch in range(epochs):
+                # Randomly shuffle the training data at the beginning of each epoch
+                x_train, y_train = dp.randomize(x_train, y_train)
+                for iteration in range(num_tr_iter):
+                    start = iteration * batch_size
+                    end = (iteration + 1) * batch_size
+                    x_batch, y_batch = dp.get_next_batch(x_train, y_train, start, end)
+                    # Run optimization op (backprop)
+                    feed_dict_batch = {self.X: x_batch, self.y: y_batch}
+                    self.sess.run(self.training_op, feed_dict=feed_dict_batch)
+                    if (epoch * batch_size + iteration) % display_freq == 0:
+                        self.run_checkpoint(epoch, num_tr_iter, iteration, feed_dict_batch)
+
+            # Run validation at the end
+            feed_dict_valid = {self.X: x_test, self.y: y_test}
+            loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
+            print('---------------------------------------------------------')
+            print("Epoch: {0}, validation loss: {1:.4f}".format(epoch + 1, loss_valid))
+            print('---------------------------------------------------------')
+            self.save_model("final", "valid_loss", loss_valid)
+            if DEBUGGER:
+                print(y_test[:3])
+                print(self.y_out.eval(feed_dict=feed_dict_valid)[:3])
+
+    def predict(self, x):
+        """
+        Runs a single feedforward computation
+        :param x: Input of the network
+        :return: Output of the network
+        """
+        with self.sess.as_default():
+            assert tf.compat.v1.get_default_session() is self.sess
+            feed_dict_valid = {self.X: x}
+            return self.y_out.eval(feed_dict=feed_dict_valid)
+
+    # Graph creation
     def create_linear_regression_graph(self):
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
@@ -109,11 +161,30 @@ class Cvnn:
                 # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
                 latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
                 # import pdb; pdb.set_trace()
+                if DEBUG_SAVER:
+                    print("Restoring model: " + latest_file)
                 self.saver.restore(self.sess, latest_file)
             else:
                 if self.verbose:
                     print("Cvnn::init_weights: No model found, initializing weights")
                 self.sess.run(self.init)
+
+    # Checkpoint methods
+    def run_checkpoint(self, epoch, num_tr_iter, iteration, feed_dict_batch):
+        """
+        Calculate and display the batch loss and accuracy. Saves data to tensorboard and saves state of the network
+        :param epoch:
+        :param num_tr_iter:
+        :param iteration:
+        :param feed_dict_batch:
+        :return:
+        """
+        loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_batch)
+        if self.verbose:
+            print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
+        # save the model
+        self.save_model(epoch, iteration, loss_batch)
+        self.save_to_tensorboard(epoch, num_tr_iter, iteration, feed_dict_batch)
 
     def save_to_tensorboard(self, epoch, num_tr_iter, iteration, feed_dict_batch):
         with self.sess.as_default():
@@ -127,53 +198,11 @@ class Cvnn:
                 summary = self.sess.run(self.merged, feed_dict=feed_dict_batch)
                 self.writer.add_summary(summary, step)
 
-    def run_checkpoint(self, epoch, num_tr_iter, iteration, feed_dict_batch):
-        # Calculate and display the batch loss and accuracy
-        loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_batch)
-        if self.verbose:
-            print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
-        # save the model
+    def save_model(self, epoch, iteration, loss_batch):
         modeldir = "{}epoch{}-iteration{}-loss{}.ckpt".format(self.savedir, epoch, iteration,
                                                               str(loss_batch).replace('.', ','))
         saved_path = self.saver.save(self.sess, modeldir)
         # print('model saved in {}'.format(saved_path))
-        self.save_to_tensorboard(epoch, num_tr_iter, iteration, feed_dict_batch)
-
-    def train(self, x_train, y_train, x_test, y_test):
-        with self.sess.as_default():
-            assert tf.compat.v1.get_default_session() is self.sess
-            self.init_weights()
-
-            # Number of training iterations in each epoch
-            num_tr_iter = int(len(y_train) / self.batch_size)
-            for epoch in range(self.epochs):
-                # Randomly shuffle the training data at the beginning of each epoch
-                x_train, y_train = dp.randomize(x_train, y_train)
-                for iteration in range(num_tr_iter):
-                    start = iteration * self.batch_size
-                    end = (iteration + 1) * self.batch_size
-                    x_batch, y_batch = dp.get_next_batch(x_train, y_train, start, end)
-                    # Run optimization op (backprop)
-                    feed_dict_batch = {self.X: x_batch, self.y: y_batch}
-                    self.sess.run(self.training_op, feed_dict=feed_dict_batch)
-                    if (epoch * self.batch_size + iteration) % self.display_freq == 0:
-                        self.run_checkpoint(epoch, num_tr_iter, iteration, feed_dict_batch)
-
-            # Run validation at the end
-            feed_dict_valid = {self.X: x_test, self.y: y_test}
-            loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
-            print('---------------------------------------------------------')
-            print("Epoch: {0}, validation loss: {1:.4f}".format(epoch + 1, loss_valid))
-            print('---------------------------------------------------------')
-            if DEBUGGER:
-                print(y_test[:3])
-                print(self.y_out.eval(feed_dict=feed_dict_valid)[:3])
-
-    def predict(self, x):
-        with self.sess.as_default():
-            assert tf.compat.v1.get_default_session() is self.sess
-            feed_dict_valid = {self.X: x}
-            return self.y_out.eval(feed_dict=feed_dict_valid)
 
 
 if __name__ == "__main__":
