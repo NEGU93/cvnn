@@ -57,10 +57,10 @@ def transform_to_real(x_complex):
 
 def separate_into_train_and_test(x, y, ratio=0.8):
     m = np.shape(x)[0]
-    x_train = x[:int(m*0.8)]
-    y_train = y[:int(m*0.8)]
-    x_test = x[int(m*0.8):]
-    y_test = y[int(m*0.8):]
+    x_train = x[:int(m*ratio)]
+    y_train = y[:int(m*ratio)]
+    x_test = x[int(m*ratio):]
+    y_test = y[int(m*ratio):]
     return x_train, y_train, x_test, y_test
 
 
@@ -68,3 +68,60 @@ def get_non_correlated_gaussian_noise(m, n, num_classes=2):
     x, y = create_non_correlated_gaussian_noise(m, n, num_classes)
     x, y = randomize(x, y)
     return separate_into_train_and_test(x, y)
+
+
+def save_npy_array(array_name, array):
+    np.save("../data/"+array_name+".npy", array)
+
+
+def save_dataset(array_name, x_train, y_train, x_test, y_test):
+    """
+    Saves in a single .npy file the test and training set with corresponding labels
+    :param array_name: Name of the array to be saved into data/ folder.
+    :param x_train:
+    :param y_train:
+    :param x_test:
+    :param y_test:
+    :return: None
+    """
+    return np.savez("../data/"+array_name, x_train, y_train, x_test, y_test)
+
+
+def load_dataset(array_name):
+    """
+    Gets all x_train, y_train, x_test, y_test from a previously saved .npy file with save_dataset function.
+    :param array_name:
+    :return: tuple (x_train, y_train, x_test, y_test)
+    """
+    return np.load("../data/"+array_name+".npy")
+
+
+if __name__ == "__main__":
+    # Data pre-processing
+    m = 5000
+    n = 30
+    input_size = n
+    output_size = 1
+    total_cases = 2 * m
+    train_ratio = 0.8
+    # x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n)
+
+    x_input = np.random.rand(total_cases, input_size) + 1j * np.random.rand(total_cases, input_size)
+    w_real = np.random.rand(input_size, output_size) + 1j * np.random.rand(input_size, output_size)
+    desired_output = np.matmul(x_input, w_real)  # Generate my desired output
+
+    # Separate train and test set
+    x_train = x_input[:int(train_ratio * total_cases), :]
+    y_train = desired_output[:int(train_ratio * total_cases), :]
+    x_test = x_input[int(train_ratio * total_cases):, :]
+    y_test = desired_output[int(train_ratio * total_cases):, :]
+
+    save_dataset("linear_output", x_train, y_train, x_test, y_test)
+
+    x_loaded_train, y_loaded_train, x_loaded_test, y_loaded_test = load_dataset("linear_output")
+
+    if x_train == x_loaded_train:
+        if y_train == y_loaded_train:
+            if x_test == x_loaded_test:
+                if y_test == y_loaded_test:
+                    print("All good!")

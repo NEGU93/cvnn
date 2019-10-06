@@ -13,10 +13,12 @@ DEBUG_RETORE_META = False
 
 class Cvnn:
     # Constructor and Destructor
-    def __init__(self, input_size=20, output_size=2, learning_rate=0.001, tensorboard=True, verbose=True):
+    def __init__(self, input_size=20, output_size=2, learning_rate=0.001,
+                 tensorboard=True, verbose=True, automatic_restore=True):
         tf.compat.v1.disable_eager_execution()
 
         self.verbose = verbose
+        self.automatic_restore = automatic_restore
         self.tensorboard = tensorboard
         self.input_size = input_size
         self.output_size = output_size
@@ -109,33 +111,34 @@ class Cvnn:
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
     # Graph creation
-    def restore_graph_from_meta(self):
+    def restore_graph_from_meta(self, latest_file=None):
         # Get the metadata file
-        if os.listdir(self.root_savedir):
-            print("Getting last model")
-            # get newest folder
-            list_of_folders = glob.glob(self.root_savedir + '/*')
-            latest_folder = max(list_of_folders, key=os.path.getctime)
-            # get newest file in the newest folder
-            list_of_files = glob.glob(latest_folder + '/*.ckpt.meta')  # Just take ckpt files, not others.
-            latest_file = max(list_of_files, key=os.path.getctime)     # .replace('/', '\\')
-            self.restored_meta = True
+        if latest_file is None and self.automatic_restore:
+            if os.listdir(self.root_savedir):
+                print("Getting last model")
+                # get newest folder
+                list_of_folders = glob.glob(self.root_savedir + '/*')
+                latest_folder = max(list_of_folders, key=os.path.getctime)
+                # get newest file in the newest folder
+                list_of_files = glob.glob(latest_folder + '/*.ckpt.meta')  # Just take ckpt files, not others.
+                latest_file = max(list_of_files, key=os.path.getctime)     # .replace('/', '\\')
+            else:
+                sys.exit('Error:restore_graph_from_meta(): No model found...')
         else:
-            self.restored_meta = False
-            sys.exit('Error:restore_graph_from_meta(): No model found...')
+            sys.exit("Error:restore_graph_from_meta(): no latest_file given and automatic_restore disabled")
+        # TODO: check latest_file exists and has the correct format!
 
         # delete the current graph
         tf.compat.v1.reset_default_graph()
 
         # import the graph from the file
         imported_graph = tf.compat.v1.train.import_meta_graph(latest_file)
+        self.restored_meta = True
 
         # list all the tensors in the graph
         if DEBUG_RETORE_META:
             for tensor in tf.compat.v1.get_default_graph().get_operations():
                 print(tensor.name)
-                if tensor.name.startswith("learning_rule/AssignVariableOp"):
-                    print("yay")
 
         self.sess = tf.compat.v1.Session()
         with self.sess.as_default():
@@ -203,7 +206,7 @@ class Cvnn:
 
         self.init = tf.compat.v1.global_variables_initializer()
 
-    def init_weights(self):
+    def init_weights(self, latest_file=None):
         """
         Check for any saved weights within the "saved_models" folder.
         If no model available it initialized the weighs itself.
@@ -213,17 +216,23 @@ class Cvnn:
         if not self.restored_meta:
             with self.sess.as_default():
                 assert tf.compat.v1.get_default_session() is self.sess
-                if os.listdir(self.root_savedir):
-                    if self.verbose:
-                        print("Cvnn::init_weights: Getting last model")
-                    # get newest folder
-                    list_of_folders = glob.glob(self.root_savedir + '/*')
-                    latest_folder = max(list_of_folders, key=os.path.getctime)
-                    # get newest file in the newest folder
-                    list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
-                    # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
-                    latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
-                    # import pdb; pdb.set_trace()
+                if latest_file is None and self.automatic_restore:
+                    if os.listdir(self.root_savedir):
+                        if self.verbose:
+                            print("Cvnn::init_weights: Getting last model")
+                        # get newest folder
+                        list_of_folders = glob.glob(self.root_savedir + '/*')
+                        latest_folder = max(list_of_folders, key=os.path.getctime)
+                        # get newest file in the newest folder
+                        list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
+                        # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\')
+                        # .split('.ckpt')[0] + '.ckpt'
+                        latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
+                        if DEBUG_SAVER:
+                            print("Restoring model: " + latest_file)
+                        self.saver.restore(self.sess, latest_file)
+                # Check again to see if I found one
+                if latest_file is None:    # TODO: check file exists and has correct format!
                     if DEBUG_SAVER:
                         print("Restoring model: " + latest_file)
                     self.saver.restore(self.sess, latest_file)
@@ -274,28 +283,15 @@ class Cvnn:
         print("Epoch: {0}, validation loss: {1:.4f}".format(epoch, loss_valid))
         print('---------------------------------------------------------')
 
+
 if __name__ == "__main__":
-    # Data pre-processing
-    m = 5000
-    n = 30
-    input_size = n
-    output_size = 1
-    total_cases = 2*m
-    train_ratio = 0.8
-    # x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n)
+    x_train, y_train, x_test, y_test = dp.load_dataset("linear_output")
 
-    x_input = np.random.rand(total_cases, input_size) + 1j * np.random.rand(total_cases, input_size)
-    w_real = np.random.rand(input_size, output_size) + 1j * np.random.rand(input_size, output_size)
-    desired_output = np.matmul(x_input, w_real)  # Generate my desired output
-
-    # Separate train and test set
-    x_train = x_input[:int(train_ratio * total_cases), :]
-    y_train = desired_output[:int(train_ratio * total_cases), :]
-    x_test = x_input[int(train_ratio * total_cases):, :]
-    y_test = desired_output[int(train_ratio * total_cases):, :]
+    input_size = x_train.shape()[1]
+    output_size = y_train.shape()[0]
 
     # Network Declaration
-    cvnn = Cvnn(input_size=n, output_size=output_size)
+    cvnn = Cvnn(input_size=input_size, output_size=output_size)
 
     cvnn.train(x_train, y_train, x_test, y_test)
     y_out = cvnn.predict(x_test)
