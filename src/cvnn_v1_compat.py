@@ -3,10 +3,12 @@ import data_processing as dp
 from datetime import datetime
 import numpy as np
 import glob
+import sys
 import os
 
 DEBUGGER = False
 DEBUG_SAVER = False
+DEBUG_RETORE_META = False
 
 
 class Cvnn:
@@ -33,19 +35,23 @@ class Cvnn:
         if not os.path.exists(self.root_savedir):
             os.makedirs(self.root_savedir)
 
-        self.create_linear_regression_graph()
+        # self.create_linear_regression_graph()
+        # Launch the graph in a session.
+        # self.sess = tf.compat.v1.Session()
+        self.restored_meta = False
+        self.restore_graph_from_meta()
 
         # create saver object
         self.saver = tf.compat.v1.train.Saver()
         # for i, var in enumerate(self.saver._var_list):
         #     print('Var {}: {}'.format(i, var))
 
-        # Launch the graph in a session.
-        self.sess = tf.compat.v1.Session()
-
     def __del__(self):
         if self.tensorboard:
-            self.writer.close()
+            try:
+                self.writer.close()
+            except:  # Get the real exception.
+                print("Writer did not exist, couldn't delete it")
         self.sess.close()
 
     # Train and predict models
@@ -65,6 +71,8 @@ class Cvnn:
             assert tf.compat.v1.get_default_session() is self.sess
             self.init_weights()
 
+            # Run validation at beginning
+            self.print_validation_loss(0, x_test, y_test)
             # Number of training iterations in each epoch
             num_tr_iter = int(len(y_train) / batch_size)
             for epoch in range(epochs):
@@ -83,9 +91,7 @@ class Cvnn:
             # Run validation at the end
             feed_dict_valid = {self.X: x_test, self.y: y_test}
             loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
-            print('---------------------------------------------------------')
-            print("Epoch: {0}, validation loss: {1:.4f}".format(epoch + 1, loss_valid))
-            print('---------------------------------------------------------')
+            self.print_validation_loss(epoch+1, x_test, y_test)
             self.save_model("final", "valid_loss", loss_valid)
             if DEBUGGER:
                 print(y_test[:3])
@@ -103,6 +109,56 @@ class Cvnn:
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
     # Graph creation
+    def restore_graph_from_meta(self):
+        # Get the metadata file
+        if os.listdir(self.root_savedir):
+            print("Getting last model")
+            # get newest folder
+            list_of_folders = glob.glob(self.root_savedir + '/*')
+            latest_folder = max(list_of_folders, key=os.path.getctime)
+            # get newest file in the newest folder
+            list_of_files = glob.glob(latest_folder + '/*.ckpt.meta')  # Just take ckpt files, not others.
+            latest_file = max(list_of_files, key=os.path.getctime)     # .replace('/', '\\')
+            self.restored_meta = True
+        else:
+            self.restored_meta = False
+            sys.exit('Error:restore_graph_from_meta(): No model found...')
+
+        # delete the current graph
+        tf.compat.v1.reset_default_graph()
+
+        # import the graph from the file
+        imported_graph = tf.compat.v1.train.import_meta_graph(latest_file)
+
+        # list all the tensors in the graph
+        if DEBUG_RETORE_META:
+            for tensor in tf.compat.v1.get_default_graph().get_operations():
+                print(tensor.name)
+                if tensor.name.startswith("learning_rule/AssignVariableOp"):
+                    print("yay")
+
+        self.sess = tf.compat.v1.Session()
+        with self.sess.as_default():
+            imported_graph.restore(self.sess, latest_file.split('.ckpt')[0]+'.ckpt')
+            graph = tf.compat.v1.get_default_graph()
+            self.loss = graph.get_operation_by_name("loss/loss").outputs[0]
+            self.X = graph.get_tensor_by_name("X:0")
+            self.y = graph.get_tensor_by_name("Y:0")
+            self.w = graph.get_tensor_by_name("weights:0")
+            self.b = graph.get_tensor_by_name("bias:0")
+            self.y_out = graph.get_tensor_by_name("forward_phase/y_out:0")
+            # print(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, "learning_rule"))
+            self.training_op = [graph.get_operation_by_name(tensor.name) for tensor in
+                                tf.compat.v1.get_default_graph().get_operations()
+                                if tensor.name.startswith("learning_rule/AssignVariableOp")]
+            # self.training_op = [graph.get_operation_by_name("leargning_rule/AssignVariableOp"),
+                                #graph.get_operation_by_name("leargning_rule/AssignVariableOp_1")]
+            # logs
+            if self.tensorboard:
+                self.writer = tf.compat.v1.summary.FileWriter(self.logdir, tf.compat.v1.get_default_graph())
+                self.loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
+                self.merged = tf.compat.v1.summary.merge_all()
+
     def create_linear_regression_graph(self):
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
@@ -118,18 +174,22 @@ class Cvnn:
                                    np.random.rand(output_size).astype(np.float32)), name="bias")
 
         with tf.compat.v1.name_scope("forward_phase") as scope:
-            self.y_out = tf.add(tf.matmul(self.X, self.w), self.b)
+            self.y_out = tf.add(tf.matmul(self.X, self.w), self.b, name="y_out")
 
         # Define Graph
         with tf.compat.v1.name_scope("loss") as scope:
             self.error = self.y - self.y_out
-            self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(self.error)), name="mse")
-
-        with tf.compat.v1.name_scope("leargning_rule") as scope:
+            self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(self.error)), name="loss")
+        with tf.compat.v1.name_scope("gradients") as scope:
             self.gradients_w, self.gradients_b = tf.gradients(ys=self.loss, xs=[self.w, self.b])
+        with tf.compat.v1.name_scope("learning_rule") as scope:
             self.training_op_w = tf.compat.v1.assign(self.w, self.w - self.learning_rate * self.gradients_w)
             self.training_op_b = tf.compat.v1.assign(self.b, self.b - self.learning_rate * self.gradients_b)
-            self.training_op = [self.training_op_w, self.training_op_b]
+        self.training_op = [self.training_op_w, self.training_op_b]
+        # self.training_op = tf.stack([self.training_op_w, self.training_op_b], axis=0, name="training_op")
+        # self.training_op = tf.compat.v2.convert_to_tensor([self.training_op_w, self.training_op_b],
+        #                                                      name="training_op")
+        # print(self.training_op)
 
         # logs
         if self.tensorboard:
@@ -139,6 +199,7 @@ class Cvnn:
                                                              tf.math.real(self.w))  # cannot pass complex
             self.imag_weight_summary = tf.compat.v1.summary.histogram('imag_weight_summary', tf.math.imag(self.w))
             self.merged = tf.compat.v1.summary.merge_all()
+            # print(self.merged)
 
         self.init = tf.compat.v1.global_variables_initializer()
 
@@ -146,28 +207,30 @@ class Cvnn:
         """
         Check for any saved weights within the "saved_models" folder.
         If no model available it initialized the weighs itself.
+        If the graph was already restored then the weights are already initialized so the function does nothing.
         :return: None
         """
-        with self.sess.as_default():
-            assert tf.compat.v1.get_default_session() is self.sess
-            if os.listdir(self.root_savedir):
-                if self.verbose:
-                    print("Cvnn::init_weights: Getting last model")
-                # get newest folder
-                list_of_folders = glob.glob(self.root_savedir + '/*')
-                latest_folder = max(list_of_folders, key=os.path.getctime)
-                # get newest file in the newest folder
-                list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
-                # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
-                latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
-                # import pdb; pdb.set_trace()
-                if DEBUG_SAVER:
-                    print("Restoring model: " + latest_file)
-                self.saver.restore(self.sess, latest_file)
-            else:
-                if self.verbose:
-                    print("Cvnn::init_weights: No model found, initializing weights")
-                self.sess.run(self.init)
+        if not self.restored_meta:
+            with self.sess.as_default():
+                assert tf.compat.v1.get_default_session() is self.sess
+                if os.listdir(self.root_savedir):
+                    if self.verbose:
+                        print("Cvnn::init_weights: Getting last model")
+                    # get newest folder
+                    list_of_folders = glob.glob(self.root_savedir + '/*')
+                    latest_folder = max(list_of_folders, key=os.path.getctime)
+                    # get newest file in the newest folder
+                    list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
+                    # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\').split('.ckpt')[0] + '.ckpt'
+                    latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
+                    # import pdb; pdb.set_trace()
+                    if DEBUG_SAVER:
+                        print("Restoring model: " + latest_file)
+                    self.saver.restore(self.sess, latest_file)
+                else:
+                    if self.verbose:
+                        print("Cvnn::init_weights: No model found, initializing weights")
+                    self.sess.run(self.init)
 
     # Checkpoint methods
     def run_checkpoint(self, epoch, num_tr_iter, iteration, feed_dict_batch):
@@ -204,6 +267,12 @@ class Cvnn:
         saved_path = self.saver.save(self.sess, modeldir)
         # print('model saved in {}'.format(saved_path))
 
+    def print_validation_loss(self, epoch, x, y):
+        feed_dict_valid = {self.X: x, self.y: y}
+        loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
+        print('---------------------------------------------------------')
+        print("Epoch: {0}, validation loss: {1:.4f}".format(epoch, loss_valid))
+        print('---------------------------------------------------------')
 
 if __name__ == "__main__":
     # Data pre-processing
