@@ -54,7 +54,7 @@ Graphs
 
         :param shape: List of tuple
             1. each number of shape[i][0] correspond to the total neurons of layer i.
-            2. a string in shape[i][1] corresponds to the activation function listed on TODO
+            2. a string in shape[i][1] corresponds to the activation function listed on :ref:`activation_functions`
                 ATTENTION: shape[0][0] will be ignored! A future version will apply the activation function to the input but not implemented for the moment.
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None

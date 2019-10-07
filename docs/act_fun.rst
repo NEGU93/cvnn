@@ -1,19 +1,23 @@
+.. _activation_functions:
 Activation Functions
 ====================
 
 This functions will be used when creating the graph of the network. For each corresponding string of options you can use any of the follwing activation functions.
 
-Activation functions are created inside the class and referenced using the function::
+Activation functions are created inside the class and referenced using the function:
+.. _apply_activation:
+::
 
 	apply_activation(out, act)
 
-.. note:: To add your own activation function just define the function in question and add it to the `apply_activation` method. 
+.. note:: To add your own activation function just define the function in question and add it to the :ref:`apply_activation` method. 
 
-.. note:: Convention: Method names have the following conventions. The predecind `act` means it is an activation function. The following `cart` or `polar` means either type A (cartesian) or type B (polar) according to [CIT2003-KUROE]_ notation.
+.. note:: Convention: The predecind `act` on `Cvnn` methods means it is an activation function. The following `cart` or `polar` means either type A (cartesian) or type B (polar) according to [CIT2003-KUROE]_ notation.
 
 .. py:class:: Cvnn
 
 .. py:method:: apply_activation(self, out, act)
+
 	Applies activation function to parameter out according to string act
 
         :param out: Tensor to whom the activation function will be applied
