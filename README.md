@@ -3,6 +3,8 @@ Done by @NEGU93 - J. Agustin Barrachina
 
 This is a library that uses [Tensorflow](https://www.tensorflow.org) as a back-end to do complex-valued neural networks as, as far as I know, CVNNs are barely supported by Tensorflow and not even supported yet for [pytorch](https://github.com/pytorch/pytorch/issues/755) (reason why I decided to use Tensorflow for this library).
 
+Please [Read the Docs](https://complex-valued-neural-networks.readthedocs.io/en/latest/index.html)
+
 ## How to use it
 
 The code to create and train a neural network will have the following logic:
