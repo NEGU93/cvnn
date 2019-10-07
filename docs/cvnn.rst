@@ -1,8 +1,9 @@
 Cvnn
 ===========
 
+.. py:class:: Cvnn
 
-.. py:function:: Cvnn(learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True)
+.. py:method:: Cvnn(learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True)
 
         Performs the training of the neural network
 
