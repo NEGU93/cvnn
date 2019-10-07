@@ -1,4 +1,4 @@
-.. _activation_functions:
+﻿.. _activation_functions:
 Activation Functions
 ====================
 
@@ -21,6 +21,9 @@ Activation functions are created inside the class and referenced using the funct
         :param out: Tensor to whom the activation function will be applied
         :param act: string that says which activation function will be applied. If string does not correspond to any known activation function, none will be applied and a warning will be displayed.
         :return: Tensor with the applied activation function
+
+Implemented Activation Functions
+--------------------------------
 
 .. py:method:: act_null(z)
 
