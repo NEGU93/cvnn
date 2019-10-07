@@ -36,7 +36,7 @@ Activation functions are created inside the class and referenced using the funct
 
 	.. math::
 
-		\frac{1.0}{1.0 + e^{-x}} + j  \frac{1.0}{1.0 + e^{-y}}
+		\frac{1}{1 + e^{-x}} + j  \frac{1}{1 + e^{-y}}
 
 	where 
 
