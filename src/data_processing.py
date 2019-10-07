@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 import os
 
 
@@ -96,19 +97,13 @@ def load_dataset(array_name):
     :param array_name: name of the file saved in '../data' with .npz termination
     :return: tuple (x_train, y_train, x_test, y_test)
     """
-    # print(os.listdir("../data"))
-    npzfile = np.load("../data/" + array_name + ".npz")
-    # print(npzfile.files)
-    return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
-
-
-"""try:
-    print(os.listdir("../data"))
-    npzfile = np.load("../data/"+array_name+".npz")
-    # print(npzfile.files)
-    return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
-except FileNotFoundError:
-    print("Cvnn::load_dataset: The file could not be found")"""
+    try:
+        # print(os.listdir("../data"))
+        npzfile = np.load("../data/" + array_name + ".npz")
+        # print(npzfile.files)
+        return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
+    except FileNotFoundError:
+        sys.exit("Cvnn::load_dataset: The file could not be found")     # TODO: check if better just throw a warning
 
 
 if __name__ == "__main__":
