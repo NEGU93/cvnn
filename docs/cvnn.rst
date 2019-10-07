@@ -1,4 +1,4 @@
-Cvnn
+CVNN
 ===========
 
 .. py:class:: Cvnn
@@ -23,7 +23,7 @@ Train and Predict
 
 .. py:method:: train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000)
 
-	Performs the training of the neural network. 
+	Performs the training of the neural network.
         If automatic_restore is True but not metadata was found, it will try to load the weights of the newest previously saved model.
 
         :param x_train: Training data of shape (<training examples>, <input_size>)
@@ -63,7 +63,7 @@ Others
 ^^^^^^
 
 .. py:method:: restore_graph_from_meta(self, latest_file=None)
-	
+
 	Restores an existing graph from meta data file
 
         :param latest_file: Path to the file to be restored. If no latest_file given and self.automatic_restore is True, the function will try to load the newest metadata inside `saved_models/` folder.

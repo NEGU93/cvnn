@@ -2,9 +2,18 @@ import numpy as np
 import sys
 import os
 
+"""----
+# Utils
+----"""
+
 
 def randomize(x, y):
-    """ Randomizes the order of data samples and their corresponding labels"""
+    """
+    Randomizes the order of data samples and their corresponding labels
+    :param x: data
+    :param y: data labels
+    :return: Tuple of (shuffled_x, shuffled_y) maintaining coherence of elements labels
+    """
     permutation = np.random.permutation(y.shape[0])
     shuffled_x = x[permutation, :]
     shuffled_y = y[permutation]
@@ -12,9 +21,59 @@ def randomize(x, y):
 
 
 def get_next_batch(x, y, start, end):
+    """
+    Get next batch from x and y using start and end
+    :param x: data
+    :param y: data labels
+    :param start: starting index of the batch to be returned
+    :param end: end index of the batch to be returned (not including)
+    :return: tuple (x, y) of the selected batch
+    """
+    if start < 0:
+        sys.exit("Error:get_next_batch(): start parameter cannot be negative")
+    if start > end:     # What will happen if not? Should I leave this case anyway and just give a warning?
+        sys.exit("Error:get_next_batch(): end should be higher than start")
+    # TODO: Check end < len(x)
     x_batch = x[start:end]
     y_batch = y[start:end]
     return x_batch, y_batch
+
+
+def transform_to_real(x_complex):
+    """
+    :param x_complex: Complex-valued matrix of size mxn
+    :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
+    """
+    m = np.shape(x_complex)[0]
+    n = np.shape(x_complex)[1]
+    x_real = np.ones((m, 2*n))
+    x_real[:, :n] = np.real(x_complex)
+    x_real[:, n:] = np.imag(x_complex)
+    return x_real
+
+
+def separate_into_train_and_test(x, y, ratio=0.8):
+    """
+    Separates data x with corresponding labels y into train and test set.
+    :param x: data
+    :param y: labels of data x
+    :param ratio: value between 0 and 1.
+        1 meaning all the data x will be the training set and 0 meaning all data x will be the test set.
+    :return: tuple (x_train, y_train, x_test, y_test) of the training and test set both data and labels.
+    """
+    if (ratio > 1) or (ratio < 0):
+        sys.exit("Error:separate_into_train_and_test: ratio should be between 0 and 1. Got value " + str(ratio))
+    m = np.shape(x)[0]
+    x_train = x[:int(m*ratio)]
+    y_train = y[:int(m*ratio)]
+    x_test = x[int(m*ratio):]
+    y_test = y[int(m*ratio):]
+    return x_train, y_train, x_test, y_test
+
+
+"""-------------
+# Create dataset
+-------------"""
 
 
 def create_data(m, n, mu, sigma):
@@ -44,32 +103,15 @@ def create_non_correlated_gaussian_noise(m, n, num_classes=2):
     return x, y
 
 
-def transform_to_real(x_complex):
-    """
-    :param x_complex: Complex-valued matrix of size mxn
-    :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
-    """
-    m = np.shape(x_complex)[0]
-    n = np.shape(x_complex)[1]
-    x_real = np.ones((m, 2*n))
-    x_real[:, :n] = np.real(x_complex)
-    x_real[:, n:] = np.imag(x_complex)
-    return x_real
-
-
-def separate_into_train_and_test(x, y, ratio=0.8):
-    m = np.shape(x)[0]
-    x_train = x[:int(m*ratio)]
-    y_train = y[:int(m*ratio)]
-    x_test = x[int(m*ratio):]
-    y_test = y[int(m*ratio):]
-    return x_train, y_train, x_test, y_test
-
-
 def get_non_correlated_gaussian_noise(m, n, num_classes=2):
     x, y = create_non_correlated_gaussian_noise(m, n, num_classes)
     x, y = randomize(x, y)
     return separate_into_train_and_test(x, y)
+
+
+"""-----------------
+# Save and Load data
+-----------------"""
 
 
 def save_npy_array(array_name, array):
@@ -78,7 +120,7 @@ def save_npy_array(array_name, array):
 
 def save_dataset(array_name, x_train, y_train, x_test, y_test):
     """
-    Saves in a single .npy file the test and training set with corresponding labels
+    Saves in a single .npz file the test and training set with corresponding labels
     :param array_name: Name of the array to be saved into data/ folder.
     :param x_train:
     :param y_train:
