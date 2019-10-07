@@ -15,9 +15,8 @@ class Cvnn:
     """-------------------------
     # Constructor and Destructor
     -------------------------"""
-
-    def __init__(self, learning_rate=0.001,
-                 tensorboard=True, verbose=True, automatic_restore=True):
+    # TODO IMPORTANT: give the ability to pass the name of the to-load network
+    def __init__(self, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True):
         tf.compat.v1.disable_eager_execution()
 
         self.verbose = verbose
@@ -113,7 +112,8 @@ class Cvnn:
     # Graph creation
     -------------"""
     # Layers
-    def create_complex_dense_layer(self, input_size, output_size, input):
+    @staticmethod
+    def create_complex_dense_layer(input_size, output_size, input):
         # Create weight matrix initialized randomely from N~(0, 0.01)
         w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
                                         np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
@@ -127,7 +127,10 @@ class Cvnn:
         """
         Creates a complex-full-connected dense graph using a shape as parameter
         This function uses none activation function.
-        :param shape: List where each number of shape[i] correspond to the total neurons of layer i.
+        :param shape: List of tuple
+            1. each number of shape[i][0] correspond to the total neurons of layer i.
+            2. a string in shape[i][1] corresponds to the activation function listed on TODO
+                ATTENTION: shape[0][0] will be ignored! TODO (maybe apply it to self.X)
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None
         """
@@ -137,15 +140,15 @@ class Cvnn:
         tf.compat.v1.reset_default_graph()
 
         # Define placeholders
-        self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[0]], name='X')
-        self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[-1]], name='Y')
+        self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[0][0]], name='X')
+        self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[-1][0]], name='Y')
 
         variables = []
         with tf.compat.v1.name_scope("forward_phase") as scope:
             for i in range(len(shape)-1):
-                out, variable = self.create_complex_dense_layer(shape[i], shape[i + 1], self.X)
+                out, variable = self.create_complex_dense_layer(shape[i][0], shape[i + 1][0], self.X)
                 variables.extend(variable)
-                self.y_out = tf.compat.v1.identity(self.act_null(out), name="y_out")        # Apply activation function
+                self.y_out = tf.compat.v1.identity(self.apply_activation(out, shape[i + 1][1]), name="y_out")        # Apply activation function
         with tf.compat.v1.name_scope("loss") as scope:
             error = self.y - self.y_out
             self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
@@ -343,8 +346,23 @@ class Cvnn:
     """-------------------
     # Activation functions
     -------------------"""
-    def act_null(self, z):
+    def apply_activation(self, out, act):
+        # map the inputs to the function blocks
+        options = {'no_act': self.act_null,
+                   'act_cart_sigmoid': self.act_cart_sigmoid,
+                   }
+        if act in options:
+            return options[act](out)
+        else:
+            print("Warning: Unknown activation function, not applying any")
+            return options['no_act'](out)
+
+    @staticmethod
+    def act_null(z):
         return z
+
+    def act_cart_sigmoid(self, z):
+        return tf.complex(tf.keras.activations.sigmoid(tf.math.real(z)), tf.keras.activations.sigmoid(tf.math.imag(z)))
 
 
 if __name__ == "__main__":
@@ -359,7 +377,7 @@ if __name__ == "__main__":
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([input_size, output_size])
+        cvnn.create_mlp_graph([(input_size, 'ignored'), (output_size, '')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
     """y_out = cvnn.predict(x_test)
