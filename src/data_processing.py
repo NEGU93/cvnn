@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 
 def randomize(x, y):
@@ -84,16 +85,21 @@ def save_dataset(array_name, x_train, y_train, x_test, y_test):
     :param y_test:
     :return: None
     """
-    return np.savez("../data/"+array_name, x_train, y_train, x_test, y_test)
+    if not os.path.exists("../data"):
+        os.makedirs("../data")
+    return np.savez("../data/"+array_name, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
 
 def load_dataset(array_name):
     """
-    Gets all x_train, y_train, x_test, y_test from a previously saved .npy file with save_dataset function.
-    :param array_name:
+    Gets all x_train, y_train, x_test, y_test from a previously saved .npz file with save_dataset function.
+    :param array_name: name of the file saved in '../data' with .npz termination
     :return: tuple (x_train, y_train, x_test, y_test)
     """
-    return np.load("../data/"+array_name+".npy")
+    # print(os.listdir("../data"))
+    npzfile = np.load("../data/"+array_name+".npz")
+    # print(npzfile.files)
+    return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
 
 
 if __name__ == "__main__":
@@ -117,11 +123,10 @@ if __name__ == "__main__":
     y_test = desired_output[int(train_ratio * total_cases):, :]
 
     save_dataset("linear_output", x_train, y_train, x_test, y_test)
-
     x_loaded_train, y_loaded_train, x_loaded_test, y_loaded_test = load_dataset("linear_output")
 
-    if x_train == x_loaded_train:
-        if y_train == y_loaded_train:
-            if x_test == x_loaded_test:
-                if y_test == y_loaded_test:
+    if np.all(x_train == x_loaded_train):
+        if np.all(y_train == y_loaded_train):
+            if np.all(x_test == x_loaded_test):
+                if np.all(y_test == y_loaded_test):
                     print("All good!")
