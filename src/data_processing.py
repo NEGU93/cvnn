@@ -97,9 +97,18 @@ def load_dataset(array_name):
     :return: tuple (x_train, y_train, x_test, y_test)
     """
     # print(os.listdir("../data"))
+    npzfile = np.load("../data/" + array_name + ".npz")
+    # print(npzfile.files)
+    return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
+
+
+"""try:
+    print(os.listdir("../data"))
     npzfile = np.load("../data/"+array_name+".npz")
     # print(npzfile.files)
     return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
+except FileNotFoundError:
+    print("Cvnn::load_dataset: The file could not be found")"""
 
 
 if __name__ == "__main__":

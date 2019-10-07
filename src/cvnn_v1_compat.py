@@ -13,15 +13,13 @@ DEBUG_RETORE_META = False
 
 class Cvnn:
     # Constructor and Destructor
-    def __init__(self, input_size=20, output_size=2, learning_rate=0.001,
+    def __init__(self, learning_rate=0.001,
                  tensorboard=True, verbose=True, automatic_restore=True):
         tf.compat.v1.disable_eager_execution()
 
         self.verbose = verbose
         self.automatic_restore = automatic_restore
         self.tensorboard = tensorboard
-        self.input_size = input_size
-        self.output_size = output_size
 
         # Hyper-parameters
         self.learning_rate = learning_rate      # The optimization initial learning rate
@@ -41,12 +39,8 @@ class Cvnn:
         # Launch the graph in a session.
         # self.sess = tf.compat.v1.Session()
         self.restored_meta = False
-        self.restore_graph_from_meta()
-
-        # create saver object
-        self.saver = tf.compat.v1.train.Saver()
-        # for i, var in enumerate(self.saver._var_list):
-        #     print('Var {}: {}'.format(i, var))
+        if automatic_restore:
+            self.restore_graph_from_meta()
 
     def __del__(self):
         if self.tensorboard:
@@ -162,7 +156,20 @@ class Cvnn:
                 self.loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
                 self.merged = tf.compat.v1.summary.merge_all()
 
-    def create_linear_regression_graph(self):
+            # create saver object
+            self.saver = tf.compat.v1.train.Saver()
+            # for i, var in enumerate(self.saver._var_list):
+            #     print('Var {}: {}'.format(i, var))
+
+    def create_complex_dense(self, input_size, output_size, input):
+        w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
+                                        np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
+        b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
+                                        np.random.rand(output_size).astype(np.float32)), name="bias")
+
+        return tf.add(tf.matmul(input, w), b), [w, b]
+
+    def create_linear_regression_graph(self, input_size, output_size):
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
@@ -171,40 +178,38 @@ class Cvnn:
         self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, output_size], name='Y')
 
         # Create weight matrix initialized randomely from N~(0, 0.01)
-        self.w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
-                                   np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
-        self.b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
-                                   np.random.rand(output_size).astype(np.float32)), name="bias")
+        self.y_out, variables = self.create_complex_dense(input_size, output_size, self.X)
 
-        with tf.compat.v1.name_scope("forward_phase") as scope:
-            self.y_out = tf.add(tf.matmul(self.X, self.w), self.b, name="y_out")
-
+        # with tf.compat.v1.name_scope("forward_phase") as scope:
+        print(variables)
         # Define Graph
         with tf.compat.v1.name_scope("loss") as scope:
             self.error = self.y - self.y_out
             self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(self.error)), name="loss")
         with tf.compat.v1.name_scope("gradients") as scope:
-            self.gradients_w, self.gradients_b = tf.gradients(ys=self.loss, xs=[self.w, self.b])
+            self.gradients = tf.gradients(ys=self.loss, xs=variables)
+        self.training_op = []
         with tf.compat.v1.name_scope("learning_rule") as scope:
-            self.training_op_w = tf.compat.v1.assign(self.w, self.w - self.learning_rate * self.gradients_w)
-            self.training_op_b = tf.compat.v1.assign(self.b, self.b - self.learning_rate * self.gradients_b)
-        self.training_op = [self.training_op_w, self.training_op_b]
-        # self.training_op = tf.stack([self.training_op_w, self.training_op_b], axis=0, name="training_op")
-        # self.training_op = tf.compat.v2.convert_to_tensor([self.training_op_w, self.training_op_b],
-        #                                                      name="training_op")
+            for i, var in enumerate(variables):
+                self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * self.gradients[i]))
         # print(self.training_op)
 
         # logs
         if self.tensorboard:
             self.writer = tf.compat.v1.summary.FileWriter(self.logdir, tf.compat.v1.get_default_graph())
             self.loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
-            self.real_weight_summary = tf.compat.v1.summary.histogram('real_weight_summary',
-                                                             tf.math.real(self.w))  # cannot pass complex
-            self.imag_weight_summary = tf.compat.v1.summary.histogram('imag_weight_summary', tf.math.imag(self.w))
+            # self.real_weight_summary = tf.compat.v1.summary.histogram('real_weight_summary',
+                                  #                           tf.math.real(self.w))  # cannot pass complex
+            # self.imag_weight_summary = tf.compat.v1.summary.histogram('imag_weight_summary', tf.math.imag(self.w))
             self.merged = tf.compat.v1.summary.merge_all()
             # print(self.merged)
 
         self.init = tf.compat.v1.global_variables_initializer()
+        self.sess = tf.compat.v1.Session()
+        # create saver object
+        self.saver = tf.compat.v1.train.Saver()
+        # for i, var in enumerate(self.saver._var_list):
+        #     print('Var {}: {}'.format(i, var))
 
     def init_weights(self, latest_file=None):
         """
@@ -216,7 +221,7 @@ class Cvnn:
         if not self.restored_meta:
             with self.sess.as_default():
                 assert tf.compat.v1.get_default_session() is self.sess
-                if latest_file is None and self.automatic_restore:
+                if latest_file is None: # and self.automatic_restore:
                     if os.listdir(self.root_savedir):
                         if self.verbose:
                             print("Cvnn::init_weights: Getting last model")
@@ -232,7 +237,7 @@ class Cvnn:
                             print("Restoring model: " + latest_file)
                         self.saver.restore(self.sess, latest_file)
                 # Check again to see if I found one
-                if latest_file is None:    # TODO: check file exists and has correct format!
+                if latest_file is not None:    # TODO: check file exists and has correct format!
                     if DEBUG_SAVER:
                         print("Restoring model: " + latest_file)
                     self.saver.restore(self.sess, latest_file)
@@ -283,15 +288,21 @@ class Cvnn:
         print("Epoch: {0}, validation loss: {1:.4f}".format(epoch, loss_valid))
         print('---------------------------------------------------------')
 
+    # Activation functions
+    def act_null(self, z):
+        return z
+
 
 if __name__ == "__main__":
     x_train, y_train, x_test, y_test = dp.load_dataset("linear_output")
 
-    input_size = x_train.shape()[1]
-    output_size = y_train.shape()[0]
+    input_size = np.shape(x_train)[1]
+    output_size = np.shape(y_train)[1]
 
     # Network Declaration
-    cvnn = Cvnn(input_size=input_size, output_size=output_size)
+    cvnn = Cvnn(automatic_restore=False)
+
+    cvnn.create_linear_regression_graph(input_size, output_size)
 
     cvnn.train(x_train, y_train, x_test, y_test)
     y_out = cvnn.predict(x_test)
