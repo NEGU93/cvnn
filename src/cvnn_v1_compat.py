@@ -17,6 +17,13 @@ class Cvnn:
     -------------------------"""
     # TODO IMPORTANT: give the ability to pass the name of the to-load network
     def __init__(self, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True):
+        """
+        Constructor
+        :param learning_rate: Learning rate at which the network will train
+        :param tensorboard: True if want the network to save tensorboard graph and summary
+        :param verbose: True for verbose mode (print and output results)
+        :param automatic_restore: True if network should search for saved models (will look for the newest saved model)
+        """
         tf.compat.v1.disable_eager_execution()
 
         self.verbose = verbose
@@ -45,31 +52,41 @@ class Cvnn:
             self.restore_graph_from_meta()
 
     def __del__(self):
+        """
+        Destructor
+        :return: None
+        """
         if self.tensorboard:
             try:
                 self.writer.close()
-            except:  # Get the real exception.
+            except:  # TODO: Get the real exception.
                 print("Writer did not exist, couldn't delete it")
-        self.sess.close()
+        self.sess.close()   # TODO: Check if sess exists first
 
     """-----------------------
     # Train and predict models
     -----------------------"""
     def train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000):
         """
-        Performs the training of the neural network
-        :param x_train: Training data
-        :param y_train: Labels of the training data
-        :param x_test: Test data to display accuracy at the end
-        :param y_test: Test labels
+        Performs the training of the neural network.
+        If automatic_restore is True but not metadata was found,
+            it will try to load the weights of the newest previously saved model.
+        :param x_train: Training data of shape (<training examples>, <input_size>)
+        :param y_train: Labels of the training data of shape (<training examples>, <output_size>)
+        :param x_test: Test data to display accuracy at the end of shape (<test examples>, <input_size>)
+        :param y_test: Test labels of shape (<test examples>, <output_size>)
         :param epochs: Total number of training epochs
-        :param batch_size: Training batch size
-        :param display_freq: Display results frequency
+        :param batch_size: Training batch size.
+            If this number is bigger than the total amount of training examples will display an error
+        :param display_freq: Display results frequency.
+            The frequency will be for each (epoch * batch_size + iteration) / display_freq
         :return: None
         """
+        if np.shape(x_train) < batch_size:  # TODO: make this case work as well. Just display a warning
+            sys.exit("Cvnn::train(): Batch size was bigger than total amount of examples")
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
-            self.init_weights()
+            self._init_weights()
 
             # Run validation at beginning
             self.print_validation_loss(0, x_test, y_test)
@@ -103,8 +120,9 @@ class Cvnn:
         :param x: Input of the network
         :return: Output of the network
         """
+        # TODO: Check that x has the correct shape!
         with self.sess.as_default():
-            assert tf.compat.v1.get_default_session() is self.sess
+            # assert tf.compat.v1.get_default_session() is self.sess
             feed_dict_valid = {self.X: x}
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
@@ -113,7 +131,8 @@ class Cvnn:
     -------------"""
     # Layers
     @staticmethod
-    def create_complex_dense_layer(input_size, output_size, input):
+    def _create_complex_dense_layer(input_size, output_size, input):
+
         # Create weight matrix initialized randomely from N~(0, 0.01)
         w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
                                         np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
@@ -125,11 +144,10 @@ class Cvnn:
     # Graphs
     def create_mlp_graph(self, shape):
         """
-        Creates a complex-full-connected dense graph using a shape as parameter
-        This function uses none activation function.
+        Creates a complex-fully-connected dense graph using a shape as parameter
         :param shape: List of tuple
             1. each number of shape[i][0] correspond to the total neurons of layer i.
-            2. a string in shape[i][1] corresponds to the activation function listed on TODO
+            2. a string in shape[i][1] corresponds to the activation function listed on self.apply_activation
                 ATTENTION: shape[0][0] will be ignored! TODO (maybe apply it to self.X)
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None
@@ -146,7 +164,7 @@ class Cvnn:
         variables = []
         with tf.compat.v1.name_scope("forward_phase") as scope:
             for i in range(len(shape)-1):
-                out, variable = self.create_complex_dense_layer(shape[i][0], shape[i + 1][0], self.X)
+                out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], self.X)
                 variables.extend(variable)
                 self.y_out = tf.compat.v1.identity(self.apply_activation(out, shape[i + 1][1]), name="y_out")        # Apply activation function
         with tf.compat.v1.name_scope("loss") as scope:
@@ -184,7 +202,7 @@ class Cvnn:
 
         # Define Graph
         with tf.compat.v1.name_scope("forward_phase") as scope:
-            self.y_out, variables = self.create_complex_dense_layer(input_size, output_size, self.X)
+            self.y_out, variables = self._create_complex_dense_layer(input_size, output_size, self.X)
             self.y_out = tf.compat.v1.identity(self.y_out, name="y_out")
 
         with tf.compat.v1.name_scope("loss") as scope:
@@ -213,8 +231,13 @@ class Cvnn:
 
     # Others
     def restore_graph_from_meta(self, latest_file=None):
-        # Get the metadata file
-        if latest_file is None and self.automatic_restore:
+        """
+        Restores an existing graph from meta data file
+        :param latest_file: Path to the file to be restored. If no latest_file given and self.automatic_restore is True,
+                            the function will try to load the newest metadata inside `saved_models/` folder.
+        :return: None
+        """
+        if latest_file is None and self.automatic_restore:  # Get the metadata file
             if os.listdir(self.root_savedir):
                 print("Getting last model")
                 # get newest folder
@@ -225,7 +248,7 @@ class Cvnn:
                 latest_file = max(list_of_files, key=os.path.getctime)     # .replace('/', '\\')
             else:
                 sys.exit('Error:restore_graph_from_meta(): No model found...')
-        else:
+        elif latest_file is None:
             sys.exit("Error:restore_graph_from_meta(): no latest_file given and automatic_restore disabled")
         # TODO: check latest_file exists and has the correct format!
 
@@ -264,7 +287,7 @@ class Cvnn:
             # for i, var in enumerate(self.saver._var_list):
             #     print('Var {}: {}'.format(i, var))
 
-    def init_weights(self, latest_file=None):
+    def _init_weights(self, latest_file=None):
         """
         Check for any saved weights within the "saved_models" folder.
         If no model available it initialized the weighs itself.
