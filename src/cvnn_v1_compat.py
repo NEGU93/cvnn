@@ -392,7 +392,14 @@ class Cvnn:
     def act_null(z):
         return z
 
-    def act_cart_sigmoid(self, z):
+    @staticmethod
+    def act_cart_sigmoid(z):
+        """
+        Called with 'act_cart_sigmoid' string.
+        Applies the function (1.0 / (1.0 + exp(-x))) + j * (1.0 / (1.0 + exp(-y))) where z = x + j * y
+        :param z: Tensor to be used as input of the activation function
+        :return: Tensor result of the applied activation function
+        """
         return tf.complex(tf.keras.activations.sigmoid(tf.math.real(z)), tf.keras.activations.sigmoid(tf.math.imag(z)))
 
 
