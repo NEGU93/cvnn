@@ -1,6 +1,6 @@
-===============================
-CYUSB3KIT-003 with SP605 xilinx
-===============================
+====================================
+Complex-Valued Neural Network (CVNN)
+====================================
 
 :Author:  J. Agustin Barrachina
 :Version: 1.0 of 2019/02/27

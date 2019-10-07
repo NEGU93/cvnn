@@ -1,10 +1,8 @@
 Cvnn
 ===========
 
-Upon construction, the object connects to the desired Cypress device.
-For initializing the device there are 3 options according to the need.
 
-.. python:cvnn:: Cvnn()
+.. python:function:: Cvnn()
 
         Performs the training of the neural network
         :param x_train: Training data
