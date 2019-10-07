@@ -1,5 +1,5 @@
-Graph Cration
-=============
+Graph Creation
+==============
 
 Graphs
 ------

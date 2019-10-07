@@ -13,5 +13,4 @@ Content
 	:maxdepth: 2
 
 	cvnn
-  	train_predict
-	graph
+	act_fun

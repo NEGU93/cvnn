@@ -69,3 +69,15 @@ with a scholarship from [ONERA](https://www.onera.fr/en)
 
 I am basically working with Complex-Valued Neural Networks for my PhD topic.
 In the need of making my coding more dynamic I build a library not to have to repeat the same code over and over for little changes and accelerate therefore my coding.
+
+## Cite Me
+
+```
+@MISC {NEGU93-CVNN,
+    author       = {J. Agustin Barrachina},
+    title        = {Complex-Valued Neural Networks (CVNN)},
+    howpublished = {\url{https://github.com/NEGU93/cvnn}},
+    journal      = {GitHub repository},
+    year         = {2019}
+}
+```

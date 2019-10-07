@@ -370,6 +370,14 @@ class Cvnn:
     # Activation functions
     -------------------"""
     def apply_activation(self, out, act):
+        """
+        Applies activation function to parameter out according to string act
+        :param out: Tensor to whom the activation function will be applied
+        :param act: string that says which activation function will be applied.
+                If string does not correspond to any known activation function,
+                none will be applied and a warning will be displayed.
+        :return: Tensor with the applied activation function
+        """
         # map the inputs to the function blocks
         options = {'no_act': self.act_null,
                    'act_cart_sigmoid': self.act_cart_sigmoid,

@@ -3,7 +3,7 @@ Train and Predict
 
 .. py:class:: Cvnn
 
-.. py:method::train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000)
+.. py:method:: train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000)
 
 	Performs the training of the neural network. 
         If automatic_restore is True but not metadata was found, it will try to load the weights of the newest previously saved model.
@@ -17,7 +17,7 @@ Train and Predict
         :param display_freq: Display results frequency. The frequency will be for each (epoch * batch_size + iteration) / display_freq
         :return: None
 
-.. py:method::predict(self, x)
+.. py:method:: predict(self, x)
 
 	Runs a single feedforward computation
 
