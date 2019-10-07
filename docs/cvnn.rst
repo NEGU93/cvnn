@@ -2,7 +2,7 @@ Cvnn
 ===========
 
 
-.. python:function:: Cvnn()
+.. py:function:: Cvnn()
 
         Performs the training of the neural network
         :param x_train: Training data
