@@ -390,6 +390,11 @@ class Cvnn:
 
     @staticmethod
     def act_null(z):
+        """
+        Does not apply any activation function. It just outputs the input.
+        :param z: Input tensor variable
+        :return: z
+        """
         return z
 
     @staticmethod

@@ -22,19 +22,27 @@ Activation functions are created inside the class and referenced using the funct
         :param act: string that says which activation function will be applied. If string does not correspond to any known activation function, none will be applied and a warning will be displayed.
         :return: Tensor with the applied activation function
 
+.. py:method:: act_null(z)
+
+	Does not apply any activation function. It just outputs the input
+
+	:param z: Input tensor variable
+        :return: z
+
 .. py:method:: act_cart_sigmoid(z)
 
-	Called with 'act_cart_sigmoid' string. Applies the function 
+	Called with `'act_cart_sigmoid'` string. 
+	Applies the function 
 
 	.. math::
 
-		(1.0 / (1.0 + exp(-x))) + j * (1.0 / (1.0 + exp(-y)))
+		\frac{1.0}{1.0 + e^{-x}} + j  \frac{1.0}{1.0 + e^{-y}}
 
 	where 
 
 	.. math::
 
-		z = x + j * y
+		z = x + j y
 
         :param z: Tensor to be used as input of the activation function
         :return: Tensor result of the applied activation function
