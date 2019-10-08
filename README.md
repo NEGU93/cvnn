@@ -42,7 +42,7 @@ if y_out is not None:
 
 ## Tensorboard
 
-This library automatically saves the graph and loss evolution over time to Tensorboard provided the input of the Cvnn constructor `tensorboard` is `True` (which is by default).
+This library automatically saves the graph and loss evolution over time to [Tensorboard](https://www.tensorflow.org/tensorboard/r1/summaries) provided the input of the Cvnn constructor `tensorboard` is `True` (which is by default).
 
 To see the results go to the main folder and run: `tensorboard --logdir log/`
 Then open your web browser and connect to: [http://localhost:6006/](http://localhost:6006/)
