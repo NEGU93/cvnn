@@ -132,7 +132,7 @@ class Cvnn:
     # Layers
     @staticmethod
     def _create_complex_dense_layer(input_size, output_size, input):
-
+        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         # Create weight matrix initialized randomely from N~(0, 0.01)
         w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
                                         np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
