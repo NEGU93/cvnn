@@ -1,5 +1,5 @@
 import tensorflow as tf
-import rvnn
+import rvnn_v1_compat
 
 
 def check_tf_version():
@@ -18,6 +18,6 @@ if __name__ == "__main__":
     # check_tf_version()
     # check_gpu_compatible()
 
-    rvnn.rvnn()
+    rvnn_v1_compat.rvnn()
 
 

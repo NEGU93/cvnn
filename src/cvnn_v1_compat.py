@@ -16,10 +16,10 @@ class Cvnn:
     """-------------------------
     # Constructor and Destructor
     -------------------------"""
-    # TODO IMPORTANT: give the ability to pass the name of the to-load network
-    def __init__(self, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True):
+    def __init__(self, name, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True):
         """
         Constructor
+        :param name: Name of the network to be created
         :param learning_rate: Learning rate at which the network will train
         :param tensorboard: True if want the network to save tensorboard graph and summary
         :param verbose: True for verbose mode (print and output results)
@@ -27,6 +27,7 @@ class Cvnn:
         """
         tf.compat.v1.disable_eager_execution()
 
+        self.name = name        # TODO: do this assignments with convention for this type of assignments
         self.verbose = verbose
         self.automatic_restore = automatic_restore
         self.tensorboard = tensorboard
@@ -36,11 +37,11 @@ class Cvnn:
 
         # logs dir
         self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        self.root_logdir = "../log"
+        self.root_logdir = "../log/" + self.name
         self.logdir = "{}/run-{}/".format(self.root_logdir, self.now)
 
         # Use date for creating different files at each run.
-        self.root_savedir = "../saved_models"
+        self.root_savedir = "../saved_models/" + self.name
         self.savedir = "{}/run-{}/".format(self.root_savedir, self.now)
         if not os.path.exists(self.root_savedir):
             os.makedirs(self.root_savedir)
@@ -136,12 +137,27 @@ class Cvnn:
     def _create_complex_dense_layer(input_size, output_size, input):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         # Create weight matrix initialized randomely from N~(0, 0.01)
-
         w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
                                         np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
         b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
                                         np.random.rand(output_size).astype(np.float32)), name="bias")
         return tf.add(tf.matmul(input, w), b), [w, b]
+
+    def _create_graph_from_shape(self, shape):
+        if len(shape) < 2:
+            sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
+        # Define placeholders
+        self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[0][0]], name='X')
+        self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[-1][0]], name='Y')
+
+        variables = []
+        with tf.compat.v1.name_scope("forward_phase") as scope:
+            out = self.apply_activation(shape[0][1], self.X)
+            for i in range(len(shape) - 1):  # Apply all the layers
+                out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
+                variables.extend(variable)
+                out = self.apply_activation(shape[i + 1][1], out)  # Apply activation function
+            return tf.compat.v1.identity(out, name="y_out"), variables
 
     # Graphs
     def create_mlp_graph(self, shape):
@@ -154,28 +170,15 @@ class Cvnn:
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None
         """
-        if len(shape) < 2:
-            sys.exit("Cvnn::create_mlp_graph: shape should be at least of lenth 2")
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
-        # Define placeholders
-        self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[0][0]], name='X')
-        self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[-1][0]], name='Y')
-
-        variables = []
-        with tf.compat.v1.name_scope("forward_phase") as scope:
-            out = self.apply_activation(shape[0][1], self.X)
-            for i in range(len(shape)-1):           # Apply all the layers
-                out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
-                variables.extend(variable)
-                out = self.apply_activation(shape[i + 1][1], out)               # Apply activation function
-            self.y_out = tf.compat.v1.identity(out, name="y_out")
+        self.y_out, variables = self._create_graph_from_shape(shape)
         with tf.compat.v1.name_scope("loss") as scope:
             error = self.y - self.y_out
             self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
         with tf.compat.v1.name_scope("gradients") as scope:
-            print(variables)
+            # print("Cvnn::create_mlp_graph(): variables to be trained " + str(variables))
             gradients = tf.gradients(ys=self.loss, xs=variables)
         self.training_op = []
         with tf.compat.v1.variable_scope("learning_rule") as scope:
@@ -216,7 +219,7 @@ class Cvnn:
             gradients = tf.gradients(ys=self.loss, xs=variables)
         self.training_op = []
         with tf.compat.v1.variable_scope("learning_rule") as scope:
-            for i, var in enumerate(variables):
+            for i, var in enumerate(variables):     # TODO: Use a name to better get it back when loading meta
                 self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
         # print(self.training_op)
 
@@ -251,7 +254,8 @@ class Cvnn:
                 list_of_files = glob.glob(latest_folder + '/*.ckpt.meta')  # Just take ckpt files, not others.
                 latest_file = max(list_of_files, key=os.path.getctime)     # .replace('/', '\\')
             else:
-                sys.exit('Error:restore_graph_from_meta(): No model found...')
+                print('Warning:restore_graph_from_meta(): No model found...')
+                return None
         elif latest_file is None:
             sys.exit("Error:restore_graph_from_meta(): no latest_file given and automatic_restore disabled")
         # TODO: check latest_file exists and has the correct format!
@@ -276,7 +280,7 @@ class Cvnn:
             self.X = graph.get_tensor_by_name("X:0")
             self.y = graph.get_tensor_by_name("Y:0")
             self.y_out = graph.get_tensor_by_name("forward_phase/y_out:0")
-            print(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, "learning_rule"))
+            # print(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, "learning_rule"))
             self.training_op = [graph.get_operation_by_name(tensor.name) for tensor in
                                 tf.compat.v1.get_default_graph().get_operations()
                                 if tensor.name.startswith("learning_rule/AssignVariableOp")]
@@ -316,6 +320,9 @@ class Cvnn:
                         if DEBUG_SAVER:
                             print("Restoring model: " + latest_file)
                         self.saver.restore(self.sess, latest_file)
+                    else:
+                        if self.verbose:
+                            print("Cvnn::init_weights: No model found.", end='')
                 # Check again to see if I found one
                 if latest_file is not None:    # TODO: check file exists and has correct format!
                     if DEBUG_SAVER:
@@ -323,7 +330,7 @@ class Cvnn:
                     self.saver.restore(self.sess, latest_file)
                 else:
                     if self.verbose:
-                        print("Cvnn::init_weights: No model found, initializing weights")
+                        print("Initializing weights...")
                     self.sess.run(self.init)
 
     """-----------------
@@ -416,7 +423,7 @@ if __name__ == "__main__":
 
     # Network Declaration
     auto_restore = False
-    cvnn = Cvnn(automatic_restore=auto_restore)
+    cvnn = Cvnn("CVNN_1HL_for_linear_data", automatic_restore=auto_restore)
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
