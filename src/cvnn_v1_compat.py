@@ -1,19 +1,21 @@
 import tensorflow as tf
 import data_processing as dp
 from datetime import datetime
+from activation_functions import *
 import numpy as np
 import glob
 import pdb
 import sys
 import os
+import utils
 
 DEBUGGER = False
 DEBUG_SAVER = False
-DEBUG_RETORE_META = False
+DEBUG_RESTORE_META = False
 
 
 def check_tf_version():
-    # Makes sure tensorflow version is 2
+    # Makes sure Tensorflow version is 2
     assert tf.__version__.startswith('2')
 
 
@@ -191,6 +193,7 @@ class Cvnn:
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None
         """
+        # TODO: maybe it's better to use this type_value logic to merge rvnn with cvnn
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
@@ -289,7 +292,7 @@ class Cvnn:
         self.restored_meta = True
 
         # list all the tensors in the graph
-        if DEBUG_RETORE_META:
+        if DEBUG_RESTORE_META:
             for tensor in tf.compat.v1.get_default_graph().get_operations():
                 print(tensor.name)
 
@@ -413,26 +416,8 @@ class Cvnn:
         if callable(act):
             return act(out)
         else:
+            print("WARNING: Cvnn::apply_function: " + str(act) + " is not callable, ignoring it")
             return out
-
-    @staticmethod
-    def act_null(z):
-        """
-        Does not apply any activation function. It just outputs the input.
-        :param z: Input tensor variable
-        :return: z
-        """
-        return z
-
-    @staticmethod
-    def act_cart_sigmoid(z):
-        """
-        Called with 'act_cart_sigmoid' string.
-        Applies the function (1.0 / (1.0 + exp(-x))) + j * (1.0 / (1.0 + exp(-y))) where z = x + j * y
-        :param z: Tensor to be used as input of the activation function
-        :return: Tensor result of the applied activation function
-        """
-        return tf.complex(tf.keras.activations.sigmoid(tf.math.real(z)), tf.keras.activations.sigmoid(tf.math.imag(z)))
 
 
 if __name__ == "__main__":
@@ -448,7 +433,7 @@ if __name__ == "__main__":
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([(input_size, 'ignored'), (hidden_size, cvnn.act_cart_sigmoid), (output_size, '')])
+        cvnn.create_mlp_graph([(input_size, 'ignored'), (hidden_size, act_cart_sigmoid), (output_size, '')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
     """y_out = cvnn.predict(x_test)

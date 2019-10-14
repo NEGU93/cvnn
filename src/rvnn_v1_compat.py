@@ -5,6 +5,9 @@ import numpy as np
 from pdb import set_trace
 import sys
 
+"""
+# TODO: Is it possible to merge RVNN with CVNN? Check this!
+"""
 
 class Rvnn(Cvnn):
     # Init compatible

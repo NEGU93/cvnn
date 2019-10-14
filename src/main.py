@@ -1,3 +1,5 @@
+from activation_functions import *
+import tensorflow as tf
 from cvnn_v1_compat import Cvnn
 from rvnn_v1_compat import Rvnn
 import data_processing as dp
@@ -24,8 +26,13 @@ if __name__ == "__main__":
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([(input_size, 'ignored'), (hidden_size, cvnn.act_cart_sigmoid), (output_size, '')])
-        rvnn.create_mlp_graph([(2*input_size, 'ignored'), (2*hidden_size, rvnn.act_cart_sigmoid), (output_size, '')])
+        cvnn.create_mlp_graph([(input_size, 'ignored'),
+                               (hidden_size, act_cart_sigmoid),
+                               (output_size, act_cart_softmax)])
+
+        rvnn.create_mlp_graph([(2*input_size, 'ignored'),
+                               (2*hidden_size, tf.keras.activations.sigmoid),
+                               (output_size, tf.keras.activations.softmax)])
 
     # Train both networks
     cvnn.train(x_train, y_train, x_test, y_test)
