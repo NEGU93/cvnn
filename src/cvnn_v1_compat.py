@@ -12,6 +12,18 @@ DEBUG_SAVER = False
 DEBUG_RETORE_META = False
 
 
+def check_tf_version():
+    # Makes sure tensorflow version is 2
+    assert tf.__version__.startswith('2')
+
+
+def check_gpu_compatible():
+    print("Available GPU devices:", flush=True)
+    print(tf.test.gpu_device_name(), flush=True)
+    print("Built in with CUDA: " + str(tf.test.is_built_with_cuda()), flush=True)
+    print("GPU available: " + str(tf.test.is_gpu_available()), flush=True)
+
+
 class Cvnn:
     """-------------------------
     # Constructor and Destructor
@@ -129,6 +141,12 @@ class Cvnn:
             feed_dict_valid = {self.X: x}
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
+    def compute_loss(self, x, y):
+        with self.sess.as_default():
+            # assert tf.compat.v1.get_default_session() is self.sess
+            feed_dict_valid = {self.X: x, self.y: y}
+            return self.sess.run(self.loss, feed_dict=feed_dict_valid)
+
     """-------------
     # Graph creation
     -------------"""
@@ -143,12 +161,12 @@ class Cvnn:
                                         np.random.rand(output_size).astype(np.float32)), name="bias")
         return tf.add(tf.matmul(input, w), b), [w, b]
 
-    def _create_graph_from_shape(self, shape):
+    def _create_graph_from_shape(self, shape, type_value=np.complex64):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
         # Define placeholders
         self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[0][0]], name='X')
-        self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[-1][0]], name='Y')
+        self.y = tf.compat.v1.placeholder(tf.dtypes.as_dtype(type_value), shape=[None, shape[-1][0]], name='Y')
 
         variables = []
         with tf.compat.v1.name_scope("forward_phase") as scope:
@@ -157,10 +175,13 @@ class Cvnn:
                 out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
                 variables.extend(variable)
                 out = self.apply_activation(shape[i + 1][1], out)  # Apply activation function
-            return tf.compat.v1.identity(out, name="y_out"), variables
+            y_out = tf.compat.v1.identity(out, name="y_out")
+        if tf.dtypes.as_dtype(np.dtype(type_value)) != y_out.dtype:     # Case for real output / real labels
+            y_out = tf.abs(y_out)       # TODO: Shall I do abs or what?
+        return y_out, variables
 
     # Graphs
-    def create_mlp_graph(self, shape):
+    def create_mlp_graph(self, shape, type_value=np.complex64):
         """
         Creates a complex-fully-connected dense graph using a shape as parameter
         :param shape: List of tuple
@@ -173,7 +194,7 @@ class Cvnn:
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
-        self.y_out, variables = self._create_graph_from_shape(shape)
+        self.y_out, variables = self._create_graph_from_shape(shape, type_value)
         with tf.compat.v1.name_scope("loss") as scope:
             error = self.y - self.y_out
             self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")

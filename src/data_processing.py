@@ -76,7 +76,7 @@ def separate_into_train_and_test(x, y, ratio=0.8):
 -------------"""
 
 
-def create_data(m, n, mu, sigma):
+def _create_data(m, n, mu, sigma):
     """
     Creates a numpy matrix of size mxn with random gaussian distribution of mean mu and variance sigma
     """
@@ -84,7 +84,7 @@ def create_data(m, n, mu, sigma):
     return x
 
 
-def create_non_correlated_gaussian_noise(m, n, num_classes=2):
+def _create_non_correlated_gaussian_noise(m, n, num_classes=2):
     """
 
     :param m: Number of examples per class
@@ -92,19 +92,23 @@ def create_non_correlated_gaussian_noise(m, n, num_classes=2):
     :param num_classes: Number of different classes to be made
     :return: tuple of a (num_classes*m)xn matrix with data and labels regarding it class.
     """
-    x = np.ones((num_classes*m, n)) + 1j*np.ones((num_classes*m, n))
-    y = np.ones((num_classes*m, 1))
+    x = np.empty((num_classes*m, n)) + 1j*np.ones((num_classes*m, n))
+    # I am using zeros instead of empty because although counter intuitive it seams it works faster:
+    # https://stackoverflow.com/questions/55145592/performance-of-np-empty-np-zeros-and-np-ones
+    # DEBUNKED? https://stackoverflow.com/questions/52262147/speed-of-np-empty-vs-np-zeros?
+    y = np.zeros((num_classes*m, num_classes))      # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
         mu = int(100*np.random.rand())
         sigma = int(10*np.random.rand())
-        x[k*m:(k+1)*m, :] = create_data(m, n, mu, sigma)
-        y[k*m:(k+1)*m] = k * y[k*m:(k+1)*m]
+        x[k*m:(k+1)*m, :] = _create_data(m, n, mu, sigma)
+        y[k*m:(k+1)*m, k] = 1
 
+    # import pdb; pdb.set_trace()
     return x, y
 
 
 def get_non_correlated_gaussian_noise(m, n, num_classes=2):
-    x, y = create_non_correlated_gaussian_noise(m, n, num_classes)
+    x, y = _create_non_correlated_gaussian_noise(m, n, num_classes)
     x, y = randomize(x, y)
     return separate_into_train_and_test(x, y)
 

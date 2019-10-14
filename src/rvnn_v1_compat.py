@@ -2,6 +2,7 @@ from cvnn_v1_compat import Cvnn
 import data_processing as dp
 import tensorflow as tf
 import numpy as np
+from pdb import set_trace
 import sys
 
 
@@ -16,6 +17,7 @@ class Rvnn(Cvnn):
         # Create weight matrix initialized randomely from N~(0, 0.01)
         w = tf.Variable(np.random.rand(input_size, output_size).astype(np.float32), name="weights")
         b = tf.Variable(np.random.rand(output_size).astype(np.float32), name="bias")
+
         return tf.add(tf.matmul(input, w), b), [w, b]
 
     def _create_graph_from_shape(self, shape):
@@ -39,11 +41,19 @@ class Rvnn(Cvnn):
     # _init_weights compatible
     # All checkpoint methods are compatible
 
+    @staticmethod
+    def act_cart_sigmoid(z):
+        return tf.keras.activations.sigmoid(z)
+
 
 if __name__ == "__main__":
-    x_train, y_train, x_test, y_test = dp.load_dataset("linear_output")
-    x_train = dp.transform_to_real(x_train)
-    x_test = dp.transform_to_real(x_test)
+    m = 100000
+    n = 1000
+    x = np.ones((m, n))
+    w = np.random.rand(n, 1)
+    y = np.matmul(x, w)
+
+    x_train, y_train, x_test, y_test = dp.separate_into_train_and_test(x, y)
 
     input_size = np.shape(x_train)[1]
     hidden_size = 10
@@ -54,7 +64,6 @@ if __name__ == "__main__":
     rvnn = Rvnn("RVNN_1HL_for_linear_data", automatic_restore=auto_restore)
 
     if not auto_restore:
-        # cvnn.create_linear_regression_graph(input_size, output_size)
         rvnn.create_mlp_graph([(input_size, 'ignored'), (hidden_size, rvnn.act_cart_sigmoid), (output_size, '')])
 
     rvnn.train(x_train, y_train, x_test, y_test)
