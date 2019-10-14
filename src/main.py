@@ -28,17 +28,17 @@ if __name__ == "__main__":
         # cvnn.create_linear_regression_graph(input_size, output_size)
         cvnn.create_mlp_graph([(input_size, 'ignored'),
                                (hidden_size, act_cart_sigmoid),
-                               (output_size, act_cart_softmax)])
+                               (output_size, act_cart_softmax)], np.float32)
 
         rvnn.create_mlp_graph([(2*input_size, 'ignored'),
                                (2*hidden_size, tf.keras.activations.sigmoid),
-                               (output_size, tf.keras.activations.softmax)])
+                               (output_size, tf.keras.activations.softmax)], np.float32)
 
     # Train both networks
-    cvnn.train(x_train, y_train, x_test, y_test)
-    rvnn.train(x_train_real, y_train, x_test_real, y_test)
+    cvnn.train(x_train, y_train, x_test, y_test, epochs=10)
+    rvnn.train(x_train_real, y_train, x_test_real, y_test, epochs=10)
 
     # compare them
-    print("CVNN loss: " + str(cvnn.compute_loss(x_test, y_test)) + "%")
-    print("RVNN loss: " + str(rvnn.compute_loss(x_test_real, y_test)) + "%")
+    print("CVNN loss: " + str(cvnn.compute_loss(x_test, y_test)))
+    print("RVNN loss: " + str(rvnn.compute_loss(x_test_real, y_test)))
 

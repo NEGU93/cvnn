@@ -38,8 +38,8 @@ def act_cart_elu(z, alpha=1.0):
     :param alpha: A scalar, slope of negative section.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.elu(tf.math.real(z, alpha)),
-                      tf.keras.activations.elu(tf.math.imag(z, alpha)))
+    return tf.complex(tf.keras.activations.elu(tf.math.real(z), alpha),
+                      tf.keras.activations.elu(tf.math.imag(z), alpha))
 
 
 def act_cart_exponential(z):
@@ -79,8 +79,8 @@ def act_cart_relu(z, alpha=0.0, max_value=None, threshold=0):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.relu(tf.math.real(z, alpha, max_value, threshold)),
-                      tf.keras.activations.relu(tf.math.imag(z, alpha, max_value, threshold)))
+    return tf.complex(tf.keras.activations.relu(tf.math.real(z), alpha, max_value, threshold),
+                      tf.keras.activations.relu(tf.math.imag(z), alpha, max_value, threshold))
 
 
 def act_cart_selu(z):
@@ -140,8 +140,8 @@ def act_cart_softmax(z, axis=-1):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.softmax(tf.math.real(z, axis)),
-                      tf.keras.activations.softmax(tf.math.imag(z, axis)))
+    return tf.complex(tf.keras.activations.softmax(tf.math.real(z), axis),
+                      tf.keras.activations.softmax(tf.math.imag(z), axis))
 
 """
 TYPE B: Polar form.

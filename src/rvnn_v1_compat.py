@@ -23,7 +23,7 @@ class Rvnn(Cvnn):
 
         return tf.add(tf.matmul(input, w), b), [w, b]
 
-    def _create_graph_from_shape(self, shape):
+    def _create_graph_from_shape(self, shape, type_value=np.float32):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
         # Define placeholders
