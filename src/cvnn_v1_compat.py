@@ -3,6 +3,7 @@ import data_processing as dp
 from datetime import datetime
 import numpy as np
 import glob
+import pdb
 import sys
 import os
 
@@ -82,7 +83,8 @@ class Cvnn:
             The frequency will be for each (epoch * batch_size + iteration) / display_freq
         :return: None
         """
-        if np.shape(x_train) < batch_size:  # TODO: make this case work as well. Just display a warning
+
+        if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
             sys.exit("Cvnn::train(): Batch size was bigger than total amount of examples")
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
@@ -134,11 +136,11 @@ class Cvnn:
     def _create_complex_dense_layer(input_size, output_size, input):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         # Create weight matrix initialized randomely from N~(0, 0.01)
+
         w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
                                         np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
         b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
                                         np.random.rand(output_size).astype(np.float32)), name="bias")
-
         return tf.add(tf.matmul(input, w), b), [w, b]
 
     # Graphs
@@ -147,8 +149,8 @@ class Cvnn:
         Creates a complex-fully-connected dense graph using a shape as parameter
         :param shape: List of tuple
             1. each number of shape[i][0] correspond to the total neurons of layer i.
-            2. a string in shape[i][1] corresponds to the activation function listed on self.apply_activation
-                ATTENTION: shape[0][0] will be ignored! TODO (maybe apply it to self.X)
+            2. a string in shape[i][1] corresponds to the activation function listed on
+                https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None
         """
@@ -163,10 +165,12 @@ class Cvnn:
 
         variables = []
         with tf.compat.v1.name_scope("forward_phase") as scope:
-            for i in range(len(shape)-1):
-                out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], self.X)
+            out = self.apply_activation(shape[0][1], self.X)
+            for i in range(len(shape)-1):           # Apply all the layers
+                out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
                 variables.extend(variable)
-                self.y_out = tf.compat.v1.identity(self.apply_activation(out, shape[i + 1][1]), name="y_out")        # Apply activation function
+                out = self.apply_activation(shape[i + 1][1], out)               # Apply activation function
+            self.y_out = tf.compat.v1.identity(out, name="y_out")
         with tf.compat.v1.name_scope("loss") as scope:
             error = self.y - self.y_out
             self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
@@ -369,24 +373,19 @@ class Cvnn:
     """-------------------
     # Activation functions
     -------------------"""
-    def apply_activation(self, out, act):
+    @staticmethod
+    def apply_activation(act, out):
         """
-        Applies activation function to parameter out according to string act
+        Applies activation function `act` to variable `out`
         :param out: Tensor to whom the activation function will be applied
-        :param act: string that says which activation function will be applied.
-                If string does not correspond to any known activation function,
-                none will be applied and a warning will be displayed.
+        :param act: function to be applied to out. See the list fo possible activation functions on:
+            https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
         :return: Tensor with the applied activation function
         """
-        # map the inputs to the function blocks
-        options = {'no_act': self.act_null,
-                   'act_cart_sigmoid': self.act_cart_sigmoid,
-                   }
-        if act in options:
-            return options[act](out)
+        if callable(act):
+            return act(out)
         else:
-            print("Warning: Unknown activation function, not applying any")
-            return options['no_act'](out)
+            return out
 
     @staticmethod
     def act_null(z):
@@ -412,6 +411,7 @@ if __name__ == "__main__":
     x_train, y_train, x_test, y_test = dp.load_dataset("linear_output")
 
     input_size = np.shape(x_train)[1]
+    hidden_size = 10
     output_size = np.shape(y_train)[1]
 
     # Network Declaration
@@ -420,7 +420,7 @@ if __name__ == "__main__":
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([(input_size, 'ignored'), (output_size, '')])
+        cvnn.create_mlp_graph([(input_size, 'ignored'), (hidden_size, cvnn.act_cart_sigmoid), (output_size, '')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
     """y_out = cvnn.predict(x_test)

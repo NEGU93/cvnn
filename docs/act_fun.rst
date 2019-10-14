@@ -8,19 +8,20 @@ Activation functions are created inside the class and referenced using the funct
 
 	apply_activation(out, act)
 
-.. note:: To add your own activation function just define the function in question and add it to the `apply_activation` method. 
+.. note:: You can define your own activation function, just create it inside the Cvnn class. The function must however be static.
 
 .. note:: Convention: The predecind `act` on `Cvnn` methods means it is an activation function. The following `cart` or `polar` means either type A (cartesian) or type B (polar) according to [CIT2003-KUROE]_ notation.
 
 .. py:class:: Cvnn
 
-.. py:method:: apply_activation(self, out, act)
+.. py:method:: apply_activation(self, act, out)
 
-	Applies activation function to parameter out according to string act
-
+	Applies activation function `act` to variable `out`
         :param out: Tensor to whom the activation function will be applied
-        :param act: string that says which activation function will be applied. If string does not correspond to any known activation function, none will be applied and a warning will be displayed.
+        :param act: function to be applied to out. See the list fo possible activation functions on: `Implemented Activation Functions`_
+            
         :return: Tensor with the applied activation function
+
 
 Implemented Activation Functions
 --------------------------------
