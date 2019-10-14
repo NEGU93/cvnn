@@ -51,18 +51,17 @@ class Cvnn:
 
         # logs dir
         self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        self.root_logdir = "../log/" + self.name
-        self.logdir = "{}/run-{}/".format(self.root_logdir, self.now)
+        root_dir = "./log/{}/run-{}/".format(self.name, self.now)
+        # Tensorboard
+        self.tbdir = root_dir + "tensorboard_logs/"
+        if not os.path.exists(self.tbdir):
+            os.makedirs(self.tbdir)
+        # checkpoint models
+        self.savedir = root_dir + "saved_models/"
+        if not os.path.exists(self.savedir):
+            os.makedirs(self.savedir)
 
-        # Use date for creating different files at each run.
-        self.root_savedir = "../saved_models/" + self.name
-        self.savedir = "{}/run-{}/".format(self.root_savedir, self.now)
-        if not os.path.exists(self.root_savedir):
-            os.makedirs(self.root_savedir)
-
-        # self.create_linear_regression_graph()
         # Launch the graph in a session.
-        # self.sess = tf.compat.v1.Session()
         self.restored_meta = False
         if automatic_restore:
             self.restore_graph_from_meta()
@@ -212,7 +211,7 @@ class Cvnn:
 
         # logs
         if self.tensorboard:
-            self.writer = tf.compat.v1.summary.FileWriter(self.logdir, tf.compat.v1.get_default_graph())
+            self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
             loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
             self.merged = tf.compat.v1.summary.merge_all()
 
@@ -249,7 +248,7 @@ class Cvnn:
 
         # logs
         if self.tensorboard:
-            self.writer = tf.compat.v1.summary.FileWriter(self.logdir, tf.compat.v1.get_default_graph())
+            self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
             loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
             self.merged = tf.compat.v1.summary.merge_all()
 
@@ -310,7 +309,7 @@ class Cvnn:
                                 if tensor.name.startswith("learning_rule/AssignVariableOp")]
             # logs
             if self.tensorboard:
-                self.writer = tf.compat.v1.summary.FileWriter(self.logdir, tf.compat.v1.get_default_graph())
+                self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
                 self.loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
                 self.merged = tf.compat.v1.summary.merge_all()
 
@@ -414,7 +413,7 @@ class Cvnn:
         :return: Tensor with the applied activation function
         """
         if callable(act):
-            return act(out)
+            return act(out)         # TODO: for the moment is not be possible to give parameters like alpha
         else:
             print("WARNING: Cvnn::apply_function: " + str(act) + " is not callable, ignoring it")
             return out
