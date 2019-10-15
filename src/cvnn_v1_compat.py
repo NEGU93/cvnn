@@ -1,5 +1,6 @@
 import tensorflow as tf
 import data_processing as dp
+from utils import *
 from datetime import datetime
 from activation_functions import *
 import numpy as np
@@ -66,6 +67,8 @@ class Cvnn:
         if automatic_restore:
             self.restore_graph_from_meta()
 
+        self._save_object_summary(root_dir)     # Save info to metadata
+
     def __del__(self):
         """
         Destructor
@@ -77,6 +80,46 @@ class Cvnn:
             except:  # TODO: Get the real exception.
                 print("Writer did not exist, couldn't delete it")
         self.sess.close()   # TODO: Check if sess exists first
+
+    """----------------
+    # metadata.txt file
+    ----------------"""
+
+    def _save_object_summary(self, root_dir):
+        """
+        Create a .txt inside the root_dir with the information of this object in particular
+        :param root_dir: Directory path to where the txt file will be saved
+        :return:
+        """
+        try:
+            self.metadata_filename = root_dir + "metadata.txt"
+            with open(self.metadata_filename, "x") as file:
+                # 'x' mode creates a new file. If file already exists, the operation fails
+                file.write(self.name + "\n")
+                file.write(self.now + "\n")
+                file.write("automatic_restore, " + str(self.automatic_restore) + "\n")
+                file.write("Restored," + str(self.restored_meta) + "\n")
+                file.write("Tensorboard enabled, " + str(self.tensorboard) + "\n")
+                file.write("Learning Rate, " + str(self.learning_rate) + "\n")
+                file.write("Weight initialization, " + "uniform distribution over [0, 1)")   # TODO: only option so far
+        except FileExistsError:     # TODO: Check if this is the actual error
+            sys.error("Fatal: Same file already exists. Aborting to not override results")
+
+    def _append_graph_structure(self, shape):
+        # TODO: Check first the file DOES exist.
+        with open(self.metadata_filename, "a") as file:
+            # 'a' mode Opens a file for appending. If the file does not exist, it creates a new file for writing.
+            file.write("\n")
+            for i in range(len(shape)):
+                if i == 0:
+                    file.write("input layer, " + str(shape[i][0]))
+                elif i == len(shape) - 1:
+                    file.write("output layer, " + str(shape[i][0]))
+                else:
+                    file.write("hidden layer " + str(i) + ", " + str(shape[i][0]))
+                if callable(shape[i][1]):           # Only write if the parameter was indeed a function
+                    file.write(", " + shape[i][1].__name__)
+                file.write("\n")
 
     """-----------------------
     # Train and predict models
@@ -110,11 +153,11 @@ class Cvnn:
             num_tr_iter = int(len(y_train) / batch_size)
             for epoch in range(epochs):
                 # Randomly shuffle the training data at the beginning of each epoch
-                x_train, y_train = dp.randomize(x_train, y_train)
+                x_train, y_train = randomize(x_train, y_train)
                 for iteration in range(num_tr_iter):
                     start = iteration * batch_size
                     end = (iteration + 1) * batch_size
-                    x_batch, y_batch = dp.get_next_batch(x_train, y_train, start, end)
+                    x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
                     # Run optimization op (backprop)
                     feed_dict_batch = {self.X: x_batch, self.y: y_batch}
                     self.sess.run(self.training_op, feed_dict=feed_dict_batch)
@@ -179,6 +222,7 @@ class Cvnn:
             y_out = tf.compat.v1.identity(out, name="y_out")
         if tf.dtypes.as_dtype(np.dtype(type_value)) != y_out.dtype:     # Case for real output / real labels
             y_out = tf.abs(y_out)       # TODO: Shall I do abs or what?
+        self._append_graph_structure(shape)     # Append the graph information to the metadata file
         return y_out, variables
 
     # Graphs
@@ -417,6 +461,11 @@ class Cvnn:
         else:
             print("WARNING: Cvnn::apply_function: " + str(act) + " is not callable, ignoring it")
             return out
+
+    """------------
+    # Data Analysis
+     -----------"""
+
 
 
 if __name__ == "__main__":

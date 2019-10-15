@@ -143,6 +143,21 @@ def act_cart_softmax(z, axis=-1):
     return tf.complex(tf.keras.activations.softmax(tf.math.real(z), axis),
                       tf.keras.activations.softmax(tf.math.imag(z), axis))
 
+
+def act_cart_softmax_real(z, axis=-1):
+    """
+        Applies the softmax function to the modulus of z.
+        The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+        It is often used as the activation for the last layer of a classification network because the result could be
+        interpreted as a probability distribution.
+        The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+        https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+        :param z: Input tensor.
+        :return: Real-valued tensor of the applied activation function
+        """
+    return tf.keras.activations.softmax(tf.math.abs(z), axis)
+
+
 """
 TYPE B: Polar form.
 """

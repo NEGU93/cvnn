@@ -38,6 +38,7 @@ class Rvnn(Cvnn):
                 out, variable = self._create_dense_layer(shape[i][0], shape[i + 1][0], out)
                 variables.extend(variable)
                 out = self.apply_activation(shape[i + 1][1], out)  # Apply activation function
+            self._append_graph_structure(shape)  # Append the graph information to the metadata file
             return tf.compat.v1.identity(out, name="y_out"), variables
 
     # create_mlp_graph compatible
