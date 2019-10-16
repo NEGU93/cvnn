@@ -2,7 +2,7 @@ from utils import *
 import numpy as np
 import sys
 import os
-
+from math import sqrt
 """----
 # Utils
 ----"""
@@ -56,7 +56,7 @@ def _create_data(m, n, mu, sigma):
     """
     Creates a numpy matrix of size mxn with random gaussian distribution of mean mu and variance sigma
     """
-    x = mu + 1j*mu + sigma * (np.random.rand(m, n) + 1j * np.random.rand(m, n))
+    x = (np.random.normal(mu, sigma, (m, n)) + 1j * np.random.normal(mu, sigma, (m, n))) / sqrt(2)
     return x
 
 
@@ -68,14 +68,14 @@ def _create_non_correlated_gaussian_noise(m, n, num_classes=2):
     :param num_classes: Number of different classes to be made
     :return: tuple of a (num_classes*m)xn matrix with data and labels regarding it class.
     """
-    x = np.empty((num_classes*m, n)) + 1j*np.ones((num_classes*m, n))
+    x = np.empty((num_classes*m, n)) + 1j*np.empty((num_classes*m, n))
     # I am using zeros instead of empty because although counter intuitive it seams it works faster:
     # https://stackoverflow.com/questions/55145592/performance-of-np-empty-np-zeros-and-np-ones
     # DEBUNKED? https://stackoverflow.com/questions/52262147/speed-of-np-empty-vs-np-zeros?
     y = np.zeros((num_classes*m, num_classes))      # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
         mu = int(100*np.random.rand())
-        sigma = int(10*np.random.rand())
+        sigma = int(1*np.random.rand())
         x[k*m:(k+1)*m, :] = _create_data(m, n, mu, sigma)
         y[k*m:(k+1)*m, k] = 1
 

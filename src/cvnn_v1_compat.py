@@ -13,6 +13,7 @@ import utils
 DEBUGGER = False
 DEBUG_SAVER = False
 DEBUG_RESTORE_META = False
+DEBUG_TRAIN = True
 
 
 def check_tf_version():
@@ -124,7 +125,7 @@ class Cvnn:
     """-----------------------
     # Train and predict models
     -----------------------"""
-    def train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000):
+    def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=100, display_freq=1000):
         """
         Performs the training of the neural network.
         If automatic_restore is True but not metadata was found,
@@ -146,6 +147,11 @@ class Cvnn:
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
             self._init_weights()
+
+            if DEBUG_TRAIN:
+                feed_dict = {self.X: x_test, self.y: y_test}
+                print(self.sess.run(self.y_out, feed_dict=feed_dict))
+                import pdb; pdb.set_trace()
 
             # Run validation at beginning
             self.print_validation_loss(0, x_test, y_test)
@@ -198,12 +204,13 @@ class Cvnn:
     @staticmethod
     def _create_complex_dense_layer(input_size, output_size, input):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        # Create weight matrix initialized randomely from N~(0, 0.01)
-        w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
-                                        np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
-        b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
-                                        np.random.rand(output_size).astype(np.float32)), name="bias")
-        return tf.add(tf.matmul(input, w), b), [w, b]
+        with tf.compat.v1.name_scope("dense_layer") as scope:   # TODO: pass the number of layer as param?
+            # Create weight matrix initialized randomely from N~(0, 0.01)
+            w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
+                                            np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
+            b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
+                                            np.random.rand(output_size).astype(np.float32)), name="bias")
+            return tf.add(tf.matmul(input, w), b), [w, b]
 
     def _create_graph_from_shape(self, shape, type_value=np.complex64):
         if len(shape) < 2:
@@ -225,6 +232,19 @@ class Cvnn:
         self._append_graph_structure(shape)     # Append the graph information to the metadata file
         return y_out, variables
 
+    # Loss functions
+    def _mean_square_loss(self):
+        with tf.compat.v1.name_scope("loss") as scope:
+            error = self.y - self.y_out
+            return tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
+
+    def _classification_loss(self):
+        with tf.compat.v1.name_scope("loss_scope") as scope:
+            y1_error = tf.math.multiply(-self.y, tf.math.log(self.y_out))       # Error for y = 1
+            y0_error = tf.math.multiply(1-self.y, tf.math.log(1-self.y_out))    # Error for y = 0
+            error = tf.math.subtract(y1_error, y0_error)
+            return tf.reduce_mean(input_tensor=error, name="loss")
+
     # Graphs
     def create_mlp_graph(self, shape, type_value=np.complex64):
         """
@@ -241,9 +261,7 @@ class Cvnn:
         tf.compat.v1.reset_default_graph()
 
         self.y_out, variables = self._create_graph_from_shape(shape, type_value)
-        with tf.compat.v1.name_scope("loss") as scope:
-            error = self.y - self.y_out
-            self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
+        self.loss = self._classification_loss()
         with tf.compat.v1.name_scope("gradients") as scope:
             # print("Cvnn::create_mlp_graph(): variables to be trained " + str(variables))
             gradients = tf.gradients(ys=self.loss, xs=variables)
@@ -425,9 +443,9 @@ class Cvnn:
             if self.tensorboard:
                 # add the summary to the writer (i.e. to the event file)
                 step = epoch * num_tr_iter + iteration
-                if step % num_tr_iter == 0:
-                    # Under this case I can plot the x axis as the epoch for clarity
-                    step = epoch
+                # if step % num_tr_iter == 0:   # TODO: this must be a function of the display frequency
+                #   # Under this case I can plot the x axis as the epoch for clarity
+                #    step = epoch
                 summary = self.sess.run(self.merged, feed_dict=feed_dict_batch)
                 self.writer.add_summary(summary, step)
 
