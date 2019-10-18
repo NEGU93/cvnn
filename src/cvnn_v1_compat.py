@@ -5,15 +5,14 @@ from datetime import datetime
 from activation_functions import *
 import numpy as np
 import glob
-import pdb
 import sys
 import os
-import utils
+from pdb import set_trace
 
-DEBUGGER = False
-DEBUG_SAVER = False
-DEBUG_RESTORE_META = False
-DEBUG_TRAIN = False
+# https://ml-cheatsheet.readthedocs.io/en/latest/
+
+DEBUG_RESTORE_META = False      # True to print the op and tensors that can be retrieved
+DEBUG_WEIGHT_LOADER = True      # True to print the file being restored for the weights
 
 
 def check_tf_version():
@@ -35,20 +34,18 @@ class Cvnn:
     def __init__(self, name, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True):
         """
         Constructor
-        :param name: Name of the network to be created
-        :param learning_rate: Learning rate at which the network will train
+        :param name: Name of the network to be created. This will be used to save data into ./log/<name>/run-{date}/
+        :param learning_rate: Learning rate at which the network will train TODO: this should not be here
         :param tensorboard: True if want the network to save tensorboard graph and summary
         :param verbose: True for verbose mode (print and output results)
         :param automatic_restore: True if network should search for saved models (will look for the newest saved model)
         """
-        tf.compat.v1.disable_eager_execution()
-
-        self.name = name        # TODO: do this assignments with convention for this type of assignments
+        tf.compat.v1.disable_eager_execution()      # This class works as a graph model so no eager compatible
+        # Save parameters of the constructor
+        self.name = name
         self.verbose = verbose
         self.automatic_restore = automatic_restore
         self.tensorboard = tensorboard
-
-        # Hyper-parameters
         self.learning_rate = learning_rate
 
         # logs dir
@@ -78,19 +75,22 @@ class Cvnn:
         if self.tensorboard:
             try:
                 self.writer.close()
-            except:  # TODO: Get the real exception.
+            except AttributeError:
                 print("Writer did not exist, couldn't delete it")
-        self.sess.close()   # TODO: Check if sess exists first
+        try:        # TODO: better way to do it?
+            self.sess.close()
+        except AttributeError:
+            print("Session was not created")
 
     """----------------
     # metadata.txt file
     ----------------"""
-
     def _save_object_summary(self, root_dir):
         """
-        Create a .txt inside the root_dir with the information of this object in particular
+        Create a .txt inside the root_dir with the information of this object in particular.
+        If the file already exists it exits with a fatal message not to override information.
         :param root_dir: Directory path to where the txt file will be saved
-        :return:
+        :return: None
         """
         try:
             self.metadata_filename = root_dir + "metadata.txt"
@@ -102,12 +102,19 @@ class Cvnn:
                 file.write("Restored," + str(self.restored_meta) + "\n")
                 file.write("Tensorboard enabled, " + str(self.tensorboard) + "\n")
                 file.write("Learning Rate, " + str(self.learning_rate) + "\n")
-                file.write("Weight initialization, " + "uniform distribution over [0, 1)")   # TODO: only option so far
+                file.write("Weight initialization, " + "uniform distribution over [0, 1)")   # TODO: change to correct
         except FileExistsError:     # TODO: Check if this is the actual error
             sys.error("Fatal: Same file already exists. Aborting to not override results")
 
     def _append_graph_structure(self, shape):
-        # TODO: Check first the file DOES exist.
+        """
+        Appends the shape of the network to the metadata file.
+        It checks the meta data file exists, if not throws and error and exits.
+        :param shape: Shape of the network to be saved
+        :return: None
+        """
+        if not os.path.exists(self.metadata_filename):
+            sys.exit("Cvnn::_append_graph_structure: The meta data file did not exist!")
         with open(self.metadata_filename, "a") as file:
             # 'a' mode Opens a file for appending. If the file does not exist, it creates a new file for writing.
             file.write("\n")
@@ -123,7 +130,7 @@ class Cvnn:
                 file.write("\n")
 
     """-----------------------
-    # Train and predict models
+    #          Train 
     -----------------------"""
     def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=100, display_freq=1000):
         """
@@ -141,22 +148,15 @@ class Cvnn:
             The frequency will be for each (epoch * batch_size + iteration) / display_freq
         :return: None
         """
-
         if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
             sys.exit("Cvnn::train(): Batch size was bigger than total amount of examples")
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
             self._init_weights()
 
-            if DEBUG_TRAIN:
-                feed_dict = {self.X: x_test, self.y: y_test}
-                print(self.sess.run(self.y_out, feed_dict=feed_dict))
-                import pdb; pdb.set_trace()
-
             # Run validation at beginning
             self.print_validation_loss(0, x_test, y_test)
-            # Number of training iterations in each epoch
-            num_tr_iter = int(len(y_train) / batch_size)
+            num_tr_iter = int(len(y_train) / batch_size)        # Number of training iterations in each epoch
             for epoch in range(epochs):
                 # Randomly shuffle the training data at the beginning of each epoch
                 x_train, y_train = randomize(x_train, y_train)
@@ -164,7 +164,7 @@ class Cvnn:
                     start = iteration * batch_size
                     end = (iteration + 1) * batch_size
                     x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
-                    # Run optimization op (backprop)
+                    # Run optimization op (backpropagation)
                     feed_dict_batch = {self.X: x_batch, self.y: y_batch}
                     self.sess.run(self.training_op, feed_dict=feed_dict_batch)
                     if (epoch * batch_size + iteration) % display_freq == 0:
@@ -175,10 +175,10 @@ class Cvnn:
             loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
             self.print_validation_loss(epoch+1, x_test, y_test)
             self.save_model("final", "valid_loss", loss_valid)
-            if DEBUGGER:
-                print(y_test[:3])
-                print(self.y_out.eval(feed_dict=feed_dict_valid)[:3])
 
+    """------------------------
+    # Predict models and result
+    ------------------------"""
     def predict(self, x):
         """
         Runs a single feedforward computation
@@ -212,8 +212,6 @@ class Cvnn:
     -------------"""
     # Layers
     def _create_dense_layer(self, input_size, output_size, input):
-        # TODO: this can actually be a function of cvnn
-        # Create weight matrix initialized randomely from N~(0, 0.01)
         with tf.compat.v1.name_scope("dense_layer") as scope:
             w = tf.Variable(self.glorot_uniform_init(input_size, output_size).astype(np.float32), name="weights")
             b = tf.Variable(np.zeros(output_size).astype(np.float32), name="bias")
@@ -255,24 +253,13 @@ class Cvnn:
         self._append_graph_structure(shape)     # Append the graph information to the metadata.txt file
         return y_out, variables
 
-    # Loss functions
-    def _mean_square_loss(self):
-        with tf.compat.v1.name_scope("loss") as scope:
-            error = self.y - self.y_out
-            return tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
-
-    def _classification_loss(self):
-        with tf.compat.v1.name_scope("loss_scope") as scope:
-            y1_error = tf.math.multiply(-self.y, tf.math.log(self.y_out))       # Error for y = 1
-            y0_error = tf.math.multiply(1-self.y, tf.math.log(1-self.y_out))    # Error for y = 0
-            error = tf.math.subtract(y1_error, y0_error)
-            return tf.reduce_mean(input_tensor=error, name="loss")
-
     # Graphs
     def create_mlp_graph(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
         """
         Creates a complex-fully-connected dense graph using a shape as parameter
-        :param output_dtype:
+        :param input_dtype: Set to np.float32 to make a real-valued neural network (output_dtype should also be float32)
+        :param output_dtype: Datatype of the output of the network. Normally float32 for classification.
+            NOTE: If float32 make sure the last activation function gives a float32 and not a complex32!
         :param shape: List of tuple
             1. each number of shape[i][0] correspond to the total neurons of layer i.
             2. a string in shape[i][1] corresponds to the activation function listed on
@@ -280,24 +267,29 @@ class Cvnn:
             Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
         :return: None
         """
-        # TODO: maybe it's better to use this type_value logic to merge rvnn with cvnn
+        if output_dtype == np.complex64 and input_dtype == np.float32:
+            sys.exit("Cvnn::create_mlp_graph: if input dtype is real output cannot be complex")
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
+        # Creates the feedforward network
         self.y_out, variables = self._create_graph_from_shape(shape, input_dtype, output_dtype)
-        self.loss = self._classification_loss()
+        # Defines the loss function
+        self.loss = self._categorical_crossentropy_loss()  # TODO: make the user to be able to select the loss!!!!
+        # Calculate gradients
         with tf.compat.v1.name_scope("gradients") as scope:
-            # print("Cvnn::create_mlp_graph(): variables to be trained " + str(variables))
             gradients = tf.gradients(ys=self.loss, xs=variables)
+        # Defines a training operator for each variable
         self.training_op = []
-        # import pdb; pdb.set_trace()
         with tf.compat.v1.variable_scope("learning_rule") as scope:
             # lr_const = tf.constant(self.learning_rate, name="learning_rate")
             for i, var in enumerate(variables):
+                # Only gradient descent supported for the moment
                 self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
-        assert len(self.training_op) == len(gradients)
+        # assert len(self.training_op) == len(gradients)
 
-        # logs
+        # logs to be saved with tensorboard
+        # TODO: add more info like weights
         if self.tensorboard:
             self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
             loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
@@ -305,46 +297,50 @@ class Cvnn:
 
         self.init = tf.compat.v1.global_variables_initializer()
         self.sess = tf.compat.v1.Session()
-        # create saver object
+
+        # create saver object of the models weights
         self.saver = tf.compat.v1.train.Saver()
         # for i, var in enumerate(self.saver._var_list):
         #     print('Var {}: {}'.format(i, var))
 
-    def create_linear_regression_graph(self, input_size, output_size):
-        # Reset latest graph
-        tf.compat.v1.reset_default_graph()
+        def create_linear_regression_graph(self, input_size, output_size,
+                                           input_dtype=np.complex64, output_dtype=np.float32):
+            """
+            Creates a linear_regression_graph with no activation function
+            :param input_size:
+            :param output_size:
+            :param input_dtype:
+            :param output_dtype:
+            :return:
+            """
+            self.create_mlp_graph([(input_size, act_linear), (output_size, act_linear)], input_dtype, output_dtype)
 
-        # Define placeholders
-        self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, input_size], name='X')
-        self.y = tf.compat.v1.placeholder(tf.complex64, shape=[None, output_size], name='Y')
-
-        # Define Graph
-        with tf.compat.v1.name_scope("forward_phase") as scope:
-            self.y_out, variables = self._create_complex_dense_layer(input_size, output_size, self.X)
-            self.y_out = tf.compat.v1.identity(self.y_out, name="y_out")
+    """
+    # Loss functions
+    # https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+    """
+    def _mean_square_loss(self):
+        """
+        Mean Squared Error, or L2 loss.
+        :return:
+        """
         with tf.compat.v1.name_scope("loss") as scope:
             error = self.y - self.y_out
-            self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
-        with tf.compat.v1.name_scope("gradients") as scope:
-            gradients = tf.gradients(ys=self.loss, xs=variables)
-        self.training_op = []
-        with tf.compat.v1.variable_scope("learning_rule") as scope:
-            for i, var in enumerate(variables):     # TODO: Use a name to better get it back when loading meta
-                self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
-        # print(self.training_op)
+            return tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
 
-        # logs
-        if self.tensorboard:
-            self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
-            loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
-            self.merged = tf.compat.v1.summary.merge_all()
-
-        self.init = tf.compat.v1.global_variables_initializer()
-        self.sess = tf.compat.v1.Session()
-        # create saver object
-        self.saver = tf.compat.v1.train.Saver()
-        # for i, var in enumerate(self.saver._var_list):
-        #     print('Var {}: {}'.format(i, var))
+    def _categorical_crossentropy_loss(self):
+        """
+        https://jovianlin.io/cat-crossentropy-vs-sparse-cat-crossentropy/
+        :return: -y*log(y_out)-(1-y)*log(1-y_out) where:
+            log - the natural log
+            y - binary indicator (0 or 1), it will be all 0's but one (according to the corresponding class)
+            y_out - predicted probability observation the class
+        """
+        with tf.compat.v1.name_scope("loss_scope") as scope:
+            y1_error = tf.math.multiply(-self.y, tf.math.log(self.y_out))       # Error for y = 1
+            y0_error = tf.math.multiply(1-self.y, tf.math.log(1-self.y_out))    # Error for y = 0
+            error = tf.math.subtract(y1_error, y0_error)
+            return tf.reduce_mean(input_tensor=error, name="loss")
 
     # Others
     def restore_graph_from_meta(self, latest_file=None):
@@ -427,7 +423,7 @@ class Cvnn:
                         # latest_file = max(list_of_files, key=os.path.getctime).replace('/', '\\')
                         # .split('.ckpt')[0] + '.ckpt'
                         latest_file = max(list_of_files, key=os.path.getctime).split('.ckpt')[0] + '.ckpt'
-                        if DEBUG_SAVER:
+                        if DEBUG_WEIGHT_LOADER:
                             print("Restoring model: " + latest_file)
                         self.saver.restore(self.sess, latest_file)
                     else:
@@ -435,7 +431,7 @@ class Cvnn:
                             print("Cvnn::init_weights: No model found.", end='')
                 # Check again to see if I found one
                 if latest_file is not None:    # TODO: check file exists and has correct format!
-                    if DEBUG_SAVER:
+                    if DEBUG_WEIGHT_LOADER:
                         print("Restoring model: " + latest_file)
                     self.saver.restore(self.sess, latest_file)
                 else:
@@ -514,8 +510,18 @@ class Cvnn:
         return np.random.randn(in_neurons, out_neurons) * np.sqrt(1/in_neurons)
 
     @staticmethod
-    def rand_init(in_neurons, out_neurons):
+    def rand_init_neg(in_neurons, out_neurons):
         return 2*np.random.rand(in_neurons, out_neurons)-1
+
+    @staticmethod
+    def rand_init(in_neurons, out_neurons):
+        """
+        Use this function to make fashion not to predict good
+        :param in_neurons:
+        :param out_neurons:
+        :return:
+        """
+        return np.random.rand(in_neurons, out_neurons)
 
     """------------
     # Data Analysis

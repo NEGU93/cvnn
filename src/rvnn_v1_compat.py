@@ -7,6 +7,12 @@ from pdb import set_trace
 import sys
 
 
+"""
+THIS MODULE WAS USED TO DEBUG RVNN when using the Cvnn class.
+It uses keras fashion dataset and trains a classifier.
+"""
+
+
 def debug_rvnn(x_train, y_train, x_test, y_test):
     tf.compat.v1.disable_eager_execution()
     # Reset latest graph
