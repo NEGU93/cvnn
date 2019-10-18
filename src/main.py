@@ -57,6 +57,8 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
     cvnn.train(x_train, y_train, x_test, y_test, epochs=10)
     rvnn.train(x_train_real, y_train, x_test_real, y_test, epochs=10)
 
+    # import pdb; pdb.set_trace()
+
     return cvnn, rvnn
 
 

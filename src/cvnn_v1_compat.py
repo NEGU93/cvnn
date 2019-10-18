@@ -13,7 +13,7 @@ import utils
 DEBUGGER = False
 DEBUG_SAVER = False
 DEBUG_RESTORE_META = False
-DEBUG_TRAIN = True
+DEBUG_TRAIN = False
 
 
 def check_tf_version():
@@ -49,7 +49,7 @@ class Cvnn:
         self.tensorboard = tensorboard
 
         # Hyper-parameters
-        self.learning_rate = learning_rate      # The optimization initial learning rate
+        self.learning_rate = learning_rate
 
         # logs dir
         self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
@@ -191,6 +191,16 @@ class Cvnn:
             feed_dict_valid = {self.X: x}
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
+    # TODO: precision, recall, f1_score
+    def compute_accuracy(self, x_test, y_test):
+        y_prob = self.predict(x_test)
+        y_prediction = np.argmax(y_prob, axis=1)
+        y_labels = np.argmax(y_test, axis=1)
+        acc = np.sum(y_prediction == y_labels) / len(y_labels)
+        if self.verbose:
+            print("Accuracy: {0:.2%}".format(acc))
+        return acc
+
     def compute_loss(self, x, y):
         with self.sess.as_default():
             # assert tf.compat.v1.get_default_session() is self.sess
@@ -201,16 +211,16 @@ class Cvnn:
     # Graph creation
     -------------"""
     # Layers
-    @staticmethod
-    def _create_complex_dense_layer(input_size, output_size, input):
+    def _create_complex_dense_layer(self, input_size, output_size, input_of_layer):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.compat.v1.name_scope("dense_layer") as scope:   # TODO: pass the number of layer as param?
             # Create weight matrix initialized randomely from N~(0, 0.01)
-            w = tf.Variable(tf.complex(np.random.rand(input_size, output_size).astype(np.float32),
-                                            np.random.rand(input_size, output_size).astype(np.float32)), name="weights")
-            b = tf.Variable(tf.complex(np.random.rand(output_size).astype(np.float32),
-                                            np.random.rand(output_size).astype(np.float32)), name="bias")
-            return tf.add(tf.matmul(input, w), b), [w, b]
+            w = tf.Variable(tf.complex(self.glorot_uniform_init(input_size, output_size).astype(np.float32),
+                                       self.glorot_uniform_init(input_size, output_size).astype(np.float32)),
+                            name="weights")
+            b = tf.Variable(tf.complex(np.zeros(output_size).astype(np.float32),
+                                       np.zeros(output_size).astype(np.float32)), name="bias")
+            return tf.add(tf.matmul(input_of_layer, w), b), [w, b]
 
     def _create_graph_from_shape(self, shape, type_value=np.complex64):
         if len(shape) < 2:
@@ -229,7 +239,7 @@ class Cvnn:
             y_out = tf.compat.v1.identity(out, name="y_out")
         if tf.dtypes.as_dtype(np.dtype(type_value)) != y_out.dtype:     # Case for real output / real labels
             y_out = tf.abs(y_out)       # TODO: Shall I do abs or what?
-        self._append_graph_structure(shape)     # Append the graph information to the metadata file
+        self._append_graph_structure(shape)     # Append the graph information to the metadata.txt file
         return y_out, variables
 
     # Loss functions
@@ -249,6 +259,7 @@ class Cvnn:
     def create_mlp_graph(self, shape, type_value=np.complex64):
         """
         Creates a complex-fully-connected dense graph using a shape as parameter
+        :param type_value:
         :param shape: List of tuple
             1. each number of shape[i][0] correspond to the total neurons of layer i.
             2. a string in shape[i][1] corresponds to the activation function listed on
@@ -266,10 +277,12 @@ class Cvnn:
             # print("Cvnn::create_mlp_graph(): variables to be trained " + str(variables))
             gradients = tf.gradients(ys=self.loss, xs=variables)
         self.training_op = []
+        # import pdb; pdb.set_trace()
         with tf.compat.v1.variable_scope("learning_rule") as scope:
+            # lr_const = tf.constant(self.learning_rate, name="learning_rate")
             for i, var in enumerate(variables):
                 self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
-        # print(self.training_op)
+        assert len(self.training_op) == len(gradients)
 
         # logs
         if self.tensorboard:
@@ -296,7 +309,6 @@ class Cvnn:
         with tf.compat.v1.name_scope("forward_phase") as scope:
             self.y_out, variables = self._create_complex_dense_layer(input_size, output_size, self.X)
             self.y_out = tf.compat.v1.identity(self.y_out, name="y_out")
-
         with tf.compat.v1.name_scope("loss") as scope:
             error = self.y - self.y_out
             self.loss = tf.reduce_mean(input_tensor=tf.square(tf.abs(error)), name="loss")
@@ -480,10 +492,21 @@ class Cvnn:
             print("WARNING: Cvnn::apply_function: " + str(act) + " is not callable, ignoring it")
             return out
 
+    """-----------
+    # Initializers
+    -----------"""
+    @staticmethod
+    def glorot_uniform_init(in_neurons, out_neurons):
+        return np.random.randn(in_neurons, out_neurons) * np.sqrt(1/in_neurons)
+
+    @staticmethod
+    def rand_init(in_neurons, out_neurons):
+        return 2*np.random.rand(in_neurons, out_neurons)-1
+
     """------------
     # Data Analysis
      -----------"""
-
+    # TODO
 
 
 if __name__ == "__main__":
