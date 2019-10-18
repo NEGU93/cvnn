@@ -494,6 +494,7 @@ class Cvnn:
 
     """-----------
     # Initializers
+    # https://keras.io/initializers/
     -----------"""
     @staticmethod
     def glorot_uniform_init(in_neurons, out_neurons):

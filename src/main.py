@@ -43,7 +43,17 @@ def monte_carlo_loss_gaussian_noise(iterations=1000, m=100000, n=1000, num_class
 
 
 def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
-    shape_cvnn, shape_rvnn, name = get_data_1h_for_gauss_noise(x_train, y_train)
+    input_size = np.shape(x_train)[1]
+    hidden_size = 10
+    output_size = np.shape(y_train)[1]
+
+    shape_cvnn = [(input_size, 'ignored'),
+                  (hidden_size, act_cart_sigmoid),
+                  (output_size, act_cart_softmax_real)]
+    shape_rvnn = [(2 * input_size, 'ignored'),
+                  (2 * hidden_size, tf.keras.activations.sigmoid),
+                  (output_size, tf.keras.activations.softmax)]
+    name = "_1HL_for_gauss_noise"
 
     auto_restore = False
     cvnn = Cvnn("CVNN" + name, automatic_restore=auto_restore)
@@ -62,24 +72,6 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
     return cvnn, rvnn
 
 
-def get_data_1h_for_gauss_noise(x_train, y_train):
-    input_size = np.shape(x_train)[1]
-    hidden_size = 10
-    output_size = np.shape(y_train)[1]
-
-    shape_cvnn = [(input_size, 'ignored'),
-                  (hidden_size, act_cart_sigmoid),
-                  (output_size, act_cart_softmax_real)]
-
-    shape_rvnn = [(2 * input_size, 'ignored'),
-                  (2 * hidden_size, tf.keras.activations.sigmoid),
-                  (output_size, tf.keras.activations.softmax)]
-
-    name = "_1HL_for_gauss_noise"
-
-    return shape_cvnn, shape_rvnn, name
-
-
 if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
@@ -87,6 +79,7 @@ if __name__ == "__main__":
     num_classes = 2
     x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
     x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
+
     cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real)
 
     # set_trace()
