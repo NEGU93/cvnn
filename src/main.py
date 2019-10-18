@@ -57,12 +57,12 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
 
     auto_restore = False
     cvnn = Cvnn("CVNN" + name, automatic_restore=auto_restore)
-    rvnn = Rvnn("RVNN" + name, automatic_restore=auto_restore)
+    rvnn = Cvnn("RVNN" + name, automatic_restore=auto_restore)
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph(shape_cvnn, np.float32)
-        rvnn.create_mlp_graph(shape_rvnn, np.float32)
+        cvnn.create_mlp_graph(shape_cvnn, input_dtype=np.complex64)
+        rvnn.create_mlp_graph(shape_rvnn, input_dtype=np.float32)
 
     cvnn.train(x_train, y_train, x_test, y_test, epochs=10)
     rvnn.train(x_train_real, y_train, x_test_real, y_test, epochs=10)

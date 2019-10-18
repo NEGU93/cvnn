@@ -211,6 +211,14 @@ class Cvnn:
     # Graph creation
     -------------"""
     # Layers
+    def _create_dense_layer(self, input_size, output_size, input):
+        # TODO: this can actually be a function of cvnn
+        # Create weight matrix initialized randomely from N~(0, 0.01)
+        with tf.compat.v1.name_scope("dense_layer") as scope:
+            w = tf.Variable(self.glorot_uniform_init(input_size, output_size).astype(np.float32), name="weights")
+            b = tf.Variable(np.zeros(output_size).astype(np.float32), name="bias")
+            return tf.add(tf.matmul(input, w), b), [w, b]
+
     def _create_complex_dense_layer(self, input_size, output_size, input_of_layer):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.compat.v1.name_scope("dense_layer") as scope:   # TODO: pass the number of layer as param?
@@ -222,22 +230,27 @@ class Cvnn:
                                        np.zeros(output_size).astype(np.float32)), name="bias")
             return tf.add(tf.matmul(input_of_layer, w), b), [w, b]
 
-    def _create_graph_from_shape(self, shape, type_value=np.complex64):
+    def _create_graph_from_shape(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
         # Define placeholders
-        self.X = tf.compat.v1.placeholder(tf.complex64, shape=[None, shape[0][0]], name='X')
-        self.y = tf.compat.v1.placeholder(tf.dtypes.as_dtype(type_value), shape=[None, shape[-1][0]], name='Y')
+        self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(input_dtype), shape=[None, shape[0][0]], name='X')
+        self.y = tf.compat.v1.placeholder(tf.dtypes.as_dtype(output_dtype), shape=[None, shape[-1][0]], name='Y')
 
         variables = []
         with tf.compat.v1.name_scope("forward_phase") as scope:
             out = self.apply_activation(shape[0][1], self.X)
             for i in range(len(shape) - 1):  # Apply all the layers
-                out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
+                if input_dtype == np.complex64:
+                    out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
+                elif input_dtype == np.float32:
+                    out, variable = self._create_dense_layer(shape[i][0], shape[i + 1][0], out)
+                else:   # TODO: add the rest
+                    sys.exit("CVNN::_create_graph_from_shape: input_type " + str(input_dtype) + " not supported")
                 variables.extend(variable)
                 out = self.apply_activation(shape[i + 1][1], out)  # Apply activation function
             y_out = tf.compat.v1.identity(out, name="y_out")
-        if tf.dtypes.as_dtype(np.dtype(type_value)) != y_out.dtype:     # Case for real output / real labels
+        if tf.dtypes.as_dtype(np.dtype(output_dtype)) != y_out.dtype:     # Case for real output / real labels
             y_out = tf.abs(y_out)       # TODO: Shall I do abs or what?
         self._append_graph_structure(shape)     # Append the graph information to the metadata.txt file
         return y_out, variables
@@ -256,10 +269,10 @@ class Cvnn:
             return tf.reduce_mean(input_tensor=error, name="loss")
 
     # Graphs
-    def create_mlp_graph(self, shape, type_value=np.complex64):
+    def create_mlp_graph(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
         """
         Creates a complex-fully-connected dense graph using a shape as parameter
-        :param type_value:
+        :param output_dtype:
         :param shape: List of tuple
             1. each number of shape[i][0] correspond to the total neurons of layer i.
             2. a string in shape[i][1] corresponds to the activation function listed on
@@ -271,7 +284,7 @@ class Cvnn:
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
-        self.y_out, variables = self._create_graph_from_shape(shape, type_value)
+        self.y_out, variables = self._create_graph_from_shape(shape, input_dtype, output_dtype)
         self.loss = self._classification_loss()
         with tf.compat.v1.name_scope("gradients") as scope:
             # print("Cvnn::create_mlp_graph(): variables to be trained " + str(variables))
