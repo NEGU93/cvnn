@@ -137,6 +137,7 @@ class Cvnn:
         Performs the training of the neural network.
         If automatic_restore is True but not metadata was found,
             it will try to load the weights of the newest previously saved model.
+        :param normal:
         :param x_train: Training data of shape (<training examples>, <input_size>)
         :param y_train: Labels of the training data of shape (<training examples>, <output_size>)
         :param x_test: Test data to display accuracy at the end of shape (<test examples>, <input_size>)
@@ -195,14 +196,11 @@ class Cvnn:
             return self.y_out.eval(feed_dict=feed_dict_valid)
 
     # TODO: precision, recall, f1_score
-    def compute_accuracy(self, x_test, y_test):
-        y_prob = self.predict(x_test)
-        y_prediction = np.argmax(y_prob, axis=1)
-        y_labels = np.argmax(y_test, axis=1)
-        acc = np.sum(y_prediction == y_labels) / len(y_labels)
-        if self.verbose:
-            print("Accuracy: {0:.2%}".format(acc))
-        return acc
+    def compute_accuracy(self, x, y):
+        with self.sess.as_default():
+            # assert tf.compat.v1.get_default_session() is self.sess
+            feed_dict_valid = {self.X: x, self.y: y}
+            return self.sess.run(self.acc, feed_dict=feed_dict_valid)
 
     def compute_loss(self, x, y):
         with self.sess.as_default():
@@ -285,6 +283,12 @@ class Cvnn:
         self.y_out, variables = self._create_graph_from_shape(shape, input_dtype, output_dtype)
         # Defines the loss function
         self.loss = self._categorical_crossentropy_loss()  # TODO: make the user to be able to select the loss!!!!
+
+        with tf.compat.v1.name_scope("acc_scope") as scope:
+            y_prediction = tf.math.argmax(self.y_out, 1)
+            y_labels = tf.math.argmax(self.y, 1)
+            self.acc = tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_prediction, y_labels), tf.float64))
+
         # Calculate gradients
         with tf.compat.v1.name_scope("gradients") as scope:
             gradients = tf.gradients(ys=self.loss, xs=variables)
@@ -301,7 +305,8 @@ class Cvnn:
         # TODO: add more info like weights
         if self.tensorboard:
             self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
-            loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
+            loss_summary = tf.compat.v1.summary.scalar(name='Loss', tensor=self.loss)
+            acc_summary = tf.compat.v1.summary.scalar(name='Accuracy (%)', tensor=self.acc)
             self.merged = tf.compat.v1.summary.merge_all()
 
         self.init = tf.compat.v1.global_variables_initializer()
@@ -465,17 +470,14 @@ class Cvnn:
             print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
         # save the model
         self.save_model(epoch, iteration, loss_batch)
-        self.save_to_tensorboard(epoch, num_tr_iter, iteration, feed_dict_batch)
+        self._save_to_tensorboard(epoch, num_tr_iter, iteration, feed_dict_batch)
 
-    def save_to_tensorboard(self, epoch, num_tr_iter, iteration, feed_dict_batch):
+    def _save_to_tensorboard(self, epoch, num_tr_iter, iteration, feed_dict_batch):
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
-            if self.tensorboard:
+            if self.tensorboard:    # Save only if needed
                 # add the summary to the writer (i.e. to the event file)
                 step = epoch * num_tr_iter + iteration
-                # if step % num_tr_iter == 0:   # TODO: this must be a function of the display frequency
-                #   # Under this case I can plot the x axis as the epoch for clarity
-                #    step = epoch
                 summary = self.sess.run(self.merged, feed_dict=feed_dict_batch)
                 self.writer.add_summary(summary, step)
 
@@ -488,8 +490,9 @@ class Cvnn:
     def print_validation_loss(self, epoch, x, y):
         feed_dict_valid = {self.X: x, self.y: y}
         loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
+        acc_valid = self.sess.run(self.acc, feed_dict=feed_dict_valid)
         print('---------------------------------------------------------')
-        print("Epoch: {0}, validation loss: {1:.4f}".format(epoch, loss_valid))
+        print("Epoch: {0}, validation loss: {1:.4f}, accuracy: {2:.4f}".format(epoch, loss_valid, acc_valid))
         print('---------------------------------------------------------')
 
     """-------------------
@@ -542,7 +545,7 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
     n = 1000
-    num_classes = 4
+    num_classes = 5
     x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
 
     # Network Declaration
@@ -554,11 +557,15 @@ if __name__ == "__main__":
     output_size = np.shape(y_train)[1]
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([(input_size, act_linear),
+        cvnn.create_mlp_graph([(input_size, 'ignored'),
                                (hidden_size, act_cart_sigmoid),
                                (output_size, act_cart_softmax_real)])
 
     cvnn.train(x_train, y_train, x_test, y_test)
+
+    set_trace()
+
+    # TODO: it will be a good idea to make a test program to make sure my network is still working when I do changes
 
     """y_out = cvnn.predict(x_test)
     if y_out is not None:
