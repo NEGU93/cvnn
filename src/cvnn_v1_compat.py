@@ -220,15 +220,18 @@ class Cvnn:
             b = tf.Variable(np.zeros(output_size).astype(np.float32), name="bias")
             return tf.add(tf.matmul(input, w), b), [w, b]
 
-    def _create_complex_dense_layer(self, input_size, output_size, input_of_layer):
+    def _create_complex_dense_layer(self, input_size, output_size, input_of_layer, layer_number):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        with tf.compat.v1.name_scope("dense_layer") as scope:   # TODO: pass the number of layer as param?
+        with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)) as scope:
             # Create weight matrix initialized randomely from N~(0, 0.01)
             w = tf.Variable(tf.complex(self.glorot_uniform_init(input_size, output_size).astype(np.float32),
                                        self.glorot_uniform_init(input_size, output_size).astype(np.float32)),
-                            name="weights")
+                            name="weights" + str(layer_number))
             b = tf.Variable(tf.complex(np.zeros(output_size).astype(np.float32),
-                                       np.zeros(output_size).astype(np.float32)), name="bias")
+                                       np.zeros(output_size).astype(np.float32)), name="bias" + str(layer_number))
+            if self.tensorboard:
+                tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), tf.math.real(w))
+                tf.compat.v1.summary.histogram('imag_weight_' + str(layer_number), tf.math.imag(w))
             return tf.add(tf.matmul(input_of_layer, w), b), [w, b]
 
     def _create_graph_from_shape(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
@@ -243,15 +246,16 @@ class Cvnn:
             out = self.apply_activation(shape[0][1], self.X)
             for i in range(len(shape) - 1):  # Apply all the layers
                 if input_dtype == np.complex64:
-                    out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out)
+                    out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out, i+1)
                 elif input_dtype == np.float32:
                     out, variable = self._create_dense_layer(shape[i][0], shape[i + 1][0], out)
-                else:   # TODO: add the rest
+                    # TODO: histogram not yet done
+                else:   # TODO: add the rest of data types
                     sys.exit("CVNN::_create_graph_from_shape: input_type " + str(input_dtype) + " not supported")
                 variables.extend(variable)
-                out = self.apply_activation(shape[i + 1][1], out)  # Apply activation function
+                out = self.apply_activation(shape[i + 1][1], out)           # Apply activation function
             y_out = tf.compat.v1.identity(out, name="y_out")
-        if tf.dtypes.as_dtype(np.dtype(output_dtype)) != y_out.dtype:     # Case for real output / real labels
+        if tf.dtypes.as_dtype(np.dtype(output_dtype)) != y_out.dtype:       # Case for real output / real labels
             y_out = tf.abs(y_out)       # TODO: Shall I do abs or what?
         self._append_graph_structure(shape)     # Append the graph information to the metadata.txt file
         return y_out, variables
@@ -306,17 +310,17 @@ class Cvnn:
         # for i, var in enumerate(self.saver._var_list):
         #     print('Var {}: {}'.format(i, var))
 
-        def create_linear_regression_graph(self, input_size, output_size,
-                                           input_dtype=np.complex64, output_dtype=np.float32):
-            """
-            Creates a linear_regression_graph with no activation function
-            :param input_size:
-            :param output_size:
-            :param input_dtype:
-            :param output_dtype:
-            :return:
-            """
-            self.create_mlp_graph([(input_size, act_linear), (output_size, act_linear)], input_dtype, output_dtype)
+    def create_linear_regression_graph(self, input_size, output_size,
+                                       input_dtype=np.complex64, output_dtype=np.float32):
+        """
+        Creates a linear_regression_graph with no activation function
+        :param input_size:
+        :param output_size:
+        :param input_dtype:
+        :param output_dtype:
+        :return:
+        """
+        self.create_mlp_graph([(input_size, act_linear), (output_size, act_linear)], input_dtype, output_dtype)
 
     """
     # Loss functions
@@ -548,7 +552,7 @@ if __name__ == "__main__":
     output_size = np.shape(y_train)[1]
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([(input_size, 'ignored'),
+        cvnn.create_mlp_graph([(input_size, act_linear),
                                (hidden_size, act_cart_sigmoid),
                                (output_size, act_cart_softmax_real)])
 
