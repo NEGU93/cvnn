@@ -41,3 +41,7 @@ def get_next_batch(x, y, start, end):
     x_batch = x[start:end]
     y_batch = y[start:end]
     return x_batch, y_batch
+
+
+def normalize(x):
+    return (x-np.amin(x))/(np.amax(x)-np.amin(x))     # Checked it works for complex values

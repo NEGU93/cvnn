@@ -1,7 +1,6 @@
 from activation_functions import *
 import tensorflow as tf
 from cvnn_v1_compat import Cvnn
-from rvnn_v1_compat import Rvnn
 import data_processing as dp
 import data_analysis as da
 import numpy as np

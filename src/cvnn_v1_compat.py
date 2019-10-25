@@ -132,7 +132,7 @@ class Cvnn:
     """-----------------------
     #          Train 
     -----------------------"""
-    def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=100, display_freq=1000):
+    def train(self, x_train, y_train, x_test, y_test, epochs=10, batch_size=100, display_freq=1000, normal=False):
         """
         Performs the training of the neural network.
         If automatic_restore is True but not metadata was found,
@@ -150,6 +150,9 @@ class Cvnn:
         """
         if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
             sys.exit("Cvnn::train(): Batch size was bigger than total amount of examples")
+        if normal:
+            x_train = normalize(x_train)    # TODO: This normalize could be a bit different for each and be bad.
+            x_test = normalize(x_test)
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
             self._init_weights()
@@ -530,21 +533,27 @@ class Cvnn:
 
 
 if __name__ == "__main__":
-    x_train, y_train, x_test, y_test = dp.load_dataset("linear_output")
+    # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
+    m = 100000
+    n = 1000
+    num_classes = 4
+    x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
+
+    # Network Declaration
+    auto_restore = False
+    cvnn = Cvnn("CVNN_tensorboard_debug", automatic_restore=auto_restore)
 
     input_size = np.shape(x_train)[1]
     hidden_size = 10
     output_size = np.shape(y_train)[1]
-
-    # Network Declaration
-    auto_restore = False
-    cvnn = Cvnn("CVNN_1HL_for_linear_data", automatic_restore=auto_restore)
-
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph([(input_size, 'ignored'), (hidden_size, act_cart_sigmoid), (output_size, '')])
+        cvnn.create_mlp_graph([(input_size, 'ignored'),
+                               (hidden_size, act_cart_sigmoid),
+                               (output_size, act_cart_softmax_real)])
 
     cvnn.train(x_train, y_train, x_test, y_test)
+
     """y_out = cvnn.predict(x_test)
     if y_out is not None:
         print(y_out[:3])

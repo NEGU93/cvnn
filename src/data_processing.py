@@ -79,8 +79,7 @@ def _create_non_correlated_gaussian_noise(m, n, num_classes=2):
         x[k*m:(k+1)*m, :] = _create_data(m, n, mu, sigma)
         y[k*m:(k+1)*m, k] = 1
 
-    # import pdb; pdb.set_trace()
-    return x, y
+    return normalize(x), y
 
 
 def get_non_correlated_gaussian_noise(m, n, num_classes=2):
