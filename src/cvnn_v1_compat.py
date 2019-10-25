@@ -214,10 +214,13 @@ class Cvnn:
     # Graph creation
     -------------"""
     # Layers
-    def _create_dense_layer(self, input_size, output_size, input):
-        with tf.compat.v1.name_scope("dense_layer") as scope:
-            w = tf.Variable(self.glorot_uniform_init(input_size, output_size).astype(np.float32), name="weights")
-            b = tf.Variable(np.zeros(output_size).astype(np.float32), name="bias")
+    def _create_dense_layer(self, input_size, output_size, input, layer_number):
+        with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)) as scope:
+            w = tf.Variable(self.glorot_uniform_init(input_size, output_size).astype(np.float32),
+                            name="weights" + str(layer_number))
+            b = tf.Variable(np.zeros(output_size).astype(np.float32), name="bias" + str(layer_number))
+            if self.tensorboard:
+                tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), w)
             return tf.add(tf.matmul(input, w), b), [w, b]
 
     def _create_complex_dense_layer(self, input_size, output_size, input_of_layer, layer_number):
@@ -248,8 +251,7 @@ class Cvnn:
                 if input_dtype == np.complex64:
                     out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out, i+1)
                 elif input_dtype == np.float32:
-                    out, variable = self._create_dense_layer(shape[i][0], shape[i + 1][0], out)
-                    # TODO: histogram not yet done
+                    out, variable = self._create_dense_layer(shape[i][0], shape[i + 1][0], out, i+1)
                 else:   # TODO: add the rest of data types
                     sys.exit("CVNN::_create_graph_from_shape: input_type " + str(input_dtype) + " not supported")
                 variables.extend(variable)
