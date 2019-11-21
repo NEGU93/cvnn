@@ -563,6 +563,7 @@ if __name__ == "__main__":
 
     cvnn.train(x_train, y_train, x_test, y_test)
 
+    # TODO CRITICAL! I get a zero imaginary part! I believe is the normalize then.
     set_trace()
 
     # TODO: it will be a good idea to make a test program to make sure my network is still working when I do changes
