@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
     n = 1000
-    num_classes = 2
+    num_classes = 5
     x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
     x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
 
