@@ -9,26 +9,16 @@ from scipy.io import loadmat
 from pdb import set_trace
 
 """
-
+This files contains all functions used for pre-processing data before training which includes:
+    1. Separating into train and test cases with it's corresponding cases (Utils)
+    2. Create own dataset (Crate dataset)
+    3. Load and save data files (Save and Load data)
 """
 
 
 """----
 # Utils
 ----"""
-
-
-def transform_to_real(x_complex):
-    """
-    :param x_complex: Complex-valued matrix of size mxn
-    :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
-    """
-    m = np.shape(x_complex)[0]
-    n = np.shape(x_complex)[1]
-    x_real = np.ones((m, 2*n))
-    x_real[:, :n] = np.real(x_complex)
-    x_real[:, n:] = np.imag(x_complex)
-    return x_real
 
 
 def get_real_train_and_test(x_train, x_test):

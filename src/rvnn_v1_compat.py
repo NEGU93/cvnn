@@ -120,3 +120,8 @@ if __name__ == "__main__":
     predictions = rvnn.predict(test_images)
 
     rvnn.compute_accuracy(test_images, test_label_new)
+
+__author__ = 'J. Agustin BARRACIHNA'
+__version__ = '1.0.0'
+__maintainer__ = 'J. Agustin BARRACIHNA'
+__email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

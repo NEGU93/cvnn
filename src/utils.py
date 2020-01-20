@@ -3,6 +3,19 @@ import numpy as np
 import sys
 
 
+def transform_to_real(x_complex):
+    """
+    :param x_complex: Complex-valued matrix of size mxn
+    :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
+    """
+    m = np.shape(x_complex)[0]
+    n = np.shape(x_complex)[1]
+    x_real = np.ones((m, 2*n))
+    x_real[:, :n] = np.real(x_complex)
+    x_real[:, n:] = np.imag(x_complex)
+    return x_real
+
+
 def cart2polar(z):
     return tf.abs(z), tf.angle(z)
 
@@ -45,3 +58,9 @@ def get_next_batch(x, y, start, end):
 
 def normalize(x):
     return (x-np.amin(x))/(np.amax(x)-np.amin(x))     # Checked it works for complex values
+
+
+__author__ = 'J. Agustin BARRACIHNA'
+__version__ = '1.0.0'
+__maintainer__ = 'J. Agustin BARRACIHNA'
+__email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

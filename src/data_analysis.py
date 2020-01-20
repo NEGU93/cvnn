@@ -13,3 +13,8 @@ def plot_csv_histogram(path, filename, column=None, visualize=False):
     plt.savefig(path + filename.replace('.csv', '.png'))
     if visualize:
         plt.show()
+
+__author__ = 'J. Agustin BARRACIHNA'
+__version__ = '1.0.0'
+__maintainer__ = 'J. Agustin BARRACIHNA'
+__email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

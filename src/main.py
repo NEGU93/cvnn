@@ -82,3 +82,7 @@ if __name__ == "__main__":
     cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real)
 
     # set_trace()
+__author__ = 'J. Agustin BARRACIHNA'
+__version__ = '1.0.0'
+__maintainer__ = 'J. Agustin BARRACIHNA'
+__email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

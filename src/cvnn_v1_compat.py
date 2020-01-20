@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import tensorflow as tf
 import data_processing as dp
 from utils import *
@@ -570,4 +571,15 @@ if __name__ == "__main__":
     if y_out is not None:
         print(y_out[:3])
         print(y_test[:3])"""
+
+# How to comment script header
+# https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
+__author__ = 'J. Agustin BARRACIHNA'
+__copyright__ = 'Copyright 2020, {project_name}'
+__credits__ = ['{credit_list}']
+__license__ = '{license}'
+__version__ = '1.0.0'
+__maintainer__ = 'J. Agustin BARRACIHNA'
+__email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
+__status__ = '{dev_status}'
 

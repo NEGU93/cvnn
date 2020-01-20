@@ -161,3 +161,9 @@ def act_cart_softmax_real(z, axis=-1):
 """
 TYPE B: Polar form.
 """
+
+
+__author__ = 'J. Agustin BARRACIHNA'
+__version__ = '1.0.0'
+__maintainer__ = 'J. Agustin BARRACIHNA'
+__email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
