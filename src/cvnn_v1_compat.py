@@ -52,8 +52,9 @@ class Cvnn:
         self.learning_rate = learning_rate
 
         # logs dir
-        self.now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        root_dir = "./log/{}/run-{}/".format(self.name, self.now)
+        self.now = datetime.today().strftime("%Y%m%d%H%M%S")
+        project_path = os.path.abspath("./")
+        root_dir = project_path + "/log/{}/run-{}/".format(self.name, self.now)
         # Tensorboard
         self.tbdir = root_dir + "tensorboard_logs/"
         if not os.path.exists(self.tbdir):
