@@ -163,7 +163,7 @@ TYPE B: Polar form.
 """
 
 
-__author__ = 'J. Agustin BARRACIHNA'
+__author__ = 'J. Agustin BARRACHINA'
 __version__ = '1.0.0'
-__maintainer__ = 'J. Agustin BARRACIHNA'
+__maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
