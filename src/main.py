@@ -47,8 +47,8 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
     output_size = np.shape(y_train)[1]
 
     shape_cvnn = [(input_size, 'ignored'),
-                  (hidden_size, act_cart_sigmoid),
-                  (output_size, act_cart_softmax_real)]
+                  (hidden_size, cart_sigmoid),
+                  (output_size, cart_softmax_real)]
     shape_rvnn = [(2 * input_size, 'ignored'),
                   (2 * hidden_size, tf.keras.activations.sigmoid),
                   (output_size, tf.keras.activations.softmax)]
