@@ -7,7 +7,7 @@ IFS="
 git status -s
 for p in `git status -s`	# For each file in git status
 do
-	file=`echo "$p" | cut -d ' ' -f2`			# Take the name of the file
+	file=`echo "$p" | rev | cut -d ' ' -f1 | rev`			# Take the name of the file
 	if [ "$file" != "auto-version-commit.sh" ]; then	# Ignores himself
 		if grep -q __version__ $file; then		# Check version is in the file
 			echo "Increasing version of file $file"
