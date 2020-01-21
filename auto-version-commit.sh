@@ -23,7 +23,7 @@ do
 done
 
 git add -A
-git commit -m \"$1\"
+git commit -m $1
 else
 echo No commit message found, please add a message.
 fi
