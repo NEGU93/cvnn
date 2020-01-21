@@ -9,7 +9,7 @@ for p in `git status -s`	# For each file in git status
 do
 	file=`echo "$p" | rev | cut -d ' ' -f1 | rev`			# Take the name of the file
 	if [ "$file" != "auto-version-commit.sh" ]; then	# Ignores himself
-		if grep -q __version__ $file; then		# Check version is in the file
+		if grep -q "__version__ = " $file; then		# Check version is in the file
 			echo "Increasing version of file $file"
 			oldver=`grep __version__ $file`
 			vernum=`echo $oldver | cut -d '.' -f3`
