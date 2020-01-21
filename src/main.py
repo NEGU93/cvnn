@@ -41,18 +41,18 @@ def monte_carlo_loss_gaussian_noise(iterations=1000, m=100000, n=1000, num_class
     da.plot_csv_histogram(path, filename, visualize=True)
 
 
-def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
+def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, name=''):
     input_size = np.shape(x_train)[1]
     hidden_size = 10
     output_size = np.shape(y_train)[1]
 
     shape_cvnn = [(input_size, 'ignored'),
-                  (hidden_size, cart_sigmoid),
-                  (output_size, cart_softmax_real)]
+                  (hidden_size, 'cart_sigmoid'),
+                  (output_size, 'cart_softmax_real')]
     shape_rvnn = [(2 * input_size, 'ignored'),
                   (2 * hidden_size, tf.keras.activations.sigmoid),
                   (output_size, tf.keras.activations.softmax)]
-    name = "_1HL_for_gauss_noise"
+    name = "_1HL_for_" + name + "gauss_noise"
 
     auto_restore = False
     cvnn = Cvnn("CVNN" + name, automatic_restore=auto_restore)
@@ -60,8 +60,8 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real):
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph(shape_cvnn, input_dtype=np.complex64)
-        rvnn.create_mlp_graph(shape_rvnn, input_dtype=np.float32)
+        cvnn.create_mlp_graph("categorical_crossentropy", shape_cvnn, input_dtype=np.complex64)
+        rvnn.create_mlp_graph("categorical_crossentropy", shape_rvnn, input_dtype=np.float32)
 
     cvnn.train(x_train, y_train, x_test, y_test, epochs=10)
     rvnn.train(x_train_real, y_train, x_test_real, y_test, epochs=10)
@@ -75,11 +75,12 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
     n = 1000
-    num_classes = 5
-    x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
+    num_classes = 2
+    name = 'hilbert'
+    x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, name)
     x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
 
-    cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real)
+    cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, name)
 
     # set_trace()
 

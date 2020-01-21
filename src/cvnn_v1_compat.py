@@ -10,11 +10,30 @@ import glob
 import sys
 import os
 from pdb import set_trace
-
 # https://ml-cheatsheet.readthedocs.io/en/latest/
 
 DEBUG_RESTORE_META = False  # True to print the op and tensors that can be retrieved
 DEBUG_WEIGHT_LOADER = True  # True to print the file being restored for the weights
+
+loss_dispatcher = {
+    'mean_square': loss.mean_square,
+    'categorical_crossentropy': loss.categorical_crossentropy
+}
+
+act_dispatcher = {
+    'linear': act.linear,
+    'cart_sigmoid': act.cart_sigmoid,
+    'cart_elu': act.cart_elu,
+    'cart_exponential': act.cart_exponential,
+    'cart_hard_sigmoid': act.cart_hard_sigmoid,
+    'cart_relu': act.cart_relu,
+    'cart_selu': act.cart_selu,
+    'cart_softplus': act.cart_softplus,
+    'cart_softsign': act.cart_softsign,
+    'cart_tanh': act.cart_tanh,
+    'cart_softmax': act.cart_softmax,
+    'cart_softmax_real': act.cart_softmax_real
+}
 
 
 def check_tf_version():
@@ -484,33 +503,41 @@ class Cvnn:
     -------------------"""
 
     @staticmethod
-    def _apply_activation(act, out):
+    def _apply_activation(act_fun, out):
         """
         Applies activation function `act` to variable `out`
         :param out: Tensor to whom the activation function will be applied
-        :param act: function to be applied to out. See the list fo possible activation functions on:
+        :param act_fun: function to be applied to out. See the list fo possible activation functions on:
             https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
         :return: Tensor with the applied activation function
         """
-        if callable(act):
-            if act.__module__ == 'activation_functions':
-                return act(out)  # TODO: for the moment is not be possible to give parameters like alpha
+        if callable(act_fun):
+            if act_fun.__module__ == 'activation_functions' or \
+                    act_fun.__module__ == 'tensorflow.python.keras.activations':
+                return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
             else:
-                sys.exit("Cvnn::create_mlp_graph:_apply_activation Unknown loss function.\n\t "
-                         "Can only use losses declared on losses.py")
-        else:
-            print("WARNING: Cvnn::apply_function: " + str(act) + " is not callable, ignoring it")
+                sys.exit("Cvnn::_apply_activation Unknown loss function.\n\t "
+                         "Can only use activations declared on losses.py")
+        elif isinstance(act_fun, str):
+            try:
+                return act_dispatcher[act_fun](out)
+            except KeyError:
+                print("WARNING: Cvnn::_apply_function: " + str(act_fun) + " is not callable, ignoring it")
             return out
 
     def _apply_loss(self, loss_func):
         # TODO: don't like the fact that I have to give self to this and not to apply_activation
         if callable(loss_func):
             if loss_func.__module__ != 'losses':
-                sys.exit("Cvnn::create_mlp_graph:_apply_loss: Unknown loss function.\n\t "
+                sys.exit("Cvnn::_apply_loss: Unknown loss function.\n\t "
                          "Can only use losses declared on losses.py")
-        # elif loss_func.dtype == 'String':
+        elif isinstance(loss_func, str):
+            try:
+                loss_func = loss_dispatcher[loss_func]
+            except KeyError:
+                sys.exit("Cvnn::_apply_loss: Invalid loss function name")
         else:
-            sys.exit("Cvnn::create_mlp_graph:_apply_loss: Invalid loss function")
+            sys.exit("Cvnn::_apply_loss: Invalid loss function")
 
         return loss_func(self.y_out, self.y)
 
@@ -559,10 +586,10 @@ if __name__ == "__main__":
     output_size = np.shape(y_train)[1]
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph(loss.categorical_crossentropy,
+        cvnn.create_mlp_graph("categorical_crossentropy",
                               [(input_size, 'ignored'),
-                               (hidden_size, act.cart_sigmoid),
-                               (output_size, act.cart_softmax_real)])
+                               (hidden_size, 'acart_sigmoid'),
+                               (output_size, 'cart_softmax_real')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
     # set_trace()

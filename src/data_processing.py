@@ -6,6 +6,7 @@ import os
 from os.path import join
 from math import sqrt
 from scipy.io import loadmat
+from scipy import signal
 from pdb import set_trace
 
 """
@@ -14,7 +15,6 @@ This files contains all functions used for pre-processing data before training w
     2. Create own dataset (Crate dataset)
     3. Load and save data files (Save and Load data)
 """
-
 
 """----
 # Utils
@@ -55,7 +55,7 @@ def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=False):
 -------------"""
 
 
-def _create_data(m, n, mu, sigma):
+def _create_non_correlated_gaussian_noise(m, n, mu, sigma):
     """
     Creates a numpy matrix of size mxn with random gaussian distribution of mean mu and variance sigma
     """
@@ -63,7 +63,18 @@ def _create_data(m, n, mu, sigma):
     return x
 
 
-def _create_non_correlated_gaussian_noise(m, n, num_classes=2):
+def _create_hilbert_gaussian_noise(m, n, mu, sigma):
+    x_real = np.random.normal(mu, sigma, (m, n))
+    return signal.hilbert(x_real)
+
+
+noise_gen_dispatcher = {
+    'non_correlated': _create_non_correlated_gaussian_noise,
+    'hilbert': _create_hilbert_gaussian_noise
+}
+
+
+def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
     """
 
     :param m: Number of examples per class
@@ -78,8 +89,11 @@ def _create_non_correlated_gaussian_noise(m, n, num_classes=2):
     y = np.zeros((num_classes*m, num_classes))      # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
         mu = int(100*np.random.rand())
-        sigma = int(1*np.random.rand())
-        x[k*m:(k+1)*m, :] = _create_data(m, n, mu, sigma)
+        sigma = 1*np.random.rand()
+        try:
+            x[k*m:(k+1)*m, :] = noise_gen_dispatcher[noise_type](m, n, mu, sigma)
+        except KeyError:
+            sys.exit("_create_gaussian_noise: Unknown type of noise")
         y[k*m:(k+1)*m, k] = 1
 
     return normalize(x), y
@@ -87,6 +101,12 @@ def _create_non_correlated_gaussian_noise(m, n, num_classes=2):
 
 def get_non_correlated_gaussian_noise(m, n, num_classes=2):
     x, y = _create_non_correlated_gaussian_noise(m, n, num_classes)
+    x, y = randomize(x, y)
+    return separate_into_train_and_test(x, y)
+
+
+def get_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
+    x, y = _create_gaussian_noise(m, n, num_classes, noise_type)
     x, y = randomize(x, y)
     return separate_into_train_and_test(x, y)
 
