@@ -7,7 +7,7 @@ git status -s
 for p in `git status -s`
 do
 	file=`echo "$p" | cut -d ' ' -f2`
-	if [ "$file" != "auto-version-add.sh" ]; then	# Ignores himself
+	if [ "$file" != "auto-version-commit.sh" ]; then	# Ignores himself
 		if grep -q __version__ $file; then	# Check version is in the file
 			echo "Increasing version of file $file"
 			oldver=`grep __version__ $file`
