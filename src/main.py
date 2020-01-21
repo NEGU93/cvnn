@@ -83,11 +83,11 @@ if __name__ == "__main__":
     cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, name)
 
     # TODO: There is a bug in here. It does not work with multiple classes. Loss function probably.
-    print(da.confussion_matrix(np.argmax(cvnn.predict(x_test), axis=1), np.argmax(y_test, axis=1)))
+    print(da.categorical_confusion_matrix(cvnn.predict(x_test), y_test))
 
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
