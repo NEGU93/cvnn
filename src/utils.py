@@ -60,7 +60,20 @@ def normalize(x):
     return (x-np.amin(x))/(np.amax(x)-np.amin(x))     # Checked it works for complex values
 
 
+def tensorflow_argmax_np_equivalent(x, num_classes):
+    res = np.zeros((np.argmax(x, 1).shape[0], num_classes))
+    indx = 0
+    for k in np.argmax(x, 1):
+        res[indx, k] = 1
+        indx += 1
+    return res
+
+
+def compute_accuracy(x, y):
+    return np.average(np.equal(x, y).all(axis=1))
+
+
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

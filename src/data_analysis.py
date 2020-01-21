@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 
 def plot_csv_histogram(path, filename, column=None, visualize=False):
@@ -15,7 +16,27 @@ def plot_csv_histogram(path, filename, column=None, visualize=False):
         plt.show()
 
 
+def confussion_matrix(y_pred_np, y_label_np):
+    y_pred_pd = pd.Series(y_pred_np, name='Predicted')
+    y_label_pd = pd.Series(y_label_np, name='Actual')
+
+    return pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
+
+
+def plot_confussion_matrix(y_pred_np, y_label_np, title='Confusion matrix', cmap=plt.cm.gray_r):
+    df_confusion = confussion_matrix(y_pred_np, y_label_np)
+    plt.matshow(df_confusion, cmap=cmap)  # imshow
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(df_confusion.columns))
+    plt.xticks(tick_marks, df_confusion.columns, rotation=45)
+    plt.yticks(tick_marks, df_confusion.index)
+    # plt.tight_layout()
+    plt.ylabel(df_confusion.index.name)
+    plt.xlabel(df_confusion.columns.name)
+
+
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

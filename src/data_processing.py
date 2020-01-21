@@ -89,7 +89,8 @@ def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
     y = np.zeros((num_classes*m, num_classes))      # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
         mu = int(100*np.random.rand())
-        sigma = 1*np.random.rand()
+        sigma = 0*np.random.rand()
+        print("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
         try:
             x[k*m:(k+1)*m, :] = noise_gen_dispatcher[noise_type](m, n, mu, sigma)
         except KeyError:
@@ -214,6 +215,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

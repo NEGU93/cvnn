@@ -469,8 +469,10 @@ class Cvnn:
         :return:
         """
         loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_batch)
+        acc_batch = self.sess.run(self.acc, feed_dict=feed_dict_batch)
         if self.verbose:
-            print("epoch {0:3d}:\t iteration {1:3d}:\t Loss={2:.2f}".format(epoch, iteration, loss_batch))
+            print("epoch {0:3d}:\t iteration {1:3d}: \t Loss={2:.2f}\t Acc={3:.2f}".format(epoch, iteration,
+                                                                                           loss_batch, acc_batch))
         # save the model
         self.save_model(epoch, iteration, loss_batch)
         self._save_to_tensorboard(epoch, num_tr_iter, iteration, feed_dict_batch)

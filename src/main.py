@@ -74,17 +74,20 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, nam
 if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
-    n = 1000
-    num_classes = 2
+    n = 100
+    num_classes = 4
     name = 'hilbert'
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, name)
     x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
 
     cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, name)
 
-    # set_trace()
+    # TODO: There is a bug in here. It does not work with multiple classes. Loss function probably.
+    print(da.confussion_matrix(np.argmax(cvnn.predict(x_test), axis=1), np.argmax(y_test, axis=1)))
+
+    set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
