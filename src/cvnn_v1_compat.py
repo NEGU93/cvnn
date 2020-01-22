@@ -72,7 +72,7 @@ class Cvnn:
 
         # logs dir
         self.now = datetime.today().strftime("%Y%m%d%H%M%S")
-        project_path = os.path.abspath("./")
+        project_path = os.path.abspath("../")
         root_dir = project_path + "/log/{}/run-{}/".format(self.name, self.now)
         # Tensorboard
         self.tbdir = root_dir + "tensorboard_logs/"
@@ -185,19 +185,22 @@ class Cvnn:
 
             # Run validation at beginning
             self.print_validation_loss(0, x_test, y_test)
+
+            # Run train
             num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
             for epoch in range(epochs):
                 # Randomly shuffle the training data at the beginning of each epoch
                 x_train, y_train = randomize(x_train, y_train)
                 for iteration in range(num_tr_iter):
+                    # Get the batch
                     start = iteration * batch_size
                     end = (iteration + 1) * batch_size
                     x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
                     # Run optimization op (backpropagation)
                     feed_dict_batch = {self.X: x_batch, self.y: y_batch}
-                    self.sess.run(self.training_op, feed_dict=feed_dict_batch)
                     if (epoch * batch_size + iteration) % display_freq == 0:
                         self.run_checkpoint(epoch, num_tr_iter, iteration, feed_dict_batch)
+                    self.sess.run(self.training_op, feed_dict=feed_dict_batch)
 
             # Run validation at the end
             feed_dict_valid = {self.X: x_test, self.y: y_test}
@@ -241,25 +244,28 @@ class Cvnn:
     # Layers
     def _create_dense_layer(self, input_size, output_size, input, layer_number):
         with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)) as scope:
-            w = tf.Variable(self.glorot_uniform_init(input_size, output_size).astype(np.float32),
+            w = tf.Variable(tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size)),
                             name="weights" + str(layer_number))
-            b = tf.Variable(np.zeros(output_size).astype(np.float32), name="bias" + str(layer_number))
+            b = tf.Variable(tf.zeros(output_size), name="bias" + str(layer_number))
             if self.tensorboard:
                 tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), w)
+                tf.compat.v1.summary.histogram('real_bias_' + str(layer_number), b)
             return tf.add(tf.matmul(input, w), b), [w, b]
 
     def _create_complex_dense_layer(self, input_size, output_size, input_of_layer, layer_number):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)) as scope:
             # Create weight matrix initialized randomely from N~(0, 0.01)
-            w = tf.Variable(tf.complex(self.glorot_uniform_init(input_size, output_size).astype(np.float32),
-                                       self.glorot_uniform_init(input_size, output_size).astype(np.float32)),
+            w = tf.Variable(tf.complex(tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size)),
+                                       tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size))),
                             name="weights" + str(layer_number))
-            b = tf.Variable(tf.complex(np.zeros(output_size).astype(np.float32),
-                                       np.zeros(output_size).astype(np.float32)), name="bias" + str(layer_number))
+            b = tf.Variable(tf.complex(tf.zeros(output_size),
+                                       tf.zeros(output_size)), name="bias" + str(layer_number))
             if self.tensorboard:
                 tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), tf.math.real(w))
                 tf.compat.v1.summary.histogram('imag_weight_' + str(layer_number), tf.math.imag(w))
+                tf.compat.v1.summary.histogram('real_bias_' + str(layer_number), tf.math.real(b))
+                tf.compat.v1.summary.histogram('imag_bias_' + str(layer_number), tf.math.imag(b))
             return tf.add(tf.matmul(input_of_layer, w), b), [w, b]
 
     def _create_graph_from_shape(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
@@ -530,9 +536,9 @@ class Cvnn:
     def _apply_loss(self, loss_func):
         # TODO: don't like the fact that I have to give self to this and not to apply_activation
         if callable(loss_func):
-            if loss_func.__module__ != 'losses':
+            if loss_func.__module__ != 'losses' and loss_func.__module__ != 'tensorflow.python.keras.losses':
                 sys.exit("Cvnn::_apply_loss: Unknown loss function.\n\t "
-                         "Can only use losses declared on losses.py")
+                         "Can only use losses declared on losses.py or tensorflow.python.keras.losses")
         elif isinstance(loss_func, str):
             try:
                 loss_func = loss_dispatcher[loss_func]
@@ -541,7 +547,7 @@ class Cvnn:
         else:
             sys.exit("Cvnn::_apply_loss: Invalid loss function")
 
-        return loss_func(self.y_out, self.y)
+        return tf.reduce_mean(input_tensor=loss_func(self.y, self.y_out), name=loss_func.__name__)
 
     """-----------
     # Initializers
@@ -609,7 +615,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

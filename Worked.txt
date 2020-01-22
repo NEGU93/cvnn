@@ -1,0 +1,22 @@
+Work:
+Class 0: mu = 42; sigma = 0.0
+Class 1: mu = 51; sigma = 0.0
+Class 2: mu = 37; sigma = 0.0
+
+Class 0: mu = 88; sigma = 0.0
+Class 1: mu = 44; sigma = 0.0
+Class 2: mu = 26; sigma = 0.0
+
+Class 0: mu = 27; sigma = 0.0
+Class 1: mu = 12; sigma = 0.0
+Class 2: mu = 54; sigma = 0.0
+
+Only on RVNN:
+Class 0: mu = 75; sigma = 0.0
+Class 1: mu = 50; sigma = 0.0
+Class 2: mu = 16; sigma = 0.0
+
+Didn't for any:
+Class 0: mu = 78; sigma = 0.0
+Class 1: mu = 14; sigma = 0.0
+Class 2: mu = 91; sigma = 0.0

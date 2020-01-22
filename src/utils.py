@@ -57,7 +57,7 @@ def get_next_batch(x, y, start, end):
 
 
 def normalize(x):
-    return (x-np.amin(x))/(np.amax(x)-np.amin(x))     # Checked it works for complex values
+    return (x-np.amin(x))/np.abs(np.amax(x)-np.amin(x))     # Checked it works for complex values
 
 
 def tensorflow_argmax_np_equivalent(x, num_classes):
@@ -74,6 +74,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

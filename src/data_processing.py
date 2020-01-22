@@ -76,7 +76,6 @@ noise_gen_dispatcher = {
 
 def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
     """
-
     :param m: Number of examples per class
     :param n: Size of vector
     :param num_classes: Number of different classes to be made
@@ -89,7 +88,7 @@ def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
     y = np.zeros((num_classes*m, num_classes))      # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
         mu = int(100*np.random.rand())
-        sigma = 0*np.random.rand()
+        sigma = 30*np.random.rand()
         print("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
         try:
             x[k*m:(k+1)*m, :] = noise_gen_dispatcher[noise_type](m, n, mu, sigma)
@@ -97,6 +96,22 @@ def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
             sys.exit("_create_gaussian_noise: Unknown type of noise")
         y[k*m:(k+1)*m, k] = 1
 
+    return normalize(x), y
+
+
+def _create_constant_classes(m, n, num_classes=2, vect=None):
+    assert len(vect) == num_classes     # TODO: message of error
+    x = np.empty((num_classes * m, n)) + 1j * np.empty((num_classes * m, n))
+    y = np.zeros((num_classes * m, num_classes))  # Initialize all at 0 to later put a 1 on the corresponding place
+    for k in range(num_classes):
+        if vect is None:
+            const = np.random.randint(100)
+        else:
+            const = vect[k]
+        x[k * m:(k + 1) * m, :] = np.ones((m, n))*const + 1j * np.ones((m, n))*const
+        y[k * m:(k + 1) * m, k] = 1
+        print("Class " + str(k) + " value = " + str(const))
+    # set_trace()
     return normalize(x), y
 
 
@@ -108,6 +123,12 @@ def get_non_correlated_gaussian_noise(m, n, num_classes=2):
 
 def get_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
     x, y = _create_gaussian_noise(m, n, num_classes, noise_type)
+    x, y = randomize(x, y)
+    return separate_into_train_and_test(x, y)
+
+
+def get_constant(m, n, num_classes=2, vect=None):
+    x, y = _create_constant_classes(m, n, num_classes, vect)
     x, y = randomize(x, y)
     return separate_into_train_and_test(x, y)
 
@@ -215,6 +236,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

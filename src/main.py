@@ -8,8 +8,8 @@ from pdb import set_trace
 import os
 
 
-def monte_carlo_loss_gaussian_noise(iterations=1000, m=100000, n=1000, num_classes=2, path="./results/",
-                                    filename="histogram.csv"):
+def monte_carlo_cvnn_rvnn_compare(iterations=1000, m=100000, n=100, num_classes=3, path="../results/",
+                                    filename="histogram.csv", name=''):
     """
     Computes the CVNN and RVNN loss result on classification of random gaussian noise over the amount of
     iterations gives as a parameter. Saves results appended to a new csv.
@@ -24,17 +24,23 @@ def monte_carlo_loss_gaussian_noise(iterations=1000, m=100000, n=1000, num_class
 
     file = open(path + filename, 'a')  # TODO: create directory if it does not exist
     if write:
-        file.write("CVNN loss, RVNN loss\n")
+        file.write("CVNN loss, CVNN acc, RVNN loss, RVNN acc\n")
     for i in range(iterations):
-        x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
-        x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
-        cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real)
+        for k in range(num_classes):
+            x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, k+2, name)
+            # TODO: Better error message if I don't do the k +1
+            x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
+            cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real)
 
-        # compare them
-        file.write(str(cvnn.compute_loss(x_test, y_test)))
-        file.write(", ")
-        file.write(str(rvnn.compute_loss(x_test_real, y_test)))
-        file.write("\n")
+            # compare them
+            file.write(str(cvnn.compute_loss(x_test, y_test)))
+            file.write(", ")
+            file.write(str(cvnn.compute_accuracy(x_test, y_test)))
+            file.write(", ")
+            file.write(str(rvnn.compute_loss(x_test_real, y_test)))
+            file.write(", ")
+            file.write(str(rvnn.compute_accuracy(x_test_real, y_test)))
+            file.write("\n")
 
     file.close()
 
@@ -52,7 +58,7 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, nam
     shape_rvnn = [(2 * input_size, 'ignored'),
                   (2 * hidden_size, tf.keras.activations.sigmoid),
                   (output_size, tf.keras.activations.softmax)]
-    name = "_1HL_for_" + name + "gauss_noise"
+    name = "_1HL_for_" + name + "_noise"
 
     auto_restore = False
     cvnn = Cvnn("CVNN" + name, automatic_restore=auto_restore)
@@ -60,8 +66,8 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, nam
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph("categorical_crossentropy", shape_cvnn, input_dtype=np.complex64)
-        rvnn.create_mlp_graph("categorical_crossentropy", shape_rvnn, input_dtype=np.float32)
+        cvnn.create_mlp_graph(tf.keras.losses.categorical_crossentropy, shape_cvnn, input_dtype=np.complex64)
+        rvnn.create_mlp_graph(tf.keras.losses.categorical_crossentropy, shape_rvnn, input_dtype=np.float32)
 
     cvnn.train(x_train, y_train, x_test, y_test, epochs=10)
     rvnn.train(x_train_real, y_train, x_test_real, y_test, epochs=10)
@@ -75,19 +81,34 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
     n = 100
-    num_classes = 4
+    num_classes = 5
     name = 'hilbert'
+    # random
+    # vect = None
+    # work
+    # vect = [42, 51, 37]
+    # vect = [42, 51, 37]
+    # vect = [42, 51, 37]
+    # vect = [42, 51, 37]
+    # Doesn't work
+    # vect = [42, 51, 37]
+
+    monte_carlo_cvnn_rvnn_compare(iterations=100, filename="historgram_gaussian.csv", name=name)
+    """
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, name)
+    # x_train, y_train, x_test, y_test = dp.get_constant(m, n, num_classes, vect)
     x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
 
     cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, name)
 
     # TODO: There is a bug in here. It does not work with multiple classes. Loss function probably.
     print(da.categorical_confusion_matrix(cvnn.predict(x_test), y_test))
+    print(da.categorical_confusion_matrix(rvnn.predict(x_test_real), y_test))
 
     set_trace()
+    """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
