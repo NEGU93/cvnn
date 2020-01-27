@@ -126,7 +126,8 @@ class Cvnn:
                 file.write("Restored," + str(self.restored_meta) + "\n")
                 file.write("Tensorboard enabled, " + str(self.tensorboard) + "\n")
                 file.write("Learning Rate, " + str(self.learning_rate) + "\n")
-                file.write("Weight initialization, " + "uniform distribution over [0, 1)")  # TODO: change to correct
+                file.write("Weight initialization, " + "uniform distribution over [0, 1)")
+                # TODO: change to correct distr
         except FileExistsError:  # TODO: Check if this is the actual error
             sys.error("Fatal: Same file already exists. Aborting to not override results")
 
@@ -143,14 +144,13 @@ class Cvnn:
             # 'a' mode Opens a file for appending. If the file does not exist, it creates a new file for writing.
             file.write("\n")
             for i in range(len(shape)):
+                fun_name = self._get_func_name(shape[i][1])
                 if i == 0:
-                    file.write("input layer, " + str(shape[i][0]))
+                    file.write("input layer: " + str(shape[i][0]) + "; act_fun = " + fun_name)
                 elif i == len(shape) - 1:
-                    file.write("output layer, " + str(shape[i][0]))
+                    file.write("output layer: " + str(shape[i][0]) + "; act_fun = " + fun_name)
                 else:
-                    file.write("hidden layer " + str(i) + ", " + str(shape[i][0]))
-                if callable(shape[i][1]):  # Only write if the parameter was indeed a function
-                    file.write(", " + shape[i][1].__name__)
+                    file.write("hidden layer: " + str(i) + ", " + str(shape[i][0]) + "; act_fun = " + fun_name)
                 file.write("\n")
 
     """-----------------------
@@ -493,6 +493,13 @@ class Cvnn:
                 self.writer.add_summary(summary, step)
 
     def save_model(self, epoch, iteration, loss_batch):
+        """
+
+        :param epoch:
+        :param iteration:
+        :param loss_batch:
+        :return:
+        """
         modeldir = "{}epoch{}-iteration{}-loss{}.ckpt".format(self.savedir, epoch, iteration,
                                                               str(loss_batch).replace('.', ','))
         saved_path = self.saver.save(self.sess, modeldir)
@@ -509,6 +516,15 @@ class Cvnn:
     """-------------------
     # Apply functions
     -------------------"""
+
+    @staticmethod
+    def _get_func_name(fun):
+        if callable(fun):
+            return fun.__name__
+        elif isinstance(fun, str):
+            return fun
+        else:
+            sys.exit("Error::_get_func_name: Function not recognizable")
 
     @staticmethod
     def _apply_activation(act_fun, out):
@@ -581,7 +597,7 @@ class Cvnn:
 if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
-    n = 1000
+    n = 100
     num_classes = 2
     x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
 
@@ -596,7 +612,7 @@ if __name__ == "__main__":
         # cvnn.create_linear_regression_graph(input_size, output_size)
         cvnn.create_mlp_graph("categorical_crossentropy",
                               [(input_size, 'ignored'),
-                               (hidden_size, 'acart_sigmoid'),
+                               (hidden_size, 'cart_sigmoid'),
                                (output_size, 'cart_softmax_real')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
@@ -615,7 +631,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

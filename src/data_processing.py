@@ -116,9 +116,7 @@ def _create_constant_classes(m, n, num_classes=2, vect=None):
 
 
 def get_non_correlated_gaussian_noise(m, n, num_classes=2):
-    x, y = _create_non_correlated_gaussian_noise(m, n, num_classes)
-    x, y = randomize(x, y)
-    return separate_into_train_and_test(x, y)
+    return get_gaussian_noise(m, n, num_classes=num_classes, noise_type='non_correlated')
 
 
 def get_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
@@ -236,6 +234,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
