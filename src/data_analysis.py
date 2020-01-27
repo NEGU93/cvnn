@@ -78,24 +78,11 @@ def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None):
     return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename)
 
 
-def plot_confusion_matrix(y_pred_np, y_label_np, title='Confusion matrix', cmap=plt.cm.gray_r):
-    df_confusion = sparse_confusion_matrix(y_pred_np, y_label_np)
-    plt.matshow(df_confusion, cmap=cmap)  # imshow
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(df_confusion.columns))
-    plt.xticks(tick_marks, df_confusion.columns, rotation=45)
-    plt.yticks(tick_marks, df_confusion.index)
-    # plt.tight_layout()
-    plt.ylabel(df_confusion.index.name)
-    plt.xlabel(df_confusion.columns.name)
-
-
 if __name__ == '__main__':
     plot_loss_and_acc("/home/barrachina/Documents/cvnn/log/CVNN_testing/run-20200127140842/CVNN_testing.csv"
                       , visualize=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -4,6 +4,7 @@ import data_processing as dp
 from utils import *
 from datetime import datetime
 import data_analysis as da
+import matplotlib.pyplot as plt
 import activation_functions as act
 from absl import logging
 import losses as loss
@@ -205,7 +206,7 @@ class Cvnn:
             # Run validation at beginning
             feed_dict_test = {self.X: x_test, self.y: y_test}
             feed_dict_train = {self.X: x_train, self.y: y_train}
-            self.print_validation_loss(0, x_test, y_test)
+            self.print_validation_loss(x_test, y_test, 0)
 
             # Run train
             num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
@@ -227,7 +228,7 @@ class Cvnn:
             # Run validation at the end
             feed_dict_valid = {self.X: x_test, self.y: y_test}
             loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
-            self.print_validation_loss(epoch + 1, x_test, y_test)
+            self.print_validation_loss(x_test, y_test, epoch + 1)
             self.save_model("final", "valid_loss", loss_valid)
 
     """------------------------
@@ -546,14 +547,6 @@ class Cvnn:
         saved_path = self.saver.save(self.sess, modeldir)
         # print('model saved in {}'.format(saved_path))
 
-    def print_validation_loss(self, epoch, x, y):
-        feed_dict_valid = {self.X: x, self.y: y}
-        loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
-        acc_valid = self.sess.run(self.acc, feed_dict=feed_dict_valid)
-        print('---------------------------------------------------------')
-        print("Epoch: {0}, validation loss: {1:.4f}, accuracy: {2:.4f}".format(epoch, loss_valid, acc_valid))
-        print('---------------------------------------------------------')
-
     def save_loss_and_acc(self, feed_dict_train, feed_dict_test):
         if self.output_options.save_loss_acc:
             loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_train)
@@ -567,7 +560,17 @@ class Cvnn:
             file = open(self.root_dir + self.name + '.csv', 'a')
             if write:
                 file.write("train loss,train acc,test loss,test acc\n")
+                self.saved_loss_acc_vectors = {
+                    "train_loss": [],
+                    "train_acc": [],
+                    "test_loss": [],
+                    "test_acc": []
+                }
             file.write(str(loss_batch) + "," + str(acc_batch) + "," + str(loss_test) + "," + str(acc_test) + "\n")
+            self.saved_loss_acc_vectors["train_loss"].append(loss_batch)
+            self.saved_loss_acc_vectors["train_acc"].append(acc_batch)
+            self.saved_loss_acc_vectors["test_loss"].append(loss_test)
+            self.saved_loss_acc_vectors["test_acc"].append(acc_test)
         return None
 
     """-------------------
@@ -648,7 +651,57 @@ class Cvnn:
     """------------
     # Data Analysis
      -----------"""
-    # TODO
+
+    def print_validation_loss(self,  x, y, epoch=None):
+        feed_dict_valid = {self.X: x, self.y: y}
+        loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
+        acc_valid = self.sess.run(self.acc, feed_dict=feed_dict_valid)
+        print('---------------------------------------------------------')
+        if epoch is not None:
+            print("Epoch: {0}, validation loss: {1:.4f}, accuracy: {2:.4f}".format(epoch, loss_valid, acc_valid))
+        else:
+            print("Loss: {1:.4f}, Accuracy: {2:.4f}".format(epoch, loss_valid, acc_valid))
+        print('---------------------------------------------------------')
+
+    def confusion_matrix(self, x_test, y_test):
+        print(da.categorical_confusion_matrix(self.predict(x_test), y_test, None))
+
+    def plot_loss_and_acc(self):
+        self.plot_loss()
+        self.plot_acc()
+        return
+
+    def plot_loss(self):
+        if self.output_options.save_loss_acc:
+            plt.figure()
+            plt.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
+                     self.saved_loss_acc_vectors["train_loss"],
+                     'o-',
+                     label='train loss')
+            plt.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
+                     self.saved_loss_acc_vectors["test_loss"],
+                     '^-',
+                     label='test loss')
+            plt.show()
+        else:
+            print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
+                  "Next time create your model with save_loss_acc = True")
+
+    def plot_acc(self):
+        if self.output_options.save_loss_acc:
+            plt.figure()
+            plt.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
+                     self.saved_loss_acc_vectors["train_acc"],
+                     'o-',
+                     label='train acc')
+            plt.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
+                     self.saved_loss_acc_vectors["test_acc"],
+                     '^-',
+                     label='test acc')
+            plt.show()
+        else:
+            print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
+                  "Next time create your model with save_loss_acc = True")
 
 
 if __name__ == "__main__":
@@ -674,7 +727,8 @@ if __name__ == "__main__":
     cvnn.train(x_train, y_train, x_test, y_test)
 
     print(da.categorical_confusion_matrix(cvnn.predict(x_test), y_test, "output.png"))
-    # set_trace()
+    cvnn.plot_loss()
+    set_trace()
 
     # TODO: it will be a good idea to make a test program to make sure my network is still working when I do changes
 
@@ -689,7 +743,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.7'
+__version__ = '1.0.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
