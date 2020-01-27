@@ -30,6 +30,29 @@ def plot_csv_histogram(path, filename, column=None, visualize=False):
     set_trace()
 
 
+def plot_loss_and_acc(filename, column=None, visualize=False):
+    assert type(filename) == str
+    data = pd.read_csv(filename)
+    plt.plot(data['train loss'], 'o-', label='train loss')
+    plt.plot(data['test loss'], label='test loss')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.savefig(filename.replace('.csv', '_loss.png'))
+    if visualize:
+        plt.show()
+
+    plt.figure()
+    plt.plot(data['train acc'], 'o-', label='train acc')
+    plt.plot(data['test acc'], label='test acc')
+    plt.xlabel('epochs')
+    plt.ylabel('accuracy')
+    plt.savefig(filename.replace('.csv', '_acc.png'))
+    if visualize:
+        plt.show()
+
+    set_trace()
+
+
 """-------------
 Confusion Matrix
 -------------"""
@@ -59,7 +82,11 @@ def plot_confusion_matrix(y_pred_np, y_label_np, title='Confusion matrix', cmap=
     plt.xlabel(df_confusion.columns.name)
 
 
+if __name__ == '__main__':
+    plot_loss_and_acc("/home/barrachina/Documents/cvnn/log/CVNN_testing/run-20200127140842/CVNN_testing.csv"
+                      , visualize=True)
+
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -73,23 +73,23 @@ class Cvnn:
         # logs dir
         self.now = datetime.today().strftime("%Y%m%d%H%M%S")
         project_path = os.path.abspath("../")
-        root_dir = project_path + "/log/{}/run-{}/".format(self.name, self.now)
+        self.root_dir = project_path + "/log/{}/run-{}/".format(self.name, self.now)
         # Tensorboard
-        self.tbdir = root_dir + "tensorboard_logs/"
+        self.tbdir = self.root_dir + "tensorboard_logs/"
         if not os.path.exists(self.tbdir):
             os.makedirs(self.tbdir)
         # checkpoint models
-        self.savedir = root_dir + "saved_models/"
+        self.savedir = self.root_dir + "saved_models/"
         if not os.path.exists(self.savedir):
             os.makedirs(self.savedir)
 
         # Launch the graph in a session.
-        self.sess = tf.compat.v1.Session()
+        # self.sess = tf.compat.v1.Session()
         self.restored_meta = False
         if automatic_restore:
             self.restore_graph_from_meta()
 
-        self._save_object_summary(root_dir)  # Save info to metadata
+        self._save_object_summary(self.root_dir)  # Save info to metadata
 
     def __del__(self):
         """
@@ -185,6 +185,8 @@ class Cvnn:
             self._init_weights()
 
             # Run validation at beginning
+            feed_dict_test = {self.X: x_test, self.y: y_test}
+            feed_dict_train = {self.X: x_train, self.y: y_train}
             self.print_validation_loss(0, x_test, y_test)
 
             # Run train
@@ -202,6 +204,7 @@ class Cvnn:
                     if (epoch * batch_size + iteration) % display_freq == 0:
                         self.run_checkpoint(epoch, num_tr_iter, iteration, feed_dict_batch)
                     self.sess.run(self.training_op, feed_dict=feed_dict_batch)
+                self.save_loss_and_acc(feed_dict_train, feed_dict_test)
 
             # Run validation at the end
             feed_dict_valid = {self.X: x_test, self.y: y_test}
@@ -312,7 +315,7 @@ class Cvnn:
         """
         if output_dtype == np.complex64 and input_dtype == np.float32:
             sys.exit("Cvnn::create_mlp_graph: if input dtype is real output cannot be complex")
-        if not self.restored_meta:
+        if self.restored_meta:
             print("Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
             return None
         # Reset latest graph
@@ -448,7 +451,6 @@ class Cvnn:
         If the graph was already restored then the weights are already initialized so the function does nothing.
         :return: None
         """
-        set_trace()
         if not self.restored_meta:
             with self.sess.as_default():
                 assert tf.compat.v1.get_default_session() is self.sess
@@ -531,6 +533,21 @@ class Cvnn:
         print('---------------------------------------------------------')
         print("Epoch: {0}, validation loss: {1:.4f}, accuracy: {2:.4f}".format(epoch, loss_valid, acc_valid))
         print('---------------------------------------------------------')
+
+    def save_loss_and_acc(self, feed_dict_train, feed_dict_test):
+        loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_train)
+        acc_batch = self.sess.run(self.acc, feed_dict=feed_dict_train)
+        loss_test = self.sess.run(self.loss, feed_dict=feed_dict_test)
+        acc_test = self.sess.run(self.acc, feed_dict=feed_dict_test)
+
+        write = True
+        if os.path.exists(self.root_dir + self.name + '.csv'):
+            write = False
+        file = open(self.root_dir + self.name + '.csv', 'a')
+        if write:
+            file.write("train loss,train acc,test loss,test acc\n")
+        file.write(str(loss_batch) + "," + str(acc_batch) + "," + str(loss_test) + "," + str(acc_test) + "\n")
+        return None
 
     """-------------------
     # Apply functions
@@ -617,12 +634,12 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
     n = 100
-    num_classes = 2
-    x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n, num_classes)
+    num_classes = 5
+    x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, 'hilbert')
 
     # Network Declaration
     auto_restore = False
-    cvnn = Cvnn("CVNN_tensorboard_debug", automatic_restore=auto_restore)
+    cvnn = Cvnn("CVNN_testing", automatic_restore=auto_restore)
 
     input_size = np.shape(x_train)[1]
     hidden_size = 10
@@ -649,7 +666,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
