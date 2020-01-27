@@ -3,6 +3,7 @@ import tensorflow as tf
 import data_processing as dp
 from utils import *
 from datetime import datetime
+import data_analysis as da
 import activation_functions as act
 import losses as loss
 import numpy as np
@@ -36,6 +37,13 @@ act_dispatcher = {
 }
 
 
+class OutputOpts:
+    def __init__(self, tensorboard, verbose, save_loss_acc):
+        self.tensorboard = tensorboard
+        self.verbose = verbose
+        self.save_loss_acc = save_loss_acc
+
+
 def check_tf_version():
     # Makes sure Tensorflow version is 2
     assert tf.__version__.startswith('2')
@@ -53,7 +61,8 @@ class Cvnn:
     # Constructor and Destructor
     -------------------------"""
 
-    def __init__(self, name, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True):
+    def __init__(self, name, learning_rate=0.001, automatic_restore=True,
+                 tensorboard=True, verbose=True, save_loss_acc=True):
         """
         Constructor
         :param name: Name of the network to be created. This will be used to save data into ./log/<name>/run-{date}/
@@ -65,9 +74,8 @@ class Cvnn:
         tf.compat.v1.disable_eager_execution()  # This class works as a graph model so no eager compatible
         # Save parameters of the constructor
         self.name = name
-        self.verbose = verbose
+        self.output_options = OutputOpts(tensorboard, verbose, save_loss_acc)
         self.automatic_restore = automatic_restore
-        self.tensorboard = tensorboard
         self.learning_rate = learning_rate
 
         # logs dir
@@ -96,7 +104,7 @@ class Cvnn:
         Destructor
         :return: None
         """
-        if self.tensorboard:
+        if self.output_options.tensorboard:
             try:
                 self.writer.close()
             except AttributeError:
@@ -125,12 +133,12 @@ class Cvnn:
                 file.write(self.now + "\n")
                 file.write("automatic_restore, " + str(self.automatic_restore) + "\n")
                 file.write("Restored," + str(self.restored_meta) + "\n")
-                file.write("Tensorboard enabled, " + str(self.tensorboard) + "\n")
+                file.write("Tensorboard enabled, " + str(self.output_options.tensorboard) + "\n")
                 file.write("Learning Rate, " + str(self.learning_rate) + "\n")
                 file.write("Weight initialization, " + "uniform distribution over [0, 1)")
                 # TODO: change to correct distr
         except FileExistsError:  # TODO: Check if this is the actual error
-            sys.error("Fatal: Same file already exists. Aborting to not override results")
+            sys.exit("Fatal: Same file already exists. Aborting to not override results")
 
     def _append_graph_structure(self, shape):
         """
@@ -163,7 +171,7 @@ class Cvnn:
         Performs the training of the neural network.
         If automatic_restore is True but not metadata was found,
             it will try to load the weights of the newest previously saved model.
-        :param normal:
+        :param normal: Normalize data before training
         :param x_train: Training data of shape (<training examples>, <input_size>)
         :param y_train: Labels of the training data of shape (<training examples>, <output_size>)
         :param x_test: Test data to display accuracy at the end of shape (<test examples>, <input_size>)
@@ -258,14 +266,14 @@ class Cvnn:
 
     def _create_complex_dense_layer(self, input_size, output_size, input_of_layer, layer_number):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)) as scope:
+        with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)):
             # Create weight matrix initialized randomely from N~(0, 0.01)
             w = tf.Variable(tf.complex(tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size)),
                                        tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size))),
                             name="weights" + str(layer_number))
             b = tf.Variable(tf.complex(tf.zeros(output_size),
                                        tf.zeros(output_size)), name="bias" + str(layer_number))
-            if self.tensorboard:
+            if self.output_options.tensorboard:
                 tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), tf.math.real(w))
                 tf.compat.v1.summary.histogram('imag_weight_' + str(layer_number), tf.math.imag(w))
                 tf.compat.v1.summary.histogram('real_bias_' + str(layer_number), tf.math.real(b))
@@ -280,7 +288,7 @@ class Cvnn:
         self.y = tf.compat.v1.placeholder(tf.dtypes.as_dtype(output_dtype), shape=[None, shape[-1][0]], name='Y')
 
         variables = []
-        with tf.compat.v1.name_scope("forward_phase") as scope:
+        with tf.compat.v1.name_scope("forward_phase"):
             out = self._apply_activation(shape[0][1], self.X)
             for i in range(len(shape) - 1):  # Apply all the layers
                 if input_dtype == np.complex64:
@@ -326,7 +334,7 @@ class Cvnn:
         # Defines the loss function
         self.loss = self._apply_loss(loss_func)
 
-        with tf.compat.v1.name_scope("acc_scope") as scope:
+        with tf.compat.v1.name_scope("acc_scope"):
             y_prediction = tf.math.argmax(self.y_out, 1)
             y_labels = tf.math.argmax(self.y, 1)
             self.acc = tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_prediction, y_labels), tf.float64))
@@ -336,7 +344,7 @@ class Cvnn:
         gradients = tf.gradients(ys=self.loss, xs=variables)
         # Defines a training operator for each variable
         self.training_op = []
-        with tf.compat.v1.variable_scope("learning_rule") as scope:
+        with tf.compat.v1.variable_scope("learning_rule"):
             # lr_const = tf.constant(self.learning_rate, name="learning_rate")
             for i, var in enumerate(variables):
                 # Only gradient descent supported for the moment
@@ -345,7 +353,7 @@ class Cvnn:
 
         # logs to be saved with tensorboard
         # TODO: add more info like for ex weights
-        if self.tensorboard:
+        if self.output_options.tensorboard:
             self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
             loss_summary = tf.compat.v1.summary.scalar(name='Loss', tensor=self.loss)
             acc_summary = tf.compat.v1.summary.scalar(name='Accuracy (%)', tensor=self.acc)
@@ -369,7 +377,9 @@ class Cvnn:
         :param output_dtype:
         :return:
         """
-        self.create_mlp_graph([(input_size, act.linear), (output_size, act.linear)], input_dtype, output_dtype)
+        self.create_mlp_graph(loss.mean_square, [(input_size, act.linear),
+                                                 (output_size, act.linear)],
+                              input_dtype, output_dtype)
 
     # Others
     def restore_graph_from_meta(self, latest_file=None):
@@ -434,7 +444,7 @@ class Cvnn:
                                 tf.compat.v1.get_default_graph().get_operations()
                                 if tensor.name.startswith("learning_rule/AssignVariableOp")]
             # logs
-            if self.tensorboard:
+            if self.output_options.tensorboard:
                 self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
                 self.loss_summary = tf.compat.v1.summary.scalar(name='loss_summary', tensor=self.loss)
                 self.merged = tf.compat.v1.summary.merge_all()
@@ -456,7 +466,7 @@ class Cvnn:
                 assert tf.compat.v1.get_default_session() is self.sess
                 if latest_file is None and self.automatic_restore:
                     if os.listdir(self.savedir):
-                        if self.verbose:
+                        if self.output_options.verbose:
                             print("Cvnn::init_weights: Getting last model")
                         # get newest folder
                         list_of_folders = glob.glob(self.root_savedir + '/*')
@@ -470,7 +480,7 @@ class Cvnn:
                             print("Restoring model: " + latest_file)
                         self.saver.restore(self.sess, latest_file)
                     else:
-                        if self.verbose:
+                        if self.output_options.verbose:
                             print("Cvnn::init_weights: No model found.", end='')
                 # Check again to see if I found one
                 if latest_file is not None:  # TODO: check file exists and has correct format!
@@ -478,7 +488,7 @@ class Cvnn:
                         print("Restoring model: " + latest_file)
                     self.saver.restore(self.sess, latest_file)
                 else:
-                    if self.verbose:
+                    if self.output_options.verbose:
                         print("Initializing weights...")
                     self.sess.run(self.init)
 
@@ -497,7 +507,7 @@ class Cvnn:
         """
         loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_batch)
         acc_batch = self.sess.run(self.acc, feed_dict=feed_dict_batch)
-        if self.verbose:
+        if self.output_options.verbose:
             print("epoch {0:3d}:\t iteration {1:3d}: \t Loss={2:.2f}\t Acc={3:.2f}".format(epoch, iteration,
                                                                                            loss_batch, acc_batch))
         # save the model
@@ -507,7 +517,7 @@ class Cvnn:
     def _save_to_tensorboard(self, epoch, num_tr_iter, iteration, feed_dict_batch):
         with self.sess.as_default():
             assert tf.compat.v1.get_default_session() is self.sess
-            if self.tensorboard:  # Save only if needed
+            if self.output_options.tensorboard:  # Save only if needed
                 # add the summary to the writer (i.e. to the event file)
                 step = epoch * num_tr_iter + iteration
                 summary = self.sess.run(self.merged, feed_dict=feed_dict_batch)
@@ -535,18 +545,19 @@ class Cvnn:
         print('---------------------------------------------------------')
 
     def save_loss_and_acc(self, feed_dict_train, feed_dict_test):
-        loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_train)
-        acc_batch = self.sess.run(self.acc, feed_dict=feed_dict_train)
-        loss_test = self.sess.run(self.loss, feed_dict=feed_dict_test)
-        acc_test = self.sess.run(self.acc, feed_dict=feed_dict_test)
+        if self.output_options.save_loss_acc:
+            loss_batch = self.sess.run(self.loss, feed_dict=feed_dict_train)
+            acc_batch = self.sess.run(self.acc, feed_dict=feed_dict_train)
+            loss_test = self.sess.run(self.loss, feed_dict=feed_dict_test)
+            acc_test = self.sess.run(self.acc, feed_dict=feed_dict_test)
 
-        write = True
-        if os.path.exists(self.root_dir + self.name + '.csv'):
-            write = False
-        file = open(self.root_dir + self.name + '.csv', 'a')
-        if write:
-            file.write("train loss,train acc,test loss,test acc\n")
-        file.write(str(loss_batch) + "," + str(acc_batch) + "," + str(loss_test) + "," + str(acc_test) + "\n")
+            write = True
+            if os.path.exists(self.root_dir + self.name + '.csv'):
+                write = False
+            file = open(self.root_dir + self.name + '.csv', 'a')
+            if write:
+                file.write("train loss,train acc,test loss,test acc\n")
+            file.write(str(loss_batch) + "," + str(acc_batch) + "," + str(loss_test) + "," + str(acc_test) + "\n")
         return None
 
     """-------------------
@@ -651,6 +662,8 @@ if __name__ == "__main__":
                            (output_size, 'cart_softmax_real')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
+
+    print(da.categorical_confusion_matrix(cvnn.predict(x_test), y_test, "output.png"))
     # set_trace()
 
     # TODO: it will be a good idea to make a test program to make sure my network is still working when I do changes
@@ -666,7 +679,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

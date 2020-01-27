@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 import numpy as np
 from pdb import set_trace
@@ -30,7 +31,7 @@ def plot_csv_histogram(path, filename, column=None, visualize=False):
     set_trace()
 
 
-def plot_loss_and_acc(filename, column=None, visualize=False):
+def plot_loss_and_acc(filename, visualize=False):
     assert type(filename) == str
     data = pd.read_csv(filename)
     plt.plot(data['train loss'], 'o-', label='train loss')
@@ -58,15 +59,23 @@ Confusion Matrix
 -------------"""
 
 
-def sparse_confusion_matrix(y_pred_np, y_label_np):
+def sparse_confusion_matrix(y_pred_np, y_label_np, filename=None):
     y_pred_pd = pd.Series(y_pred_np, name='Predicted')
     y_label_pd = pd.Series(y_label_np, name='Actual')
+    df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
+    if filename is not None:
+        fig, ax = plt.subplots()
+        sns.heatmap(df,
+                    annot=True,
+                    linewidths=.5,
+                    cbar=True,
+                    )
+        fig.savefig(filename)
+    return df
 
-    return pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
 
-
-def categorical_confusion_matrix(y_pred_np, y_label_np):
-    return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1))
+def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None):
+    return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename)
 
 
 def plot_confusion_matrix(y_pred_np, y_label_np, title='Confusion matrix', cmap=plt.cm.gray_r):
@@ -87,6 +96,6 @@ if __name__ == '__main__':
                       , visualize=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

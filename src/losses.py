@@ -18,7 +18,7 @@ def mean_square(y, y_out):
     Mean Squared Error, or L2 loss.
     :return:
     """
-    with tf.compat.v1.name_scope("loss") as scope:
+    with tf.compat.v1.name_scope("loss"):
         error = y - y_out
         return tf.square(tf.abs(error))
 
@@ -48,7 +48,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
