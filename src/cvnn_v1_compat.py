@@ -84,6 +84,7 @@ class Cvnn:
             os.makedirs(self.savedir)
 
         # Launch the graph in a session.
+        self.sess = tf.compat.v1.Session()
         self.restored_meta = False
         if automatic_restore:
             self.restore_graph_from_meta()
@@ -311,6 +312,9 @@ class Cvnn:
         """
         if output_dtype == np.complex64 and input_dtype == np.float32:
             sys.exit("Cvnn::create_mlp_graph: if input dtype is real output cannot be complex")
+        if not self.restored_meta:
+            print("Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
+            return None
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
 
@@ -373,14 +377,26 @@ class Cvnn:
         :return: None
         """
         if latest_file is None and self.automatic_restore:  # Get the metadata file
-            if os.listdir(self.root_savedir):
+            if os.listdir(self.savedir + '../../'):
+                parent_dir = os.path.abspath(self.savedir + '../../')
                 print("Getting last model")
                 # get newest folder
-                list_of_folders = glob.glob(self.root_savedir + '/*')
+                list_of_folders = glob.glob(parent_dir + '/*')
                 latest_folder = max(list_of_folders, key=os.path.getctime)
                 # get newest file in the newest folder
-                list_of_files = glob.glob(latest_folder + '/*.ckpt.meta')  # Just take ckpt files, not others.
-                latest_file = max(list_of_files, key=os.path.getctime)  # .replace('/', '\\')
+                list_of_folders.remove(latest_folder)
+                while list_of_folders:
+                    latest_folder = max(list_of_folders, key=os.path.getctime)
+                    # set_trace()
+                    list_of_files = glob.glob(latest_folder + '/saved_models/*.ckpt.meta')  # Just take ckpt files, not others.
+                    if list_of_files:     # If a saved model was found!
+                        latest_file = max(list_of_files, key=os.path.getctime)  # .replace('/', '\\')
+                        print("Found model " + latest_file)
+                        break
+                    list_of_folders.remove(latest_folder)
+                if latest_file is None:
+                    print("Warning:restore_graph_from_meta(): No model found...")
+                    return None
             else:
                 print('Warning:restore_graph_from_meta(): No model found...')
                 return None
@@ -389,7 +405,7 @@ class Cvnn:
         # TODO: check latest_file exists and has the correct format!
 
         # delete the current graph
-        tf.compat.v1.reset_default_graph()
+        # self.sess.reset_default_graph()
 
         # import the graph from the file
         imported_graph = tf.compat.v1.train.import_meta_graph(latest_file)
@@ -400,10 +416,12 @@ class Cvnn:
             for tensor in tf.compat.v1.get_default_graph().get_operations():
                 print(tensor.name)
 
-        self.sess = tf.compat.v1.Session()
         with self.sess.as_default():
             imported_graph.restore(self.sess, latest_file.split('.ckpt')[0] + '.ckpt')
             graph = tf.compat.v1.get_default_graph()
+            # for op in graph.get_operations():
+            #     print(op)
+            # set_trace()
             self.loss = graph.get_operation_by_name("loss/loss").outputs[0]
             self.X = graph.get_tensor_by_name("X:0")
             self.y = graph.get_tensor_by_name("Y:0")
@@ -430,11 +448,12 @@ class Cvnn:
         If the graph was already restored then the weights are already initialized so the function does nothing.
         :return: None
         """
+        set_trace()
         if not self.restored_meta:
             with self.sess.as_default():
                 assert tf.compat.v1.get_default_session() is self.sess
                 if latest_file is None and self.automatic_restore:
-                    if os.listdir(self.root_savedir):
+                    if os.listdir(self.savedir):
                         if self.verbose:
                             print("Cvnn::init_weights: Getting last model")
                         # get newest folder
@@ -608,12 +627,11 @@ if __name__ == "__main__":
     input_size = np.shape(x_train)[1]
     hidden_size = 10
     output_size = np.shape(y_train)[1]
-    if not auto_restore:
-        # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph("categorical_crossentropy",
-                              [(input_size, 'ignored'),
-                               (hidden_size, 'cart_sigmoid'),
-                               (output_size, 'cart_softmax_real')])
+    # cvnn.create_linear_regression_graph(input_size, output_size)
+    cvnn.create_mlp_graph("categorical_crossentropy",
+                          [(input_size, 'ignored'),
+                           (hidden_size, 'cart_sigmoid'),
+                           (output_size, 'cart_softmax_real')])
 
     cvnn.train(x_train, y_train, x_test, y_test)
     # set_trace()
@@ -631,7 +649,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
