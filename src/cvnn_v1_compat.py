@@ -5,6 +5,7 @@ from utils import *
 from datetime import datetime
 import data_analysis as da
 import activation_functions as act
+from absl import logging
 import losses as loss
 import numpy as np
 import glob
@@ -15,6 +16,13 @@ from pdb import set_trace
 
 DEBUG_RESTORE_META = False  # True to print the op and tensors that can be retrieved
 DEBUG_WEIGHT_LOADER = True  # True to print the file being restored for the weights
+
+logging_dispatcher = {
+    "DEBUG": "0",
+    "INFO": "1",
+    "WARNING": "2",
+    "ERROR": "3"
+}
 
 loss_dispatcher = {
     'mean_square': loss.mean_square,
@@ -62,7 +70,7 @@ class Cvnn:
     -------------------------"""
 
     def __init__(self, name, learning_rate=0.001, automatic_restore=True,
-                 tensorboard=True, verbose=True, save_loss_acc=True):
+                 tensorboard=True, verbose=True, save_loss_acc=True, logging_level="INFO"):
         """
         Constructor
         :param name: Name of the network to be created. This will be used to save data into ./log/<name>/run-{date}/
@@ -72,6 +80,8 @@ class Cvnn:
         :param automatic_restore: True if network should search for saved models (will look for the newest saved model)
         """
         tf.compat.v1.disable_eager_execution()  # This class works as a graph model so no eager compatible
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = logging_dispatcher[logging_level]
+        # tf.autograph.set_verbosity(logging.FATAL)       # TODO: not working :S
         # Save parameters of the constructor
         self.name = name
         self.output_options = OutputOpts(tensorboard, verbose, save_loss_acc)
@@ -679,7 +689,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
