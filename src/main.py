@@ -2,14 +2,13 @@ from activation_functions import *
 import tensorflow as tf
 from cvnn_v1_compat import Cvnn
 import data_processing as dp
-import data_analysis as da
 import numpy as np
 from pdb import set_trace
 import sys
 import os
 
 
-def monte_carlo_cvnn_rvnn_compare(iterations=1000, m=100000, n=100, min_num_classes=2, max_num_classes=3,
+def monte_carlo_cvnn_rvnn_compare(iterations=100, m=10000, n=100, min_num_classes=2, max_num_classes=5,
                                   test_for_each_data=10, path="../results/", filename="histogram", name=''):
     """
     Computes the CVNN and RVNN loss and acc result on classification of random gaussian noise over the amount of
@@ -102,8 +101,7 @@ if __name__ == "__main__":
     # Doesn't work
     # vect = [42, 51, 37]
 
-    monte_carlo_cvnn_rvnn_compare(iterations=1, m=m, n=n, min_num_classes=num_classes, max_num_classes=num_classes,
-                                  filename="historgram_gaussian.csv", name=name)
+    monte_carlo_cvnn_rvnn_compare(iterations=50, m=m, n=n, min_num_classes=num_classes, max_num_classes=5, name=name)
 
     """
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, name)
@@ -119,6 +117,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -270,7 +270,7 @@ class Cvnn:
             w = tf.Variable(tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size)),
                             name="weights" + str(layer_number))
             b = tf.Variable(tf.zeros(output_size), name="bias" + str(layer_number))
-            if self.tensorboard:
+            if self.output_options.tensorboard:
                 tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), w)
                 tf.compat.v1.summary.histogram('real_bias_' + str(layer_number), b)
             return tf.add(tf.matmul(input, w), b), [w, b]
@@ -412,7 +412,8 @@ class Cvnn:
                 while list_of_folders:
                     latest_folder = max(list_of_folders, key=os.path.getctime)
                     # set_trace()
-                    list_of_files = glob.glob(latest_folder + '/saved_models/*.ckpt.meta')  # Just take ckpt files, not others.
+                    # Just take ckpt files, not others.
+                    list_of_files = glob.glob(latest_folder + '/saved_models/*.ckpt.meta')
                     if list_of_files:     # If a saved model was found!
                         latest_file = max(list_of_files, key=os.path.getctime)  # .replace('/', '\\')
                         print("Found model " + latest_file)
@@ -713,7 +714,7 @@ if __name__ == "__main__":
 
     # Network Declaration
     auto_restore = False
-    cvnn = Cvnn("CVNN_testing", automatic_restore=auto_restore)
+    cvnn = Cvnn("CVNN_testing", automatic_restore=auto_restore, logging_level="INFO")
 
     input_size = np.shape(x_train)[1]
     hidden_size = 10
@@ -743,7 +744,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.8'
+__version__ = '1.0.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
