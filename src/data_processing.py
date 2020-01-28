@@ -175,23 +175,6 @@ def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/g
     mat = loadmat(mat_fname)
     return mat
 
-
-def load_gilles_mat_data(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
-    mat = load_matlab_matrices(fname, path)
-    ic = mat['ic'] .squeeze(axis=0)             # Labels corresponding to types
-    nb_sig = mat['nb_sig'].squeeze(axis=0)
-    sx = mat['sx'][0]                           # TODO: is this just a scalar?
-    types = [t[0] for t in mat['types'].squeeze(axis=0)]
-    xp = []                                     # Metadata TODO: good for regression network
-    for t in mat['xp'].squeeze(axis=1):
-        xp.append({'Type': t[0][0], 'Nb_rec': t[1][0][0], 'Amplitude': t[2][0][0], 'f0': t[3][0][0],
-                   'Bande': t[4][0][0], 'Retard': t[5][0][0], 'Retard2': t[6][0][0], 'Sequence': t[7][0][0]})
-
-    xx = mat['xx'].squeeze(axis=2).squeeze(axis=1).transpose()      # Signad data
-
-    return ic, nb_sig, sx, types, xp, xx
-
-
 """----------------
 # Testing Functions
 ----------------"""
@@ -234,6 +217,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

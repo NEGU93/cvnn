@@ -7,10 +7,11 @@ import re
 import os
 from pdb import set_trace
 
-"""------------------
+"""
 Monte Carlo csv files
+---------------------
 saved on ./results/histogram_iter[0-9]+_classes[0-9]+.csv
-------------------"""
+"""
 
 
 def plot_csv_histogram(path, filename, column=None, visualize=False):
@@ -90,10 +91,11 @@ def get_loss_and_acc_means(filename):
         return None
 
 
-"""-------------------
+"""
 Loss and Acc saved csv
+----------------------
 saved on ./log/<name>/run-<date>/<name>.csv
--------------------"""
+"""
 
 
 def plot_loss_and_acc(filename, visualize=False):
@@ -119,10 +121,11 @@ def plot_loss_and_acc(filename, visualize=False):
     set_trace()
 
 
-"""-------------
+"""
 Confusion Matrix
+----------------
 Given results and labels directly
--------------"""
+"""
 
 
 def sparse_confusion_matrix(y_pred_np, y_label_np, filename=None):
@@ -153,6 +156,6 @@ if __name__ == '__main__':
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.7'
+__version__ = '1.0.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
