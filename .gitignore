@@ -3,6 +3,7 @@ saved_models/
 log/
 out/
 data/
+results/
 
 # python cache
 __pycache__/
