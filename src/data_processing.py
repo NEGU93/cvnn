@@ -28,7 +28,7 @@ def get_real_train_and_test(x_train, x_test):
     return x_train_real, x_test_real
 
 
-def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=False):
+def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=True):
     """
     Separates data x with corresponding labels y into train and test set.
     :param x: data
@@ -48,6 +48,15 @@ def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=False):
     x_test = x[int(m*ratio):]
     y_test = y[int(m*ratio):]
     return x_train, y_train, x_test, y_test
+
+def sparse_into_categorical(spar, num_classes=None):
+    assert len(spar.shape) == 1
+    if num_classes is None:
+        num_classes = max(spar) + 1     # assumes labels starts at 0
+    cat = np.zeros((spar.shape[0], num_classes))
+    for i, k in enumerate(spar):
+        cat[i][k] = 1
+    return cat
 
 
 """-------------
@@ -210,13 +219,11 @@ def test_save_load():
                     print("All good!")
 
 
-if __name__ == "__main__":
-    ic, nb_sig, sx, types, xp, xx = load_gilles_mat_data()
-    x_train, y_train, x_test, y_test = separate_into_train_and_test(xx, ic, pre_rand=True)
-    set_trace()
+# if __name__ == "__main__":
+
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

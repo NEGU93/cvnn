@@ -683,6 +683,10 @@ class Cvnn:
                      self.saved_loss_acc_vectors["test_loss"],
                      '^-',
                      label='test loss')
+            plt.legend(loc="upper right")
+            plt.ylabel("epochs")
+            plt.xlabel("loss")
+            plt.title("Train vs Test loss")
             plt.show()
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
@@ -699,6 +703,10 @@ class Cvnn:
                      self.saved_loss_acc_vectors["test_acc"],
                      '^-',
                      label='test acc')
+            plt.legend(loc="lower right")
+            plt.ylabel("epochs")
+            plt.xlabel("accuracy (%)")
+            plt.title("Train vs Test accuracy")
             plt.show()
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
@@ -744,7 +752,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.9'
+__version__ = '1.0.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
