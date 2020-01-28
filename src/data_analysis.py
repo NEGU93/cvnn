@@ -148,7 +148,7 @@ def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None):
 
 
 if __name__ == '__main__':
-    res = get_histogram_results('../results')
+    res = get_histogram_results('./results')
     res = get_pandas_mean_for_each_class(res)
     # plot_loss_and_acc("/home/barrachina/Documents/cvnn/log/CVNN_testing/run-20200127140842/CVNN_testing.csv"
     # , visualize=True)
@@ -156,6 +156,6 @@ if __name__ == '__main__':
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.8'
+__version__ = '1.0.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

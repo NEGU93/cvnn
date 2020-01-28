@@ -91,7 +91,7 @@ class Cvnn:
 
         # logs dir
         self.now = datetime.today().strftime("%Y%m%d%H%M%S")
-        project_path = os.path.abspath("../")
+        project_path = os.path.abspath("./")
         self.root_dir = project_path + "/log/{}/run-{}/".format(self.name, self.now)
         # Tensorboard
         self.tbdir = self.root_dir + "tensorboard_logs/"
@@ -752,7 +752,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.10'
+__version__ = '1.0.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
