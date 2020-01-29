@@ -9,7 +9,7 @@ import os
 
 
 def monte_carlo_cvnn_rvnn_compare(iterations=100, m=10000, n=100, min_num_classes=2, max_num_classes=5,
-                                  test_for_each_data=10, path="../results/", filename="histogram", name=''):
+                                  test_for_each_data=10, path="./results/", filename="histogram", name=''):
     """
     Computes the CVNN and RVNN loss and acc result on classification of random gaussian noise over the amount of
     iterations gives as a parameter. Saves results appended to a new csv.
@@ -35,18 +35,18 @@ def monte_carlo_cvnn_rvnn_compare(iterations=100, m=10000, n=100, min_num_classe
                 write = False   # Not to write again the CVNN and all the headers.
             file = open(path + filename + "_iter" + str(i) + "_classes" + str(k) + '.csv', 'a')
             if write:
-                file.write("CVNN loss, CVNN acc, RVNN loss, RVNN acc\n")
+                file.write("CVNN loss,CVNN acc,RVNN loss,RVNN acc\n")
             for t in range(test_for_each_data):
                 print("Iteration " + str(i) + "." + str(t) + " for " + str(k) + " classes")
                 cvnn, rvnn = do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, verbose=False)
 
                 # compare them
                 file.write(str(cvnn.compute_loss(x_test, y_test)))
-                file.write(", ")
+                file.write(",")
                 file.write(str(cvnn.compute_accuracy(x_test, y_test)))
-                file.write(", ")
+                file.write(",")
                 file.write(str(rvnn.compute_loss(x_test_real, y_test)))
-                file.write(", ")
+                file.write(",")
                 file.write(str(rvnn.compute_accuracy(x_test_real, y_test)))
                 file.write("\n")
             file.close()
@@ -117,6 +117,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
