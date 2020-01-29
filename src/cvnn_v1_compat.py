@@ -602,7 +602,7 @@ class Cvnn:
                 return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
             else:
                 sys.exit("Cvnn::_apply_activation Unknown loss function.\n\t "
-                         "Can only use activations declared on losses.py")
+                         "Can only use activations declared on activation_functions.py or keras.activations")
         elif isinstance(act_fun, str):
             try:
                 return act_dispatcher[act_fun](out)
@@ -625,29 +625,6 @@ class Cvnn:
             sys.exit("Cvnn::_apply_loss: Invalid loss function")
 
         return tf.reduce_mean(input_tensor=loss_func(self.y, self.y_out), name=loss_func.__name__)
-
-    """-----------
-    # Initializers
-    # https://keras.io/initializers/
-    -----------"""
-
-    @staticmethod
-    def glorot_uniform_init(in_neurons, out_neurons):
-        return np.random.randn(in_neurons, out_neurons) * np.sqrt(1 / in_neurons)
-
-    @staticmethod
-    def rand_init_neg(in_neurons, out_neurons):
-        return 2 * np.random.rand(in_neurons, out_neurons) - 1
-
-    @staticmethod
-    def rand_init(in_neurons, out_neurons):
-        """
-        Use this function to make fashion not to predict good
-        :param in_neurons:
-        :param out_neurons:
-        :return:
-        """
-        return np.random.rand(in_neurons, out_neurons)
 
     """------------
     # Data Analysis
@@ -752,7 +729,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.11'
+__version__ = '1.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

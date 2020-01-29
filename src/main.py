@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 100000
     n = 100
-    num_classes = 2
+    num_classes = 4
     name = 'hilbert'
     # random
     # vect = None
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # Doesn't work
     # vect = [42, 51, 37]
 
-    monte_carlo_cvnn_rvnn_compare(iterations=50, m=m, n=n, min_num_classes=num_classes, max_num_classes=5, name=name)
+    monte_carlo_cvnn_rvnn_compare(iterations=50, m=m, n=n, min_num_classes=num_classes, max_num_classes=6, name=name)
 
     """
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, name)
@@ -117,6 +117,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

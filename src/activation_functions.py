@@ -26,7 +26,8 @@ def cart_sigmoid(z):
     :param z: Tensor to be used as input of the activation function
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.sigmoid(tf.math.real(z)), tf.keras.activations.sigmoid(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.sigmoid(tf.math.real(z)),
+                              tf.keras.activations.sigmoid(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_elu(z, alpha=1.0):
@@ -38,8 +39,8 @@ def cart_elu(z, alpha=1.0):
     :param alpha: A scalar, slope of negative section.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.elu(tf.math.real(z), alpha),
-                      tf.keras.activations.elu(tf.math.imag(z), alpha))
+    return tf.cast(tf.complex(tf.keras.activations.elu(tf.math.real(z), alpha),
+                   tf.keras.activations.elu(tf.math.imag(z), alpha)), dtype=z.dtype)
 
 
 def cart_exponential(z):
@@ -49,8 +50,8 @@ def cart_exponential(z):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.exponential(tf.math.real(z)),
-                      tf.keras.activations.exponential(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.exponential(tf.math.real(z)),
+                   tf.keras.activations.exponential(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_hard_sigmoid(z):
@@ -64,8 +65,8 @@ def cart_hard_sigmoid(z):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.hard_sigmoid(tf.math.real(z)),
-                      tf.keras.activations.hard_sigmoid(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.hard_sigmoid(tf.math.real(z)),
+                   tf.keras.activations.hard_sigmoid(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_relu(z, alpha=0.0, max_value=None, threshold=0):
@@ -79,8 +80,8 @@ def cart_relu(z, alpha=0.0, max_value=None, threshold=0):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.relu(tf.math.real(z), alpha, max_value, threshold),
-                      tf.keras.activations.relu(tf.math.imag(z), alpha, max_value, threshold))
+    return tf.cast(tf.complex(tf.keras.activations.relu(tf.math.real(z), alpha, max_value, threshold),
+                              tf.keras.activations.relu(tf.math.imag(z), alpha, max_value, threshold)), dtype=z.dtype)
 
 
 def cart_selu(z):
@@ -91,7 +92,8 @@ def cart_selu(z):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.selu(tf.math.real(z)), tf.keras.activations.selu(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.selu(tf.math.real(z)),
+                              tf.keras.activations.selu(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_softplus(z):
@@ -102,7 +104,8 @@ def cart_softplus(z):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.softplus(tf.math.real(z)), tf.keras.activations.softplus(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.softplus(tf.math.real(z)),
+                              tf.keras.activations.softplus(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_softsign(z):
@@ -113,7 +116,8 @@ def cart_softsign(z):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.softsign(tf.math.real(z)), tf.keras.activations.softsign(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.softsign(tf.math.real(z)),
+                              tf.keras.activations.softsign(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_tanh(z):
@@ -125,7 +129,8 @@ def cart_tanh(z):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.tanh(tf.math.real(z)), tf.keras.activations.tanh(tf.math.imag(z)))
+    return tf.cast(tf.complex(tf.keras.activations.tanh(tf.math.real(z)),
+                              tf.keras.activations.tanh(tf.math.imag(z))), dtype=z.dtype)
 
 
 # Classification
@@ -140,8 +145,8 @@ def cart_softmax(z, axis=-1):
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
-    return tf.complex(tf.keras.activations.softmax(tf.math.real(z), axis),
-                      tf.keras.activations.softmax(tf.math.imag(z), axis))
+    return tf.cast(tf.complex(tf.keras.activations.softmax(tf.math.real(z), axis),
+                              tf.keras.activations.softmax(tf.math.imag(z), axis)), dtype=z.dtype)
 
 
 def cart_softmax_real(z, axis=-1):
@@ -164,6 +169,6 @@ TYPE B: Polar form.
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

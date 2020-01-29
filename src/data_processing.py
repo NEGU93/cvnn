@@ -49,6 +49,7 @@ def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=True):
     y_test = y[int(m*ratio):]
     return x_train, y_train, x_test, y_test
 
+
 def sparse_into_categorical(spar, num_classes=None):
     assert len(spar.shape) == 1
     if num_classes is None:
@@ -224,6 +225,6 @@ def test_save_load():
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
