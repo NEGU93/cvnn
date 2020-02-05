@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from utils import *
+from cvnn.src.utils import *
 import numpy as np
 import sys
 import os

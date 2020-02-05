@@ -10,22 +10,72 @@ from pdb import set_trace
 import scipy.stats as stats
 
 
-def solve(m1, m2, std1, std2):
+def find_intersection_of_gaussians(m1, m2, std1, std2):
     a = 1 / (2 * std1 ** 2) - 1 / (2 * std2 ** 2)
     b = m2 / (std2 ** 2) - m1 / (std1 ** 2)
     c = m1 ** 2 / (2 * std1 ** 2) - m2 ** 2 / (2 * std2 ** 2) - np.log(std2 / std1)
     return np.roots([a, b, c])
 
 
-def plot_gaussian(mu=0, std=1):
-    x = np.linspace(mu - 3 * std, mu + 3 * std, 100)
-    plt.plot(x, stats.norm.pdf(x, mu, std))
-    plt.show()
+def plot_gaussian(mu=0, std=1, x=None,
+                  y_label=None, x_label=None, title=None,
+                  filename="./results/plot_2_gaussian_output.png", showfig=False, savefig=True):
+    """
+    Plot a gaussian function
+    :param mu: mean of the gaussian
+    :param std:  Standard deviation of the gaussian
+    :param x: The x axis linespace data. If None, an automatic one will be generated. Default is None
+    :param y_label: The y axis label.
+    :param x_label: The x axis label.
+    :param title: str or None. The legend’s title. Default is no title (None).
+    :param filename: Only used when savefig=True. The name of the figure to be saved
+    :param showfig: Boolean. If true it will show the figure using matplotlib show method
+    :param savefig: Boolean. If true it will save the figure with the name of filename parameter
+    :return: tuple (fig, ax) from the plotted figure
+    """
+    if x is None:
+        x = np.linspace(mu - 3 * std, mu + 3 * std, 100)
+    fig, ax = plt.subplots()
+    ax.plot(x, stats.norm.pdf(x, mu, std))
+
+    # Figure parameters
+    if y_label is not None:
+        ax.set_ylabel(y_label)
+    if x_label is not None:
+        ax.set_xlabel(x_label)
+    if title is not None:
+        fig.suptitle(title)
+
+    # save/show results
+    if savefig:
+        fig.savefig(filename)
+    if showfig:
+        fig.show()
+    return fig, ax
 
 
-def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2,
+def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2, x=None,
                     y_label=None, x_label=None, loc=None, title=None,
-                    filename="./results/plot_2_gaussian_output.png", showfig=False, savefig=True, x=None):
+                    filename="./results/plot_2_gaussian_output.png", showfig=False, savefig=True):
+    """
+    Plots 2 gaussians on the same plot using matplotlib
+    :param mu_1: Mean of first gaussian to be plotted
+    :param std_1: Standard deviation of the first gaussian to be plotted
+    :param mu_2: Mean of second gaussian to be plotted
+    :param std_2: Standard deviation of the second gaussian to be plotted
+    :param name_1: Name of the first gaussian (Used in legend)
+    :param name_2: Name of the second gaussian (Used in legend)
+    :param x: The x axis linespace data. If None, an automatic one will be generated. Default is None
+    :param y_label: The y axis label.
+    :param x_label: The x axis label.
+    :param loc: can be a string or an integer specifying the legend location. default: None.
+                    https://matplotlib.org/api/legend_api.html#matplotlib.legend.Legend
+    :param title: str or None. The legend’s title. Default is no title (None).
+    :param filename: Only used when savefig=True. The name of the figure to be saved
+    :param showfig: Boolean. If true it will show the figure using matplotlib show method
+    :param savefig: Boolean. If true it will save the figure with the name of filename parameter
+    :return: tuple (fig, ax) from the plotted figure
+    """
     # Get x axes
     ax_min = min(mu_1 - 3 * std_1, mu_2 - 3 * std_2)
     ax_max = max(mu_1 + 3 * std_1, mu_2 + 3 * std_2)
@@ -36,12 +86,13 @@ def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2,
     gauss_1 = stats.norm.pdf(x, mu_1, std_1)
     gauss_2 = stats.norm.pdf(x, mu_2, std_2)
 
+    # plot gaussians
     fig, ax = plt.subplots()
     ax.plot(x, gauss_1, label=name_1)
     ax.plot(x, gauss_2, label=name_2)
 
     # plot intersection point
-    result = solve(mu_1, mu_2, std_1, std_2)
+    result = find_intersection_of_gaussians(mu_1, mu_2, std_1, std_2)
     keep_root = [r for r in result if ax_max > r > ax_min]
     for k in keep_root:
         intersection_point = stats.norm.pdf(k, mu_1, std_1)
@@ -51,19 +102,6 @@ def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2,
         trans = transforms.blended_transform_factory(ax.get_yticklabels()[0].get_transform(), ax.transData)
         ax.text(0, intersection_point, "{:.2f}".format(intersection_point),
                 transform=trans, ha="right", va="center")
-        """
-        # some statistics
-        error_line = k
-        if mu_1 > mu_2:
-            gauss_max = gauss_1 * dx
-            gauss_min = gauss_2 * dx
-        else:
-            gauss_max = gauss_2 * dx
-            gauss_min = gauss_1 * dx
-        area_1 = gauss_max[x < error_line].sum()
-        area_2 = gauss_min[x > error_line].sum()
-        print("Intersection area is " + str(area_1*100) + "%")
-        """
 
     # Figure parameters
     if loc is not None:
@@ -84,21 +122,28 @@ def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2,
     return fig, ax
 
 
-def plot_2_hist(data_1, data_2, name_1, name_2, y_label='', x_label='', loc='upper right', title='',
-                filename="./results/plot_2_hist_output.png", showfig=False):
+def plot_2_hist(data_1, data_2, name_1, name_2, bins=None, y_label='', x_label='', loc='upper right', title='',
+                filename="./results/plot_2_hist_output.png", showfig=False, savefig=True):
+    """
+    Plot 2 histograms in the same figure using matplotlib
+    :param data_1: Data for the first histogram
+    :param data_2: Data for the second histogram
+    :param name_1: Name of the first histogram (Used in legend)
+    :param name_2: Name of the second histogram (Used in legend)
+    :param bins:  int or sequence or str, optional
+    :param y_label: The y axis label.
+    :param x_label: The x axis label.
+    :param loc: can be a string or an integer specifying the legend location. default: None.
+                    https://matplotlib.org/api/legend_api.html#matplotlib.legend.Legend
+    :param title: str or None. The legend’s title. Default is no title (None).
+    :param filename: Only used when savefig=True. The name of the figure to be saved
+    :param showfig: Boolean. If true it will show the figure using matplotlib show method
+    :param savefig: Boolean. If true it will save the figure with the name of filename parameter
+    :return tuple (fig, ax) from the plotted figure
+    """
     fig, ax = plt.subplots()
-    bins = np.linspace(0, 1, 101)
-    """
-    mu_1 = np.mean(data_1)
-    mu_2 = np.mean(data_2)
-    std_1 = np.std(data_1)
-    std_2 = np.std(data_2)
-
-    gauss_1 = stats.norm.pdf(bins, mu_1, std_1)
-    gauss_2 = stats.norm.pdf(bins, mu_2, std_2)
-    plt.plot(bins, gauss_1 * max(data_1) / max(gauss_1), color='blue')
-    plt.plot(bins, gauss_2 * max(data_2) / max(gauss_2), color='red')
-    """
+    if bins is None:
+        bins = np.linspace(0, 1, 101)
     ax.hist(data_1, bins, alpha=0.5, label=name_1)
     ax.hist(data_2, bins, alpha=0.5, label=name_2)
     # Figure parameters
@@ -115,6 +160,9 @@ def plot_2_hist(data_1, data_2, name_1, name_2, y_label='', x_label='', loc='upp
     # save/show results
     if showfig:
         fig.show()
+    if savefig:
+        fig.savefig(filename)
+    return fig, ax
 
 
 """
@@ -124,41 +172,70 @@ saved on ./results/histogram_iter[0-9]+_classes[0-9]+.csv
 """
 
 
-def plot_csv_histogram_matplotlib(path, filename, column=None, visualize=False):
+def plot_csv_histogram_matplotlib(filename, bins=None, column=None, showfig=False):
+    """
+    Plots and saves a histogram image using the data from a csv file with help of matplotlib.
+    :param filename: Full path + name of the csv file to be opened (must contain the csv extension)
+                TODO: automatically add the extension if it's not there
+    :param bins: int or sequence or str, optional
+    :param column:
+    :param showfig: Boolean. If true it will show the figure using matplotlib show method
+    :return: None
+    """
     assert type(filename) == str
+    path, file = os.path.split(filename)
     data = pd.read_csv(path + filename)
-    plot_2_hist(data['CVNN acc'], data['RVNN acc'], 'CVNN', 'RVNN', showfig=visualize)
+    fig, ax = plot_2_hist(data['CVNN acc'], data['RVNN acc'], 'CVNN', 'RVNN', bins=bins, showfig=showfig, savefig=False)
+    fig.savefig(path + "matplot_histogram_" + file.replace('.csv', '.png'))  # Save the image with same name as csv
 
 
-def plot_csv_histogram_pandas(path, filename, column=None, visualize=False):
+def plot_csv_histogram_pandas(filename, bins=None, column=None, showfig=False):
     """
     Opens a csv file and creates a png file with the histogram of the csv result.
     This is used to make many simulations of both RVNN and CVNN and compare them with statistics.
-    :param path: Path where the csv file is located.
-    :param filename: Name of the csv file
+    :param filename: Full path + name of the csv file to be opened (must contain the csv extension)
+                TODO: automatically add the extension if it's not there
+    :param bins: int or sequence or str, optional
     :param column:
-    :param visualize: True to show the image saved
+    :param showfig: Boolean. If true it will show the figure
     :return: None
     """
     # https://medium.com/python-pandemonium/data-visualization-in-python-histogram-in-matplotlib-dce38f49f89c
     assert type(filename) == str
+    path, file = os.path.split(filename)
     data = pd.read_csv(path + filename)
-
-    data.hist(column=column, bins=data.shape[0] // 10)
+    if bins is None:
+        bins = data.shape[0] // 10
+    data.hist(column=column, bins=bins)
     if column is not None:
         filename = column + filename
     plt.savefig(path + "histogram_" + filename.replace('.csv', '.png'))  # Save the image with same name as csv
-    if visualize:
+    if showfig:
         plt.show()
 
 
 def get_trailing_number(s):
+    """
+    Search for a termination of a file name that has the ".csv" extension and that has a number at the end.
+    It gives the number at the end of the file. This number can have any amount of digits.
+    Example:
+    x = get_trailing_number("my/path/to/file/any_43_start_name9872.csv")    # x = 9872
+    y = get_trailing_number("my/path/to/file/any_43_start_name.csv")        # y = None
+    z = get_trailing_number("my/path/to/file/any_43_start_name85498.txt")   # y = None
+    :param s: The string to search for the specific term
+    :return: The number located before the extension. None if there is no number.
+    """
     m = re.search(r'\d+.csv$', s)  # I get only the end of the string (last number of any size and .csv extension)
     # splitext gets root [0] and extension [1] of the name.
     return int(os.path.splitext(m.group())[0]) if m else None
 
 
-def get_histogram_results(path):
+def get_histogram_results(path="./"):
+    """
+
+    :param path:
+    :return:
+    """
     project_path = os.path.abspath(path)
     list_of_files = glob.glob(project_path + "/*[0-9].csv")  # csv files that will end with a number.
     d = dict()
@@ -182,8 +259,6 @@ def get_pandas_mean_for_each_class(d):
         cvnn_acc = 0
         rvnn_acc = 0
         for dic in d[k]:
-            # set_trace()
-            # TODO: last version compatibility (space before string)
             cvnn_loss += dic['CVNN loss']
             rvnn_loss += dic['RVNN loss']
             cvnn_acc += dic['CVNN acc']
