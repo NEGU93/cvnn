@@ -282,7 +282,7 @@ def get_loss_and_acc_means(filename):
 def get_loss_and_acc_std(filename):
     try:
         data = pd.read_csv(filename)
-        return data.std().to_dict()
+        return data.std().to_dict()     # TODO: can return Nan with only one data
     except pd.errors.EmptyDataError:
         print("pandas.errors.EmptyDataError: get_loss_and_acc_means: No columns to parse from file")
         return None
@@ -352,6 +352,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

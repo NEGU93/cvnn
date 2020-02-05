@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
-import data_processing as dp
-from utils import *
+import cvnn.data_processing as dp
+from cvnn.utils import *
 from datetime import datetime
-import data_analysis as da
+import cvnn.data_analysis as da
 import matplotlib.pyplot as plt
-import activation_functions as act
+import cvnn.activation_functions as act
 from absl import logging
-import losses as loss
+import cvnn.losses as loss
 import numpy as np
 import glob
 import sys
@@ -729,7 +729,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.13'
+__version__ = '0.0.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

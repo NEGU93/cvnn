@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from cvnn.src.utils import *
+from cvnn.utils import *
 import numpy as np
 import sys
 import os
@@ -110,7 +110,8 @@ def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
 
 
 def _create_constant_classes(m, n, num_classes=2, vect=None):
-    assert len(vect) == num_classes     # TODO: message of error
+    if vect is not None:
+        assert len(vect) == num_classes     # TODO: message of error
     x = np.empty((num_classes * m, n)) + 1j * np.empty((num_classes * m, n))
     y = np.zeros((num_classes * m, num_classes))  # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
@@ -185,6 +186,7 @@ def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/g
     mat = loadmat(mat_fname)
     return mat
 
+
 """----------------
 # Testing Functions
 ----------------"""
@@ -220,9 +222,10 @@ def test_save_load():
                     print("All good!")
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    get_constant(23, 21)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

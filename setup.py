@@ -2,14 +2,11 @@ from setuptools import setup
 import versioneer
 
 requirements = [
-    'tensorflow'
-    'numpy'
-    'matplotlib'
-    'pandas'
-    'os'
-    'seaborn'
-    'glob'
-    're'
+    'tensorflow',
+    'numpy',
+    'matplotlib',
+    'pandas',
+    'seaborn',
     'scipy'
 ]
 
