@@ -1,28 +1,28 @@
-from argparse import ArgumentParser..1'
-from cvnn import __version__..1'
-..1'
-def cli(args=None):..1'
-    p = ArgumentParser(..1'
-        description="Library to help implement a complex-valued neural network (cvnn) using tensorflow as back-end",..1'
-        conflict_handler='resolve'..1'
-    )..1'
-    p.add_argument(..1'
-        '-V', '--version',..1'
-        action='version',..1'
-        help='Show the conda-prefix-replacement version number and exit.',..1'
-        version="cvnn %s" % __version__,..1'
-    )..1'
-..1'
-    args = p.parse_args(args)..1'
-..1'
-    # do something with the args..1'
-    print("CLI template - fix me up!")..1'
-..1'
-    # No return value means no error...1'
-    # Return a value of 1 or higher to signify an error...1'
-    # See https://docs.python.org/3/library/sys.html#sys.exit..1'
-..1'
-..1'
-if __name__ == '__main__':..1'
-    import sys..1'
-    cli(sys.argv[1:])..1'
+from argparse import ArgumentParser
+from cvnn import __version__
+
+def cli(args=None):
+    p = ArgumentParser(
+        description="Library to help implement a complex-valued neural network (cvnn) using tensorflow as back-end",
+        conflict_handler='resolve'
+    )
+    p.add_argument(
+        '-V', '--version',
+        action='version',
+        help='Show the conda-prefix-replacement version number and exit.',
+        version="cvnn %s" % __version__,
+    )
+
+    args = p.parse_args(args)
+
+    # do something with the args
+    print("CLI template - fix me up!")
+
+    # No return value means no error.
+    # Return a value of 1 or higher to signify an error.
+    # See https://docs.python.org/3/library/sys.html#sys.exit
+
+
+if __name__ == '__main__':
+    import sys
+    cli(sys.argv[1:])
