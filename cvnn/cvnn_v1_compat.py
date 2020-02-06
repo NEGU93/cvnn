@@ -4,8 +4,8 @@ import cvnn.data_processing as dp
 from cvnn.utils import *
 from datetime import datetime
 import cvnn.data_analysis as da
+import cvnn.layers as layers
 import matplotlib.pyplot as plt
-import cvnn.activation_functions as act
 from absl import logging
 import cvnn.losses as loss
 import numpy as np
@@ -28,21 +28,6 @@ logging_dispatcher = {
 loss_dispatcher = {
     'mean_square': loss.mean_square,
     'categorical_crossentropy': loss.categorical_crossentropy
-}
-
-act_dispatcher = {
-    'linear': act.linear,
-    'cart_sigmoid': act.cart_sigmoid,
-    'cart_elu': act.cart_elu,
-    'cart_exponential': act.cart_exponential,
-    'cart_hard_sigmoid': act.cart_hard_sigmoid,
-    'cart_relu': act.cart_relu,
-    'cart_selu': act.cart_selu,
-    'cart_softplus': act.cart_softplus,
-    'cart_softsign': act.cart_softsign,
-    'cart_tanh': act.cart_tanh,
-    'cart_softmax': act.cart_softmax,
-    'cart_softmax_real': act.cart_softmax_real
 }
 
 
@@ -155,7 +140,7 @@ class Cvnn:
         """
         Appends the shape of the network to the metadata file.
         It checks the meta data file exists, if not throws and error and exits.
-        :param shape: Shape of the network to be saved
+        :param shape: Shape of the network to be saved.
         :return: None
         """
         if not os.path.exists(self.metadata_filename):
@@ -164,13 +149,11 @@ class Cvnn:
             # 'a' mode Opens a file for appending. If the file does not exist, it creates a new file for writing.
             file.write("\n")
             for i in range(len(shape)):
-                fun_name = self._get_func_name(shape[i][1])
                 if i == 0:
-                    file.write("input layer: " + str(shape[i][0]) + "; act_fun = " + fun_name)
-                elif i == len(shape) - 1:
-                    file.write("output layer: " + str(shape[i][0]) + "; act_fun = " + fun_name)
+                    file.write("input size: " + str(shape[i].input_size))
+                    file.write("output layer: " + shape[i].get_description())
                 else:
-                    file.write("hidden layer: " + str(i) + ", " + str(shape[i][0]) + "; act_fun = " + fun_name)
+                    file.write("hidden layer: " + shape[i].get_description())
                 file.write("\n")
 
     """-----------------------
@@ -265,54 +248,27 @@ class Cvnn:
     -------------"""
 
     # Layers
-    def _create_dense_layer(self, input_size, output_size, input, layer_number):
-        with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)) as scope:
-            w = tf.Variable(tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size)),
-                            name="weights" + str(layer_number))
-            b = tf.Variable(tf.zeros(output_size), name="bias" + str(layer_number))
-            if self.output_options.tensorboard:
-                tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), w)
-                tf.compat.v1.summary.histogram('real_bias_' + str(layer_number), b)
-            return tf.add(tf.matmul(input, w), b), [w, b]
-
-    def _create_complex_dense_layer(self, input_size, output_size, input_of_layer, layer_number):
-        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        with tf.compat.v1.name_scope("dense_layer_" + str(layer_number)):
-            # Create weight matrix initialized randomely from N~(0, 0.01)
-            w = tf.Variable(tf.complex(tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size)),
-                                       tf.keras.initializers.GlorotUniform()(shape=(input_size, output_size))),
-                            name="weights" + str(layer_number))
-            b = tf.Variable(tf.complex(tf.zeros(output_size),
-                                       tf.zeros(output_size)), name="bias" + str(layer_number))
-            if self.output_options.tensorboard:
-                tf.compat.v1.summary.histogram('real_weight_' + str(layer_number), tf.math.real(w))
-                tf.compat.v1.summary.histogram('imag_weight_' + str(layer_number), tf.math.imag(w))
-                tf.compat.v1.summary.histogram('real_bias_' + str(layer_number), tf.math.real(b))
-                tf.compat.v1.summary.histogram('imag_bias_' + str(layer_number), tf.math.imag(b))
-            return tf.add(tf.matmul(input_of_layer, w), b), [w, b]
 
     def _create_graph_from_shape(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
+        if not all([isinstance(layer, layers.Layer) for layer in shape]):   # Check all the data is a Layer object
+            sys.exit("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
         # Define placeholders
-        self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(input_dtype), shape=[None, shape[0][0]], name='X')
-        self.y = tf.compat.v1.placeholder(tf.dtypes.as_dtype(output_dtype), shape=[None, shape[-1][0]], name='Y')
-
+        self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[0].input_dtype),
+                                          shape=[None, shape[0].input_size], name='X')
+        self.y = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[-1].output_dtype),
+                                          shape=[None, shape[-1].output_size], name='Y')
         variables = []
+        # TODO: verify layers coherence (output_size[k] = input_size[k+1])
         with tf.compat.v1.name_scope("forward_phase"):
-            out = self._apply_activation(shape[0][1], self.X)
-            for i in range(len(shape) - 1):  # Apply all the layers
-                if input_dtype == np.complex64:
-                    out, variable = self._create_complex_dense_layer(shape[i][0], shape[i + 1][0], out, i + 1)
-                elif input_dtype == np.float32:
-                    out, variable = self._create_dense_layer(shape[i][0], shape[i + 1][0], out, i + 1)
-                else:  # TODO: add the rest of data types
-                    sys.exit("CVNN::_create_graph_from_shape: input_type " + str(input_dtype) + " not supported")
+            for i in range(len(shape)):  # Apply all the layers
+                if i == 0:  # For the first layer the input is X
+                    out, variable = shape[i].apply_layer(self.X, self.output_options)
+                else:
+                    out, variable = shape[i].apply_layer(out, self.output_options)
                 variables.extend(variable)
-                out = self._apply_activation(shape[i + 1][1], out)  # Apply activation function
             y_out = tf.compat.v1.identity(out, name="y_out")
-        if tf.dtypes.as_dtype(np.dtype(output_dtype)) != y_out.dtype:  # Case for real output / real labels
-            y_out = tf.abs(y_out)  # TODO: Shall I do abs or what?
         self._append_graph_structure(shape)  # Append the graph information to the metadata.txt file
         return y_out, variables
 
@@ -332,8 +288,6 @@ class Cvnn:
             NOTE: If float32 make sure the last activation function gives a float32 and not a complex32!
         :return: None
         """
-        if output_dtype == np.complex64 and input_dtype == np.float32:
-            sys.exit("Cvnn::create_mlp_graph: if input dtype is real output cannot be complex")
         if self.restored_meta:
             print("Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
             return None
@@ -377,20 +331,6 @@ class Cvnn:
         self.saver = tf.compat.v1.train.Saver()
         # for i, var in enumerate(self.saver._var_list):
         #     print('Var {}: {}'.format(i, var))
-
-    def create_linear_regression_graph(self, input_size, output_size,
-                                       input_dtype=np.complex64, output_dtype=np.float32):
-        """
-        Creates a linear_regression_graph with no activation function
-        :param input_size:
-        :param output_size:
-        :param input_dtype:
-        :param output_dtype:
-        :return:
-        """
-        self.create_mlp_graph(loss.mean_square, [(input_size, act.linear),
-                                                 (output_size, act.linear)],
-                              input_dtype, output_dtype)
 
     # Others
     def restore_graph_from_meta(self, latest_file=None):
@@ -578,38 +518,6 @@ class Cvnn:
     # Apply functions
     -------------------"""
 
-    @staticmethod
-    def _get_func_name(fun):
-        if callable(fun):
-            return fun.__name__
-        elif isinstance(fun, str):
-            return fun
-        else:
-            sys.exit("Error::_get_func_name: Function not recognizable")
-
-    @staticmethod
-    def _apply_activation(act_fun, out):
-        """
-        Applies activation function `act` to variable `out`
-        :param out: Tensor to whom the activation function will be applied
-        :param act_fun: function to be applied to out. See the list fo possible activation functions on:
-            https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
-        :return: Tensor with the applied activation function
-        """
-        if callable(act_fun):
-            if act_fun.__module__ == 'activation_functions' or \
-                    act_fun.__module__ == 'tensorflow.python.keras.activations':
-                return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
-            else:
-                sys.exit("Cvnn::_apply_activation Unknown loss function.\n\t "
-                         "Can only use activations declared on activation_functions.py or keras.activations")
-        elif isinstance(act_fun, str):
-            try:
-                return act_dispatcher[act_fun](out)
-            except KeyError:
-                print("WARNING: Cvnn::_apply_function: " + str(act_fun) + " is not callable, ignoring it")
-            return out
-
     def _apply_loss(self, loss_func):
         # TODO: don't like the fact that I have to give self to this and not to apply_activation
         if callable(loss_func):
@@ -706,9 +614,12 @@ if __name__ == "__main__":
     output_size = np.shape(y_train)[1]
     # cvnn.create_linear_regression_graph(input_size, output_size)
     cvnn.create_mlp_graph("categorical_crossentropy",
-                          [(input_size, 'ignored'),
-                           (hidden_size, 'cart_sigmoid'),
-                           (output_size, 'cart_softmax_real')])
+                          [layers.Dense(input_size=input_size, output_size=hidden_size,
+                                        layer_number=0, activation='cart_sigmoid',
+                                        input_dtype=np.complex64, output_dtype=np.complex64),
+                           layers.Dense(input_size=hidden_size, output_size=output_size,
+                                        layer_number=1, activation='cart_softmax_real',
+                                        input_dtype=np.complex64, output_dtype=np.float32)])
 
     cvnn.train(x_train, y_train, x_test, y_test)
 
@@ -729,7 +640,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.14'
+__version__ = '0.1.0'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -3,6 +3,15 @@ import numpy as np
 import sys
 
 
+def get_func_name(fun):
+    if callable(fun):
+        return fun.__name__
+    elif isinstance(fun, str):
+        return fun
+    else:
+        sys.exit("Error::_get_func_name: Function not recognizable")
+
+
 def transform_to_real(x_complex):
     """
     :param x_complex: Complex-valued matrix of size mxn
@@ -74,6 +83,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
