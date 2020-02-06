@@ -247,8 +247,6 @@ class Cvnn:
     # Graph creation
     -------------"""
 
-    # Layers
-
     def _create_graph_from_shape(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
@@ -640,7 +638,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

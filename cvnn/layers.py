@@ -20,6 +20,8 @@ act_dispatcher = {
     'cart_softmax_real': act.cart_softmax_real
 }
 
+supported_dtypes = (np.complex64, np.float32)
+
 
 class Layer(ABC):
     def __init__(self, input_size, output_size, layer_number, activation=None,
@@ -31,7 +33,11 @@ class Layer(ABC):
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             sys.exit("Layer::__init__: if input dtype is real output cannot be complex")
+        if input_dtype not in supported_dtypes:
+            sys.exit("ERROR:Layer::__init__: unsupported input_dtype " + str(input_dtype))
         self.input_dtype = input_dtype
+        if output_dtype not in supported_dtypes:
+            sys.exit("ERROR:Layer::__init__: unsupported output_dtype " + str(output_dtype))
         self.output_dtype = output_dtype
         super().__init__()
 
@@ -75,17 +81,27 @@ class Dense(Layer):
         with tf.compat.v1.name_scope("dense_layer_" + str(self.layer_number)):
             # Create weight matrix initialized randomely from N~(0, 0.01)
             # TODO: be able to choose the initializer
-            w = tf.Variable(tf.complex(tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size)),
-                                       tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size))),
-                            name="weights" + str(self.layer_number))
-            b = tf.Variable(tf.complex(tf.zeros(self.output_size),
-                                       tf.zeros(self.output_size)), name="bias" + str(self.layer_number))
+            if self.input_dtype == np.complex64:    # Complex layer
+                w = tf.Variable(
+                    tf.complex(tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size)),
+                               tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size))),
+                    name="weights" + str(self.layer_number))
+                b = tf.Variable(tf.complex(tf.zeros(self.output_size),
+                                tf.zeros(self.output_size)), name="bias" + str(self.layer_number))
+            elif self.input_dtype == np.float32:       # Real Layer
+                w = tf.Variable(tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size)),
+                                name="weights" + str(self.layer_number))
+                b = tf.Variable(tf.zeros(self.output_size), name="bias" + str(self.layer_number))
+            else:
+                # This case should never happen. The constructor should already have checked this
+                sys.exit("ERROR: Dense::apply_layer: input_dtype not supported.")
             if output_options.tensorboard:
                 tf.compat.v1.summary.histogram('real_weight_' + str(self.layer_number), tf.math.real(w))
                 tf.compat.v1.summary.histogram('imag_weight_' + str(self.layer_number), tf.math.imag(w))
                 tf.compat.v1.summary.histogram('real_bias_' + str(self.layer_number), tf.math.real(b))
                 tf.compat.v1.summary.histogram('imag_bias_' + str(self.layer_number), tf.math.imag(b))
             out = tf.add(tf.matmul(input, w), b)
+
             if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != out.dtype:  # Case for real output / real labels
                 assert self.output_dtype == np.float32 and out.dtype == tf.dtypes.complex64
                 print("WARNING:Dense::apply_layer: Automatically casting output as abs because output should be real")
@@ -102,7 +118,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.0'
+__version__ = '0.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
