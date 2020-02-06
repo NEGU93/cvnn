@@ -247,7 +247,7 @@ class Cvnn:
     # Graph creation
     -------------"""
 
-    def _create_graph_from_shape(self, shape, input_dtype=np.complex64, output_dtype=np.float32):
+    def _create_graph_from_shape(self, shape):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
         if not all([isinstance(layer, layers.Layer) for layer in shape]):   # Check all the data is a Layer object
@@ -271,8 +271,7 @@ class Cvnn:
         return y_out, variables
 
     # Graphs
-    def create_mlp_graph(self, loss_func, shape,
-                         input_dtype=np.complex64, output_dtype=np.float32):
+    def create_mlp_graph(self, loss_func, shape):
         """
         Creates a complex-fully-connected dense graph using a shape as parameter
         :param shape: List of tuple
@@ -293,7 +292,7 @@ class Cvnn:
         tf.compat.v1.reset_default_graph()
 
         # Creates the feedforward network
-        self.y_out, variables = self._create_graph_from_shape(shape, input_dtype, output_dtype)
+        self.y_out, variables = self._create_graph_from_shape(shape)
         # Defines the loss function
         self.loss = self._apply_loss(loss_func)
 
@@ -512,9 +511,9 @@ class Cvnn:
             self.saved_loss_acc_vectors["test_acc"].append(acc_test)
         return None
 
-    """-------------------
+    """--------------
     # Apply functions
-    -------------------"""
+    --------------"""
 
     def _apply_loss(self, loss_func):
         # TODO: don't like the fact that I have to give self to this and not to apply_activation
@@ -636,7 +635,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
