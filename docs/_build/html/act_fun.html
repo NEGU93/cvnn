@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Activation Functions &#8212; cvnn 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Data Processing" href="data_processing.html" />
+    <link rel="prev" title="CVNN" href="cvnn.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>Activation Functions<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>This functions will be used when creating the graph of the network. For each corresponding string of options you can use any of the follwing activation functions.</p>
+<p>Activation functions are created inside the class and referenced using the function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apply_activation</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">act</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can define your own activation function, just create it inside the Cvnn class. The function must however be static.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Convention: The predecind <cite>act</cite> on <cite>Cvnn</cite> methods means it is an activation function. The following <cite>cart</cite> or <cite>polar</cite> means either type A (cartesian) or type B (polar) according to <a class="reference internal" href="#cit2003-kuroe" id="id2"><span>[CIT2003-KUROE]</span></a> notation.</p>
+</div>
+<dl class="class">
+<dt id="Cvnn">
+<em class="property">class </em><code class="sig-name descname">Cvnn</code><a class="headerlink" href="#Cvnn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="apply_activation">
+<code class="sig-name descname">apply_activation</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">act</em>, <em class="sig-param">out</em><span class="sig-paren">)</span><a class="headerlink" href="#apply_activation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies activation function <cite>act</cite> to variable <cite>out</cite>
+:param out: Tensor to whom the activation function will be applied
+:param act: function to be applied to out. See the list fo possible activation functions on: <a class="reference internal" href="#implemented-activation-functions">Implemented Activation Functions</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Tensor with the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="section" id="implemented-activation-functions">
+<h2>Implemented Activation Functions<a class="headerlink" href="#implemented-activation-functions" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="act_null">
+<code class="sig-name descname">act_null</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#act_null" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does not apply any activation function. It just outputs the input</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor variable</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>z</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="act_cart_sigmoid">
+<code class="sig-name descname">act_cart_sigmoid</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#act_cart_sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called with <cite>‘act_cart_sigmoid’</cite> string.
+Applies the function</p>
+<div class="math notranslate nohighlight">
+\[\frac{1}{1 + e^{-x}} + j  \frac{1}{1 + e^{-y}}\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[z = x + j y\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Tensor to be used as input of the activation function</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="citation">
+<dt class="label" id="cit2003-kuroe"><span class="brackets"><a class="fn-backref" href="#id2">CIT2003-KUROE</a></span></dt>
+<dd><p>Kuroe, Yasuaki, Mitsuo Yoshid, and Takehiro Mori. “On activation functions for complex-valued neural networks—existence of energy functions—.” Artificial Neural Networks and Neural Information Processing—ICANN/ICONIP 2003. Springer, Berlin, Heidelberg, 2003. 985-992.</p>
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">cvnn</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Activation Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implemented-activation-functions">Implemented Activation Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data_processing.html">Data Processing</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="cvnn.html" title="previous chapter">CVNN</a></li>
+      <li>Next: <a href="data_processing.html" title="next chapter">Data Processing</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, J Agustin BARRACHINA.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/act_fun.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

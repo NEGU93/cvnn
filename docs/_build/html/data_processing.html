@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Data Processing &#8212; cvnn 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Activation Functions" href="act_fun.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="data-processing">
+<h1>Data Processing<a class="headerlink" href="#data-processing" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="utils">
+<h2>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="randomize">
+<code class="sig-name descname">randomize</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="headerlink" href="#randomize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Randomizes the order of data samples and their corresponding labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – data</p></li>
+<li><p><strong>y</strong> – data labels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple of (shuffled_x, shuffled_y) maintaining coherence of elements labels</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="get_next_batch">
+<code class="sig-name descname">get_next_batch</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">start</em>, <em class="sig-param">end</em><span class="sig-paren">)</span><a class="headerlink" href="#get_next_batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get next batch from x and y using start and end</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – data</p></li>
+<li><p><strong>y</strong> – data labels</p></li>
+<li><p><strong>start</strong> – starting index of the batch to be returned</p></li>
+<li><p><strong>end</strong> – end index of the batch to be returned (not including)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple (x, y) of the selected batch</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="transform_to_real">
+<code class="sig-name descname">transform_to_real</code><span class="sig-paren">(</span><em class="sig-param">x_complex</em><span class="sig-paren">)</span><a class="headerlink" href="#transform_to_real" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x_complex</strong> – Complex-valued matrix of size mxn</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="separate_into_train_and_test">
+<code class="sig-name descname">separate_into_train_and_test</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">ratio=0.8</em><span class="sig-paren">)</span><a class="headerlink" href="#separate_into_train_and_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Separates data x with corresponding labels y into train and test set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – data</p></li>
+<li><p><strong>y</strong> – labels of data x</p></li>
+<li><p><strong>ratio</strong> – value between 0 and 1. 1 meaning all the data x will be the training set and 0 meaning all data x will be the test set.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple (x_train, y_train, x_test, y_test) of the training and test set both data and labels.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="save-and-load-dataset">
+<h2>Save and load dataset<a class="headerlink" href="#save-and-load-dataset" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="save_dataset">
+<code class="sig-name descname">save_dataset</code><span class="sig-paren">(</span><em class="sig-param">array_name</em>, <em class="sig-param">x_train</em>, <em class="sig-param">y_train</em>, <em class="sig-param">x_test</em>, <em class="sig-param">y_test</em><span class="sig-paren">)</span><a class="headerlink" href="#save_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves in a single .npz file the test and training set with corresponding labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array_name</strong> – Name of the array to be saved into data/ folder.</p></li>
+<li><p><strong>x_train</strong> – </p></li>
+<li><p><strong>y_train</strong> – </p></li>
+<li><p><strong>x_test</strong> – </p></li>
+<li><p><strong>y_test</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="load-dataset"></span><dl class="function">
+<dt id="load_dataset">
+<code class="sig-name descname">load_dataset</code><span class="sig-paren">(</span><em class="sig-param">array_name</em><span class="sig-paren">)</span><a class="headerlink" href="#load_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets all x_train, y_train, x_test, y_test from a previously saved .npz file with <span class="xref std std-ref">save_dataset</span> function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>array_name</strong> – name of the file saved in ‘../data’ with .npz termination</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple (x_train, y_train, x_test, y_test)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">cvnn</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data Processing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#utils">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#save-and-load-dataset">Save and load dataset</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="act_fun.html" title="previous chapter">Activation Functions</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, J Agustin BARRACHINA.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/data_processing.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -37,6 +37,7 @@ def categorical_crossentropy(y, y_out):
         y - binary indicator (0 or 1), it will be all 0's but one (according to the corresponding class)
         y_out - predicted probability observation the class
     """
+    # TODO: not working for the moment
     with tf.compat.v1.name_scope("loss_scope") as scope:
         y1_error = tf.math.multiply(-y, tf.math.log(y_out))  # Error for y = 1
         y0_error = tf.math.multiply(1 - y, tf.math.log(1 - y_out))  # Error for y = 0

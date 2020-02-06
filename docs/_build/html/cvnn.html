@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>CVNN &#8212; cvnn 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Activation Functions" href="act_fun.html" />
+    <link rel="prev" title="Complex-Valued Neural Network (CVNN)" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="cvnn">
+<h1>CVNN<a class="headerlink" href="#cvnn" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="Cvnn">
+<em class="property">class </em><code class="sig-name descname">Cvnn</code><a class="headerlink" href="#Cvnn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">learning_rate=0.001</em>, <em class="sig-param">tensorboard=True</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">automatic_restore=True</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>learning_rate</strong> – Learning rate at which the network will train</p></li>
+<li><p><strong>tensorboard</strong> – True if want the network to save tensorboard graph and summary</p></li>
+<li><p><strong>verbose</strong> – True for verbose mode (print and output results)</p></li>
+<li><p><strong>automatic_restore</strong> – True if network should search for saved models (will look for the newest saved model)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="__del__">
+<code class="sig-name descname">__del__</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#__del__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Destructor</p>
+</dd></dl>
+
+<div class="section" id="train-and-predict">
+<h2>Train and Predict<a class="headerlink" href="#train-and-predict" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="train">
+<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x_train</em>, <em class="sig-param">y_train</em>, <em class="sig-param">x_test</em>, <em class="sig-param">y_test</em>, <em class="sig-param">epochs=100</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">display_freq=1000</em><span class="sig-paren">)</span><a class="headerlink" href="#train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs the training of the neural network.
+If automatic_restore is True but not metadata was found, it will try to load the weights of the newest previously saved model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_train</strong> – Training data of shape (&lt;training examples&gt;, &lt;input_size&gt;)</p></li>
+<li><p><strong>y_train</strong> – Labels of the training data of shape (&lt;training examples&gt;, &lt;output_size&gt;)</p></li>
+<li><p><strong>x_test</strong> – Test data to display accuracy at the end of shape (&lt;test examples&gt;, &lt;input_size&gt;)</p></li>
+<li><p><strong>y_test</strong> – Test labels of shape (&lt;test examples&gt;, &lt;output_size&gt;)</p></li>
+<li><p><strong>epochs</strong> – Total number of training epochs</p></li>
+<li><p><strong>batch_size</strong> – Training batch size. If this number is bigger than the total amount of training examples will display an error</p></li>
+<li><p><strong>display_freq</strong> – Display results frequency. The frequency will be for each (epoch * batch_size + iteration) / display_freq</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs a single feedforward computation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – Input of the network</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Output of the network</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="graph-creation">
+<h2>Graph Creation<a class="headerlink" href="#graph-creation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="graphs">
+<h3>Graphs<a class="headerlink" href="#graphs" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="create_mlp_graph">
+<code class="sig-name descname">create_mlp_graph</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em><span class="sig-paren">)</span><a class="headerlink" href="#create_mlp_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a complex-fully-connected dense graph using a shape as parameter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>shape</strong> – <p>List of tuple
+1. each number of shape[i][0] correspond to the total neurons of layer i.
+2. a string in shape[i][1] corresponds to the activation function listed on <span class="xref std std-ref">activation_functions</span></p>
+<blockquote>
+<div><p>ATTENTION: shape[0][0] will be ignored! A future version will apply the activation function to the input but not implemented for the moment.</p>
+</div></blockquote>
+<p>Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.</p>
+</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="others">
+<h3>Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="restore_graph_from_meta">
+<code class="sig-name descname">restore_graph_from_meta</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">latest_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#restore_graph_from_meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restores an existing graph from meta data file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>latest_file</strong> – Path to the file to be restored. If no latest_file given and self.automatic_restore is True, the function will try to load the newest metadata inside <cite>saved_models/</cite> folder.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">cvnn</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CVNN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#train-and-predict">Train and Predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#graph-creation">Graph Creation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#graphs">Graphs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#others">Others</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_processing.html">Data Processing</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Complex-Valued Neural Network (CVNN)</a></li>
+      <li>Next: <a href="act_fun.html" title="next chapter">Activation Functions</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, J Agustin BARRACHINA.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/cvnn.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

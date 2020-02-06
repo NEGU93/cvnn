@@ -481,7 +481,7 @@ class Cvnn:
                         if self.output_options.verbose:
                             print("Cvnn::init_weights: Getting last model")
                         # get newest folder
-                        list_of_folders = glob.glob(self.root_savedir + '/*')
+                        list_of_folders = glob.glob(self.savedir + '/*')
                         latest_folder = max(list_of_folders, key=os.path.getctime)
                         # get newest file in the newest folder
                         list_of_files = glob.glob(latest_folder + '/*.ckpt.data*')  # Just take ckpt files, not others.
