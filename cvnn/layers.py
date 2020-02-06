@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from itertools import count
 import tensorflow as tf
 import sys
 import cvnn.activation_functions as act
@@ -24,11 +25,12 @@ supported_dtypes = (np.complex64, np.float32)
 
 
 class Layer(ABC):
-    def __init__(self, input_size, output_size, layer_number, activation=None,
-                 input_dtype=np.complex64, output_dtype=np.complex64):
+    _layer_number = count(0)        # Used to count the number of layers
+
+    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64):
         self.input_size = input_size
         self.output_size = output_size
-        self.layer_number = layer_number
+        self.layer_number = next(self._layer_number)        # Know it's own number
         self.activation = activation
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
@@ -118,7 +120,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

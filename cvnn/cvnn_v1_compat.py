@@ -612,11 +612,9 @@ if __name__ == "__main__":
     output_size = np.shape(y_train)[1]
     # cvnn.create_linear_regression_graph(input_size, output_size)
     cvnn.create_mlp_graph("categorical_crossentropy",
-                          [layers.Dense(input_size=input_size, output_size=hidden_size,
-                                        layer_number=0, activation='cart_sigmoid',
+                          [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
                                         input_dtype=np.complex64, output_dtype=np.complex64),
-                           layers.Dense(input_size=hidden_size, output_size=output_size,
-                                        layer_number=1, activation='cart_softmax_real',
+                           layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
                                         input_dtype=np.complex64, output_dtype=np.float32)])
 
     cvnn.train(x_train, y_train, x_test, y_test)
@@ -638,7 +636,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

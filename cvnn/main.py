@@ -61,17 +61,13 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, nam
     hidden_size = 10
     output_size = np.shape(y_train)[1]
 
-    shape_cvnn = [layers.Dense(input_size=input_size, output_size=hidden_size,
-                               layer_number=0, activation='cart_sigmoid',
+    shape_cvnn = [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
                                input_dtype=np.complex64, output_dtype=np.complex64),
-                  layers.Dense(input_size=hidden_size, output_size=output_size,
-                               layer_number=1, activation='cart_softmax_real',
+                  layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
                                input_dtype=np.complex64, output_dtype=np.float32)]
-    shape_rvnn = [layers.Dense(input_size=2*input_size, output_size=2*hidden_size,
-                               layer_number=0, activation='cart_sigmoid',
+    shape_rvnn = [layers.Dense(input_size=2*input_size, output_size=2*hidden_size, activation='cart_sigmoid',
                                input_dtype=np.float32, output_dtype=np.float32),
-                  layers.Dense(input_size=2*hidden_size, output_size=output_size,
-                               layer_number=1, activation='cart_softmax_real',
+                  layers.Dense(input_size=2*hidden_size, output_size=output_size, activation='cart_softmax_real',
                                input_dtype=np.float32, output_dtype=np.float32)]
     name = "_1HL_for_" + name + "_noise"
 
@@ -124,6 +120,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
