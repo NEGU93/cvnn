@@ -22,6 +22,17 @@ do
 		fi
 	fi
 done
+file= "cvnn/__init__.py"
+echo "Increasing version of file $file"
+oldver=`grep "__version__ = " $file`	# oldver=__version__ = 'z.y.x'
+verf1=`echo $oldver | cut -d '.' -f1`	# __version__ = 'z
+verf2=`echo $oldver | cut -d '.' -f2`	# y
+verf3=`echo $oldver | cut -d '.' -f3`	# x'
+oldnum=`echo $verf3 | sed 's/.$//'`	# removes the quote from verf3
+newnum=`expr $oldnum + 1`		# x += 1
+newver="$verf1.$verf2.$newnum\'"	# joins string again.
+sed -i "s/$oldver\$/$newver/g" $file	# replaces line with the new one
+
 
 git add -A
 git commit -m $1
