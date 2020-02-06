@@ -622,20 +622,13 @@ if __name__ == "__main__":
     cvnn.plot_loss()
     set_trace()
 
-    # TODO: it will be a good idea to make a test program to make sure my network is still working when I do changes
-
-    """y_out = cvnn.predict(x_test)
-    if y_out is not None:
-        print(y_out[:3])
-        print(y_test[:3])"""
-
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.3'
+__version__ = '0.1.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
