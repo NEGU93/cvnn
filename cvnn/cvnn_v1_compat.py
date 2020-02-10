@@ -557,42 +557,48 @@ class Cvnn:
         self.plot_acc()
         return
 
-    def plot_loss(self):
+    def plot_loss(self, savefig=True, showfig=True):
         if self.output_options.save_loss_acc:
-            plt.figure()
-            plt.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
+            fig, ax = plt.subplots()
+            fig.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
                      self.saved_loss_acc_vectors["train_loss"],
                      'o-',
                      label='train loss')
-            plt.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
+            fig.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
                      self.saved_loss_acc_vectors["test_loss"],
                      '^-',
                      label='test loss')
-            plt.legend(loc="upper right")
-            plt.ylabel("epochs")
-            plt.xlabel("loss")
-            plt.title("Train vs Test loss")
-            plt.show()
+            fig.legend(loc="upper right")
+            ax.set_ylabel("epochs")
+            ax.set_xlabel("loss")
+            fig.suptitle("Train vs Test loss")
+            if showfig:
+                fig.show()
+            if savefig:
+                fig.savefig(self.root_dir + "loss_plot_" + self.name + ".png")
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
                   "Next time create your model with save_loss_acc = True")
 
-    def plot_acc(self):
+    def plot_acc(self, savefig=True, showfig=True):
         if self.output_options.save_loss_acc:
-            plt.figure()
-            plt.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
+            fig, ax = plt.subplots()
+            fig.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
                      self.saved_loss_acc_vectors["train_acc"],
                      'o-',
                      label='train acc')
-            plt.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
+            fig.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
                      self.saved_loss_acc_vectors["test_acc"],
                      '^-',
                      label='test acc')
-            plt.legend(loc="lower right")
-            plt.ylabel("epochs")
-            plt.xlabel("accuracy (%)")
-            plt.title("Train vs Test accuracy")
-            plt.show()
+            fig.legend(loc="lower right")
+            ax.set_ylabel("epochs")
+            ax.set_xlabel("accuracy (%)")
+            fig.suptitle("Train vs Test accuracy")
+            if showfig:
+                fig.show()
+            if savefig:
+                fig.savefig(self.root_dir + "acc_plot_" + self.name + ".png")
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
                   "Next time create your model with save_loss_acc = True")
@@ -630,7 +636,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
