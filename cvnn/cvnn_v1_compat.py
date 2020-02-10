@@ -195,6 +195,7 @@ class Cvnn:
 
             # Run train
             num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
+            self._save_to_tensorboard(0, num_tr_iter, 0, feed_dict_train)       # save stuff before any training
             for epoch in range(epochs):
                 # Randomly shuffle the training data at the beginning of each epoch
                 x_train, y_train = randomize(x_train, y_train)
@@ -206,7 +207,7 @@ class Cvnn:
                     # Run optimization op (backpropagation)
                     feed_dict_batch = {self.X: x_batch, self.y: y_batch}
                     if (epoch * batch_size + iteration) % display_freq == 0:
-                        self.run_checkpoint(epoch, num_tr_iter, iteration, feed_dict_batch)
+                        self.run_checkpoint(epoch, num_tr_iter, iteration+1, feed_dict_batch)
                     self.sess.run(self.training_op, feed_dict=feed_dict_batch)
                 self.save_loss_and_acc(feed_dict_train, feed_dict_test)
 
@@ -629,7 +630,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
