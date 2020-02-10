@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
+import plotly
+import plotly.graph_objects as go
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -54,8 +56,7 @@ def plot_gaussian(mu=0, std=1, x=None,
     return fig, ax
 
 
-def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2, x=None,
-                    y_label=None, x_label=None, loc=None, title=None,
+def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2, x=None, y_label=None, x_label=None, loc=None, title=None,
                     filename="./results/plot_2_gaussian_output.png", showfig=False, savefig=True):
     """
     Plots 2 gaussians on the same plot using matplotlib
@@ -103,27 +104,11 @@ def plot_2_gaussian(mu_1, std_1, mu_2, std_2, name_1, name_2, x=None,
         ax.text(0, intersection_point, "{:.2f}".format(intersection_point),
                 transform=trans, ha="right", va="center")
 
-    # Figure parameters
-    if loc is not None:
-        fig.legend(loc=loc)
-    if y_label is not None:
-        ax.set_ylabel(y_label)
-    if x_label is not None:
-        ax.set_xlabel(x_label)
-    ax.set(xlim=(ax_min, ax_max), ylim=(0, max(max(gauss_1), max(gauss_2)) * 1.05))
-    if title is not None:
-        fig.suptitle(title)
-
-    # save/show results
-    if savefig:
-        fig.savefig(filename)
-    if showfig:
-        fig.show()
+    add_params(fig, ax, y_label, x_label, loc, title, filename, showfig, savefig)
     return fig, ax
 
 
-def plot_2_hist(data_1, data_2, name_1, name_2, bins=None, y_label='', x_label='', loc='upper right', title='',
-                filename="./results/plot_2_hist_output.png", showfig=False, savefig=True):
+def plot_2_hist_matplotlib(data_1, data_2, name_1, name_2, bins=None):
     """
     Plot 2 histograms in the same figure using matplotlib
     :param data_1: Data for the first histogram
@@ -131,6 +116,40 @@ def plot_2_hist(data_1, data_2, name_1, name_2, bins=None, y_label='', x_label='
     :param name_1: Name of the first histogram (Used in legend)
     :param name_2: Name of the second histogram (Used in legend)
     :param bins:  int or sequence or str, optional
+    :return tuple (fig, ax) from the plotted figure
+    """
+    fig, ax = plt.subplots()
+    if bins is None:
+        bins = np.linspace(0, 1, 501)
+    ax.hist(data_1, bins, alpha=0.5, label=name_1)
+    ax.hist(data_2, bins, alpha=0.5, label=name_2)
+    ax.axis(xmin=min(min(data_1), min(data_2)) - 0.01, xmax=max(max(data_1), max(data_2)) + 0.01)
+    return fig, ax
+
+
+def plot_hist_pandas(data, bins=None, column=None):
+    fig = plt.figure()
+    if bins is None:
+        bins = data.shape[0] // 10
+    ax = data.hist(column=column, bins=bins)
+    return fig, ax
+
+
+def plot_2_hist_seaborn(data_1, data_2, name_1, name_2, bins):
+    fig = plt.figure()
+    if bins is None:
+        bins = np.linspace(0, 1, 501)
+    ax = sns.distplot(data_1, bins, label=name_1)
+    ax = sns.distplot(data_2, bins, label=name_2, ax=ax)
+    ax.axis(xmin=min(min(data_1), min(data_2)) - 0.01, xmax=max(max(data_1), max(data_2)) + 0.01)
+    return fig, ax
+
+
+def add_params(fig, ax, y_label=None, x_label=None, loc=None, title=None,
+               filename="./results/plot_2_gaussian_output.png", showfig=False, savefig=True):
+    """
+    :param fig:
+    :param ax:
     :param y_label: The y axis label.
     :param x_label: The x axis label.
     :param loc: can be a string or an integer specifying the legend location. default: None.
@@ -139,13 +158,8 @@ def plot_2_hist(data_1, data_2, name_1, name_2, bins=None, y_label='', x_label='
     :param filename: Only used when savefig=True. The name of the figure to be saved
     :param showfig: Boolean. If true it will show the figure using matplotlib show method
     :param savefig: Boolean. If true it will save the figure with the name of filename parameter
-    :return tuple (fig, ax) from the plotted figure
+    :return None:
     """
-    fig, ax = plt.subplots()
-    if bins is None:
-        bins = np.linspace(0, 1, 101)
-    ax.hist(data_1, bins, alpha=0.5, label=name_1)
-    ax.hist(data_2, bins, alpha=0.5, label=name_2)
     # Figure parameters
     if loc is not None:
         fig.legend(loc=loc)
@@ -155,14 +169,11 @@ def plot_2_hist(data_1, data_2, name_1, name_2, bins=None, y_label='', x_label='
         ax.set_xlabel(x_label)
     if title is not None:
         fig.suptitle(title)
-    ax.axis(xmin=min(min(data_1), min(data_2)) - 0.01, xmax=max(max(data_1), max(data_2)) + 0.01)
-
     # save/show results
     if showfig:
         fig.show()
     if savefig:
         fig.savefig(filename)
-    return fig, ax
 
 
 """
@@ -172,7 +183,7 @@ saved on ./results/histogram_iter[0-9]+_classes[0-9]+.csv
 """
 
 
-def plot_csv_histogram_matplotlib(filename, bins=None, column=None, showfig=False):
+def plot_csv_histogram(filename, bins=None, column=None, showfig=False, library='matplotlib'):
     """
     Plots and saves a histogram image using the data from a csv file with help of matplotlib.
     :param filename: Full path + name of the csv file to be opened (must contain the csv extension)
@@ -180,38 +191,37 @@ def plot_csv_histogram_matplotlib(filename, bins=None, column=None, showfig=Fals
     :param bins: int or sequence or str, optional
     :param column:
     :param showfig: Boolean. If true it will show the figure using matplotlib show method
+    :param library: TODO
     :return: None
     """
     assert type(filename) == str
     path, file = os.path.split(filename)
-    data = pd.read_csv(path + filename)
-    fig, ax = plot_2_hist(data['CVNN acc'], data['RVNN acc'], 'CVNN', 'RVNN', bins=bins, showfig=showfig, savefig=False)
-    fig.savefig(path + "matplot_histogram_" + file.replace('.csv', '.png'))  # Save the image with same name as csv
-
-
-def plot_csv_histogram_pandas(filename, bins=None, column=None, showfig=False):
-    """
-    Opens a csv file and creates a png file with the histogram of the csv result.
-    This is used to make many simulations of both RVNN and CVNN and compare them with statistics.
-    :param filename: Full path + name of the csv file to be opened (must contain the csv extension)
-                TODO: automatically add the extension if it's not there
-    :param bins: int or sequence or str, optional
-    :param column:
-    :param showfig: Boolean. If true it will show the figure
-    :return: None
-    """
-    # https://medium.com/python-pandemonium/data-visualization-in-python-histogram-in-matplotlib-dce38f49f89c
-    assert type(filename) == str
-    path, file = os.path.split(filename)
-    data = pd.read_csv(path + filename)
-    if bins is None:
-        bins = data.shape[0] // 10
-    data.hist(column=column, bins=bins)
-    if column is not None:
-        filename = column + filename
-    plt.savefig(path + "histogram_" + filename.replace('.csv', '.png'))  # Save the image with same name as csv
-    if showfig:
-        plt.show()
+    data = pd.read_csv(filename)
+    if library == 'plotly':
+        fig = go.Figure()
+        fig.add_trace(go.Histogram(x=np.array(data['CVNN acc']), name='CVNN'))
+        fig.add_trace(go.Histogram(x=np.array(data['RVNN acc']), name='RVNN'))
+        # Overlay both histograms
+        fig.update_layout(barmode='overlay')
+        # Reduce opacity to see both histograms
+        fig.update_traces(opacity=0.75)
+        plotly.offline.plot(fig, filename=path + '/' + library + "_histogram_" + file.replace(".csv", ".html"))
+    elif library == 'matplotlib':
+        fig, ax = plot_2_hist_matplotlib(np.array(data['CVNN acc']), np.array(data['RVNN acc']), 'CVNN', 'RVNN',
+                                         bins=bins)
+    elif library == 'pandas':
+        # https://medium.com/python-pandemonium/data-visualization-in-python-histogram-in-matplotlib-dce38f49f89c
+        fig, ax = plot_hist_pandas(data, bins, column)
+    elif library == 'seaborn':
+        fig, ax = plot_2_hist_seaborn(np.array(data['CVNN acc']), np.array(data['RVNN acc']), 'CVNN', 'RVNN', bins=bins)
+    else:
+        print("Warning: Unrecognized library to plot " + library)
+        return None
+    # Save the image with same name as csv
+    if library is not 'plotly':
+        add_params(fig, ax, x_label='Accuracy in %', title=library + ' histogram', loc='upper right',
+                   showfig=showfig, savefig=False)
+    fig.savefig(path + "/" + library + "_histogram_" + file.replace('.csv', '.png'))
 
 
 def get_trailing_number(s):
@@ -352,6 +362,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

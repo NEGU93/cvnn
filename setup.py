@@ -7,7 +7,7 @@ requirements = [
     'matplotlib',
     'pandas',
     'seaborn',
-    'scipy'
+    'scipy', 'plotly'
 ]
 
 setup(

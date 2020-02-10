@@ -77,8 +77,8 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, nam
 
     if not auto_restore:
         # cvnn.create_linear_regression_graph(input_size, output_size)
-        cvnn.create_mlp_graph(tf.keras.losses.categorical_crossentropy, shape_cvnn, input_dtype=np.complex64)
-        rvnn.create_mlp_graph(tf.keras.losses.categorical_crossentropy, shape_rvnn, input_dtype=np.float32)
+        cvnn.create_mlp_graph(tf.keras.losses.categorical_crossentropy, shape_cvnn)
+        rvnn.create_mlp_graph(tf.keras.losses.categorical_crossentropy, shape_rvnn)
 
     cvnn.train(x_train, y_train, x_test, y_test, epochs=10)
     rvnn.train(x_train_real, y_train, x_test_real, y_test, epochs=10)
@@ -120,6 +120,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.9'
+__version__ = '0.0.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
