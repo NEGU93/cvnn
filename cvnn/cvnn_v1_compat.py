@@ -13,6 +13,7 @@ import glob
 import sys
 import os
 from pdb import set_trace
+
 # https://ml-cheatsheet.readthedocs.io/en/latest/
 
 DEBUG_RESTORE_META = False  # True to print the op and tensors that can be retrieved
@@ -195,7 +196,7 @@ class Cvnn:
 
             # Run train
             num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
-            self._save_to_tensorboard(0, num_tr_iter, 0, feed_dict_train)       # save stuff before any training
+            self._save_to_tensorboard(0, num_tr_iter, 0, feed_dict_train)  # save stuff before any training
             for epoch in range(epochs):
                 # Randomly shuffle the training data at the beginning of each epoch
                 x_train, y_train = randomize(x_train, y_train)
@@ -207,7 +208,7 @@ class Cvnn:
                     # Run optimization op (backpropagation)
                     feed_dict_batch = {self.X: x_batch, self.y: y_batch}
                     if (epoch * batch_size + iteration) % display_freq == 0:
-                        self.run_checkpoint(epoch, num_tr_iter, iteration+1, feed_dict_batch)
+                        self.run_checkpoint(epoch, num_tr_iter, iteration + 1, feed_dict_batch)
                     self.sess.run(self.training_op, feed_dict=feed_dict_batch)
                 self.save_loss_and_acc(feed_dict_train, feed_dict_test)
 
@@ -253,7 +254,7 @@ class Cvnn:
     def _create_graph_from_shape(self, shape):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
-        if not all([isinstance(layer, layers.Layer) for layer in shape]):   # Check all the data is a Layer object
+        if not all([isinstance(layer, layers.Layer) for layer in shape]):  # Check all the data is a Layer object
             sys.exit("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
         # Define placeholders
         self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[0].input_dtype),
@@ -354,7 +355,7 @@ class Cvnn:
                     # set_trace()
                     # Just take ckpt files, not others.
                     list_of_files = glob.glob(latest_folder + '/saved_models/*.ckpt.meta')
-                    if list_of_files:     # If a saved model was found!
+                    if list_of_files:  # If a saved model was found!
                         latest_file = max(list_of_files, key=os.path.getctime)  # .replace('/', '\\')
                         print("Found model " + latest_file)
                         break
@@ -538,7 +539,7 @@ class Cvnn:
     # Data Analysis
      -----------"""
 
-    def print_validation_loss(self,  x, y, epoch=None):
+    def print_validation_loss(self, x, y, epoch=None):
         feed_dict_valid = {self.X: x, self.y: y}
         loss_valid = self.sess.run(self.loss, feed_dict=feed_dict_valid)
         acc_valid = self.sess.run(self.acc, feed_dict=feed_dict_valid)
@@ -560,14 +561,14 @@ class Cvnn:
     def plot_loss(self, savefig=True, showfig=True):
         if self.output_options.save_loss_acc:
             fig, ax = plt.subplots()
-            fig.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
-                     self.saved_loss_acc_vectors["train_loss"],
-                     'o-',
-                     label='train loss')
-            fig.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
-                     self.saved_loss_acc_vectors["test_loss"],
-                     '^-',
-                     label='test loss')
+            ax.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
+                    self.saved_loss_acc_vectors["train_loss"],
+                    'o-',
+                    label='train loss')
+            ax.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
+                    self.saved_loss_acc_vectors["test_loss"],
+                    '^-',
+                    label='test loss')
             fig.legend(loc="upper right")
             ax.set_ylabel("epochs")
             ax.set_xlabel("loss")
@@ -583,14 +584,14 @@ class Cvnn:
     def plot_acc(self, savefig=True, showfig=True):
         if self.output_options.save_loss_acc:
             fig, ax = plt.subplots()
-            fig.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
-                     self.saved_loss_acc_vectors["train_acc"],
-                     'o-',
-                     label='train acc')
-            fig.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
-                     self.saved_loss_acc_vectors["test_acc"],
-                     '^-',
-                     label='test acc')
+            ax.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
+                    self.saved_loss_acc_vectors["train_acc"],
+                    'o-',
+                    label='train acc')
+            ax.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
+                    self.saved_loss_acc_vectors["test_acc"],
+                    '^-',
+                    label='test acc')
             fig.legend(loc="lower right")
             ax.set_ylabel("epochs")
             ax.set_xlabel("accuracy (%)")
@@ -636,7 +637,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.9'
+__version__ = '0.1.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
