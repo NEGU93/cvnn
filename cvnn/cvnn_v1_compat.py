@@ -78,6 +78,8 @@ class Cvnn:
         self.now = datetime.today().strftime("%Y%m%d%H%M%S")
         project_path = os.path.abspath("./")
         self.root_dir = project_path + "/log/{}/run-{}/".format(self.name, self.now)
+        print("Root path = " + project_path)  # To debug where will things be saved
+        print("Root dir = " + self.root_dir)
         # Tensorboard
         self.tbdir = self.root_dir + "tensorboard_logs/"
         if not os.path.exists(self.tbdir):
@@ -597,7 +599,7 @@ class Cvnn:
 
 if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
-    m = 100000
+    m = 10000
     n = 100
     num_classes = 5
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, 'hilbert')
@@ -627,7 +629,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 import plotly
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -335,23 +336,54 @@ Given results and labels directly
 """
 
 
-def sparse_confusion_matrix(y_pred_np, y_label_np, filename=None):
-    y_pred_pd = pd.Series(y_pred_np, name='Predicted')
-    y_label_pd = pd.Series(y_label_np, name='Actual')
-    df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
-    if filename is not None:
+def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=None, showfig=False):
+    if library == 'seaborn':
         fig, ax = plt.subplots()
-        sns.heatmap(df,
+        sns.heatmap(data,
                     annot=True,
                     linewidths=.5,
                     cbar=True,
                     )
-        fig.savefig(filename)
+        if filename is not None:
+            fig.savefig(filename)
+    elif library == 'plotly':
+        z = data.values.tolist()
+        if axis_legends is None:
+            y = [str(j) for j in data.axes[0].tolist()]
+            x = [str(i) for i in data.axes[1].tolist()]
+        else:
+            y = []
+            x = []
+            for j in data.axes[0].tolist():
+                if isinstance(j, int):
+                    y.append(axis_legends[j])
+                elif isinstance(j, str):
+                    y.append(j)
+                else:
+                    print("WTF?! should never have arrived here")
+            for i in data.axes[1].tolist():
+                if isinstance(i, int):
+                    x.append(axis_legends[i])
+                elif isinstance(i, str):
+                    x.append(i)
+                else:
+                    print("WTF?! should never have arrived here")
+        # fig = go.Figure(data=go.Heatmap(z=z, x=x, y=y))
+        fig = ff.create_annotated_heatmap(z, x=x, y=y)
+    if showfig:
+        fig.show()
+
+
+def sparse_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
+    y_pred_pd = pd.Series(y_pred_np, name='Predicted')
+    y_label_pd = pd.Series(y_label_np, name='Actual')
+    df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
+    plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
     return df
 
 
-def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None):
-    return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename)
+def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
+    return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename, axis_legends)
 
 
 if __name__ == '__main__':
@@ -362,6 +394,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.13'
+__version__ = '0.0.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
