@@ -6,6 +6,8 @@ from datetime import datetime
 import cvnn.data_analysis as da
 import cvnn.layers as layers
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly
 from absl import logging
 import cvnn.losses as loss
 import numpy as np
@@ -553,53 +555,81 @@ class Cvnn:
     def confusion_matrix(self, x_test, y_test):
         print(da.categorical_confusion_matrix(self.predict(x_test), y_test, None))
 
-    def plot_loss_and_acc(self):
-        self.plot_loss()
-        self.plot_acc()
+    def plot_loss_and_acc(self, library='plotly'):
+        self.plot_loss(library=library)
+        self.plot_acc(library=library)
         return
 
-    def plot_loss(self, savefig=True, showfig=True):
+    def plot_loss(self, savefig=True, showfig=True, library='plotly'):
         if self.output_options.save_loss_acc:
-            fig, ax = plt.subplots()
-            ax.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
-                    self.saved_loss_acc_vectors["train_loss"],
-                    'o-',
-                    label='train loss')
-            ax.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
-                    self.saved_loss_acc_vectors["test_loss"],
-                    '^-',
-                    label='test loss')
-            fig.legend(loc="upper right")
-            ax.set_ylabel("epochs")
-            ax.set_xlabel("loss")
-            fig.suptitle("Train vs Test loss")
-            if showfig:
-                fig.show()
-            if savefig:
-                fig.savefig(self.root_dir + "loss_plot_" + self.name + ".png")
+            if library == 'matplotlib':
+                fig, ax = plt.subplots()
+                ax.plot(range(len(self.saved_loss_acc_vectors["train_loss"])),
+                        self.saved_loss_acc_vectors["train_loss"],
+                        'o-',
+                        label='train loss')
+                ax.plot(range(len(self.saved_loss_acc_vectors["test_loss"])),
+                        self.saved_loss_acc_vectors["test_loss"],
+                        '^-',
+                        label='test loss')
+                fig.legend(loc="upper right")
+                ax.set_ylabel("epochs")
+                ax.set_xlabel("loss")
+                fig.suptitle("Train vs Test loss")
+                if showfig:
+                    fig.show()
+                if savefig:
+                    fig.savefig(self.root_dir + "matplot_loss_plot_" + self.name + ".png")
+            elif library == 'plotly':
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["train_loss"]))),
+                                         y=self.saved_loss_acc_vectors["train_loss"],
+                                         mode='lines+markers',
+                                         name='train loss'))
+                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["test_loss"]))),
+                                         y=self.saved_loss_acc_vectors["test_loss"],
+                                         mode='lines+markers',
+                                         name='test loss'))
+                plotly.offline.plot(fig, filename=self.root_dir + "plotly_loss_plot_" + self.name + ".html")
+            else:
+                print("Warning: Unrecognized library to plot " + library)
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
                   "Next time create your model with save_loss_acc = True")
 
-    def plot_acc(self, savefig=True, showfig=True):
+    def plot_acc(self, savefig=True, showfig=True, library='plotly'):
         if self.output_options.save_loss_acc:
-            fig, ax = plt.subplots()
-            ax.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
-                    self.saved_loss_acc_vectors["train_acc"],
-                    'o-',
-                    label='train acc')
-            ax.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
-                    self.saved_loss_acc_vectors["test_acc"],
-                    '^-',
-                    label='test acc')
-            fig.legend(loc="lower right")
-            ax.set_ylabel("epochs")
-            ax.set_xlabel("accuracy (%)")
-            fig.suptitle("Train vs Test accuracy")
-            if showfig:
-                fig.show()
-            if savefig:
-                fig.savefig(self.root_dir + "acc_plot_" + self.name + ".png")
+            if library == 'matplotlib':
+                fig, ax = plt.subplots()
+                ax.plot(range(len(self.saved_loss_acc_vectors["train_acc"])),
+                        self.saved_loss_acc_vectors["train_acc"],
+                        'o-',
+                        label='train acc')
+                ax.plot(range(len(self.saved_loss_acc_vectors["test_acc"])),
+                        self.saved_loss_acc_vectors["test_acc"],
+                        '^-',
+                        label='test acc')
+                fig.legend(loc="lower right")
+                ax.set_ylabel("epochs")
+                ax.set_xlabel("accuracy (%)")
+                fig.suptitle("Train vs Test accuracy")
+                if showfig:
+                    fig.show()
+                if savefig:
+                    fig.savefig(self.root_dir + "acc_plot_" + self.name + ".png")
+            elif library == 'plotly':
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["train_acc"]))),
+                                         y=self.saved_loss_acc_vectors["train_acc"],
+                                         mode='lines+markers',
+                                         name='train acc'))
+                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["test_acc"]))),
+                                         y=self.saved_loss_acc_vectors["test_acc"],
+                                         mode='lines+markers',
+                                         name='test acc'))
+                plotly.offline.plot(fig, filename=self.root_dir + "plotly_acc_plot_" + self.name + ".html")
+            else:
+                print("Warning: Unrecognized library to plot " + library)
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
                   "Next time create your model with save_loss_acc = True")
@@ -637,7 +667,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.10'
+__version__ = '0.1.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

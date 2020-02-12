@@ -306,27 +306,151 @@ saved on ./log/<name>/run-<date>/<name>.csv
 """
 
 
-def plot_loss_and_acc(filename, visualize=False):
+def plot_loss(filename, savefig=True, showfig=True, library='plotly'):
     assert type(filename) == str
+    path, file = os.path.split(filename)
     data = pd.read_csv(filename)
-    plt.plot(data['train loss'], 'o-', label='train loss')
-    plt.plot(data['test loss'], label='test loss')
-    plt.xlabel('epochs')
-    plt.ylabel('loss')
-    plt.savefig(filename.replace('.csv', '_loss.png'))
-    if visualize:
-        plt.show()
+    if library == 'matplotlib':
+        fig, ax = plt.subplots()
+        ax.plot(range(len(data["train loss"])),
+                data["train loss"],
+                'o-',
+                label='train loss')
+        ax.plot(range(len(data["test loss"])),
+                data["test loss"],
+                '^-',
+                label='test loss')
+        fig.legend(loc="upper right")
+        ax.set_ylabel("epochs")
+        ax.set_xlabel("loss")
+        fig.suptitle("Train vs Test loss")
+        if showfig:
+            fig.show()
+        if savefig:
+            fig.savefig(path + "/" + library + "_loss_" + file.replace(".csv", ".png"))
+    elif library == 'plotly':
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=list(range(len(data["train loss"]))),
+                                 y=data["train loss"],
+                                 mode='lines',
+                                 name='train loss',
+                                 line_color='rgb(255, 0, 0)'))
+        fig.add_trace(go.Scatter(x=list(range(len(data["test loss"]))),
+                                 y=data["test loss"],
+                                 mode='lines',
+                                 name='test loss',
+                                 line_color='rgb(0, 255, 0)'))
+        fig.update_layout(title='Train vs Test loss',
+                          xaxis_title='epochs',
+                          yaxis_title='loss')
+        if savefig:
+            plotly.offline.plot(fig, filename=path + "/" + library + "_loss_" + file.replace(".csv", ".html"))
+        elif showfig:
+            fig.show()
+    else:
+        print("Warning: Unrecognized library to plot " + library)
 
-    plt.figure()
-    plt.plot(data['train acc'], 'o-', label='train acc')
-    plt.plot(data['test acc'], label='test acc')
-    plt.xlabel('epochs')
-    plt.ylabel('accuracy')
-    plt.savefig(filename.replace('.csv', '_acc.png'))
-    if visualize:
-        plt.show()
 
-    set_trace()
+def plot_acc(filename, savefig=True, showfig=True, library='plotly'):
+    assert type(filename) == str
+    path, file = os.path.split(filename)
+    data = pd.read_csv(filename)
+    if library == 'matplotlib':
+        fig, ax = plt.subplots()
+        ax.plot(range(len(data["train acc"])),
+                data["train acc"],
+                'o-',
+                label='train acc')
+        ax.plot(range(len(data["test acc"])),
+                data["test acc"],
+                '^-',
+                label='test acc')
+        fig.legend(loc="lower right")
+        ax.set_ylabel("epochs")
+        ax.set_xlabel("accuracy (%)")
+        fig.suptitle("Train vs Test accuracy")
+        if showfig:
+            fig.show()
+        if savefig:
+            fig.savefig(path + "/" + library + "_acc_" + file.replace(".csv", ".png"))
+    elif library == 'plotly':
+        fig = go.Figure()
+        color_train = 'rgb(255, 0, 0)'
+        color_test = 'rgb(0, 255, 0)'
+        assert len(data["train acc"]) == len(data["test acc"])
+        x = list(range(len(data["train acc"])))
+        fig.add_trace(go.Scatter(x=x,
+                                 y=data["train acc"],
+                                 mode='lines',
+                                 name='train acc',
+                                 line_color=color_train))
+        fig.add_trace(go.Scatter(x=x,
+                                 y=data["test acc"],
+                                 mode='lines',
+                                 name='test acc',
+                                 line_color=color_test))
+        # Add points
+        fig.add_trace(go.Scatter(x=[x[-1]],
+                                 y=[data["train acc"].to_list()[-1]],
+                                 mode='markers',
+                                 name='last value train',
+                                 marker_color=color_train))
+        fig.add_trace(go.Scatter(x=[x[-1]],
+                                 y=[data["test acc"].to_list()[-1]],
+                                 mode='markers',
+                                 name='last value test',
+                                 marker_color=color_test))
+        # Max points
+        train_max = max(data["train acc"])
+        test_max = max(data["test acc"])
+        # ATTENTION! this will only give you first occurrence
+        train_max_index = data["train acc"].to_list().index(train_max)
+        test_max_index = data["test acc"].to_list().index(test_max)
+
+        fig.add_trace(go.Scatter(x=[train_max_index],
+                                 y=[train_max],
+                                 mode='markers',
+                                 name='max value train',
+                                 text=['{}%'.format(int(train_max * 100))],
+                                 textposition="top center",
+                                 marker_color=color_train))
+        fig.add_trace(go.Scatter(x=[test_max_index],
+                                 y=[test_max],
+                                 mode='markers',
+                                 name='max value test',
+                                 text=['{}%'.format(int(test_max*100))],
+                                 textposition="top center",
+                                 marker_color=color_test))
+        annotations = []
+        # Right annotations
+        annotations.append(dict(xref='paper', x=0.95, y=data["train acc"].to_list()[-1],
+                                xanchor='left', yanchor='middle',
+                                text='{}%'.format(int(data["train acc"].to_list()[-1]*100)),
+                                font=dict(family='Arial',
+                                          size=16),
+                                showarrow=False))
+        annotations.append(dict(xref='paper', x=0.95, y=data["test acc"].to_list()[-1],
+                                xanchor='left', yanchor='middle',
+                                text='{}%'.format(int(data["test acc"].to_list()[-1]*100)),
+                                font=dict(family='Arial',
+                                          size=16),
+                                showarrow=False))
+        fig.update_layout(annotations=annotations,
+                          title='Train vs Test accuracy',
+                          xaxis_title='epochs',
+                          yaxis_title='accuracy (%)'
+                          )
+        if savefig:
+            plotly.offline.plot(fig, filename=path + "/" + library + "_acc_" + file.replace(".csv", ".html"))
+        elif showfig:
+            fig.show()
+    else:
+        print("Warning: Unrecognized library to plot " + library)
+
+
+def plot_loss_and_acc(filename, savefig=True, showfig=True, library='plotly'):
+    plot_loss(filename, savefig, showfig, library)
+    plot_acc(filename, savefig, showfig, library)
 
 
 """
@@ -394,6 +518,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.14'
+__version__ = '0.0.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
