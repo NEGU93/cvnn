@@ -136,7 +136,7 @@ class Cvnn:
                 file.write("Restored," + str(self.restored_meta) + "\n")
                 file.write("Tensorboard enabled, " + str(self.output_options.tensorboard) + "\n")
                 file.write("Learning Rate, " + str(self.learning_rate) + "\n")
-                file.write("Weight initialization, " + "uniform distribution over [0, 1)")
+                file.write("Weight initialization, " + "uniform distribution over [0, 1)\n")
                 # TODO: change to correct distr
         except FileExistsError:  # TODO: Check if this is the actual error
             sys.exit("Fatal: Same file already exists. Aborting to not override results")
@@ -153,13 +153,20 @@ class Cvnn:
         with open(self.metadata_filename, "a") as file:
             # 'a' mode Opens a file for appending. If the file does not exist, it creates a new file for writing.
             file.write("\n")
+            net_type = shape[-1].get_output_dtype()
+            if net_type == np.complex64:
+                file.write("Complex Network\n")
+            elif net_type == np.float32:
+                file.write("Real Network\n")
+            else:
+                file.write("Unknown network type\n")
             for i in range(len(shape)):
                 if i == 0:
-                    file.write("input size: " + str(shape[i].input_size))
-                    file.write("output layer: " + shape[i].get_description())
+                    file.write("input layer::" + shape[i].get_description())
+                elif i == len(shape) - 1:
+                    file.write("output layer::" + shape[i].get_description())
                 else:
-                    file.write("hidden layer: " + shape[i].get_description())
-                file.write("\n")
+                    file.write("hidden layer::" + shape[i].get_description())
 
     """-----------------------
     #          Train 
@@ -667,7 +674,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.11'
+__version__ = '0.1.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

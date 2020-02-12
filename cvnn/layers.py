@@ -43,6 +43,9 @@ class Layer(ABC):
         self.output_dtype = output_dtype
         super().__init__()
 
+    def get_output_dtype(self):
+        return self.output_dtype
+
     @staticmethod
     def _apply_activation(act_fun, out):
         """
@@ -112,7 +115,9 @@ class Dense(Layer):
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
-        out_str = "Dense layer: output size = " + str(self.output_size) + "; act_fun = " + fun_name + "\n"
+        out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype) + \
+                  ") -> output size = " + str(self.output_size) + "(" + str(self.output_dtype) + \
+                  "); act_fun = " + fun_name + "\n"
         return out_str
 
 
@@ -120,7 +125,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
