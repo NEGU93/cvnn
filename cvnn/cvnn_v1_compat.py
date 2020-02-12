@@ -635,27 +635,27 @@ class Cvnn:
                                          y=[train_min],
                                          mode='markers',
                                          name='min value train',
-                                         text=['{}%'.format(int(train_min * 100))],
+                                         text=['{}%'.format(train_min)],
                                          textposition="bottom center",
                                          marker_color=color_train))
                 fig.add_trace(go.Scatter(x=[test_min_index],
                                          y=[test_min],
                                          mode='markers',
                                          name='min value test',
-                                         text=['{}%'.format(int(test_min * 100))],
+                                         text=['{}%'.format(test_min)],
                                          textposition="bottom center",
                                          marker_color=color_test))
                 annotations = []
                 # Right annotations
                 annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["train_loss"][-1],
                                         xanchor='left', yanchor='middle',
-                                        text='{}%'.format(int(self.saved_loss_acc_vectors["train_loss"][-1] * 100)),
+                                        text='{}%'.format(self.saved_loss_acc_vectors["train_loss"][-1]),
                                         font=dict(family='Arial',
                                                   size=16),
                                         showarrow=False))
                 annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["test_loss"][-1],
                                         xanchor='left', yanchor='middle',
-                                        text='{}%'.format(int(self.saved_loss_acc_vectors["test_loss"][-1] * 100)),
+                                        text='{}%'.format(self.saved_loss_acc_vectors["test_loss"][-1]),
                                         font=dict(family='Arial',
                                                   size=16),
                                         showarrow=False))
@@ -803,7 +803,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.13'
+__version__ = '0.1.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

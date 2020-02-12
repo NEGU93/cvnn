@@ -367,27 +367,27 @@ def plot_loss(filename, savefig=True, showfig=True, library='plotly'):
                                  y=[train_min],
                                  mode='markers',
                                  name='min value train',
-                                 text=['{}%'.format(int(train_min * 100))],
+                                 text=['{}%'.format(train_min)],
                                  textposition="top center",
                                  marker_color=color_train))
         fig.add_trace(go.Scatter(x=[test_min_index],
                                  y=[test_min],
                                  mode='markers',
                                  name='min value test',
-                                 text=['{}%'.format(int(test_min * 100))],
+                                 text=['{}%'.format(test_min)],
                                  textposition="top center",
                                  marker_color=color_test))
         annotations = []
         # Right annotations
         annotations.append(dict(xref='paper', x=0.95, y=data["train loss"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
-                                text='{}%'.format(int(data["train loss"].to_list()[-1] * 100)),
+                                text='{}%'.format(data["train loss"].to_list()[-1]),
                                 font=dict(family='Arial',
                                           size=16),
                                 showarrow=False))
         annotations.append(dict(xref='paper', x=0.95, y=data["test loss"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
-                                text='{}%'.format(int(data["test loss"].to_list()[-1] * 100)),
+                                text='{}%'.format(data["test loss"].to_list()[-1]),
                                 font=dict(family='Arial',
                                           size=16),
                                 showarrow=False))
@@ -570,6 +570,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.16'
+__version__ = '0.0.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
