@@ -27,11 +27,14 @@ supported_dtypes = (np.complex64, np.float32)
 class Layer(ABC):
     _layer_number = count(0)        # Used to count the number of layers
 
-    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64):
+    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
         self.input_size = input_size
         self.output_size = output_size
         self.layer_number = next(self._layer_number)        # Know it's own number
         self.activation = activation
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             sys.exit("Layer::__init__: if input dtype is real output cannot be complex")
@@ -43,8 +46,8 @@ class Layer(ABC):
         self.output_dtype = output_dtype
         super().__init__()
 
-    def get_output_dtype(self):
-        return self.output_dtype
+    def get_input_dtype(self):
+        return self.input_dtype
 
     @staticmethod
     def _apply_activation(act_fun, out):
@@ -88,13 +91,13 @@ class Dense(Layer):
             # TODO: be able to choose the initializer
             if self.input_dtype == np.complex64:    # Complex layer
                 w = tf.Variable(
-                    tf.complex(tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size)),
-                               tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size))),
+                    tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
+                               self.weight_initializer()(shape=(self.input_size, self.output_size))),
                     name="weights" + str(self.layer_number))
                 b = tf.Variable(tf.complex(tf.zeros(self.output_size),
                                 tf.zeros(self.output_size)), name="bias" + str(self.layer_number))
             elif self.input_dtype == np.float32:       # Real Layer
-                w = tf.Variable(tf.keras.initializers.GlorotUniform()(shape=(self.input_size, self.output_size)),
+                w = tf.Variable(self.weight_initializer()(shape=(self.input_size, self.output_size)),
                                 name="weights" + str(self.layer_number))
                 b = tf.Variable(tf.zeros(self.output_size), name="bias" + str(self.layer_number))
             else:
@@ -115,9 +118,10 @@ class Dense(Layer):
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
-        out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype) + \
-                  ") -> output size = " + str(self.output_size) + "(" + str(self.output_dtype) + \
-                  "); act_fun = " + fun_name + "\n"
+        out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype.__name__) + \
+                  ") -> output size = " + str(self.output_size) + "(" + str(self.output_dtype.__name__) + \
+                  ");\n\t act_fun = " + fun_name + ";\n\t weight init = " \
+                  + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + "\n"
         return out_str
 
 
@@ -125,7 +129,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

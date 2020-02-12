@@ -21,6 +21,18 @@ from pdb import set_trace
 DEBUG_RESTORE_META = False  # True to print the op and tensors that can be retrieved
 DEBUG_WEIGHT_LOADER = True  # True to print the file being restored for the weights
 
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 logging_dispatcher = {
     "DEBUG": "0",
     "INFO": "1",
@@ -136,8 +148,6 @@ class Cvnn:
                 file.write("Restored," + str(self.restored_meta) + "\n")
                 file.write("Tensorboard enabled, " + str(self.output_options.tensorboard) + "\n")
                 file.write("Learning Rate, " + str(self.learning_rate) + "\n")
-                file.write("Weight initialization, " + "uniform distribution over [0, 1)\n")
-                # TODO: change to correct distr
         except FileExistsError:  # TODO: Check if this is the actual error
             sys.exit("Fatal: Same file already exists. Aborting to not override results")
 
@@ -153,20 +163,19 @@ class Cvnn:
         with open(self.metadata_filename, "a") as file:
             # 'a' mode Opens a file for appending. If the file does not exist, it creates a new file for writing.
             file.write("\n")
-            net_type = shape[-1].get_output_dtype()
+            net_type = shape[0].get_input_dtype()
             if net_type == np.complex64:
                 file.write("Complex Network\n")
             elif net_type == np.float32:
                 file.write("Real Network\n")
             else:
+                print(bcolors.WARNING + "Warning:cvnn::_append_graph_structure: Unknown network type " + net_type.__name__)
                 file.write("Unknown network type\n")
             for i in range(len(shape)):
-                if i == 0:
-                    file.write("input layer::" + shape[i].get_description())
-                elif i == len(shape) - 1:
-                    file.write("output layer::" + shape[i].get_description())
+                if i < len(shape) - 1:
+                    file.write("hidden layer " + str(i) + "::" + shape[i].get_description())
                 else:
-                    file.write("hidden layer::" + shape[i].get_description())
+                    file.write("output layer::" + shape[i].get_description())
 
     """-----------------------
     #          Train 
@@ -299,7 +308,7 @@ class Cvnn:
         :return: None
         """
         if self.restored_meta:
-            print("Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
+            print(bcolors.WARNING + "Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
             return None
         # Reset latest graph
         tf.compat.v1.reset_default_graph()
@@ -370,10 +379,10 @@ class Cvnn:
                         break
                     list_of_folders.remove(latest_folder)
                 if latest_file is None:
-                    print("Warning:restore_graph_from_meta(): No model found...")
+                    print(bcolors.WARNING + "Warning:restore_graph_from_meta(): No model found...")
                     return None
             else:
-                print('Warning:restore_graph_from_meta(): No model found...')
+                print(bcolors.WARNING + 'Warning:restore_graph_from_meta(): No model found...')
                 return None
         elif latest_file is None:
             sys.exit("Error:restore_graph_from_meta(): no latest_file given and automatic_restore disabled")
@@ -582,24 +591,84 @@ class Cvnn:
                 fig.legend(loc="upper right")
                 ax.set_ylabel("epochs")
                 ax.set_xlabel("loss")
-                fig.suptitle("Train vs Test loss")
+                fig.suptitle("Train vs Test loss " + self.name)
                 if showfig:
                     fig.show()
                 if savefig:
                     fig.savefig(self.root_dir + "matplot_loss_plot_" + self.name + ".png")
             elif library == 'plotly':
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["train_loss"]))),
+                color_train = 'rgb(255, 0, 0)'
+                color_test = 'rgb(0, 255, 0)'
+                assert len(self.saved_loss_acc_vectors["train_loss"]) == len(self.saved_loss_acc_vectors["test_loss"])
+                x = list(range(len(self.saved_loss_acc_vectors["test_loss"])))
+                fig.add_trace(go.Scatter(x=x,
                                          y=self.saved_loss_acc_vectors["train_loss"],
-                                         mode='lines+markers',
-                                         name='train loss'))
-                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["test_loss"]))),
+                                         mode='lines',
+                                         name='train loss',
+                                         line_color='rgb(255, 0, 0)'))
+                fig.add_trace(go.Scatter(x=x,
                                          y=self.saved_loss_acc_vectors["test_loss"],
-                                         mode='lines+markers',
-                                         name='test loss'))
-                plotly.offline.plot(fig, filename=self.root_dir + "plotly_loss_plot_" + self.name + ".html")
+                                         mode='lines',
+                                         name='test loss',
+                                         line_color='rgb(0, 255, 0)'))
+
+                # Add points
+                fig.add_trace(go.Scatter(x=[x[-1]],
+                                         y=[self.saved_loss_acc_vectors["train_loss"][-1]],
+                                         mode='markers',
+                                         name='last value train',
+                                         marker_color=color_train))
+                fig.add_trace(go.Scatter(x=[x[-1]],
+                                         y=[self.saved_loss_acc_vectors["test_loss"][-1]],
+                                         mode='markers',
+                                         name='last value test',
+                                         marker_color=color_test))
+                # Max points
+                train_min = min(self.saved_loss_acc_vectors["train_loss"])
+                test_min = min(self.saved_loss_acc_vectors["test_loss"])
+                # ATTENTION! this will only give you first occurrence
+                train_min_index = self.saved_loss_acc_vectors["train_loss"].index(train_min)
+                test_min_index = self.saved_loss_acc_vectors["test_loss"].index(test_min)
+
+                fig.add_trace(go.Scatter(x=[train_min_index],
+                                         y=[train_min],
+                                         mode='markers',
+                                         name='min value train',
+                                         text=['{}%'.format(int(train_min * 100))],
+                                         textposition="bottom center",
+                                         marker_color=color_train))
+                fig.add_trace(go.Scatter(x=[test_min_index],
+                                         y=[test_min],
+                                         mode='markers',
+                                         name='min value test',
+                                         text=['{}%'.format(int(test_min * 100))],
+                                         textposition="bottom center",
+                                         marker_color=color_test))
+                annotations = []
+                # Right annotations
+                annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["train_loss"][-1],
+                                        xanchor='left', yanchor='middle',
+                                        text='{}%'.format(int(self.saved_loss_acc_vectors["train_loss"][-1] * 100)),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False))
+                annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["test_loss"][-1],
+                                        xanchor='left', yanchor='middle',
+                                        text='{}%'.format(int(self.saved_loss_acc_vectors["test_loss"][-1] * 100)),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False))
+                fig.update_layout(annotations=annotations,
+                                  title='Train vs Test loss ' + self.name,
+                                  xaxis_title='epochs',
+                                  yaxis_title='loss')
+                if savefig:
+                    plotly.offline.plot(fig, filename=self.root_dir + "plotly_loss_plot_" + self.name + ".html")
+                elif showfig:
+                    fig.show()
             else:
-                print("Warning: Unrecognized library to plot " + library)
+                print(bcolors.WARNING + "Warning: Unrecognized library to plot " + library)
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
                   "Next time create your model with save_loss_acc = True")
@@ -619,24 +688,84 @@ class Cvnn:
                 fig.legend(loc="lower right")
                 ax.set_ylabel("epochs")
                 ax.set_xlabel("accuracy (%)")
-                fig.suptitle("Train vs Test accuracy")
+                fig.suptitle("Train vs Test accuracy " + self.name)
                 if showfig:
                     fig.show()
                 if savefig:
                     fig.savefig(self.root_dir + "acc_plot_" + self.name + ".png")
             elif library == 'plotly':
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["train_acc"]))),
+                color_train = 'rgb(255, 0, 0)'
+                color_test = 'rgb(0, 255, 0)'
+                assert len(self.saved_loss_acc_vectors["train_acc"]) == len(self.saved_loss_acc_vectors["test_acc"])
+                x = list(range(len(self.saved_loss_acc_vectors["train_acc"])))
+                fig.add_trace(go.Scatter(x=x,
                                          y=self.saved_loss_acc_vectors["train_acc"],
-                                         mode='lines+markers',
-                                         name='train acc'))
-                fig.add_trace(go.Scatter(x=list(range(len(self.saved_loss_acc_vectors["test_acc"]))),
+                                         mode='lines',
+                                         name='train acc',
+                                         line_color='rgb(255, 0, 0)'))
+                fig.add_trace(go.Scatter(x=x,
                                          y=self.saved_loss_acc_vectors["test_acc"],
-                                         mode='lines+markers',
-                                         name='test acc'))
-                plotly.offline.plot(fig, filename=self.root_dir + "plotly_acc_plot_" + self.name + ".html")
+                                         mode='lines',
+                                         name='test acc',
+                                         line_color='rgb(0, 255, 0)'))
+
+                # Add points
+                fig.add_trace(go.Scatter(x=[x[-1]],
+                                         y=[self.saved_loss_acc_vectors["train_acc"][-1]],
+                                         mode='markers',
+                                         name='last value train',
+                                         marker_color=color_train))
+                fig.add_trace(go.Scatter(x=[x[-1]],
+                                         y=[self.saved_loss_acc_vectors["test_acc"][-1]],
+                                         mode='markers',
+                                         name='last value test',
+                                         marker_color=color_test))
+                # Max points
+                train_max = max(self.saved_loss_acc_vectors["train_acc"])
+                test_max = max(self.saved_loss_acc_vectors["test_acc"])
+                # ATTENTION! this will only give you first occurrence
+                train_max_index = self.saved_loss_acc_vectors["train_acc"].index(train_max)
+                test_max_index = self.saved_loss_acc_vectors["test_acc"].index(test_max)
+
+                fig.add_trace(go.Scatter(x=[train_max_index],
+                                         y=[train_max],
+                                         mode='markers',
+                                         name='min value train',
+                                         text=['{}%'.format(int(train_max * 100))],
+                                         textposition="top center",
+                                         marker_color=color_train))
+                fig.add_trace(go.Scatter(x=[test_max_index],
+                                         y=[test_max],
+                                         mode='markers',
+                                         name='min value test',
+                                         text=['{}%'.format(int(test_max * 100))],
+                                         textposition="top center",
+                                         marker_color=color_test))
+                annotations = []
+                # Right annotations
+                annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["train_acc"][-1],
+                                        xanchor='left', yanchor='middle',
+                                        text='{}%'.format(int(self.saved_loss_acc_vectors["train_acc"][-1] * 100)),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False))
+                annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["test_acc"][-1],
+                                        xanchor='left', yanchor='middle',
+                                        text='{}%'.format(int(self.saved_loss_acc_vectors["test_acc"][-1] * 100)),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False))
+                fig.update_layout(annotations=annotations,
+                                  title='Train vs Test accuracy ' + self.name,
+                                  xaxis_title='epochs',
+                                  yaxis_title='accuracy (%)')
+                if savefig:
+                    plotly.offline.plot(fig, filename=self.root_dir + "plotly_loss_plot_" + self.name + ".html")
+                elif showfig:
+                    fig.show()
             else:
-                print("Warning: Unrecognized library to plot " + library)
+                print(bcolors.WARNING + "Warning: Unrecognized library to plot " + library)
         else:
             print("save_loss_acc was disabled. No data was saved in order to plot the graph. "
                   "Next time create your model with save_loss_acc = True")
@@ -674,7 +803,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.12'
+__version__ = '0.1.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -330,17 +330,69 @@ def plot_loss(filename, savefig=True, showfig=True, library='plotly'):
             fig.savefig(path + "/" + library + "_loss_" + file.replace(".csv", ".png"))
     elif library == 'plotly':
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=list(range(len(data["train loss"]))),
+        color_train = 'rgb(255, 0, 0)'
+        color_test = 'rgb(0, 255, 0)'
+        assert len(data["train loss"]) == len(data["test loss"])
+        x = list(range(len(data["train loss"])))
+        fig.add_trace(go.Scatter(x=x,
                                  y=data["train loss"],
                                  mode='lines',
                                  name='train loss',
                                  line_color='rgb(255, 0, 0)'))
-        fig.add_trace(go.Scatter(x=list(range(len(data["test loss"]))),
+        fig.add_trace(go.Scatter(x=x,
                                  y=data["test loss"],
                                  mode='lines',
                                  name='test loss',
                                  line_color='rgb(0, 255, 0)'))
-        fig.update_layout(title='Train vs Test loss',
+
+        # Add points
+        fig.add_trace(go.Scatter(x=[x[-1]],
+                                 y=[data["train loss"].to_list()[-1]],
+                                 mode='markers',
+                                 name='last value train',
+                                 marker_color=color_train))
+        fig.add_trace(go.Scatter(x=[x[-1]],
+                                 y=[data["test loss"].to_list()[-1]],
+                                 mode='markers',
+                                 name='last value test',
+                                 marker_color=color_test))
+        # Max points
+        train_min = min(data["train loss"])
+        test_min = min(data["test loss"])
+        # ATTENTION! this will only give you first occurrence
+        train_min_index = data["train loss"].to_list().index(train_min)
+        test_min_index = data["test loss"].to_list().index(test_min)
+
+        fig.add_trace(go.Scatter(x=[train_min_index],
+                                 y=[train_min],
+                                 mode='markers',
+                                 name='min value train',
+                                 text=['{}%'.format(int(train_min * 100))],
+                                 textposition="top center",
+                                 marker_color=color_train))
+        fig.add_trace(go.Scatter(x=[test_min_index],
+                                 y=[test_min],
+                                 mode='markers',
+                                 name='min value test',
+                                 text=['{}%'.format(int(test_min * 100))],
+                                 textposition="top center",
+                                 marker_color=color_test))
+        annotations = []
+        # Right annotations
+        annotations.append(dict(xref='paper', x=0.95, y=data["train loss"].to_list()[-1],
+                                xanchor='left', yanchor='middle',
+                                text='{}%'.format(int(data["train loss"].to_list()[-1] * 100)),
+                                font=dict(family='Arial',
+                                          size=16),
+                                showarrow=False))
+        annotations.append(dict(xref='paper', x=0.95, y=data["test loss"].to_list()[-1],
+                                xanchor='left', yanchor='middle',
+                                text='{}%'.format(int(data["test loss"].to_list()[-1] * 100)),
+                                font=dict(family='Arial',
+                                          size=16),
+                                showarrow=False))
+        fig.update_layout(annotations=annotations,
+                          title='Train vs Test loss',
                           xaxis_title='epochs',
                           yaxis_title='loss')
         if savefig:
@@ -518,6 +570,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.15'
+__version__ = '0.0.16'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
