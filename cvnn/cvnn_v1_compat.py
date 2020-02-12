@@ -635,27 +635,40 @@ class Cvnn:
                                          y=[train_min],
                                          mode='markers',
                                          name='min value train',
-                                         text=['{}%'.format(train_min)],
+                                         text=['{0:.2f}%'.format(train_min)],
                                          textposition="bottom center",
                                          marker_color=color_train))
                 fig.add_trace(go.Scatter(x=[test_min_index],
                                          y=[test_min],
                                          mode='markers',
                                          name='min value test',
-                                         text=['{}%'.format(test_min)],
+                                         text=['{0:.2f}%'.format(test_min)],
                                          textposition="bottom center",
                                          marker_color=color_test))
                 annotations = []
+                # Min annotations
+                annotations.append(dict(xref="x", yref="y", x=train_min_index, y=train_min,
+                                        xanchor='left', yanchor='middle',
+                                        text='{0:.2f}%'.format(train_min),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False, ay=-40))
+                annotations.append(dict(xref="x", yref="y", x=test_min_index, y=test_min,
+                                        xanchor='left', yanchor='middle',
+                                        text='{0:.2f}%'.format(test_min),
+                                        font=dict(family='Arial',
+                                                  size=14),
+                                        showarrow=False, ay=-40))
                 # Right annotations
                 annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["train_loss"][-1],
                                         xanchor='left', yanchor='middle',
-                                        text='{}%'.format(self.saved_loss_acc_vectors["train_loss"][-1]),
+                                        text='{0:.2f}%'.format(self.saved_loss_acc_vectors["train_loss"][-1]),
                                         font=dict(family='Arial',
                                                   size=16),
                                         showarrow=False))
                 annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["test_loss"][-1],
                                         xanchor='left', yanchor='middle',
-                                        text='{}%'.format(self.saved_loss_acc_vectors["test_loss"][-1]),
+                                        text='{0:.2f}%'.format(self.saved_loss_acc_vectors["test_loss"][-1]),
                                         font=dict(family='Arial',
                                                   size=16),
                                         showarrow=False))
@@ -743,6 +756,18 @@ class Cvnn:
                                          textposition="top center",
                                          marker_color=color_test))
                 annotations = []
+                annotations.append(dict(xref="x", yref="y", x=train_max_index, y=train_max,
+                                        xanchor='left', yanchor='middle',
+                                        text='{}%'.format(int(train_max * 100)),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False, ay=-40))
+                annotations.append(dict(xref="x", yref="y", x=test_max_index, y=test_max,
+                                        xanchor='left', yanchor='middle',
+                                        text='{}%'.format(int(test_max * 100)),
+                                        font=dict(family='Arial',
+                                                  size=14),
+                                        showarrow=False, ay=-40))
                 # Right annotations
                 annotations.append(dict(xref='paper', x=0.95, y=self.saved_loss_acc_vectors["train_acc"][-1],
                                         xanchor='left', yanchor='middle',
@@ -803,7 +828,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.14'
+__version__ = '0.1.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

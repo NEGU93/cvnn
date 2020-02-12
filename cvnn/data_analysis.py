@@ -367,27 +367,40 @@ def plot_loss(filename, savefig=True, showfig=True, library='plotly'):
                                  y=[train_min],
                                  mode='markers',
                                  name='min value train',
-                                 text=['{}%'.format(train_min)],
+                                 text=['{0:.2f}%'.format(train_min)],
                                  textposition="top center",
                                  marker_color=color_train))
         fig.add_trace(go.Scatter(x=[test_min_index],
                                  y=[test_min],
                                  mode='markers',
                                  name='min value test',
-                                 text=['{}%'.format(test_min)],
+                                 text=['{0:.2f}%'.format(test_min)],
                                  textposition="top center",
                                  marker_color=color_test))
         annotations = []
+        # Min annotations
+        annotations.append(dict(xref="x", yref="y", x=train_min_index, y=train_min,
+                                xanchor='left', yanchor='middle',
+                                text='{0:.2f}%'.format(train_min),
+                                font=dict(family='Arial',
+                                          size=14),
+                                showarrow=False, ay=-40))
+        annotations.append(dict(xref="x", yref="y", x=test_min_index, y=test_min,
+                                xanchor='left', yanchor='middle',
+                                text='{0:.2f}%'.format(test_min),
+                                font=dict(family='Arial',
+                                          size=14),
+                                showarrow=False, ay=-40))
         # Right annotations
         annotations.append(dict(xref='paper', x=0.95, y=data["train loss"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
-                                text='{}%'.format(data["train loss"].to_list()[-1]),
+                                text='{0:.2f}%'.format(data["train loss"].to_list()[-1]),
                                 font=dict(family='Arial',
                                           size=16),
                                 showarrow=False))
         annotations.append(dict(xref='paper', x=0.95, y=data["test loss"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
-                                text='{}%'.format(data["test loss"].to_list()[-1]),
+                                text='{0:.2f}%'.format(data["test loss"].to_list()[-1]),
                                 font=dict(family='Arial',
                                           size=16),
                                 showarrow=False))
@@ -474,6 +487,19 @@ def plot_acc(filename, savefig=True, showfig=True, library='plotly'):
                                  textposition="top center",
                                  marker_color=color_test))
         annotations = []
+        # Max annotations
+        annotations.append(dict(xref="x", yref="y", x=train_max_index, y=train_max,
+                                xanchor='left', yanchor='middle',
+                                text='{}%'.format(int(train_max * 100)),
+                                font=dict(family='Arial',
+                                          size=14),
+                                showarrow=False, ay=-40))
+        annotations.append(dict(xref="x", yref="y", x=test_max_index, y=test_max,
+                                xanchor='left', yanchor='middle',
+                                text='{}%'.format(int(test_max * 100)),
+                                font=dict(family='Arial',
+                                          size=14),
+                                showarrow=False, ay=-40))
         # Right annotations
         annotations.append(dict(xref='paper', x=0.95, y=data["train acc"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
@@ -570,6 +596,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
