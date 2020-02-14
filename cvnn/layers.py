@@ -75,7 +75,7 @@ class Layer(ABC):
             return out
 
     @abstractmethod
-    def apply_layer(self, input, output_options):
+    def apply_layer(self, input, output_options=None):
         pass
 
     @abstractmethod
@@ -84,7 +84,7 @@ class Layer(ABC):
 
 
 class Dense(Layer):
-    def apply_layer(self, input, output_options):
+    def apply_layer(self, input, output_options=None):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.compat.v1.name_scope("dense_layer_" + str(self.layer_number)):
             # Create weight matrix initialized randomely from N~(0, 0.01)
@@ -103,11 +103,12 @@ class Dense(Layer):
             else:
                 # This case should never happen. The constructor should already have checked this
                 sys.exit("ERROR: Dense::apply_layer: input_dtype not supported.")
-            if output_options.tensorboard:
-                tf.compat.v1.summary.histogram('real_weight_' + str(self.layer_number), tf.math.real(w))
-                tf.compat.v1.summary.histogram('imag_weight_' + str(self.layer_number), tf.math.imag(w))
-                tf.compat.v1.summary.histogram('real_bias_' + str(self.layer_number), tf.math.real(b))
-                tf.compat.v1.summary.histogram('imag_bias_' + str(self.layer_number), tf.math.imag(b))
+            if output_options is not None:
+                if output_options.tensorboard:
+                    tf.compat.v1.summary.histogram('real_weight_' + str(self.layer_number), tf.math.real(w))
+                    tf.compat.v1.summary.histogram('imag_weight_' + str(self.layer_number), tf.math.imag(w))
+                    tf.compat.v1.summary.histogram('real_bias_' + str(self.layer_number), tf.math.real(b))
+                    tf.compat.v1.summary.histogram('imag_bias_' + str(self.layer_number), tf.math.imag(b))
             out = tf.add(tf.matmul(input, w), b)
 
             if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != out.dtype:  # Case for real output / real labels
@@ -129,7 +130,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
