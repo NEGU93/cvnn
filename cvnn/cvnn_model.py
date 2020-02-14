@@ -25,7 +25,7 @@ class CvnnModel:
     -------------------------"""
 
     def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=False, display_freq=100):
-        # logging.getLogger('tensorflow').disabled = True
+        logging.getLogger('tensorflow').disabled = True
         logger = logging.getLogger(cvnn.__name__)
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(FORMATTER)
@@ -82,11 +82,11 @@ class CvnnModel:
     -----------------------"""
 
     def _single_train(self, x_train_batch, y_train_batch, learning_rate):
-        with tf.GradientTape() as t:
+        with tf.GradientTape() as tape:
             current_loss = self._apply_loss(y_train_batch, self.__call__(x_train_batch))    # Compute loss
-        # print(len(self.variables))
-        gradients = t.gradient(current_loss, self.variables)                                # Compute gradients
-        set_trace()
+            # print(len(self.variables))
+        gradients = tape.gradient(current_loss, self.variables)                                # Compute gradients
+        # set_trace()
         assert all(g is not None for g in gradients)
         # set_trace()
         for i, lay in enumerate(self.shape):
