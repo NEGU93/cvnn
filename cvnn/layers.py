@@ -27,14 +27,10 @@ supported_dtypes = (np.complex64, np.float32)
 class Layer(ABC):
     _layer_number = count(0)        # Used to count the number of layers
 
-    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
+    def __init__(self, input_size, output_size, input_dtype=np.complex64, output_dtype=np.complex64):
         self.input_size = input_size
         self.output_size = output_size
         self.layer_number = next(self._layer_number)        # Know it's own number
-        self.activation = activation
-        self.weight_initializer = weight_initializer
-        self.bias_initializer = bias_initializer
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             sys.exit("Layer::__init__: if input dtype is real output cannot be complex")
@@ -75,7 +71,7 @@ class Layer(ABC):
             return out
 
     @abstractmethod
-    def apply_layer(self, input, output_options=None):
+    def apply_layer(self, input):
         pass
 
     @abstractmethod
@@ -84,38 +80,36 @@ class Layer(ABC):
 
 
 class Dense(Layer):
-    def apply_layer(self, input, output_options=None):
-        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        with tf.compat.v1.name_scope("dense_layer_" + str(self.layer_number)):
-            # Create weight matrix initialized randomely from N~(0, 0.01)
-            # TODO: be able to choose the initializer
-            if self.input_dtype == np.complex64:    # Complex layer
-                w = tf.Variable(
-                    tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                               self.weight_initializer()(shape=(self.input_size, self.output_size))),
-                    name="weights" + str(self.layer_number))
-                b = tf.Variable(tf.complex(tf.zeros(self.output_size),
-                                tf.zeros(self.output_size)), name="bias" + str(self.layer_number))
-            elif self.input_dtype == np.float32:       # Real Layer
-                w = tf.Variable(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                                name="weights" + str(self.layer_number))
-                b = tf.Variable(tf.zeros(self.output_size), name="bias" + str(self.layer_number))
-            else:
-                # This case should never happen. The constructor should already have checked this
-                sys.exit("ERROR: Dense::apply_layer: input_dtype not supported.")
-            if output_options is not None:
-                if output_options.tensorboard:
-                    tf.compat.v1.summary.histogram('real_weight_' + str(self.layer_number), tf.math.real(w))
-                    tf.compat.v1.summary.histogram('imag_weight_' + str(self.layer_number), tf.math.imag(w))
-                    tf.compat.v1.summary.histogram('real_bias_' + str(self.layer_number), tf.math.real(b))
-                    tf.compat.v1.summary.histogram('imag_bias_' + str(self.layer_number), tf.math.imag(b))
-            out = tf.add(tf.matmul(input, w), b)
+    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
+        super(Dense, self).__init__(input_size, output_size, input_dtype, output_dtype)
+        self.activation = activation
+        weight_initializer = weight_initializer
+        bias_initializer = bias_initializer
+        if self.input_dtype == np.complex64:  # Complex layer
+            self.w = tf.Variable(
+                tf.complex(weight_initializer()(shape=(self.input_size, self.output_size)),
+                           weight_initializer()(shape=(self.input_size, self.output_size))),
+                name="weights" + str(self.layer_number))
+            self.b = tf.Variable(tf.complex(tf.zeros(self.output_size),
+                                            tf.zeros(self.output_size)), name="bias" + str(self.layer_number))
+        elif self.input_dtype == np.float32:  # Real Layer
+            self.w = tf.Variable(weight_initializer()(shape=(self.input_size, self.output_size)),
+                                 name="weights" + str(self.layer_number))
+            self.b = tf.Variable(tf.zeros(self.output_size), name="bias" + str(self.layer_number))
+        else:
+            # This case should never happen. The constructor should already have checked this
+            sys.exit("ERROR: Dense::apply_layer: input_dtype not supported.")
 
-            if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != out.dtype:  # Case for real output / real labels
-                assert self.output_dtype == np.float32 and out.dtype == tf.dtypes.complex64
-                print("WARNING:Dense::apply_layer: Automatically casting output as abs because output should be real")
-                out = tf.abs(out)  # TODO: Shall I do abs or what?
-            return self._apply_activation(self.activation, out), [w, b]
+    def apply_layer(self, input):
+        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
+        if tf.dtypes.as_dtype(input.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
+            print("WARNING: Input dtype " + str(input.dtype) + " is not as expected ("
+                  + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
+        out = tf.add(tf.matmul(tf.cast(input, self.input_dtype), self.w), self.b)
+        if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != out.dtype:  # Case for real output / real labels
+            print("WARNING:Dense::apply_layer: Automatically casting output")
+        return self._apply_activation(self.activation, tf.cast(out, self.output_dtype)), [self.w, self.b]
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
@@ -130,7 +124,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
