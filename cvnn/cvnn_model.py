@@ -3,17 +3,13 @@ import sys
 import logging
 import numpy as np
 import tensorflow as tf
+import cvnn
 import cvnn.layers as layers
 import cvnn.data_processing as dp
 from cvnn.utils import normalize, randomize, get_next_batch
 from pdb import set_trace
 
-logging_dispatcher = {
-    "DEBUG": "0",
-    "INFO": "1",
-    "WARNING": "2",
-    "ERROR": "3"
-}
+FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
 
 
 class OutputOpts:
@@ -28,20 +24,29 @@ class CvnnModel:
     # Constructor and Stuff
     -------------------------"""
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=False, logging_level="ERROR"):
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = logging_dispatcher[logging_level]
-        logging.getLogger('tensorflow').disabled = True
+    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=False, display_freq=100):
+        # logging.getLogger('tensorflow').disabled = True
+        logger = logging.getLogger(cvnn.__name__)
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(FORMATTER)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(console_handler)
+        self.logger = logger
+
         self.name = name
         self.shape = shape
         self.variables = []
         self.loss_fun = loss_fun
-        self.output_options = OutputOpts(tensorboard, verbose)
+        self.output_options = OutputOpts(tensorboard, verbose, display_freq)
 
     def __call__(self, x):
         out = x
+        self.variables.clear()
         for i in range(len(self.shape)):  # Apply all the layers
             out, variable = self.shape[i].apply_layer(out)
             self.variables.extend(variable)
+            # set_trace()
+        # self.variables = variables
         y_out = out     # tf.compat.v1.identity(out, name="y_out")
         return y_out
 
@@ -49,9 +54,13 @@ class CvnnModel:
         # TODO: don't like the fact that I have to give self to this and not to apply_activation
         if callable(self.loss_fun):
             if self.loss_fun.__module__ != 'tensorflow.python.keras.losses':
-                sys.exit("Cvnn::_apply_loss: Unknown loss function.\n\t "
-                         "Can only use losses declared on losses.py or tensorflow.python.keras.losses")
+                self.logger.error("Unknown loss function.\n\t "
+                                  "Can only use losses declared on tensorflow.python.keras.losses")
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
+
+    """-------------------------
+    # Predict models and results
+    -------------------------"""
 
     def predict(self, x):
         y_out = self.__call__(x)
@@ -68,16 +77,25 @@ class CvnnModel:
     def evaluate(self, x_test, y_true):
         return self.evaluate_loss(x_test, y_true), self.evaluate_accuracy(x_test, y_true)
 
+    """-----------------------
+    #          Train 
+    -----------------------"""
+
     def _single_train(self, x_train_batch, y_train_batch, learning_rate):
         with tf.GradientTape() as t:
             current_loss = self._apply_loss(y_train_batch, self.__call__(x_train_batch))    # Compute loss
+        # print(len(self.variables))
         gradients = t.gradient(current_loss, self.variables)                                # Compute gradients
-        for i, var in enumerate(self.variables):
-            tf.compat.v1.assign(var, var - learning_rate * gradients[i])                    # Change values
+        set_trace()
+        assert all(g is not None for g in gradients)
+        # set_trace()
+        for i, lay in enumerate(self.shape):
+            # tf.compat.v1.assign(var, var - learning_rate*gradients[i])  # Change values
+            lay.update_weights(learning_rate*gradients[2*i], learning_rate*gradients[2*i+1])
 
-    def fit(self, x_train, y_train, learning_rate=0.01, batch_size=64, epochs=5, normal=True):
+    def fit(self, x_train, y_train, learning_rate=0.01, epochs=10, batch_size=100, normal=True):
         if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
-            sys.exit("Cvnn::train(): Batch size was bigger than total amount of examples")
+            self.logger.error("Batch size was bigger than total amount of examples")
         if normal:
             x_train = normalize(x_train)  # TODO: This normalize could be a bit different for each and be bad.
 
@@ -115,10 +133,10 @@ if __name__ == '__main__':
     shape = [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
                           input_dtype=np.complex64, output_dtype=np.complex64),
              layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
-                          input_dtype=np.complex64, output_dtype=np.complex64)]
+                          input_dtype=np.complex64, output_dtype=np.float32)]
     model = CvnnModel("Testing CVNN", shape, tf.keras.losses.categorical_crossentropy)
     print(model.evaluate(x_test.astype(np.complex64), y_test))
-    model.fit(x_train.astype(np.complex64), y_train, learning_rate=0.001, batch_size=100, epochs=10, normal=True)
+    model.fit(x_train.astype(np.complex64), y_train, learning_rate=0.1, batch_size=100, epochs=10, normal=True)
     print(model.evaluate(x_test.astype(np.complex64), y_test))
 
 
