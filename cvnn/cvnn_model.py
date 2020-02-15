@@ -125,18 +125,23 @@ if __name__ == '__main__':
     n = 100
     num_classes = 2
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, 'hilbert')
+    cdtype = np.complex128
+    if cdtype == np.complex64:
+        rdtype = np.float32
+    else:
+        rdtype = np.float64
 
     input_size = np.shape(x_train)[1]
     hidden_size = 10
     output_size = np.shape(y_train)[1]
 
     shape = [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
-                          input_dtype=np.complex64, output_dtype=np.complex64),
+                          input_dtype=cdtype, output_dtype=cdtype),
              layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
-                          input_dtype=np.complex64, output_dtype=np.float32)]
+                          input_dtype=cdtype, output_dtype=rdtype)]
     model = CvnnModel("Testing CVNN", shape, tf.keras.losses.categorical_crossentropy)
-    print(model.evaluate(x_test.astype(np.complex64), y_test))
-    model.fit(x_train.astype(np.complex64), y_train, learning_rate=0.1, batch_size=100, epochs=10, normal=True)
-    print(model.evaluate(x_test.astype(np.complex64), y_test))
+    print(model.evaluate(x_test.astype(cdtype), y_test))
+    model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10, normal=True)
+    print(model.evaluate(x_test.astype(cdtype), y_test))
 
 
