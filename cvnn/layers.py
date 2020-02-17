@@ -122,8 +122,15 @@ class ComplexDense(ComplexLayer):
         return out_str
 
     def call(self, inputs, **kwargs):
-        ret, _ = self.call_v1(inputs)
-        return ret
+        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
+        if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
+            self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
+                                + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
+        out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
+        y_out = self._apply_activation(self.activation, out)
+        if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
+            self.logger.warning("Dense::apply_layer: Automatically casting output")
+        return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))
 
     def call_v1(self, inputs):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
@@ -141,7 +148,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
