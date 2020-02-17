@@ -277,7 +277,7 @@ class Cvnn:
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
         # Check all the data is a Layer object
-        if not all([isinstance(layer, tf.keras.layers.Layer) or isinstance(layer, layers.Layer) for layer in shape]):
+        if not all([isinstance(layer, tf.keras.layers.Layer) or isinstance(layer, layers.ComplexLayer) for layer in shape]):
             sys.exit("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
         # Define placeholders
         self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[0].input_dtype),
@@ -835,7 +835,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.18'
+__version__ = '0.1.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
