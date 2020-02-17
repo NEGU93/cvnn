@@ -38,12 +38,14 @@ class CvnnModel:
         self.variables = []
         self.loss_fun = loss_fun
         self.output_options = OutputOpts(tensorboard, verbose, display_freq)
+        if not tf.executing_eagerly():
+            logging.error("CvnnModel::__init__: TF was not executing eagerly")
 
     def __call__(self, x):
         out = x
         self.variables.clear()
         for i in range(len(self.shape)):  # Apply all the layers
-            out, variable = self.shape[i].apply_layer(out)
+            out, variable = self.shape[i].call(out, )
             self.variables.extend(variable)
             # set_trace()
         # self.variables = variables
@@ -67,6 +69,7 @@ class CvnnModel:
         return tf.math.argmax(y_out, 1)
 
     def evaluate_loss(self, x_test, y_true):
+        tf.executing_eagerly()
         return self._apply_loss(y_true, self.__call__(x_test)).numpy()
 
     def evaluate_accuracy(self, x_test, y_true):
@@ -89,9 +92,13 @@ class CvnnModel:
         # set_trace()
         assert all(g is not None for g in gradients)
         # set_trace()
-        for i, lay in enumerate(self.shape):
+        # for i, lay in enumerate(self.shape):
+        # set_trace()
+        for i, var in enumerate(self.variables):
             # tf.compat.v1.assign(var, var - learning_rate*gradients[i])  # Change values
-            lay.update_weights(learning_rate*gradients[2*i], learning_rate*gradients[2*i+1])
+            # lay.update_weights(learning_rate*gradients[2*i], learning_rate*gradients[2*i+1])
+            tf.compat.v1.assign(var, var - learning_rate * gradients[i])
+        # set_trace()
 
     def fit(self, x_train, y_train, learning_rate=0.01, epochs=10, batch_size=100, normal=True):
         if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning

@@ -81,6 +81,7 @@ class Cvnn:
         :param automatic_restore: True if network should search for saved models (will look for the newest saved model)
         """
         tf.compat.v1.disable_eager_execution()  # This class works as a graph model so no eager compatible
+        tf.compat.v1.reset_default_graph()
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = logging_dispatcher[logging_level]
         # tf.autograph.set_verbosity(logging.FATAL)       # TODO: not working :S
         # Save parameters of the constructor
@@ -106,6 +107,8 @@ class Cvnn:
 
         # Launch the graph in a session.
         # self.sess = tf.compat.v1.Session()
+        self.sess = tf.compat.v1.get_default_session()
+        self.g = tf.compat.v1.get_default_graph()
         self.restored_meta = False
         if automatic_restore:
             self.restore_graph_from_meta()
@@ -169,7 +172,8 @@ class Cvnn:
             elif net_type == np.float32:
                 file.write("Real Network\n")
             else:
-                print(bcolors.WARNING + "Warning:cvnn::_append_graph_structure: Unknown network type " + net_type.__name__)
+                print(bcolors.WARNING + "Warning:cvnn::_append_graph_structure: Unknown network type "
+                      + net_type.__name__)
                 file.write("Unknown network type\n")
             for i in range(len(shape)):
                 if i < len(shape) - 1:
@@ -272,7 +276,8 @@ class Cvnn:
     def _create_graph_from_shape(self, shape):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
-        if not all([isinstance(layer, layers.Layer) for layer in shape]):  # Check all the data is a Layer object
+        # Check all the data is a Layer object
+        if not all([isinstance(layer, tf.keras.layers.Layer) or isinstance(layer, layers.Layer) for layer in shape]):
             sys.exit("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
         # Define placeholders
         self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[0].input_dtype),
@@ -284,9 +289,9 @@ class Cvnn:
         with tf.compat.v1.name_scope("forward_phase"):
             for i in range(len(shape)):  # Apply all the layers
                 if i == 0:  # For the first layer the input is X
-                    out, variable = shape[i].apply_layer(self.X, self.output_options)
+                    out, variable = shape[i].call(self.X)
                 else:
-                    out, variable = shape[i].apply_layer(out, self.output_options)
+                    out, variable = shape[i].call(out)
                 variables.extend(variable)
             y_out = tf.compat.v1.identity(out, name="y_out")
         self._append_graph_structure(shape)  # Append the graph information to the metadata.txt file
@@ -311,45 +316,47 @@ class Cvnn:
             print(bcolors.WARNING + "Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
             return None
         # Reset latest graph
-        tf.compat.v1.reset_default_graph()
+        # tf.compat.v1.reset_default_graph()
+        # TODO: check this function was only called once.
 
         # Creates the feedforward network
-        self.y_out, variables = self._create_graph_from_shape(shape)
-        # Defines the loss function
-        self.loss = self._apply_loss(loss_func)
+        with self.g.as_default():
+            self.y_out, variables = self._create_graph_from_shape(shape)
+            # Defines the loss function
+            self.loss = self._apply_loss(loss_func)
 
-        with tf.compat.v1.name_scope("acc_scope"):
-            y_prediction = tf.math.argmax(self.y_out, 1)
-            y_labels = tf.math.argmax(self.y, 1)
-            self.acc = tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_prediction, y_labels), tf.float64))
+            with tf.compat.v1.name_scope("acc_scope"):
+                y_prediction = tf.math.argmax(self.y_out, 1)
+                y_labels = tf.math.argmax(self.y, 1)
+                self.acc = tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_prediction, y_labels), tf.float64))
 
-        # Calculate gradients
-        # with tf.compat.v1.name_scope("gradients") as scope:
-        gradients = tf.gradients(ys=self.loss, xs=variables)
-        # Defines a training operator for each variable
-        self.training_op = []
-        with tf.compat.v1.variable_scope("learning_rule"):
-            # lr_const = tf.constant(self.learning_rate, name="learning_rate")
-            for i, var in enumerate(variables):
-                # Only gradient descent supported for the moment
-                self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
-        # assert len(self.training_op) == len(gradients)
+            # Calculate gradients
+            # with tf.compat.v1.name_scope("gradients") as scope:
+            gradients = tf.gradients(ys=self.loss, xs=variables)
+            # Defines a training operator for each variable
+            self.training_op = []
+            with tf.compat.v1.variable_scope("learning_rule"):
+                # lr_const = tf.constant(self.learning_rate, name="learning_rate")
+                for i, var in enumerate(variables):
+                    # Only gradient descent supported for the moment
+                    self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
+            # assert len(self.training_op) == len(gradients)
 
-        # logs to be saved with tensorboard
-        # TODO: add more info like for ex weights
-        if self.output_options.tensorboard:
-            self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
-            loss_summary = tf.compat.v1.summary.scalar(name='Loss', tensor=self.loss)
-            acc_summary = tf.compat.v1.summary.scalar(name='Accuracy (%)', tensor=self.acc)
-            self.merged = tf.compat.v1.summary.merge_all()
+            # logs to be saved with tensorboard
+            # TODO: add more info like for ex weights
+            if self.output_options.tensorboard:
+                self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
+                loss_summary = tf.compat.v1.summary.scalar(name='Loss', tensor=self.loss)
+                acc_summary = tf.compat.v1.summary.scalar(name='Accuracy (%)', tensor=self.acc)
+                self.merged = tf.compat.v1.summary.merge_all()
 
-        self.init = tf.compat.v1.global_variables_initializer()
-        self.sess = tf.compat.v1.Session()
+            self.init = tf.compat.v1.global_variables_initializer()
+            self.sess = tf.compat.v1.Session()
 
-        # create saver object of the models weights
-        self.saver = tf.compat.v1.train.Saver()
-        # for i, var in enumerate(self.saver._var_list):
-        #     print('Var {}: {}'.format(i, var))
+            # create saver object of the models weights
+            self.saver = tf.compat.v1.train.Saver()
+            # for i, var in enumerate(self.saver._var_list):
+            #     print('Var {}: {}'.format(i, var))
 
     # Others
     def restore_graph_from_meta(self, latest_file=None):
@@ -828,7 +835,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.17'
+__version__ = '0.1.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
