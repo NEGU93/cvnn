@@ -83,7 +83,7 @@ class Layer(ABC):
         pass
 
 
-class ComplexDense(Layer):
+class Dense(Layer):
     def apply_layer(self, input, output_options):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.compat.v1.name_scope("dense_layer_" + str(self.layer_number)):
@@ -129,7 +129,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

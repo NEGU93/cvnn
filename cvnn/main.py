@@ -61,14 +61,14 @@ def do_one_iter(x_train, y_train, x_train_real, x_test, y_test, x_test_real, nam
     hidden_size = 10
     output_size = np.shape(y_train)[1]
 
-    shape_cvnn = [layers.ComplexDense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
-                                      input_dtype=np.complex64, output_dtype=np.complex64),
-                  layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
-                                      input_dtype=np.complex64, output_dtype=np.float32)]
-    shape_rvnn = [layers.ComplexDense(input_size=2 * input_size, output_size=2 * hidden_size, activation='cart_sigmoid',
-                                      input_dtype=np.float32, output_dtype=np.float32),
-                  layers.ComplexDense(input_size=2 * hidden_size, output_size=output_size, activation='cart_softmax_real',
-                                      input_dtype=np.float32, output_dtype=np.float32)]
+    shape_cvnn = [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
+                               input_dtype=np.complex64, output_dtype=np.complex64),
+                  layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
+                               input_dtype=np.complex64, output_dtype=np.float32)]
+    shape_rvnn = [layers.Dense(input_size=2 * input_size, output_size=2 * hidden_size, activation='cart_sigmoid',
+                               input_dtype=np.float32, output_dtype=np.float32),
+                  layers.Dense(input_size=2 * hidden_size, output_size=output_size, activation='cart_softmax_real',
+                               input_dtype=np.float32, output_dtype=np.float32)]
     name = "_1HL_for_" + name + "_noise"
 
     auto_restore = False
@@ -120,6 +120,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
