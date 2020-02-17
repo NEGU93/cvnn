@@ -122,6 +122,10 @@ class ComplexDense(ComplexLayer):
         return out_str
 
     def call(self, inputs, **kwargs):
+        ret, _ = self.call_v1(inputs)
+        return ret
+
+    def call_v1(self, inputs):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
             self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
@@ -137,7 +141,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

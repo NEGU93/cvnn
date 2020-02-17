@@ -277,7 +277,7 @@ class Cvnn:
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
         # Check all the data is a Layer object
-        if not all([isinstance(layer, tf.keras.layers.Layer) or isinstance(layer, layers.ComplexLayer) for layer in shape]):
+        if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
             sys.exit("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
         # Define placeholders
         self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[0].input_dtype),
@@ -289,9 +289,9 @@ class Cvnn:
         with tf.compat.v1.name_scope("forward_phase"):
             for i in range(len(shape)):  # Apply all the layers
                 if i == 0:  # For the first layer the input is X
-                    out, variable = shape[i].call(self.X)
+                    out, variable = shape[i].call_v1(self.X, )
                 else:
-                    out, variable = shape[i].call(out)
+                    out, variable = shape[i].call_v1(out, )
                 variables.extend(variable)
             y_out = tf.compat.v1.identity(out, name="y_out")
         self._append_graph_structure(shape)  # Append the graph information to the metadata.txt file
@@ -835,7 +835,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.1.19'
+__version__ = '0.1.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

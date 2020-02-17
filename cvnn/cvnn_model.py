@@ -19,7 +19,7 @@ class OutputOpts:
         self.display_freq = display_freq
 
 
-class CvnnModel:
+class CvnnModel():
     """-------------------------
     # Constructor and Stuff
     -------------------------"""
@@ -43,14 +43,18 @@ class CvnnModel:
 
     def __call__(self, x):
         out = x
+        # Check all the data is a Layer object
+        if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
+            self.logger.error("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
+            sys.exit(-1)
         self.variables.clear()
         for i in range(len(self.shape)):  # Apply all the layers
             out, variable = self.shape[i].call(out, )
             self.variables.extend(variable)
             # set_trace()
         # self.variables = variables
-        y_out = out     # tf.compat.v1.identity(out, name="y_out")
-        return y_out
+        # y_out = tf.compat.v1.identity(out, name="y_out")
+        return out
 
     def _apply_loss(self, y_true, y_pred):
         # TODO: don't like the fact that I have to give self to this and not to apply_activation
@@ -64,29 +68,33 @@ class CvnnModel:
     # Predict models and results
     -------------------------"""
 
+    def call(self, x):
+        return self.__call__(x)
+
     def predict(self, x):
         y_out = self.__call__(x)
         return tf.math.argmax(y_out, 1)
 
     def evaluate_loss(self, x_test, y_true):
         tf.executing_eagerly()
-        return self._apply_loss(y_true, self.__call__(x_test)).numpy()
+        return self._apply_loss(y_true, self.__call__(x_test, )).numpy()
 
     def evaluate_accuracy(self, x_test, y_true):
         y_pred = self.predict(x_test)
         y_labels = tf.math.argmax(y_true, 1)
         return tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_pred, y_labels), tf.float64)).numpy()
 
-    def evaluate(self, x_test, y_true):
+    def evaluate(self, x_test, y_true, **kwargs):
         return self.evaluate_loss(x_test, y_true), self.evaluate_accuracy(x_test, y_true)
 
     """-----------------------
     #          Train 
     -----------------------"""
 
-    def _single_train(self, x_train_batch, y_train_batch, learning_rate):
+    @tf.function
+    def train_step(self, x_train_batch, y_train_batch, learning_rate):
         with tf.GradientTape() as tape:
-            current_loss = self._apply_loss(y_train_batch, self.__call__(x_train_batch))    # Compute loss
+            current_loss = self._apply_loss(y_train_batch, self.call(x_train_batch, ))    # Compute loss
             # print(len(self.variables))
         gradients = tape.gradient(current_loss, self.variables)                                # Compute gradients
         # set_trace()
@@ -123,7 +131,7 @@ class CvnnModel:
                     current_loss, current_acc = self.evaluate(x_batch, y_batch)
                     print("Epoch: {0}/{1}; batch {2}/{3}; loss: {4:.4f} accuracy: {5:.2f} %"
                           .format(epoch, epochs, iteration, num_tr_iter, current_loss, current_acc*100))
-                self._single_train(x_batch, y_batch, learning_rate)
+                self.train_step(x_batch, y_batch, learning_rate)
 
 
 if __name__ == '__main__':
@@ -142,13 +150,19 @@ if __name__ == '__main__':
     hidden_size = 10
     output_size = np.shape(y_train)[1]
 
-    shape = [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
-                          input_dtype=cdtype, output_dtype=cdtype),
-             layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
-                          input_dtype=cdtype, output_dtype=rdtype)]
+    shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
+                                 input_dtype=cdtype, output_dtype=cdtype),
+             layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
+                                 input_dtype=cdtype, output_dtype=rdtype)]
     model = CvnnModel("Testing CVNN", shape, tf.keras.losses.categorical_crossentropy)
-    print(model.evaluate(x_test.astype(cdtype), y_test))
+
+    train_loss = tf.keras.metrics.Mean(name='train_loss')
+    train_accuracy = tf.keras.metrics.CategoricalAccuracy(name='train_accuracy')
+    test_loss = tf.keras.metrics.Mean(name='test_loss')
+    test_accuracy = tf.keras.metrics.CategoricalAccuracy(name='test_accuracy')
+
+    print(model.evaluate(x_test.astype(cdtype), y_test, ))
     model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10, normal=True)
-    print(model.evaluate(x_test.astype(cdtype), y_test))
+    print(model.evaluate(x_test.astype(cdtype), y_test, ))
 
 
