@@ -107,8 +107,8 @@ class Cvnn:
 
         # Launch the graph in a session.
         # self.sess = tf.compat.v1.Session()
-        self.sess = tf.compat.v1.get_default_session()
-        self.g = tf.compat.v1.get_default_graph()
+        # self.sess = tf.compat.v1.get_default_session()
+        # self.g = tf.compat.v1.get_default_graph()
         self.restored_meta = False
         if automatic_restore:
             self.restore_graph_from_meta()
@@ -320,43 +320,43 @@ class Cvnn:
         # TODO: check this function was only called once.
 
         # Creates the feedforward network
-        with self.g.as_default():
-            self.y_out, variables = self._create_graph_from_shape(shape)
-            # Defines the loss function
-            self.loss = self._apply_loss(loss_func)
+        # with self.g.as_default():
+        self.y_out, variables = self._create_graph_from_shape(shape)
+        # Defines the loss function
+        self.loss = self._apply_loss(loss_func)
 
-            with tf.compat.v1.name_scope("acc_scope"):
-                y_prediction = tf.math.argmax(self.y_out, 1)
-                y_labels = tf.math.argmax(self.y, 1)
-                self.acc = tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_prediction, y_labels), tf.float64))
+        with tf.compat.v1.name_scope("acc_scope"):
+            y_prediction = tf.math.argmax(self.y_out, 1)
+            y_labels = tf.math.argmax(self.y, 1)
+            self.acc = tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_prediction, y_labels), tf.float64))
 
-            # Calculate gradients
-            # with tf.compat.v1.name_scope("gradients") as scope:
-            gradients = tf.gradients(ys=self.loss, xs=variables)
-            # Defines a training operator for each variable
-            self.training_op = []
-            with tf.compat.v1.variable_scope("learning_rule"):
-                # lr_const = tf.constant(self.learning_rate, name="learning_rate")
-                for i, var in enumerate(variables):
-                    # Only gradient descent supported for the moment
-                    self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
-            # assert len(self.training_op) == len(gradients)
+        # Calculate gradients
+        # with tf.compat.v1.name_scope("gradients") as scope:
+        gradients = tf.gradients(ys=self.loss, xs=variables)
+        # Defines a training operator for each variable
+        self.training_op = []
+        with tf.compat.v1.variable_scope("learning_rule"):
+            # lr_const = tf.constant(self.learning_rate, name="learning_rate")
+            for i, var in enumerate(variables):
+                # Only gradient descent supported for the moment
+                self.training_op.append(tf.compat.v1.assign(var, var - self.learning_rate * gradients[i]))
+        # assert len(self.training_op) == len(gradients)
 
-            # logs to be saved with tensorboard
-            # TODO: add more info like for ex weights
-            if self.output_options.tensorboard:
-                self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
-                loss_summary = tf.compat.v1.summary.scalar(name='Loss', tensor=self.loss)
-                acc_summary = tf.compat.v1.summary.scalar(name='Accuracy (%)', tensor=self.acc)
-                self.merged = tf.compat.v1.summary.merge_all()
+        # logs to be saved with tensorboard
+        # TODO: add more info like for ex weights
+        if self.output_options.tensorboard:
+            self.writer = tf.compat.v1.summary.FileWriter(self.tbdir, tf.compat.v1.get_default_graph())
+            loss_summary = tf.compat.v1.summary.scalar(name='Loss', tensor=self.loss)
+            acc_summary = tf.compat.v1.summary.scalar(name='Accuracy (%)', tensor=self.acc)
+            self.merged = tf.compat.v1.summary.merge_all()
 
-            self.init = tf.compat.v1.global_variables_initializer()
-            self.sess = tf.compat.v1.Session()
+        self.init = tf.compat.v1.global_variables_initializer()
+        self.sess = tf.compat.v1.Session()
 
-            # create saver object of the models weights
-            self.saver = tf.compat.v1.train.Saver()
-            # for i, var in enumerate(self.saver._var_list):
-            #     print('Var {}: {}'.format(i, var))
+        # create saver object of the models weights
+        self.saver = tf.compat.v1.train.Saver()
+        # for i, var in enumerate(self.saver._var_list):
+        #     print('Var {}: {}'.format(i, var))
 
     # Others
     def restore_graph_from_meta(self, latest_file=None):
