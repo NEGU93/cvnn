@@ -148,11 +148,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-<<<<<<< HEAD
-__version__ = '0.0.8'
-=======
-__version__ = '0.0.13'
->>>>>>> tf-2-compat
+__version__ = '0.0.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
