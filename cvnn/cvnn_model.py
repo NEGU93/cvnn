@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import logging
 import numpy as np
 from itertools import count     # To count the number of times fit is called
@@ -22,6 +23,8 @@ class CvnnModel:  # (Model)
     -------------------------"""
 
     def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
+        pattern = re.compile("^[2-9][0-9]*")
+        assert pattern.match(tf.__version__)    # Check TF version is at least 2
         # super(CvnnModel, self).__init__()
         self.name = name
         self.shape = shape
@@ -275,7 +278,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.5'
+__version__ = '0.2.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
