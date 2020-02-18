@@ -84,7 +84,6 @@ class ComplexLayer(layers.Layer, ABC):
 
 
 class ComplexDense(ComplexLayer):
-    _layer_number = count(0)  # Used to count the number of layers
 
     def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
                  weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
@@ -148,7 +147,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.14'
+__version__ = '0.0.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

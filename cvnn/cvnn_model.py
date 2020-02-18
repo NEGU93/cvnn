@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import numpy as np
+from itertools import count     # To count the number of times fit is called
 import tensorflow as tf
 import cvnn
 import cvnn.layers as layers
@@ -14,14 +15,8 @@ from tensorflow.keras import Model
 FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
 
 
-class OutputOpts:
-    def __init__(self, tensorboard, verbose, display_freq=100):
-        self.tensorboard = tensorboard
-        self.verbose = verbose
-        self.display_freq = display_freq
-
-
 class CvnnModel:  # (Model)
+    _fit_count = count(0)  # Used to count the number of layers
     """-------------------------
     # Constructor and Stuff
     -------------------------"""
@@ -31,8 +26,7 @@ class CvnnModel:  # (Model)
         self.name = name
         self.shape = shape
         self.loss_fun = loss_fun
-        if verbose:
-            self.print_summary()
+        self.epochs_done = 0
         if not tf.executing_eagerly():
             # tf.compat.v1.enable_eager_execution()
             logging.error("CvnnModel::__init__: TF was not executing eagerly")
@@ -47,7 +41,7 @@ class CvnnModel:  # (Model)
         logger.addHandler(console_handler)
         self.logger = logger
 
-        # Folder for saving information
+        # Folder management for logs
         self.now = datetime.today()
         project_path = os.path.abspath("./")
         self.root_dir = project_path + "/log/" \
@@ -57,7 +51,8 @@ class CvnnModel:  # (Model)
                         + "/run-" + self.now.time().strftime("%Hh%Mm%S") + "/"
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
-        self.save_metadata()
+
+        self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
 
     def call(self, x):
         # Check all the data is a Layer object
@@ -101,7 +96,7 @@ class CvnnModel:  # (Model)
 
     # Add '@tf.function' to accelerate the code by much!
     @tf.function
-    def train_step(self, x_train_batch, y_train_batch, learning_rate):
+    def _train_step(self, x_train_batch, y_train_batch, learning_rate):
         with tf.GradientTape() as tape:
             current_loss = self._apply_loss(y_train_batch, self.call(x_train_batch))  # Compute loss
         variables = []
@@ -113,14 +108,21 @@ class CvnnModel:  # (Model)
             val.assign(val - learning_rate * gradients[i])
 
     def fit(self, x_train, y_train, learning_rate=0.01, epochs=10, batch_size=100,
-            verbose=True, display_freq=100):
+            verbose=True, display_freq=100, fast_mode=False, save_to_file=True):
+        fit_count = next(self._fit_count)        # Know it's own number
+        save_fit_filename = None
+        if save_to_file:
+            save_fit_filename = "fit_" + str(fit_count) + ".txt"
         if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
             self.logger.error("Batch size was bigger than total amount of examples")
 
         num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
-        if verbose:
-            print("Starting training...")
+        self._manage_string("Starting training...\n" + self._get_str_evaluate(x_train, y_train),
+                            verbose, save_fit_filename)
+        epochs_done = self.epochs_done
+
         for epoch in range(epochs):
+            self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
             x_train, y_train = randomize(x_train, y_train)
             for iteration in range(num_tr_iter):
@@ -129,15 +131,48 @@ class CvnnModel:  # (Model)
                 end = (iteration + 1) * batch_size
                 x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
                 # Run optimization op (backpropagation)
-                if verbose and (epoch * batch_size + iteration) % display_freq == 0:
-                    current_loss, current_acc = self.evaluate(x_batch, y_batch)
-                    print("Epoch: {0}/{1}; batch {2}/{3}; loss: {4:.4f} accuracy: {5:.2f} %"
-                          .format(epoch, epochs, iteration, num_tr_iter, current_loss, current_acc * 100))
-                self.train_step(x_batch, y_batch, learning_rate)
+                if not fast_mode:
+                    if (self.epochs_done * batch_size + iteration) % display_freq == 0:
+                        epoch_str = self._get_str_current_epoch(x_batch, y_batch,
+                                                                self.epochs_done, epochs_done + epochs,
+                                                                iteration, num_tr_iter)
+                        self._manage_string(epoch_str, verbose, save_fit_filename)
+                self._train_step(x_batch, y_batch, learning_rate)
+        # After epochs
+        self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train),
+                            verbose, save_fit_filename)
 
     """
-        Saving and Summary
+        Managing strings
     """
+
+    def _get_str_current_epoch(self, x, y, epoch, epochs, iteration, num_tr_iter):
+        current_loss, current_acc = self.evaluate(x, y)
+        return "Epoch: {0}/{1}; batch {2}/{3}; loss: {4:.4f} accuracy: {5:.2f} %\n".format(epoch, epochs, iteration,
+                                                                                         num_tr_iter, current_loss,
+                                                                                         current_acc * 100)
+
+    def _manage_string(self, string, verbose=False, filename=None, mode="a"):
+        if verbose:
+            print(string, end='')
+        if filename is not None:
+            filename = self.root_dir + filename
+            try:
+                with open(filename, mode) as file:
+                    file.write(string)
+            except FileExistsError:  # TODO: Check if this is the actual error
+                logging.error("CvnnModel::manage_string: Same file already exists. Aborting to not override results" +
+                              str(filename))
+            except FileNotFoundError:
+                logging.error("CvnnModel::manage_string: No such file or directory: " + self.root_dir)
+                sys.exit(-1)
+
+    def _get_str_evaluate(self, x_test, y_test):
+        loss, acc = self.evaluate(x_test, y_test)
+        ret_str = "---------------------------------------------------------\n"
+        ret_str += "Loss: {0:.4f}, Accuracy: {1:.4f}\n".format(loss, acc)
+        ret_str += "---------------------------------------------------------\n"
+        return ret_str
 
     def summary(self):
         summary_str = ""
@@ -153,21 +188,6 @@ class CvnnModel:  # (Model)
         for lay in self.shape:
             summary_str += lay.get_description()
         return summary_str
-
-    def print_summary(self):
-        print(self.summary())
-
-    def save_metadata(self):
-        filename = self.root_dir + self.name + "_metadata.txt"
-        try:
-            with open(filename, "x") as file:
-                file.write(self.summary())
-        except FileExistsError:  # TODO: Check if this is the actual error
-            logging.error("CvnnModel::save_metadata: Same file already exists. Aborting to not override results")
-            sys.exit(-1)
-        except FileNotFoundError:
-            logging.error("CvnnModel::save_metadata: No such file or directory: " + self.root_dir)
-            sys.exit(-1)
 
 
 if __name__ == '__main__':
@@ -200,9 +220,8 @@ if __name__ == '__main__':
     test_loss = tf.keras.metrics.Mean(name='test_loss')
     test_accuracy = tf.keras.metrics.CategoricalAccuracy(name='test_accuracy')
 
-    print(model.evaluate(x_test.astype(cdtype), y_test, ))
     model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10)
-    print(model.evaluate(x_test.astype(cdtype), y_test, ))
+    model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10)
 
 
 # How to comment script header
@@ -211,7 +230,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
