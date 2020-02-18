@@ -21,7 +21,7 @@ class CvnnModel:  # (Model)
     # Constructor and Stuff
     -------------------------"""
 
-    def __init__(self, name, shape, loss_fun, verbose=True):
+    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
         # super(CvnnModel, self).__init__()
         self.name = name
         self.shape = shape
@@ -52,6 +52,13 @@ class CvnnModel:  # (Model)
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
+        self.tensorboard = tensorboard
+        if self.tensorboard:        # After this, fit will have no say if using tensorboard or not.
+            train_log_dir = self.root_dir + "tensorboard_logs/train"
+            test_log_dir = self.root_dir + "tensorboard_logs/test"
+            self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+            self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
 
     def call(self, x):
@@ -70,6 +77,21 @@ class CvnnModel:  # (Model)
                 self.logger.error("Unknown loss function.\n\t "
                                   "Can only use losses declared on tensorflow.python.keras.losses")
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
+
+    """
+        Checkpoints
+    """
+    def _tensorboard_checkpoint(self, x_train, y_train, x_test, y_test):
+        train_loss, train_accuracy = self.evaluate(x_train, y_train)
+        with self.train_summary_writer.as_default():
+            tf.summary.scalar('loss', train_loss, step=self.epochs_done)
+            tf.summary.scalar('accuracy', train_accuracy*100, step=self.epochs_done)
+        if x_test is not None:
+            assert y_test is not None
+            test_loss, test_accuracy = self.evaluate(x_test, y_test)
+            with self.test_summary_writer.as_default():
+                tf.summary.scalar('loss', test_loss, step=self.epochs_done)
+                tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
 
     """-------------------------
     # Predict models and results
@@ -107,7 +129,7 @@ class CvnnModel:  # (Model)
         for i, val in enumerate(variables):
             val.assign(val - learning_rate * gradients[i])
 
-    def fit(self, x_train, y_train, learning_rate=0.01, epochs=10, batch_size=100,
+    def fit(self, x_train, y_train, x_test=None, y_test=None, learning_rate=0.01, epochs=10, batch_size=100,
             verbose=True, display_freq=100, fast_mode=False, save_to_file=True):
         fit_count = next(self._fit_count)        # Know it's own number
         save_fit_filename = None
@@ -122,6 +144,8 @@ class CvnnModel:  # (Model)
         epochs_done = self.epochs_done
 
         for epoch in range(epochs):
+            if not fast_mode:
+                self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
             self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
             x_train, y_train = randomize(x_train, y_train)
@@ -170,7 +194,7 @@ class CvnnModel:  # (Model)
     def _get_str_evaluate(self, x_test, y_test):
         loss, acc = self.evaluate(x_test, y_test)
         ret_str = "---------------------------------------------------------\n"
-        ret_str += "Loss: {0:.4f}, Accuracy: {1:.4f}\n".format(loss, acc)
+        ret_str += "Loss: {0:.4f}, Accuracy: {1:.2f}\n".format(loss, acc * 100)
         ret_str += "---------------------------------------------------------\n"
         return ret_str
 
@@ -194,7 +218,7 @@ if __name__ == '__main__':
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 1000
     n = 100
-    num_classes = 2
+    num_classes = 5
     x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, 'hilbert')
     cdtype = np.complex64
     if cdtype == np.complex64:
@@ -214,14 +238,10 @@ if __name__ == '__main__':
              layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-
-    train_loss = tf.keras.metrics.Mean(name='train_loss')
-    train_accuracy = tf.keras.metrics.CategoricalAccuracy(name='train_accuracy')
-    test_loss = tf.keras.metrics.Mean(name='test_loss')
-    test_accuracy = tf.keras.metrics.CategoricalAccuracy(name='test_accuracy')
-
-    model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10)
-    model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10)
+    model.fit(x_train.astype(cdtype), y_train, x_test.astype(cdtype), y_test,
+              learning_rate=0.1, batch_size=100, epochs=10)
+    model.fit(x_train.astype(cdtype), y_train, x_test.astype(cdtype), y_test,
+              learning_rate=0.1, batch_size=100, epochs=10)
 
 
 # How to comment script header
@@ -230,7 +250,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
