@@ -26,16 +26,16 @@ act_dispatcher = {
 }
 
 supported_dtypes = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
+layer_count = count(0)        # Used to count the number of layers
 
 
 class ComplexLayer(layers.Layer, ABC):
-    _layer_number = count(0)        # Used to count the number of layers
 
     def __init__(self, input_size, output_size, input_dtype=np.complex64, output_dtype=np.complex64):
         self.logger = logging.getLogger(cvnn.__name__)
         self.input_size = input_size
         self.output_size = output_size
-        self.layer_number = next(self._layer_number)        # Know it's own number
+        self.layer_number = next(layer_count)        # Know it's own number
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             self.logger.error("Layer::__init__: if input dtype is real output cannot be complex")
@@ -82,6 +82,10 @@ class ComplexLayer(layers.Layer, ABC):
     def get_description(self):
         pass
 
+    @abstractmethod
+    def save_tensorboard_checkpoint(self, summary, step=None):
+        pass
+
 
 class ComplexDense(ComplexLayer):
 
@@ -109,8 +113,9 @@ class ComplexDense(ComplexLayer):
                                          name="bias" + str(self.layer_number)),
                              dtype=self.input_dtype)
         else:
-            # This case should never happen. The constructor should already have checked this
-            self.logger.error("Input_dtype not supported.")  # TODO: Show supported cases
+            # This case should never happen. The abstract constructor should already have checked this
+            self.logger.error("Input_dtype not supported.")
+            sys.exit(-1)
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
@@ -132,22 +137,35 @@ class ComplexDense(ComplexLayer):
         return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))
 
     def call_v1(self, inputs):
-        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
-            self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
-                                + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
-        out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
-        y_out = self._apply_activation(self.activation, out)
-        if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
-            self.logger.warning("Dense::apply_layer: Automatically casting output")
-        return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype))), [self.w, self.b]
+        return self.call(inputs), [self.w, self.b]
+
+    def save_tensorboard_checkpoint(self, summary, step=None):
+        with summary.as_default():
+            if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:
+                tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_w_real",
+                                     data=tf.math.real(self.w), step=step)
+                tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_w_imag",
+                                     data=tf.math.imag(self.w), step=step)
+                tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_b_real",
+                                     data=tf.math.real(self.b), step=step)
+                tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_b_imag",
+                                     data=tf.math.imag(self.b), step=step)
+            elif self.input_dtype == np.float32 or self.input_dtype == np.float64:
+                tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_w",
+                                     data=self.w, step=step)
+                tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_b",
+                                     data=self.b, step=step)
+            else:
+                # This case should never happen. The constructor should already have checked this
+                self.logger.error("Input_dtype not supported.")
+                sys.exit(-1)
 
 
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.15'
+__version__ = '0.0.16'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

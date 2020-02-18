@@ -56,8 +56,10 @@ class CvnnModel:  # (Model)
         if self.tensorboard:        # After this, fit will have no say if using tensorboard or not.
             train_log_dir = self.root_dir + "tensorboard_logs/train"
             test_log_dir = self.root_dir + "tensorboard_logs/test"
+            weigths_log_dit = self.root_dir + "tensorboard_logs/weights"
             self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
             self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
+            self.weights_summary_writer = tf.summary.create_file_writer(weigths_log_dit)
 
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
 
@@ -82,16 +84,21 @@ class CvnnModel:  # (Model)
         Checkpoints
     """
     def _tensorboard_checkpoint(self, x_train, y_train, x_test, y_test):
+        # Save train loss and accuracy
         train_loss, train_accuracy = self.evaluate(x_train, y_train)
         with self.train_summary_writer.as_default():
             tf.summary.scalar('loss', train_loss, step=self.epochs_done)
             tf.summary.scalar('accuracy', train_accuracy*100, step=self.epochs_done)
+        # Save test loss and accuracy
         if x_test is not None:
             assert y_test is not None
             test_loss, test_accuracy = self.evaluate(x_test, y_test)
             with self.test_summary_writer.as_default():
                 tf.summary.scalar('loss', test_loss, step=self.epochs_done)
                 tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
+        # Save weights histogram
+        for layer in shape:
+            layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
 
     """-------------------------
     # Predict models and results
@@ -250,7 +257,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
