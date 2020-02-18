@@ -53,13 +53,12 @@ class CvnnModel:  # (Model)
             os.makedirs(self.root_dir)
 
         self.tensorboard = tensorboard
+        self.graph_writer_logdir = self.root_dir + "tensorboard_logs/train_func"
+        self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
         if self.tensorboard:        # After this, fit will have no say if using tensorboard or not.
-            train_log_dir = self.root_dir + "tensorboard_logs/train"
-            test_log_dir = self.root_dir + "tensorboard_logs/test"
-            weigths_log_dit = self.root_dir + "tensorboard_logs/weights"
-            self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-            self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
-            self.weights_summary_writer = tf.summary.create_file_writer(weigths_log_dit)
+            self.train_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/train")
+            self.test_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/test")
+            self.weights_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/weights")
 
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
 
@@ -127,14 +126,25 @@ class CvnnModel:  # (Model)
     @tf.function
     def _train_step(self, x_train_batch, y_train_batch, learning_rate):
         with tf.GradientTape() as tape:
-            current_loss = self._apply_loss(y_train_batch, self.call(x_train_batch))  # Compute loss
-        variables = []
-        for lay in self.shape:
-            variables.extend(lay.trainable_variables)
-        gradients = tape.gradient(current_loss, variables)  # Compute gradients
-        assert all(g is not None for g in gradients)
-        for i, val in enumerate(variables):
-            val.assign(val - learning_rate * gradients[i])
+            # Forward mode computation
+            with tf.name_scope("Forward_Phase") as scope:
+                x_called = self.call(x_train_batch)
+            # Loss function computation
+            with tf.name_scope("Loss") as scope:
+                current_loss = self._apply_loss(y_train_batch, x_called)  # Compute loss
+
+        # Calculating gradient
+        with tf.name_scope("Gradient") as scope:
+            variables = []
+            for lay in self.shape:
+                variables.extend(lay.trainable_variables)
+            gradients = tape.gradient(current_loss, variables)  # Compute gradients
+            assert all(g is not None for g in gradients)
+
+        # Backpropagation
+        with tf.name_scope("Optimizer") as scope:
+            for i, val in enumerate(variables):
+                val.assign(val - learning_rate * gradients[i])
 
     def fit(self, x_train, y_train, x_test=None, y_test=None, learning_rate=0.01, epochs=10, batch_size=100,
             verbose=True, display_freq=100, fast_mode=False, save_to_file=True):
@@ -168,7 +178,15 @@ class CvnnModel:  # (Model)
                                                                 self.epochs_done, epochs_done + epochs,
                                                                 iteration, num_tr_iter)
                         self._manage_string(epoch_str, verbose, save_fit_filename)
+                if self.epochs_done == 1 and iteration == 0:
+                    # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
+                    # Bracket the function call with
+                    # tf.summary.trace_on() and tf.summary.trace_export().
+                    tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
                 self._train_step(x_batch, y_batch, learning_rate)
+                if self.epochs_done == 1 and iteration == 0:
+                    with self.graph_writer.as_default():
+                        tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
         # After epochs
         self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train),
                             verbose, save_fit_filename)
@@ -179,7 +197,7 @@ class CvnnModel:  # (Model)
 
     def _get_str_current_epoch(self, x, y, epoch, epochs, iteration, num_tr_iter):
         current_loss, current_acc = self.evaluate(x, y)
-        return "Epoch: {0}/{1}; batch {2}/{3}; loss: {4:.4f} accuracy: {5:.2f} %\n".format(epoch, epochs, iteration,
+        return "Epoch: {0}/{1}; batch {2}/{3}; train loss: {4:.4f} train accuracy: {5:.2f} %\n".format(epoch, epochs, iteration,
                                                                                          num_tr_iter, current_loss,
                                                                                          current_acc * 100)
 
@@ -257,7 +275,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
