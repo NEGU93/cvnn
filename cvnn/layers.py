@@ -2,9 +2,13 @@ from abc import ABC, abstractmethod
 from itertools import count
 import tensorflow as tf
 import sys
+import cvnn
+import logging
 import cvnn.activation_functions as act
 from cvnn.utils import get_func_name
 import numpy as np
+from tensorflow.keras import layers
+from pdb import set_trace
 
 act_dispatcher = {
     'linear': act.linear,
@@ -21,36 +25,35 @@ act_dispatcher = {
     'cart_softmax_real': act.cart_softmax_real
 }
 
-supported_dtypes = (np.complex64, np.float32)
+supported_dtypes = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
 
 
-class Layer(ABC):
+class ComplexLayer(layers.Layer, ABC):
     _layer_number = count(0)        # Used to count the number of layers
 
-    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
+    def __init__(self, input_size, output_size, input_dtype=np.complex64, output_dtype=np.complex64):
+        self.logger = logging.getLogger(cvnn.__name__)
         self.input_size = input_size
         self.output_size = output_size
         self.layer_number = next(self._layer_number)        # Know it's own number
-        self.activation = activation
-        self.weight_initializer = weight_initializer
-        self.bias_initializer = bias_initializer
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
-            sys.exit("Layer::__init__: if input dtype is real output cannot be complex")
+            self.logger.error("Layer::__init__: if input dtype is real output cannot be complex")
+            sys.exit(-1)
         if input_dtype not in supported_dtypes:
-            sys.exit("ERROR:Layer::__init__: unsupported input_dtype " + str(input_dtype))
+            self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype))
+            sys.exit(-1)
         self.input_dtype = input_dtype
         if output_dtype not in supported_dtypes:
-            sys.exit("ERROR:Layer::__init__: unsupported output_dtype " + str(output_dtype))
+            self.logger.error("Layer::__init__: unsupported output_dtype " + str(output_dtype))
+            sys.exit(-1)
         self.output_dtype = output_dtype
         super().__init__()
 
     def get_input_dtype(self):
         return self.input_dtype
 
-    @staticmethod
-    def _apply_activation(act_fun, out):
+    def _apply_activation(self, act_fun, out):
         """
         Applies activation function `act` to variable `out`
         :param out: Tensor to whom the activation function will be applied
@@ -65,56 +68,50 @@ class Layer(ABC):
                     act_fun.__module__ == 'tensorflow.python.keras.activations':
                 return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
             else:
-                sys.exit("Cvnn::_apply_activation Unknown activation function.\n\t "
-                         "Can only use activations declared on activation_functions.py or keras.activations")
+                self.logger.error("Cvnn::_apply_activation Unknown activation function.\n\t "
+                                  "Can only use activations declared on activation_functions.py or keras.activations")
+                sys.exit(-1)
         elif isinstance(act_fun, str):
             try:
                 return act_dispatcher[act_fun](out)
             except KeyError:
-                print("WARNING: Cvnn::_apply_function: " + str(act_fun) + " is not callable, ignoring it")
+                self.logger.warning("WARNING: Cvnn::_apply_function: " + str(act_fun) + " is not callable, ignoring it")
             return out
-
-    @abstractmethod
-    def apply_layer(self, input, output_options):
-        pass
 
     @abstractmethod
     def get_description(self):
         pass
 
 
-class Dense(Layer):
-    def apply_layer(self, input, output_options):
-        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
-        with tf.compat.v1.name_scope("dense_layer_" + str(self.layer_number)):
-            # Create weight matrix initialized randomely from N~(0, 0.01)
-            # TODO: be able to choose the initializer
-            if self.input_dtype == np.complex64:    # Complex layer
-                w = tf.Variable(
-                    tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                               self.weight_initializer()(shape=(self.input_size, self.output_size))),
-                    name="weights" + str(self.layer_number))
-                b = tf.Variable(tf.complex(tf.zeros(self.output_size),
-                                tf.zeros(self.output_size)), name="bias" + str(self.layer_number))
-            elif self.input_dtype == np.float32:       # Real Layer
-                w = tf.Variable(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                                name="weights" + str(self.layer_number))
-                b = tf.Variable(tf.zeros(self.output_size), name="bias" + str(self.layer_number))
-            else:
-                # This case should never happen. The constructor should already have checked this
-                sys.exit("ERROR: Dense::apply_layer: input_dtype not supported.")
-            if output_options.tensorboard:
-                tf.compat.v1.summary.histogram('real_weight_' + str(self.layer_number), tf.math.real(w))
-                tf.compat.v1.summary.histogram('imag_weight_' + str(self.layer_number), tf.math.imag(w))
-                tf.compat.v1.summary.histogram('real_bias_' + str(self.layer_number), tf.math.real(b))
-                tf.compat.v1.summary.histogram('imag_bias_' + str(self.layer_number), tf.math.imag(b))
-            out = tf.add(tf.matmul(input, w), b)
+class ComplexDense(ComplexLayer):
+    _layer_number = count(0)  # Used to count the number of layers
 
-            if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != out.dtype:  # Case for real output / real labels
-                assert self.output_dtype == np.float32 and out.dtype == tf.dtypes.complex64
-                print("WARNING:Dense::apply_layer: Automatically casting output as abs because output should be real")
-                out = tf.abs(out)  # TODO: Shall I do abs or what?
-            return self._apply_activation(self.activation, out), [w, b]
+    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
+        super(ComplexDense, self).__init__(input_size, output_size, input_dtype, output_dtype)
+        self.output_dtype = output_dtype
+        self.activation = activation
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer  # TODO: Not working yet
+        if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
+            self.w = tf.cast(tf.Variable(tf.complex(weight_initializer()(shape=(self.input_size, self.output_size)),
+                                                    weight_initializer()(shape=(self.input_size, self.output_size))),
+                                         name="weights" + str(self.layer_number)),
+                             dtype=self.input_dtype)
+            self.b = tf.cast(tf.Variable(tf.complex(tf.zeros(self.output_size),
+                                                    tf.zeros(self.output_size)),
+                                         name="bias" + str(self.layer_number))
+                             , dtype=self.input_dtype)
+        elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
+            self.w = tf.cast(tf.Variable(weight_initializer()(shape=(self.input_size, self.output_size)),
+                                         name="weights" + str(self.layer_number)),
+                             dtype=self.input_dtype)
+            self.b = tf.cast(tf.Variable(tf.zeros(self.output_size),
+                                         name="bias" + str(self.layer_number)),
+                             dtype=self.input_dtype)
+        else:
+            # This case should never happen. The constructor should already have checked this
+            self.logger.error("Input_dtype not supported.")  # TODO: Show supported cases
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
@@ -124,12 +121,38 @@ class Dense(Layer):
                   + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + "\n"
         return out_str
 
+    def call(self, inputs, **kwargs):
+        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
+        if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
+            self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
+                                + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
+        out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
+        y_out = self._apply_activation(self.activation, out)
+        if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
+            self.logger.warning("Dense::apply_layer: Automatically casting output")
+        return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))
+
+    def call_v1(self, inputs):
+        # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
+        if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
+            self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
+                                + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
+        out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
+        y_out = self._apply_activation(self.activation, out)
+        if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
+            self.logger.warning("Dense::apply_layer: Automatically casting output")
+        return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype))), [self.w, self.b]
+
 
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
+<<<<<<< HEAD
 __version__ = '0.0.8'
+=======
+__version__ = '0.0.13'
+>>>>>>> tf-2-compat
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

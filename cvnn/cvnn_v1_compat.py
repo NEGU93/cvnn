@@ -81,6 +81,7 @@ class Cvnn:
         :param automatic_restore: True if network should search for saved models (will look for the newest saved model)
         """
         tf.compat.v1.disable_eager_execution()  # This class works as a graph model so no eager compatible
+        tf.compat.v1.reset_default_graph()
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = logging_dispatcher[logging_level]
         # tf.autograph.set_verbosity(logging.FATAL)       # TODO: not working :S
         # Save parameters of the constructor
@@ -106,6 +107,8 @@ class Cvnn:
 
         # Launch the graph in a session.
         # self.sess = tf.compat.v1.Session()
+        # self.sess = tf.compat.v1.get_default_session()
+        # self.g = tf.compat.v1.get_default_graph()
         self.restored_meta = False
         if automatic_restore:
             self.restore_graph_from_meta()
@@ -169,7 +172,8 @@ class Cvnn:
             elif net_type == np.float32:
                 file.write("Real Network\n")
             else:
-                print(bcolors.WARNING + "Warning:cvnn::_append_graph_structure: Unknown network type " + net_type.__name__)
+                print(bcolors.WARNING + "Warning:cvnn::_append_graph_structure: Unknown network type "
+                      + net_type.__name__)
                 file.write("Unknown network type\n")
             for i in range(len(shape)):
                 if i < len(shape) - 1:
@@ -272,7 +276,8 @@ class Cvnn:
     def _create_graph_from_shape(self, shape):
         if len(shape) < 2:
             sys.exit("Cvnn::_create_graph_from_shape: shape should be at least of lenth 2")
-        if not all([isinstance(layer, layers.Layer) for layer in shape]):  # Check all the data is a Layer object
+        # Check all the data is a Layer object
+        if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
             sys.exit("CVNN::_create_graph_from_shape: all layers in shape must be a cvnn.layer.Layer")
         # Define placeholders
         self.X = tf.compat.v1.placeholder(tf.dtypes.as_dtype(shape[0].input_dtype),
@@ -284,9 +289,9 @@ class Cvnn:
         with tf.compat.v1.name_scope("forward_phase"):
             for i in range(len(shape)):  # Apply all the layers
                 if i == 0:  # For the first layer the input is X
-                    out, variable = shape[i].apply_layer(self.X, self.output_options)
+                    out, variable = shape[i].call_v1(self.X, )
                 else:
-                    out, variable = shape[i].apply_layer(out, self.output_options)
+                    out, variable = shape[i].call_v1(out, )
                 variables.extend(variable)
             y_out = tf.compat.v1.identity(out, name="y_out")
         self._append_graph_structure(shape)  # Append the graph information to the metadata.txt file
@@ -311,9 +316,11 @@ class Cvnn:
             print(bcolors.WARNING + "Warning:Cvnn::create_mlp_graph: Graph was already created from a saved model.")
             return None
         # Reset latest graph
-        tf.compat.v1.reset_default_graph()
+        # tf.compat.v1.reset_default_graph()
+        # TODO: check this function was only called once.
 
         # Creates the feedforward network
+        # with self.g.as_default():
         self.y_out, variables = self._create_graph_from_shape(shape)
         # Defines the loss function
         self.loss = self._apply_loss(loss_func)
@@ -815,7 +822,7 @@ if __name__ == "__main__":
                           [layers.Dense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
                                         input_dtype=np.complex64, output_dtype=np.complex64),
                            layers.Dense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
-                                        input_dtype=np.complex64, output_dtype=np.float32)])
+                                        input_dtype=np.complex64, output_dtype=np.complex64)])
 
     cvnn.train(x_train, y_train, x_test, y_test)
 
@@ -828,7 +835,11 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
+<<<<<<< HEAD
 __version__ = '0.1.18'
+=======
+__version__ = '0.1.20'
+>>>>>>> tf-2-compat
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
