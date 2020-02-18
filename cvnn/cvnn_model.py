@@ -2,8 +2,9 @@ import os
 import sys
 import re
 import logging
+import threading
 import numpy as np
-from itertools import count     # To count the number of times fit is called
+from itertools import count  # To count the number of times fit is called
 import tensorflow as tf
 import cvnn
 import cvnn.layers as layers
@@ -12,6 +13,10 @@ from cvnn.utils import randomize, get_next_batch
 from datetime import datetime
 from pdb import set_trace
 from tensorflow.keras import Model
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
 
@@ -22,9 +27,9 @@ class CvnnModel:  # (Model)
     # Constructor and Stuff
     -------------------------"""
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
+    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True, save_model_checkpoints=False):
         pattern = re.compile("^[2-9][0-9]*")
-        assert pattern.match(tf.__version__)    # Check TF version is at least 2
+        assert pattern.match(tf.__version__)  # Check TF version is at least 2
         # super(CvnnModel, self).__init__()
         self.name = name
         self.shape = shape
@@ -56,9 +61,10 @@ class CvnnModel:  # (Model)
             os.makedirs(self.root_dir)
 
         self.tensorboard = tensorboard
+        self.save_model_checkpoints = save_model_checkpoints
         self.graph_writer_logdir = self.root_dir + "tensorboard_logs/train_func"
         self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
-        if self.tensorboard:        # After this, fit will have no say if using tensorboard or not.
+        if self.tensorboard:  # After this, fit will have no say if using tensorboard or not.
             self.train_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/train")
             self.test_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/test")
             self.weights_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/weights")
@@ -85,12 +91,24 @@ class CvnnModel:  # (Model)
     """
         Checkpoints
     """
+
+    def _run_checkpoint(self, x_train, y_train, x_test, y_test):
+        if self.tensorboard:    # Save tensorboard data
+            self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
+        # Save model
+        if self.save_model_checkpoints:
+            if x_test is not None:
+                assert y_test is not None
+                self.save(x_test, y_test)
+            else:
+                self.save(x_train, y_train)
+
     def _tensorboard_checkpoint(self, x_train, y_train, x_test, y_test):
         # Save train loss and accuracy
         train_loss, train_accuracy = self.evaluate(x_train, y_train)
         with self.train_summary_writer.as_default():
             tf.summary.scalar('loss', train_loss, step=self.epochs_done)
-            tf.summary.scalar('accuracy', train_accuracy*100, step=self.epochs_done)
+            tf.summary.scalar('accuracy', train_accuracy * 100, step=self.epochs_done)
         # Save test loss and accuracy
         if x_test is not None:
             assert y_test is not None
@@ -101,6 +119,45 @@ class CvnnModel:  # (Model)
         # Save weights histogram
         for layer in shape:
             layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
+
+    def save(self, x, y):           # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
+        # TODO: TypeError: can't pickle _thread._local objects
+        # https://github.com/tensorflow/tensorflow/issues/33283
+        loss, acc = self.evaluate(x, y)
+        checkpoint_root = self.root_dir + "saved_models/"
+        if not os.path.exists(checkpoint_root):
+            os.makedirs(checkpoint_root)
+        save_name = checkpoint_root + "model_checkpoint_epoch" + str(self.epochs_done) + "loss{0:.4f}acc{1:d}".format(loss, int(acc * 100))
+
+        # CvnnModel._extractfromlocal(self)
+        with open(save_name.replace(".", ",") + ".pickle", "wb") as saver:
+            # set_trace()
+            pickle.dump(self.__dict__, saver)
+            # for lay in self.shape:
+            #    pickle.dump(lay.__dict__, saver)
+        # CvnnModel._loadtolocal(self)
+
+    """
+    @classmethod
+    def _extractfromlocal(cls, model):  # extracts attributes from the local thrading container
+        model._thread_local = model._thread_local.__dict__
+        for attr in model.__dict__.values():
+            if '_thread_local' in dir(attr):
+                cls._extractfromlocal(attr)
+
+    @classmethod
+    def _loadtolocal(cls, model):   # puts attributes back to the local threading container
+        aux=threading.local()
+        aux.__dict__.update(model._thread_local)
+        model._thread_local = aux
+        for attr in model.__dict__.values():
+            if '_thread_local' in dir(attr):
+                cls._loadtolocal(attr)
+    """
+
+    @classmethod        # https://stackoverflow.com/a/2709848/5931672
+    def loader(cls, f):
+        return pickle.load(f)       # TODO: not yet tested
 
     """-------------------------
     # Predict models and results
@@ -151,7 +208,7 @@ class CvnnModel:  # (Model)
 
     def fit(self, x_train, y_train, x_test=None, y_test=None, learning_rate=0.01, epochs=10, batch_size=100,
             verbose=True, display_freq=100, fast_mode=False, save_to_file=True):
-        fit_count = next(self._fit_count)        # Know it's own number
+        fit_count = next(self._fit_count)  # Know it's own number
         save_fit_filename = None
         if save_to_file:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
@@ -164,8 +221,7 @@ class CvnnModel:  # (Model)
         epochs_done = self.epochs_done
 
         for epoch in range(epochs):
-            if not fast_mode:
-                self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
+            self._run_checkpoint(x_train, y_train, x_test, y_test)
             self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
             x_train, y_train = randomize(x_train, y_train)
@@ -191,6 +247,7 @@ class CvnnModel:  # (Model)
                     with self.graph_writer.as_default():
                         tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
         # After epochs
+        self._run_checkpoint(x_train, y_train, x_test, y_test)
         self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train),
                             verbose, save_fit_filename)
 
@@ -200,9 +257,11 @@ class CvnnModel:  # (Model)
 
     def _get_str_current_epoch(self, x, y, epoch, epochs, iteration, num_tr_iter):
         current_loss, current_acc = self.evaluate(x, y)
-        return "Epoch: {0}/{1}; batch {2}/{3}; train loss: {4:.4f} train accuracy: {5:.2f} %\n".format(epoch, epochs, iteration,
-                                                                                         num_tr_iter, current_loss,
-                                                                                         current_acc * 100)
+        return "Epoch: {0}/{1}; batch {2}/{3}; train loss: {4:.4f} train accuracy: {5:.2f} %\n".format(epoch, epochs,
+                                                                                                       iteration,
+                                                                                                       num_tr_iter,
+                                                                                                       current_loss,
+                                                                                                       current_acc * 100)
 
     def _manage_string(self, string, verbose=False, filename=None, mode="a"):
         if verbose:
@@ -271,14 +330,13 @@ if __name__ == '__main__':
     model.fit(x_train.astype(cdtype), y_train, x_test.astype(cdtype), y_test,
               learning_rate=0.1, batch_size=100, epochs=10)
 
-
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
