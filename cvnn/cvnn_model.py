@@ -28,6 +28,7 @@ class CvnnModel:  # (Model)
     -------------------------"""
 
     def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True, save_model_checkpoints=False):
+        assert not save_model_checkpoints           # TODO: Not working for the moment, sorry!
         pattern = re.compile("^[2-9][0-9]*")
         assert pattern.match(tf.__version__)  # Check TF version is at least 2
         # super(CvnnModel, self).__init__()
@@ -117,7 +118,7 @@ class CvnnModel:  # (Model)
                 tf.summary.scalar('loss', test_loss, step=self.epochs_done)
                 tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
         # Save weights histogram
-        for layer in shape:
+        for layer in self.shape:
             layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
 
     def save(self, x, y):           # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
@@ -216,7 +217,9 @@ class CvnnModel:  # (Model)
             self.logger.error("Batch size was bigger than total amount of examples")
 
         num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
-        self._manage_string("Starting training...\n" + self._get_str_evaluate(x_train, y_train),
+        self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
+                            "\nEpochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
+                            self._get_str_evaluate(x_train, y_train),
                             verbose, save_fit_filename)
         epochs_done = self.epochs_done
 
@@ -336,7 +339,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
