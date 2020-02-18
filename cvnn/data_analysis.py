@@ -184,7 +184,8 @@ saved on ./results/histogram_iter[0-9]+_classes[0-9]+.csv
 """
 
 
-def plot_csv_histogram(filename, bins=None, column=None, showfig=False, library='matplotlib'):
+def plot_csv_histogram(filename, data1, data2, name_d1='CVNN', name_d2='RVNN', bins=None,
+                       column=None, showfig=False, library='matplotlib'):
     """
     Plots and saves a histogram image using the data from a csv file with help of matplotlib.
     :param filename: Full path + name of the csv file to be opened (must contain the csv extension)
@@ -197,24 +198,23 @@ def plot_csv_histogram(filename, bins=None, column=None, showfig=False, library=
     """
     assert type(filename) == str
     path, file = os.path.split(filename)
-    data = pd.read_csv(filename)
     if library == 'plotly':
         fig = go.Figure()
-        fig.add_trace(go.Histogram(x=np.array(data['CVNN acc']), name='CVNN'))
-        fig.add_trace(go.Histogram(x=np.array(data['RVNN acc']), name='RVNN'))
+        fig.add_trace(go.Histogram(x=np.array(data1), name=name_d1))
+        fig.add_trace(go.Histogram(x=np.array(data2), name=name_d2))
         # Overlay both histograms
         fig.update_layout(barmode='overlay')
         # Reduce opacity to see both histograms
         fig.update_traces(opacity=0.75)
         plotly.offline.plot(fig, filename=path + '/' + library + "_histogram_" + file.replace(".csv", ".html"))
     elif library == 'matplotlib':
-        fig, ax = plot_2_hist_matplotlib(np.array(data['CVNN acc']), np.array(data['RVNN acc']), 'CVNN', 'RVNN',
+        fig, ax = plot_2_hist_matplotlib(np.array(data1), np.array(data2), name_d1, name_d2,
                                          bins=bins)
     elif library == 'pandas':
         # https://medium.com/python-pandemonium/data-visualization-in-python-histogram-in-matplotlib-dce38f49f89c
-        fig, ax = plot_hist_pandas(data, bins, column)
+        fig, ax = plot_hist_pandas(data1, bins, column)     # TODO: this is not longer a pandas data CHECK THIS CASE!
     elif library == 'seaborn':
-        fig, ax = plot_2_hist_seaborn(np.array(data['CVNN acc']), np.array(data['RVNN acc']), 'CVNN', 'RVNN', bins=bins)
+        fig, ax = plot_2_hist_seaborn(np.array(data1), np.array(data2), name_d1, name_d2, bins=bins)
     else:
         print("Warning: Unrecognized library to plot " + library)
         return None
@@ -596,6 +596,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -6,7 +6,8 @@ import tensorflow as tf
 import cvnn
 import cvnn.layers as layers
 import cvnn.data_processing as dp
-from cvnn.utils import normalize, randomize, get_next_batch
+from cvnn.utils import randomize, get_next_batch
+from datetime import datetime
 from pdb import set_trace
 from tensorflow.keras import Model
 
@@ -20,13 +21,24 @@ class OutputOpts:
         self.display_freq = display_freq
 
 
-class CvnnModel:    # (Model)
+class CvnnModel:  # (Model)
     """-------------------------
     # Constructor and Stuff
     -------------------------"""
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=False, display_freq=100):
+    def __init__(self, name, shape, loss_fun, verbose=True):
         # super(CvnnModel, self).__init__()
+        self.name = name
+        self.shape = shape
+        self.loss_fun = loss_fun
+        if verbose:
+            self.print_summary()
+        if not tf.executing_eagerly():
+            # tf.compat.v1.enable_eager_execution()
+            logging.error("CvnnModel::__init__: TF was not executing eagerly")
+            sys.exit(-1)
+
+        # Logging parameters
         logging.getLogger('tensorflow').disabled = True
         logger = logging.getLogger(cvnn.__name__)
         console_handler = logging.StreamHandler(sys.stdout)
@@ -35,12 +47,17 @@ class CvnnModel:    # (Model)
         logger.addHandler(console_handler)
         self.logger = logger
 
-        # self.name = name
-        self.shape = shape
-        self.loss_fun = loss_fun
-        self.output_options = OutputOpts(tensorboard, verbose, display_freq)
-        if not tf.executing_eagerly():
-            logging.error("CvnnModel::__init__: TF was not executing eagerly")
+        # Folder for saving information
+        self.now = datetime.today()
+        project_path = os.path.abspath("./")
+        self.root_dir = project_path + "/log/" \
+                        + str(self.now.year) + "/" \
+                        + str(self.now.month) + self.now.strftime("%B") + "/" \
+                        + str(self.now.day) + self.now.strftime("%A") \
+                        + "/run-" + self.now.time().strftime("%Hh%Mm%S") + "/"
+        if not os.path.exists(self.root_dir):
+            os.makedirs(self.root_dir)
+        self.save_metadata()
 
     def call(self, x):
         # Check all the data is a Layer object
@@ -68,10 +85,10 @@ class CvnnModel:    # (Model)
         return tf.math.argmax(y_out, 1)
 
     def evaluate_loss(self, x_test, y_true):
-        return self._apply_loss(y_true, self.call(x_test, )).numpy()
+        return self._apply_loss(y_true, self.call(x_test)).numpy()
 
     def evaluate_accuracy(self, x_test, y_true):
-        y_pred = self.predict(x_test, )
+        y_pred = self.predict(x_test)
         y_labels = tf.math.argmax(y_true, 1)
         return tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_pred, y_labels), tf.float64)).numpy()
 
@@ -86,21 +103,22 @@ class CvnnModel:    # (Model)
     @tf.function
     def train_step(self, x_train_batch, y_train_batch, learning_rate):
         with tf.GradientTape() as tape:
-            current_loss = self._apply_loss(y_train_batch, self.call(x_train_batch))    # Compute loss
+            current_loss = self._apply_loss(y_train_batch, self.call(x_train_batch))  # Compute loss
         variables = []
         for lay in self.shape:
             variables.extend(lay.trainable_variables)
-        gradients = tape.gradient(current_loss, variables)                           # Compute gradients
+        gradients = tape.gradient(current_loss, variables)  # Compute gradients
         assert all(g is not None for g in gradients)
         for i, val in enumerate(variables):
             val.assign(val - learning_rate * gradients[i])
 
-    def fit(self, x_train, y_train, learning_rate=0.01, epochs=10, batch_size=100):
+    def fit(self, x_train, y_train, learning_rate=0.01, epochs=10, batch_size=100,
+            verbose=True, display_freq=100):
         if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
             self.logger.error("Batch size was bigger than total amount of examples")
 
         num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
-        if self.output_options.verbose:
+        if verbose:
             print("Starting training...")
         for epoch in range(epochs):
             # Randomly shuffle the training data at the beginning of each epoch
@@ -111,12 +129,45 @@ class CvnnModel:    # (Model)
                 end = (iteration + 1) * batch_size
                 x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
                 # Run optimization op (backpropagation)
-                if self.output_options.verbose and \
-                        (epoch * batch_size + iteration) % self.output_options.display_freq == 0:
+                if verbose and (epoch * batch_size + iteration) % display_freq == 0:
                     current_loss, current_acc = self.evaluate(x_batch, y_batch)
                     print("Epoch: {0}/{1}; batch {2}/{3}; loss: {4:.4f} accuracy: {5:.2f} %"
-                          .format(epoch, epochs, iteration, num_tr_iter, current_loss, current_acc*100))
+                          .format(epoch, epochs, iteration, num_tr_iter, current_loss, current_acc * 100))
                 self.train_step(x_batch, y_batch, learning_rate)
+
+    """
+        Saving and Summary
+    """
+
+    def summary(self):
+        summary_str = ""
+        summary_str += self.name + "\n"
+        net_dtype = self.shape[0].get_input_dtype()
+        if net_dtype == np.complex64 or net_dtype == np.complex128:
+            summary_str += "Complex Network\n"
+        elif net_dtype == np.float32 or net_dtype == np.float64:
+            summary_str += "Real Network\n"
+        else:
+            summary_str += "Unknown Data Type Network\n"
+            logging.warning("CvnnModel::summary: Unknown Data Type Network")
+        for lay in self.shape:
+            summary_str += lay.get_description()
+        return summary_str
+
+    def print_summary(self):
+        print(self.summary())
+
+    def save_metadata(self):
+        filename = self.root_dir + self.name + "_metadata.txt"
+        try:
+            with open(filename, "x") as file:
+                file.write(self.summary())
+        except FileExistsError:  # TODO: Check if this is the actual error
+            logging.error("CvnnModel::save_metadata: Same file already exists. Aborting to not override results")
+            sys.exit(-1)
+        except FileNotFoundError:
+            logging.error("CvnnModel::save_metadata: No such file or directory: " + self.root_dir)
+            sys.exit(-1)
 
 
 if __name__ == '__main__':
@@ -142,7 +193,7 @@ if __name__ == '__main__':
                                  input_dtype=cdtype, output_dtype=cdtype),
              layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
-    model = CvnnModel("Testing CVNN", shape, tf.keras.losses.categorical_crossentropy)
+    model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
 
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.CategoricalAccuracy(name='train_accuracy')
@@ -152,5 +203,3 @@ if __name__ == '__main__':
     print(model.evaluate(x_test.astype(cdtype), y_test, ))
     model.fit(x_train.astype(cdtype), y_train, learning_rate=0.1, batch_size=100, epochs=10)
     print(model.evaluate(x_test.astype(cdtype), y_test, ))
-
-
