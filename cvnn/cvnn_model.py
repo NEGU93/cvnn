@@ -9,8 +9,10 @@ import tensorflow as tf
 import cvnn
 import cvnn.layers as layers
 import cvnn.data_processing as dp
+import cvnn.data_analysis as da
 from cvnn.utils import randomize, get_next_batch
 from datetime import datetime
+from pathlib import Path
 from pdb import set_trace
 from tensorflow.keras import Model
 try:
@@ -27,7 +29,8 @@ class CvnnModel:  # (Model)
     # Constructor and Stuff
     -------------------------"""
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True, save_model_checkpoints=False):
+    def __init__(self, name, shape, loss_fun,
+                 verbose=True, tensorboard=True, save_model_checkpoints=False, save_csv_checkpoints=True):
         assert not save_model_checkpoints           # TODO: Not working for the moment, sorry!
         pattern = re.compile("^[2-9][0-9]*")
         assert pattern.match(tf.__version__)  # Check TF version is at least 2
@@ -53,24 +56,29 @@ class CvnnModel:  # (Model)
         # Folder management for logs
         self.now = datetime.today()
         project_path = os.path.abspath("./")
-        self.root_dir = project_path + "/log/" \
-                        + str(self.now.year) + "/" \
-                        + str(self.now.month) + self.now.strftime("%B") + "/" \
-                        + str(self.now.day) + self.now.strftime("%A") \
-                        + "/run-" + self.now.time().strftime("%Hh%Mm%S") + "/"
+        self.root_dir = Path(project_path + "/log/" + str(self.now.year) + "/"
+                             + str(self.now.month) + self.now.strftime("%B") + "/"
+                             + str(self.now.day) + self.now.strftime("%A")
+                             + "/run-" + self.now.time().strftime("%Hh%Mm%S") + "/")
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
+        # Chekpoints
+        self.save_csv_checkpoints = save_csv_checkpoints
         self.tensorboard = tensorboard
         self.save_model_checkpoints = save_model_checkpoints
-        self.graph_writer_logdir = self.root_dir + "tensorboard_logs/train_func"
+        self.graph_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train_func"))
         self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
         if self.tensorboard:  # After this, fit will have no say if using tensorboard or not.
-            self.train_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/train")
-            self.test_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/test")
-            self.weights_summary_writer = tf.summary.create_file_writer(self.root_dir + "tensorboard_logs/weights")
+            train_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train"))
+            test_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/test"))
+            weigths_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/weights"))
+            self.train_summary_writer = tf.summary.create_file_writer(train_writer_logdir)
+            self.test_summary_writer = tf.summary.create_file_writer(test_writer_logdir)
+            self.weights_summary_writer = tf.summary.create_file_writer(weigths_writer_logdir)
 
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
+        self.plotter = da.Plotter(self.root_dir)
 
     def call(self, x):
         # Check all the data is a Layer object
@@ -96,6 +104,11 @@ class CvnnModel:  # (Model)
     def _run_checkpoint(self, x_train, y_train, x_test, y_test):
         if self.tensorboard:    # Save tensorboard data
             self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
+        if self.save_csv_checkpoints:
+            self._save_csv(x_train, y_train, 'train')
+            if x_test is not None:
+                assert y_test is not None
+                self._save_csv(x_test, y_test, 'test')
         # Save model
         if self.save_model_checkpoints:
             if x_test is not None:
@@ -103,6 +116,21 @@ class CvnnModel:  # (Model)
                 self.save(x_test, y_test)
             else:
                 self.save(x_train, y_train)
+
+    def _save_csv(self, x, y, filename):
+        loss = self.evaluate_loss(x, y)
+        acc = self.evaluate_accuracy(x, y)
+        if not filename.endswith('.csv'):
+            filename += '.csv'
+        filename = self.root_dir / filename
+        # print("Saving to " + str(filename))
+        if not os.path.exists(filename):
+            file = open(filename, 'x')
+            file.write('loss,accuracy\n')
+        else:
+            file = open(filename, 'a')
+        file.write(str(loss) + ',' + str(acc) + '\n')
+        file.close()
 
     def _tensorboard_checkpoint(self, x_train, y_train, x_test, y_test):
         # Save train loss and accuracy
@@ -253,6 +281,7 @@ class CvnnModel:  # (Model)
         self._run_checkpoint(x_train, y_train, x_test, y_test)
         self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train),
                             verbose, save_fit_filename)
+        self.plotter.reload_data()
 
     """
         Managing strings
@@ -270,7 +299,7 @@ class CvnnModel:  # (Model)
         if verbose:
             print(string, end='')
         if filename is not None:
-            filename = self.root_dir + filename
+            filename = self.root_dir / filename
             try:
                 with open(filename, mode) as file:
                     file.write(string)
