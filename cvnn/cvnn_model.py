@@ -97,6 +97,13 @@ class CvnnModel:  # (Model)
                                   "Can only use losses declared on tensorflow.python.keras.losses")
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
 
+    def is_complex(self):
+        dtype = self.shape[0].get_input_dtype()
+        if dtype == np.complex64 and dtype == np.complex128:
+            return True
+        else:
+            return False
+
     """
         Checkpoints
     """
