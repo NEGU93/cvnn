@@ -9,6 +9,23 @@ import sys
 import os
 
 
+class MonteCarlo:
+
+    def __init__(self):
+        self.models = []
+        
+    def add_model(self, model):
+        self.models.append(model)
+
+    def run(self, x_train, y_train, x_test, y_test, iterations=100, learning_rate=0.01, epochs=10, batch_size=100):
+        for it in range(iterations):
+            print("Iteration {}/{}".format(it, iterations))
+            for model in self.models:
+                model.fit(x_train, y_train,  x_test=x_test, y_test=y_test,
+                          learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
+                          verbose=False, fast_mode=True, save_to_file=False)
+
+
 def monte_carlo_cvnn_rvnn_compare(iterations=100, m=10000, n=100, min_num_classes=2, max_num_classes=5,
                                   test_for_each_data=10, path="./results/", filename="histogram", name=''):
     """
