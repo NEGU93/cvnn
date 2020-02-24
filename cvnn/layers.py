@@ -96,9 +96,14 @@ class ComplexDense(ComplexLayer):
         self.activation = activation
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
+        self.w = None
+        self.b = None
+        self.init_weights()
+
+    def init_weights(self):
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
-            self.w = tf.cast(tf.Variable(tf.complex(weight_initializer()(shape=(self.input_size, self.output_size)),
-                                                    weight_initializer()(shape=(self.input_size, self.output_size))),
+            self.w = tf.cast(tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
+                                                    self.weight_initializer()(shape=(self.input_size, self.output_size))),
                                          name="weights" + str(self.layer_number)),
                              dtype=self.input_dtype)
             self.b = tf.cast(tf.Variable(tf.complex(tf.zeros(self.output_size),
@@ -106,7 +111,7 @@ class ComplexDense(ComplexLayer):
                                          name="bias" + str(self.layer_number))
                              , dtype=self.input_dtype)
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
-            self.w = tf.cast(tf.Variable(weight_initializer()(shape=(self.input_size, self.output_size)),
+            self.w = tf.cast(tf.Variable(self.weight_initializer()(shape=(self.input_size, self.output_size)),
                                          name="weights" + str(self.layer_number)),
                              dtype=self.input_dtype)
             self.b = tf.cast(tf.Variable(tf.zeros(self.output_size),
@@ -166,7 +171,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

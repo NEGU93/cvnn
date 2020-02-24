@@ -24,6 +24,15 @@ except ImportError:
 FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
 
 
+def run_once(f):
+    def wrapper(*args, **kwargs):
+        if not wrapper.has_run:
+            wrapper.has_run = True
+            return f(*args, **kwargs)
+    wrapper.has_run = False
+    return wrapper
+
+
 class CvnnModel:  # (Model)
     _fit_count = count(0)  # Used to count the number of layers
     """-------------------------
@@ -34,7 +43,7 @@ class CvnnModel:  # (Model)
                  verbose=True, tensorboard=True, save_model_checkpoints=False, save_csv_checkpoints=True):
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         pattern = re.compile("^[2-9][0-9]*")
-        assert pattern.match(tf.__version__)  # Check TF version is at least 2
+        assert pattern.match(tf.version.VERSION)  # Check TF version is at least 2
         # super(CvnnModel, self).__init__()
         self.name = name
         self.shape = shape
@@ -57,10 +66,7 @@ class CvnnModel:  # (Model)
         # Folder management for logs
         self.now = datetime.today()
         project_path = os.path.abspath("./")
-        self.root_dir = Path(project_path + "/log/" + str(self.now.year) + "/"
-                             + str(self.now.month) + self.now.strftime("%B") + "/"
-                             + str(self.now.day) + self.now.strftime("%A")
-                             + "/run-" + self.now.time().strftime("%Hh%Mm%S") + "/")
+        self.root_dir = Path(project_path + self.now.strftime("/log/%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
@@ -79,6 +85,31 @@ class CvnnModel:  # (Model)
             self.weights_summary_writer = tf.summary.create_file_writer(weigths_writer_logdir)
 
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
+        self.plotter = da.Plotter(self.root_dir)
+
+    def reset_model(self):
+        self.epochs_done = 0
+        for lay in self.shape:
+            lay.init_weights()
+        # Folder management for logs
+        old_root_dir = self.root_dir
+        self.now = datetime.today()
+        project_path = os.path.abspath("./")
+        self.root_dir = Path(project_path + self.now.strftime("/log/%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
+        if not os.path.exists(self.root_dir):
+            os.makedirs(self.root_dir)
+        # Chekpoints
+        self.graph_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train_func"))
+        self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
+        if self.tensorboard:  # After this, fit will have no say if using tensorboard or not.
+            train_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train"))
+            test_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/test"))
+            weigths_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/weights"))
+            self.train_summary_writer = tf.summary.create_file_writer(train_writer_logdir)
+            self.test_summary_writer = tf.summary.create_file_writer(test_writer_logdir)
+            self.weights_summary_writer = tf.summary.create_file_writer(weigths_writer_logdir)
+        self._manage_string("Restarted model from " + str(old_root_dir), False,
+                            filename=self.name + "_metadata.txt", mode="x")
         self.plotter = da.Plotter(self.root_dir)
 
     def call(self, x):
@@ -100,7 +131,7 @@ class CvnnModel:  # (Model)
 
     def is_complex(self):
         dtype = self.shape[0].get_input_dtype()
-        if dtype == np.complex64 and dtype == np.complex128:
+        if dtype == np.complex64 or dtype == np.complex128:
             return True
         else:
             return False
@@ -119,7 +150,7 @@ class CvnnModel:  # (Model)
             if x_test is not None:
                 assert y_test is not None
                 self._save_csv(x_test, y_test, 'test')
-        # Save model
+        # Save model weigths
         if self.save_model_checkpoints:
             if x_test is not None:
                 assert y_test is not None
@@ -228,6 +259,20 @@ class CvnnModel:  # (Model)
     #          Train 
     -----------------------"""
 
+    @run_once
+    def _start_graph_tensorflow(self):
+        # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
+        # Bracket the function call with
+        # tf.summary.trace_on() and tf.summary.trace_export().
+        # Prettier option:
+        # https://stackoverflow.com/questions/4103773/efficient-way-of-having-a-function-only-execute-once-in-a-loop
+        tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
+
+    @run_once
+    def _end_graph_tensorflow(self):
+        with self.graph_writer.as_default():
+            tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
+
     # Add '@tf.function' to accelerate the code by much!
     @tf.function
     def _train_step(self, x_train_batch, y_train_batch, learning_rate):
@@ -254,6 +299,7 @@ class CvnnModel:  # (Model)
 
     def fit(self, x_train, y_train, x_test=None, y_test=None, learning_rate=0.01, epochs=10, batch_size=100,
             verbose=True, display_freq=100, fast_mode=False, save_to_file=True):
+        # TODO: Consider removing fast_mode
         fit_count = next(self._fit_count)  # Know it's own number
         save_fit_filename = None
         if save_to_file:
@@ -283,17 +329,9 @@ class CvnnModel:  # (Model)
                                          iteration=iteration, num_tr_iter=num_tr_iter,
                                          total_epochs=epochs_done + epochs, fast_mode=fast_mode,
                                          verbose=verbose, save_fit_filename=save_fit_filename)
-                if self.epochs_done == 1 and iteration == 0:
-                    # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
-                    # Bracket the function call with
-                    # tf.summary.trace_on() and tf.summary.trace_export().
-                    # Prettier option:
-                    # https://stackoverflow.com/questions/4103773/efficient-way-of-having-a-function-only-execute-once-in-a-loop
-                    tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
+                self._start_graph_tensorflow()
                 self._train_step(x_batch, y_batch, learning_rate)
-                if self.epochs_done == 1 and iteration == 0:
-                    with self.graph_writer.as_default():
-                        tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
+                self._end_graph_tensorflow()
         # After epochs
         self._run_checkpoint(x_train, y_train, x_test, y_test, fast_mode=True)
         self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train, x_test, y_test),
@@ -395,7 +433,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.9'
+__version__ = '0.2.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

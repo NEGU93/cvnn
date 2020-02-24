@@ -600,7 +600,7 @@ class Plotter:
     def _csv_to_pandas(self):
         for file in os.listdir(self.path):
             if file.endswith(".csv"):
-                print(file)
+                # print(file)
                 self.pandas_list.append(pd.read_csv(self.path / file))
                 self.labels.append(os.path.splitext(file)[0])
 
@@ -709,6 +709,6 @@ if __name__ == "__main__":
     # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.21'
+__version__ = '0.0.22'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
