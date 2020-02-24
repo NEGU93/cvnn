@@ -170,7 +170,7 @@ def add_params(fig, ax, y_label=None, x_label=None, loc=None, title=None,
     if x_label is not None:
         ax.set_xlabel(x_label)
     if title is not None:
-        fig.suptitle(title)
+        ax.set_title(title)
     # save/show results
     if showfig:
         fig.show()
@@ -699,14 +699,90 @@ class Plotter:
             fig.show()
 
 
-# class MonteCarloPlotter(Plotter):
+class MonteCarloPlotter(Plotter):
 
-  #   def plot_histogram(self):
+    def plot_everything_histogram(self, reload=False, library='matplotlib', showfig=False, savefig=True):
+        if reload:
+            self._csv_to_pandas()
+        assert len(self.pandas_list) != 0
+        for key in self.pandas_list[0]:
+            self.plot_histogram(key, reload=False, library=library, showfig=showfig, savefig=savefig)
 
+    def plot_histogram(self,  key='loss', reload=False, library='matplotlib', showfig=False, savefig=True):
+        if reload:
+            self._csv_to_pandas()
+        if library == 'matplotlib':
+            self._plot_histogram_matplotlib(key=key, showfig=showfig, savefig=savefig)
+        elif library == 'plotly':
+            self._plot_histogram_plotly(key=key, showfig=showfig, savefig=savefig)
+        elif library == 'seaborn':
+            self._plot_histogram_seaborn(key=key, showfig=showfig, savefig=savefig)
+        else:
+            print("Warning: Unrecognized library to plot " + library)
+            return None
 
+    def _plot_histogram_matplotlib(self, key='loss', showfig=False, savefig=True):
+        fig, ax = plt.subplots()
+        bins = np.linspace(0, 1, 501)
+        min_ax = 1.0
+        max_ax = 0.0
+        title = None
+        for i, data in enumerate(self.pandas_list):
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
+            ax.hist(data[key], bins, alpha=0.5, label=self.labels[i])
+            min_ax = min(min_ax, min(data[key]))
+            max_ax = max(max_ax, max(data[key]))
+        title += " " + key
+        ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
+        add_params(fig, ax, x_label=key, title=title, loc='upper right',
+                   filename=self.path / (key + ".png"), showfig=showfig, savefig=savefig)
+        return fig, ax
 
+    def _plot_histogram_plotly(self, key='loss', showfig=False, savefig=True):
+        fig = go.Figure()
+        title = None
+        for i, data in enumerate(self.pandas_list):
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
+            fig.add_trace(go.Histogram(x=np.array(data[key]), name=self.labels[i]))
+        title += " " + key
+        # Overlay both histograms
+        fig.update_layout(barmode='overlay')
+        # Reduce opacity to see both histograms
+        fig.update_traces(opacity=0.75)
+        fig.update_layout(title=title,
+                          xaxis_title=key)
+        if savefig:
+            plotly.offline.plot(fig, filename=str(self.path / (key + ".html")))
+        elif showfig:
+            fig.show()
+        return fig
 
-
+    def _plot_histogram_seaborn(self, key='loss', showfig=False, savefig=True):
+        fig = plt.figure()
+        bins = np.linspace(0, 1, 501)
+        min_ax = 1.0
+        max_ax = 0.0
+        title = None
+        ax = None
+        for i, data in enumerate(self.pandas_list):
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
+            ax = sns.distplot(data[key], bins, label=self.labels[i])
+            min_ax = min(min_ax, min(data[key]))
+            max_ax = max(max_ax, max(data[key]))
+        title += " " + key
+        ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
+        add_params(fig, ax, x_label=key, title=title, loc='upper right',
+                   filename=self.path / (key + ".png"), showfig=showfig, savefig=savefig)
+        return fig, ax
 
 
 if __name__ == "__main__":

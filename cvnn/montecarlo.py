@@ -1,6 +1,7 @@
 import cvnn.layers as layers
 import cvnn.data_processing as dp
 from cvnn.cvnn_model import CvnnModel
+from cvnn.data_analysis import MonteCarloPlotter
 from datetime import datetime
 from pathlib import Path
 import copy
@@ -14,6 +15,7 @@ class MonteCarlo:
 
     def __init__(self):
         self.models = []
+        self.plotter = None
 
     def add_model(self, model):
         self.models.append(model)
@@ -28,6 +30,7 @@ class MonteCarlo:
         path = Path("./monte_carlo_runs/" + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
         if not os.path.exists(path):
             os.makedirs(path)
+        self.plotter = MonteCarloPlotter(path)
         files = []
         for model in self.models:
             file = open(path / (model.name + ".csv"), 'x')
@@ -56,6 +59,7 @@ class MonteCarlo:
                 files[i].flush()  # Not to lose the data if MC stops in the middle
                 # typically the above line would do. however this is used to ensure that the file is written
                 os.fsync(files[i].fileno())  # http://docs.python.org/2/library/stdtypes.html#file.flush
+        self.plotter.reload_data()
         for file in files:
             file.close()
 
