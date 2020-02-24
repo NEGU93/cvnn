@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from pdb import set_trace
 from tensorflow.keras import Model
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -31,7 +32,7 @@ class CvnnModel:  # (Model)
 
     def __init__(self, name, shape, loss_fun,
                  verbose=True, tensorboard=True, save_model_checkpoints=False, save_csv_checkpoints=True):
-        assert not save_model_checkpoints           # TODO: Not working for the moment, sorry!
+        assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         pattern = re.compile("^[2-9][0-9]*")
         assert pattern.match(tf.__version__)  # Check TF version is at least 2
         # super(CvnnModel, self).__init__()
@@ -108,8 +109,10 @@ class CvnnModel:  # (Model)
         Checkpoints
     """
 
-    def _run_checkpoint(self, x_train, y_train, x_test, y_test):
-        if self.tensorboard:    # Save tensorboard data
+    def _run_checkpoint(self, x_train, y_train, x_test, y_test,
+                        iteration=0, num_tr_iter=0, total_epochs=0,
+                        fast_mode=True, verbose=False, save_fit_filename=None):
+        if self.tensorboard:  # Save tensorboard data
             self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
         if self.save_csv_checkpoints:
             self._save_csv(x_train, y_train, 'train')
@@ -123,6 +126,12 @@ class CvnnModel:  # (Model)
                 self.save(x_test, y_test)
             else:
                 self.save(x_train, y_train)
+        # Run output
+        if not fast_mode:
+            epoch_str = self._get_str_current_epoch(x_train, y_train,
+                                                    self.epochs_done, total_epochs,
+                                                    iteration, num_tr_iter, x_test, y_test)
+            self._manage_string(epoch_str, verbose, save_fit_filename)
 
     def _save_csv(self, x, y, filename):
         loss = self.evaluate_loss(x, y)
@@ -156,14 +165,15 @@ class CvnnModel:  # (Model)
         for layer in self.shape:
             layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
 
-    def save(self, x, y):           # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
+    def save(self, x, y):  # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
         # TODO: TypeError: can't pickle _thread._local objects
         # https://github.com/tensorflow/tensorflow/issues/33283
         loss, acc = self.evaluate(x, y)
         checkpoint_root = self.root_dir + "saved_models/"
         if not os.path.exists(checkpoint_root):
             os.makedirs(checkpoint_root)
-        save_name = checkpoint_root + "model_checkpoint_epoch" + str(self.epochs_done) + "loss{0:.4f}acc{1:d}".format(loss, int(acc * 100))
+        save_name = checkpoint_root + "model_checkpoint_epoch" + str(self.epochs_done) + "loss{0:.4f}acc{1:d}".format(
+            loss, int(acc * 100))
 
         # CvnnModel._extractfromlocal(self)
         with open(save_name.replace(".", ",") + ".pickle", "wb") as saver:
@@ -191,9 +201,9 @@ class CvnnModel:  # (Model)
                 cls._loadtolocal(attr)
     """
 
-    @classmethod        # https://stackoverflow.com/a/2709848/5931672
+    @classmethod  # https://stackoverflow.com/a/2709848/5931672
     def loader(cls, f):
-        return pickle.load(f)       # TODO: not yet tested
+        return pickle.load(f)  # TODO: not yet tested
 
     """-------------------------
     # Predict models and results
@@ -254,12 +264,11 @@ class CvnnModel:  # (Model)
         num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
                             "\nEpochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
-                            self._get_str_evaluate(x_train, y_train),
+                            self._get_str_evaluate(x_train, y_train, x_test, y_test),
                             verbose, save_fit_filename)
         epochs_done = self.epochs_done
 
         for epoch in range(epochs):
-            self._run_checkpoint(x_train, y_train, x_test, y_test)
             self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
             x_train, y_train = randomize(x_train, y_train)
@@ -269,12 +278,11 @@ class CvnnModel:  # (Model)
                 end = (iteration + 1) * batch_size
                 x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
                 # Run optimization op (backpropagation)
-                if not fast_mode:
-                    if (self.epochs_done * batch_size + iteration) % display_freq == 0:
-                        epoch_str = self._get_str_current_epoch(x_batch, y_batch,
-                                                                self.epochs_done, epochs_done + epochs,
-                                                                iteration, num_tr_iter)
-                        self._manage_string(epoch_str, verbose, save_fit_filename)
+                if (self.epochs_done * batch_size + iteration) % display_freq == 0:
+                    self._run_checkpoint(x_train, y_train, x_test, y_test,
+                                         iteration=iteration, num_tr_iter=num_tr_iter,
+                                         total_epochs=epochs_done + epochs, fast_mode=fast_mode,
+                                         verbose=verbose, save_fit_filename=save_fit_filename)
                 if self.epochs_done == 1 and iteration == 0:
                     # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
                     # Bracket the function call with
@@ -287,8 +295,8 @@ class CvnnModel:  # (Model)
                     with self.graph_writer.as_default():
                         tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
         # After epochs
-        self._run_checkpoint(x_train, y_train, x_test, y_test)
-        self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train),
+        self._run_checkpoint(x_train, y_train, x_test, y_test, fast_mode=True)
+        self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train, x_test, y_test),
                             verbose, save_fit_filename)
         self.plotter.reload_data()
 
@@ -296,13 +304,19 @@ class CvnnModel:  # (Model)
         Managing strings
     """
 
-    def _get_str_current_epoch(self, x, y, epoch, epochs, iteration, num_tr_iter):
+    def _get_str_current_epoch(self, x, y, epoch, epochs, iteration, num_tr_iter, x_val=None, y_val=None):
         current_loss, current_acc = self.evaluate(x, y)
-        return "Epoch: {0}/{1}; batch {2}/{3}; train loss: {4:.4f} train accuracy: {5:.2f} %\n".format(epoch, epochs,
-                                                                                                       iteration,
-                                                                                                       num_tr_iter,
-                                                                                                       current_loss,
-                                                                                                       current_acc * 100)
+        ret_str = "Epoch: {0}/{1}; batch {2}/{3}; train loss: " \
+                  "{4:.4f} train accuracy: {5:.2f} %".format(epoch, epochs,
+                                                             iteration,
+                                                             num_tr_iter,
+                                                             current_loss,
+                                                             current_acc * 100)
+        if x_val is not None:
+            assert y_val is not None
+            val_loss, val_acc = self.evaluate(x_val, y_val)
+            ret_str += "; validation loss: {0:.4f} validation accuracy: {1:.2f} %".format(val_loss, val_acc * 100)
+        return ret_str + "\n"
 
     def _manage_string(self, string, verbose=False, filename=None, mode="a"):
         if verbose:
@@ -319,10 +333,14 @@ class CvnnModel:  # (Model)
                 logging.error("CvnnModel::manage_string: No such file or directory: " + self.root_dir)
                 sys.exit(-1)
 
-    def _get_str_evaluate(self, x_test, y_test):
-        loss, acc = self.evaluate(x_test, y_test)
+    def _get_str_evaluate(self, x_train, y_train, x_test, y_test):
+        loss, acc = self.evaluate(x_train, y_train)
         ret_str = "---------------------------------------------------------\n"
-        ret_str += "Loss: {0:.4f}, Accuracy: {1:.2f}\n".format(loss, acc * 100)
+        ret_str += "Training Loss: {0:.4f}, Training Accuracy: {1:.2f}\n".format(loss, acc * 100)
+        if x_test is not None:
+            assert y_test is not None
+            loss, acc = self.evaluate(x_test, y_test)
+            ret_str += "Validation Loss: {0:.4f}, Validation Accuracy: {1:.2f}\n".format(loss, acc * 100)
         ret_str += "---------------------------------------------------------\n"
         return ret_str
 
@@ -377,7 +395,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.8'
+__version__ = '0.2.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
