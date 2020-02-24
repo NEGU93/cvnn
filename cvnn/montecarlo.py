@@ -3,6 +3,7 @@ import cvnn.data_processing as dp
 from cvnn.cvnn_model import CvnnModel
 from datetime import datetime
 from pathlib import Path
+import copy
 import sys
 import os
 import numpy as np
@@ -51,21 +52,7 @@ class MonteCarlo:
                 else:
                     x_train_iter = x_train_real
                     x_val = x_test_real
-                test_shape = []
-                for layer in model.shape:
-                    if isinstance(layer, layers.ComplexDense):
-                        test_shape.append(layers.ComplexDense(layer.input_size, layer.output_size,
-                                                              activation=layer.activation,
-                                                              input_dtype=layer.input_dtype,
-                                                              output_dtype=layer.output_dtype,
-                                                              weight_initializer=layer.weight_initializer,
-                                                              bias_initializer=layer.bias_initializer
-                                                              ))
-                    else:
-                        sys.exit("Layer " + str(layer) + " unknown")
-                test_model = CvnnModel(model.name, test_shape, model.loss_fun,
-                                       verbose=debug, tensorboard=model.tensorboard,
-                                       save_model_checkpoints=False, save_csv_checkpoints=model.save_csv_checkpoints)
+                test_model = copy.deepcopy(model)
                 test_model.fit(x_train_iter, y_train, x_test=x_val, y_test=y_test,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=not debug, save_to_file=False)

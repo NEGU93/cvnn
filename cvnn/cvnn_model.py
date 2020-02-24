@@ -29,6 +29,7 @@ def run_once(f):
         if not wrapper.has_run:
             wrapper.has_run = True
             return f(*args, **kwargs)
+
     wrapper.has_run = False
     return wrapper
 
@@ -86,6 +87,25 @@ class CvnnModel:  # (Model)
 
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
         self.plotter = da.Plotter(self.root_dir)
+
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
+        new_shape = []
+        for layer in self.shape:
+            if isinstance(layer, layers.ComplexDense):
+                new_shape.append(layers.ComplexDense(layer.input_size, layer.output_size,
+                                                     activation=layer.activation,
+                                                     input_dtype=layer.input_dtype,
+                                                     output_dtype=layer.output_dtype,
+                                                     weight_initializer=layer.weight_initializer,
+                                                     bias_initializer=layer.bias_initializer
+                                                     ))
+            else:
+                sys.exit("Layer " + str(layer) + " unknown")
+        return CvnnModel(self.name, new_shape, self.loss_fun,
+                         verbose=False, tensorboard=self.tensorboard,
+                         save_model_checkpoints=False, save_csv_checkpoints=self.save_csv_checkpoints)
 
     def call(self, x):
         # Check all the data is a Layer object
@@ -408,7 +428,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.11'
+__version__ = '0.2.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
