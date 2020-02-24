@@ -87,31 +87,6 @@ class CvnnModel:  # (Model)
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
         self.plotter = da.Plotter(self.root_dir)
 
-    def reset_model(self):
-        self.epochs_done = 0
-        for lay in self.shape:
-            lay.init_weights()
-        # Folder management for logs
-        old_root_dir = self.root_dir
-        self.now = datetime.today()
-        project_path = os.path.abspath("./")
-        self.root_dir = Path(project_path + self.now.strftime("/log/%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
-        if not os.path.exists(self.root_dir):
-            os.makedirs(self.root_dir)
-        # Chekpoints
-        self.graph_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train_func"))
-        self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
-        if self.tensorboard:  # After this, fit will have no say if using tensorboard or not.
-            train_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train"))
-            test_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/test"))
-            weigths_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/weights"))
-            self.train_summary_writer = tf.summary.create_file_writer(train_writer_logdir)
-            self.test_summary_writer = tf.summary.create_file_writer(test_writer_logdir)
-            self.weights_summary_writer = tf.summary.create_file_writer(weigths_writer_logdir)
-        self._manage_string("Restarted model from " + str(old_root_dir), False,
-                            filename=self.name + "_metadata.txt", mode="x")
-        self.plotter = da.Plotter(self.root_dir)
-
     def call(self, x):
         # Check all the data is a Layer object
         if not all([isinstance(layer, layers.ComplexLayer) for layer in self.shape]):
@@ -433,7 +408,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.10'
+__version__ = '0.2.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

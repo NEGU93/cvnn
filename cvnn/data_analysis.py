@@ -699,6 +699,15 @@ class Plotter:
             fig.show()
 
 
+# class MonteCarloPlotter(Plotter):
+
+    # def plot_histogram(self):
+
+
+
+
+
+
 if __name__ == "__main__":
     plotter = Plotter("./log/2020/2February/21Friday/run-20h24m21")
     plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
@@ -709,6 +718,6 @@ if __name__ == "__main__":
     # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.22'
+__version__ = '0.0.23'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
