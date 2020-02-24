@@ -9,6 +9,30 @@ import sys
 import os
 
 
+class MonteCarlo:
+
+    def __init__(self):
+        self.models = []
+        
+    def add_model(self, model):
+        self.models.append(model)
+
+    def run(self, x_train, y_train, x_test, y_test, iterations=100, learning_rate=0.01, epochs=10, batch_size=100):
+        x_train_real, x_test_real = dp.separate_into_train_and_test(x_train, x_test)
+        for it in range(iterations):
+            print("Iteration {}/{}".format(it, iterations))
+            for model in self.models:
+                if model.is_complex():
+                    x = x_train
+                    x_val = x_test
+                else:
+                    x = x_train_real
+                    x_val = x_test_real
+                model.fit(x, y_train,  x_test=x_val, y_test=y_test,
+                          learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
+                          verbose=False, fast_mode=True, save_to_file=False)
+
+
 def monte_carlo_cvnn_rvnn_compare(iterations=100, m=10000, n=100, min_num_classes=2, max_num_classes=5,
                                   test_for_each_data=10, path="./results/", filename="histogram", name=''):
     """

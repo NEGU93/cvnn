@@ -222,9 +222,6 @@ def test_save_load():
                     print("All good!")
 
 
-if __name__ == "__main__":
-    get_constant(23, 21)
-
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.0.10'
 __maintainer__ = 'J. Agustin BARRACHINA'

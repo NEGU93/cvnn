@@ -9,6 +9,7 @@ import numpy as np
 import glob
 import re
 import os
+from pathlib import Path
 from pdb import set_trace
 import scipy.stats as stats
 
@@ -588,12 +589,124 @@ def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_lege
     return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename, axis_legends)
 
 
-if __name__ == '__main__':
-    res = get_histogram_results('./results')
-    res = get_pandas_mean_for_each_class(res)
+class Plotter:
+
+    def __init__(self, path):
+        assert os.path.exists(path)
+        self.path = Path(path)
+        self.pandas_list = []
+        self.labels = []
+
+    def _csv_to_pandas(self):
+        for file in os.listdir(self.path):
+            if file.endswith(".csv"):
+                print(file)
+                self.pandas_list.append(pd.read_csv(self.path / file))
+                self.labels.append(os.path.splitext(file)[0])
+
+    def reload_data(self):
+        self._csv_to_pandas()
+
+    def plot_everything(self, reload=False, library='matplotlib', showfig=False, savefig=True):
+        if reload:
+            self._csv_to_pandas()
+        assert len(self.pandas_list) != 0
+        for key in self.pandas_list[0]:
+            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig)
+
+    def plot_key(self, key='loss', reload=False, library='matplotlib', showfig=False, savefig=True):
+        if reload:
+            self._csv_to_pandas()
+        if library == 'matplotlib':
+            self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig)
+        elif library == 'plotly':
+            self._plot_plotly(key=key, showfig=showfig, savefig=savefig)
+        else:
+            print("Warning: Unrecognized library to plot " + library)
+
+    def _plot_matplotlib(self, key='loss', showfig=False, savefig=True):
+        fig, ax = plt.subplots()
+        title = None
+        for i, data in enumerate(self.pandas_list):
+            if key in data:
+                ax.plot(data[key], 'o-', label=self.labels[i])
+                if title is not None:
+                    title += " vs. " + self.labels[i]
+                else:
+                    title = self.labels[i]
+        title += " " + key
+        fig.legend(loc="upper right")
+        ax.set_ylabel(key)
+        ax.set_xlabel("step")
+        ax.set_title(title)
+        if showfig:
+            fig.show()
+        if savefig:
+            fig.savefig(str(self.path) + key + ".png")
+
+    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min):
+        fig = go.Figure()
+        colors = ['rgb(255, 0, 0)', 'rgb(0, 255, 0)', 'rgb(0, 0, 255)']  # TODO: This only works for 2 cases, no 3
+        annotations = []
+        title = None
+        for i, data in enumerate(self.pandas_list):
+            if key in data:
+                if title is not None:
+                    title += " vs. " + self.labels[i]
+                else:
+                    title = self.labels[i]
+                x = list(range(len(data[key])))
+                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[0], line_color=colors[i]))
+                # Add points
+                fig.add_trace(go.Scatter(x=[x[-1]],
+                                         y=[data[key].to_list()[-1]],
+                                         mode='markers',
+                                         name='last value',
+                                         marker_color=colors[i]))
+                # Max/min points
+                func_value = func(data[key])
+                # ATTENTION! this will only give you first occurrence
+                func_index = data[key].to_list().index(func_value)
+                if func_index != len(data[key])-1:
+                    fig.add_trace(go.Scatter(x=[func_index],
+                                             y=[func_value],
+                                             mode='markers',
+                                             name=func.__name__,
+                                             text=['{0:.2f}%'.format(func_value)],
+                                             textposition="top center",
+                                             marker_color=colors[i]))
+                    # Min annotations
+                    annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
+                                            xanchor='left', yanchor='middle',
+                                            text='{0:.2f}'.format(func_value),
+                                            font=dict(family='Arial',
+                                                      size=14),
+                                            showarrow=False, ay=-40))
+                # Right annotations
+                annotations.append(dict(xref='paper', x=0.95, y=data[key].to_list()[-1],
+                                        xanchor='left', yanchor='middle',
+                                        text='{0:.2f}'.format(data[key].to_list()[-1]),
+                                        font=dict(family='Arial',
+                                                  size=16),
+                                        showarrow=False))
+        fig.update_layout(annotations=annotations,
+                          title=title,
+                          xaxis_title='epochs',
+                          yaxis_title=key)
+        if savefig:
+            plotly.offline.plot(fig, filename=str(self.path) + key + ".html")
+        elif showfig:
+            fig.show()
+
+
+if __name__ == "__main__":
+    plotter = Plotter("./log/2020/2February/21Friday/run-20h24m21")
+    plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
+    # res = get_histogram_results('./results')
+    # res = get_pandas_mean_for_each_class(res)
     # plot_loss_and_acc("/home/barrachina/Documents/cvnn/log/CVNN_testing/run-20200127140842/CVNN_testing.csv"
     # , visualize=True)
-    set_trace()
+    # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.0.21'
