@@ -244,6 +244,8 @@ class CvnnModel:  # (Model)
                     # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
                     # Bracket the function call with
                     # tf.summary.trace_on() and tf.summary.trace_export().
+                    # Prettier option:
+                    # https://stackoverflow.com/questions/4103773/efficient-way-of-having-a-function-only-execute-once-in-a-loop
                     tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
                 self._train_step(x_batch, y_batch, learning_rate)
                 if self.epochs_done == 1 and iteration == 0:
