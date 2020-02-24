@@ -18,28 +18,21 @@ class MonteCarlo:
     def add_model(self, model):
         self.models.append(model)
 
-    def run(self, x, y, filename='monecarlo_run',
+    def run(self, x, y,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=False, debug=False):
         x_train, y_train, x_test, y_test = dp.separate_into_train_and_test(x, y)
         x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
         x_train_real = x_train_real.astype(np.float32)
         x_test_real = x_test_real.astype(np.float32)
         now = datetime.today()
-        path = Path("./results/" + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
+        path = Path("./monte_carlo_runs/" + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
         if not os.path.exists(path):
             os.makedirs(path)
-        filename = str(path / filename)
-        if not filename.endswith(".csv"):
-            filename += ".csv"
-        if os.path.exists(filename):
-            exit("File already existed, aborting to prevent override")
-        file = open(filename, 'a')
-        print("Writing results into " + filename)
-        for i, model in enumerate(self.models):
-            if i != 0:
-                file.write(",")
-            file.write("{0} train loss,{0} train acc,{0} test loss,{0} test acc".format(model.name))
-        file.write("\n")
+        files = []
+        for model in self.models:
+            file = open(path / (model.name + ".csv"), 'x')
+            file.write("train loss,train accuracy,test loss,test accuracy\n")
+            files.append(file)
         for it in range(iterations):
             print("Iteration {}/{}".format(it + 1, iterations))
             if shuffle:
@@ -59,15 +52,12 @@ class MonteCarlo:
                 train_loss, train_acc = test_model.evaluate(x_train_iter, y_train)
                 test_loss, test_acc = test_model.evaluate(x_val, y_test)
                 # save result
-                file.write(str(train_loss) + "," + str(train_acc) + "," + str(test_loss) + "," + str(test_acc))
-                if i != len(self.models) - 1:
-                    file.write(",")
-                else:
-                    file.write("\n")
-                    file.flush()  # Not to lose the data if MC stops in the middle
-                    # typically the above line would do. however this is used to ensure that the file is written
-                    os.fsync(file.fileno())  # http://docs.python.org/2/library/stdtypes.html#file.flush
-        file.close()
+                files[i].write(str(train_loss) + "," + str(train_acc) + "," + str(test_loss) + "," + str(test_acc) + "\n")
+                files[i].flush()  # Not to lose the data if MC stops in the middle
+                # typically the above line would do. however this is used to ensure that the file is written
+                os.fsync(files[i].fileno())  # http://docs.python.org/2/library/stdtypes.html#file.flush
+        for file in files:
+            file.close()
 
 
 class RealVsComplex(MonteCarlo):

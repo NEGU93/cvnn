@@ -701,7 +701,8 @@ class Plotter:
 
 # class MonteCarloPlotter(Plotter):
 
-    # def plot_histogram(self):
+  #   def plot_histogram(self):
+
 
 
 
@@ -718,6 +719,6 @@ if __name__ == "__main__":
     # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.23'
+__version__ = '0.0.24'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
