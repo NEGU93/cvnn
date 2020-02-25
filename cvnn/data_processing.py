@@ -187,7 +187,8 @@ class Dataset(ABC):
 
 class CorrelatedGaussianNormal(Dataset):
 
-    def __init__(self, m, n, num_classes=2, ratio=0.8, debug=False):
+    def __init__(self, m, n, num_classes=2, ratio=0.8, coeff_correl_limit=0.75, debug=False):
+        self.coeff_correl_limit = coeff_correl_limit
         self.debug = debug
         super().__init__(m, n, num_classes, ratio)
 
@@ -234,7 +235,7 @@ class CorrelatedGaussianNormal(Dataset):
         sigma_real = 1
         sigma_imag = 2
         for signal_class in range(self.num_classes):
-            coeff_correl = -0.999 + 2 * 0.999 * signal_class / (self.num_classes - 1)
+            coeff_correl = -self.coeff_correl_limit + 2 * self.coeff_correl_limit * signal_class / (self.num_classes - 1)
             r = np.array([
                 [sigma_real, coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag)],
                 [coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag), sigma_imag]
@@ -332,14 +333,14 @@ if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 1000
     n = 100
-    num_classes = 4
-    dataset = CorrelatedGaussianNormal(m, n)
+    num_classes = 2
+    dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=True, coeff_correl_limit=0.75)
     x, y = dataset.get_all()
     # create_correlated_gaussian_noise(n, debug=True)
     set_trace()
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

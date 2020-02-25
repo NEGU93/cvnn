@@ -89,6 +89,7 @@ def cart_selu(z):
     Applies Scaled Exponential Linear Unit (SELU) to both the real and imag part of z.
     The scaled exponential unit activation: scale * elu(x, alpha).
     https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu
+    https://arxiv.org/abs/1706.02515
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
     """
@@ -181,6 +182,6 @@ def pol_selu(z):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
