@@ -1,9 +1,9 @@
 import cvnn.layers as layers
-import cvnn.data_processing as dp
+from cvnn.data_processing import Dataset
 from cvnn.cvnn_model import CvnnModel
 from cvnn.data_analysis import MonteCarloPlotter
 from datetime import datetime
-from utils import create_folder
+from utils import create_folder, transform_to_real, randomize
 from pathlib import Path
 import copy
 import sys
@@ -22,11 +22,10 @@ class MonteCarlo:
         self.models.append(model)
 
     def run(self, x, y,
-            iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=False, debug=False):
-        x_train, y_train, x_test, y_test = dp.separate_into_train_and_test(x, y)
-        x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
-        x_train_real = x_train_real.astype(np.float32)
-        x_test_real = x_test_real.astype(np.float32)
+            iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=True, debug=False):
+        x_train, y_train, x_val, y_val = Dataset.separate_into_train_and_test(x, y)
+        x_train_real = transform_to_real(x_train)
+        x_test_real = transform_to_real(x_val)
         path = create_folder("./monte_carlo_runs/")
         self.plotter = MonteCarloPlotter(path)
         files = []
@@ -37,21 +36,23 @@ class MonteCarlo:
         for it in range(iterations):
             print("Iteration {}/{}".format(it + 1, iterations))
             if shuffle:
-                x_train, y_train, x_test, y_test = dp.separate_into_train_and_test(x, y)
-                x_train_real, x_test_real = dp.separate_into_train_and_test(x_train, x_test)
+                x, y = randomize(x, y)
+                x_train, y_train, x_val, y_val = Dataset.separate_into_train_and_test(x, y)
+                x_train_real = transform_to_real(x_train)
+                x_test_real = transform_to_real(x_val)
             for i, model in enumerate(self.models):
                 if model.is_complex():
                     x_train_iter = x_train
-                    x_val = x_test
+                    x_val = x_val
                 else:
                     x_train_iter = x_train_real
                     x_val = x_test_real
                 test_model = copy.deepcopy(model)
-                test_model.fit(x_train_iter, y_train, x_test=x_val, y_test=y_test,
+                test_model.fit(x_train_iter, y_train, x_test=x_val, y_test=y_val,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=not debug, save_to_file=False)
                 train_loss, train_acc = test_model.evaluate(x_train_iter, y_train)
-                test_loss, test_acc = test_model.evaluate(x_val, y_test)
+                test_loss, test_acc = test_model.evaluate(x_val, y_val)
                 # save result
                 files[i].write(str(train_loss) + "," + str(train_acc) + "," + str(test_loss) + "," + str(test_acc) + "\n")
                 files[i].flush()  # Not to lose the data if MC stops in the middle

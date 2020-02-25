@@ -213,7 +213,7 @@ def plot_csv_histogram(filename, data1, data2, name_d1='CVNN', name_d2='RVNN', b
                                          bins=bins)
     elif library == 'pandas':
         # https://medium.com/python-pandemonium/data-visualization-in-python-histogram-in-matplotlib-dce38f49f89c
-        fig, ax = plot_hist_pandas(data1, bins, column)     # TODO: this is not longer a pandas data CHECK THIS CASE!
+        fig, ax = plot_hist_pandas(data1, bins, column)  # TODO: this is not longer a pandas data CHECK THIS CASE!
     elif library == 'seaborn':
         fig, ax = plot_2_hist_seaborn(np.array(data1), np.array(data2), name_d1, name_d2, bins=bins)
     else:
@@ -294,7 +294,7 @@ def get_loss_and_acc_means(filename):
 def get_loss_and_acc_std(filename):
     try:
         data = pd.read_csv(filename)
-        return data.std().to_dict()     # TODO: can return Nan with only one data
+        return data.std().to_dict()  # TODO: can return Nan with only one data
     except pd.errors.EmptyDataError:
         print("pandas.errors.EmptyDataError: get_loss_and_acc_means: No columns to parse from file")
         return None
@@ -484,7 +484,7 @@ def plot_acc(filename, savefig=True, showfig=True, library='plotly'):
                                  y=[test_max],
                                  mode='markers',
                                  name='max value test',
-                                 text=['{}%'.format(int(test_max*100))],
+                                 text=['{}%'.format(int(test_max * 100))],
                                  textposition="top center",
                                  marker_color=color_test))
         annotations = []
@@ -504,13 +504,13 @@ def plot_acc(filename, savefig=True, showfig=True, library='plotly'):
         # Right annotations
         annotations.append(dict(xref='paper', x=0.95, y=data["train acc"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
-                                text='{}%'.format(int(data["train acc"].to_list()[-1]*100)),
+                                text='{}%'.format(int(data["train acc"].to_list()[-1] * 100)),
                                 font=dict(family='Arial',
                                           size=16),
                                 showarrow=False))
         annotations.append(dict(xref='paper', x=0.95, y=data["test acc"].to_list()[-1],
                                 xanchor='left', yanchor='middle',
-                                text='{}%'.format(int(data["test acc"].to_list()[-1]*100)),
+                                text='{}%'.format(int(data["test acc"].to_list()[-1] * 100)),
                                 font=dict(family='Arial',
                                           size=16),
                                 showarrow=False))
@@ -667,7 +667,7 @@ class Plotter:
                 func_value = func(data[key])
                 # ATTENTION! this will only give you first occurrence
                 func_index = data[key].to_list().index(func_value)
-                if func_index != len(data[key])-1:
+                if func_index != len(data[key]) - 1:
                     fig.add_trace(go.Scatter(x=[func_index],
                                              y=[func_value],
                                              mode='markers',
@@ -699,6 +699,32 @@ class Plotter:
         elif showfig:
             fig.show()
 
+    def get_full_pandas_dataframe(self):
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
+        self._csv_to_pandas()
+        length = len(self.pandas_list[0])
+        for data_frame in self.pandas_list:  # TODO: Check if.
+            assert length == len(data_frame)  # What happens if NaN? Can I cope not having same len?
+
+        result = pd.DataFrame({
+            'network': [self.get_net_name()]*length,
+            'step': list(range(length)),
+            'path': [self.path]*length
+        })
+
+        for data_frame, data_label in zip(self.pandas_list, self.labels):
+            data_frame.columns = [data_label + " " + str(col) for col in data_frame.columns]
+            # concatenated = pd.concat(self.pandas_list, keys=self.labels)
+            result = pd.concat([result, data_frame], axis=1, sort=False)
+        return result
+
+    def get_net_name(self):
+        str_to_match = "_metadata.txt"
+        for file in os.listdir(self.path):
+            if file.endswith(str_to_match):
+                return re.sub(str_to_match + "$", '', file)     # See that there is no need to open the file
+        return "Name not found"
+
 
 class MonteCarloPlotter(Plotter):
 
@@ -709,7 +735,7 @@ class MonteCarloPlotter(Plotter):
         for key in self.pandas_list[0]:
             self.plot_histogram(key, reload=False, library=library, showfig=showfig, savefig=savefig)
 
-    def plot_histogram(self,  key='loss', reload=False, library='matplotlib', showfig=False, savefig=True):
+    def plot_histogram(self, key='loss', reload=False, library='matplotlib', showfig=False, savefig=True):
         if reload:
             self._csv_to_pandas()
         if library == 'matplotlib':
@@ -787,8 +813,9 @@ class MonteCarloPlotter(Plotter):
 
 
 if __name__ == "__main__":
-    plotter = Plotter("./log/2020/2February/21Friday/run-20h24m21")
-    plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
+    plotter = Plotter("./log/2020/02February/25Tuesday/run-14h16m23")
+    # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
+    plotter.get_full_pandas_dataframe()
     # res = get_histogram_results('./results')
     # res = get_pandas_mean_for_each_class(res)
     # plot_loss_and_acc("/home/barrachina/Documents/cvnn/log/CVNN_testing/run-20200127140842/CVNN_testing.csv"
@@ -796,6 +823,6 @@ if __name__ == "__main__":
     # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.26'
+__version__ = '0.0.27'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

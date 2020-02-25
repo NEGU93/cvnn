@@ -138,21 +138,27 @@ class CvnnModel:  # (Model)
     def _run_checkpoint(self, x_train, y_train, x_test, y_test,
                         iteration=0, num_tr_iter=0, total_epochs=0,
                         fast_mode=True, verbose=False, save_fit_filename=None):
-        if self.tensorboard:  # Save tensorboard data
+        # Save tensorboard data
+        if self.tensorboard:
             self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
+        # Save train and (maybe) test acc and loss
+        # I do this instead of making and internal vector because I make sure that it can be recovered at any time.
+        # Even if the training stopped in the middle by any reason. This way my result is saved many times (Backup!)
+        # Other more efficient method would be to create a vector and save it at the end but I risk loosing info
+        # if the training stops at any point.
         if self.save_csv_checkpoints:
             self._save_csv(x_train, y_train, 'train')
             if x_test is not None:
                 assert y_test is not None
                 self._save_csv(x_test, y_test, 'test')
-        # Save model weigths
+        # Save model weights
         if self.save_model_checkpoints:
             if x_test is not None:
                 assert y_test is not None
                 self.save(x_test, y_test)
             else:
                 self.save(x_train, y_train)
-        # Run output
+        # Print checkpoint state (and maybe save to file)
         if not fast_mode:
             epoch_str = self._get_str_current_epoch(x_train, y_train,
                                                     self.epochs_done, total_epochs,
@@ -428,7 +434,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.14'
+__version__ = '0.2.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
