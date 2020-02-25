@@ -607,20 +607,20 @@ class Plotter:
     def reload_data(self):
         self._csv_to_pandas()
 
-    def plot_everything(self, reload=False, library='matplotlib', showfig=False, savefig=True):
+    def plot_everything(self, reload=False, library='matplotlib', showfig=False, savefig=True, name=""):
         if reload:
             self._csv_to_pandas()
         assert len(self.pandas_list) != 0
         for key in self.pandas_list[0]:
-            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig)
+            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, name=name)
 
-    def plot_key(self, key='loss', reload=False, library='matplotlib', showfig=False, savefig=True):
+    def plot_key(self, key='loss', reload=False, library='matplotlib', showfig=False, savefig=True, name=""):
         if reload:
             self._csv_to_pandas()
         if library == 'matplotlib':
             self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig)
         elif library == 'plotly':
-            self._plot_plotly(key=key, showfig=showfig, savefig=savefig)
+            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, name=name)
         else:
             print("Warning: Unrecognized library to plot " + library)
 
@@ -644,7 +644,7 @@ class Plotter:
         if savefig:
             fig.savefig(str(self.path) + key + ".png")
 
-    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min):
+    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, name=""):
         fig = go.Figure()
         colors = ['rgb(255, 0, 0)', 'rgb(0, 255, 0)', 'rgb(0, 0, 255)']  # TODO: This only works for 2 cases, no 3
         annotations = []
@@ -656,7 +656,7 @@ class Plotter:
                 else:
                     title = self.labels[i]
                 x = list(range(len(data[key])))
-                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[0], line_color=colors[i]))
+                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i], line_color=colors[i]))
                 # Add points
                 fig.add_trace(go.Scatter(x=[x[-1]],
                                          y=[data[key].to_list()[-1]],
@@ -689,9 +689,10 @@ class Plotter:
                                         font=dict(family='Arial',
                                                   size=16),
                                         showarrow=False))
+        title += " " + key + " " + name
         fig.update_layout(annotations=annotations,
                           title=title,
-                          xaxis_title='epochs',
+                          xaxis_title='steps',
                           yaxis_title=key)
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path) + key + ".html")
@@ -795,6 +796,6 @@ if __name__ == "__main__":
     # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.24'
+__version__ = '0.0.25'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

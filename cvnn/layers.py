@@ -10,6 +10,10 @@ import numpy as np
 from tensorflow.keras import layers
 from pdb import set_trace
 
+# Initializers:
+# https://www.tensorflow.org/api_docs/python/tf/keras/initializers
+# https://keras.io/initializers/
+
 act_dispatcher = {
     'linear': act.linear,
     'cart_sigmoid': act.cart_sigmoid,
@@ -22,7 +26,8 @@ act_dispatcher = {
     'cart_softsign': act.cart_softsign,
     'cart_tanh': act.cart_tanh,
     'cart_softmax': act.cart_softmax,
-    'cart_softmax_real': act.cart_softmax_real
+    'cart_softmax_real': act.cart_softmax_real,
+    'pol_selu': act.pol_selu
 }
 
 supported_dtypes = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
@@ -90,7 +95,7 @@ class ComplexLayer(layers.Layer, ABC):
 class ComplexDense(ComplexLayer):
 
     def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.zeros):
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros):
         super(ComplexDense, self).__init__(input_size, output_size, input_dtype, output_dtype)
         self.output_dtype = output_dtype
         self.activation = activation
@@ -106,15 +111,15 @@ class ComplexDense(ComplexLayer):
                                                     self.weight_initializer()(shape=(self.input_size, self.output_size))),
                                          name="weights" + str(self.layer_number)),
                              dtype=self.input_dtype)
-            self.b = tf.cast(tf.Variable(tf.complex(tf.zeros(self.output_size),
-                                                    tf.zeros(self.output_size)),
+            self.b = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(self.output_size),
+                                                    self.bias_initializer()(self.output_size)),
                                          name="bias" + str(self.layer_number))
                              , dtype=self.input_dtype)
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
             self.w = tf.cast(tf.Variable(self.weight_initializer()(shape=(self.input_size, self.output_size)),
                                          name="weights" + str(self.layer_number)),
                              dtype=self.input_dtype)
-            self.b = tf.cast(tf.Variable(tf.zeros(self.output_size),
+            self.b = tf.cast(tf.Variable(self.bias_initializer()(self.output_size),
                                          name="bias" + str(self.layer_number)),
                              dtype=self.input_dtype)
         else:
@@ -171,7 +176,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.18'
+__version__ = '0.0.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

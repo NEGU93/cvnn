@@ -369,11 +369,11 @@ class CvnnModel:  # (Model)
     def _get_str_evaluate(self, x_train, y_train, x_test, y_test):
         loss, acc = self.evaluate(x_train, y_train)
         ret_str = "---------------------------------------------------------\n"
-        ret_str += "Training Loss: {0:.4f}, Training Accuracy: {1:.2f}\n".format(loss, acc * 100)
+        ret_str += "Training Loss: {0:.4f}, Training Accuracy: {1:.2f} %\n".format(loss, acc * 100)
         if x_test is not None:
             assert y_test is not None
             loss, acc = self.evaluate(x_test, y_test)
-            ret_str += "Validation Loss: {0:.4f}, Validation Accuracy: {1:.2f}\n".format(loss, acc * 100)
+            ret_str += "Validation Loss: {0:.4f}, Validation Accuracy: {1:.2f} %\n".format(loss, acc * 100)
         ret_str += "---------------------------------------------------------\n"
         return ret_str
 
@@ -428,7 +428,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.12'
+__version__ = '0.2.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

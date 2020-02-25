@@ -40,7 +40,7 @@ def cart_elu(z, alpha=1.0):
     :return: Tensor result of the applied activation function
     """
     return tf.cast(tf.complex(tf.keras.activations.elu(tf.math.real(z), alpha),
-                   tf.keras.activations.elu(tf.math.imag(z), alpha)), dtype=z.dtype)
+                              tf.keras.activations.elu(tf.math.imag(z), alpha)), dtype=z.dtype)
 
 
 def cart_exponential(z):
@@ -51,7 +51,7 @@ def cart_exponential(z):
     :return: Tensor result of the applied activation function
     """
     return tf.cast(tf.complex(tf.keras.activations.exponential(tf.math.real(z)),
-                   tf.keras.activations.exponential(tf.math.imag(z))), dtype=z.dtype)
+                              tf.keras.activations.exponential(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_hard_sigmoid(z):
@@ -66,7 +66,7 @@ def cart_hard_sigmoid(z):
     :return: Tensor result of the applied activation function
     """
     return tf.cast(tf.complex(tf.keras.activations.hard_sigmoid(tf.math.real(z)),
-                   tf.keras.activations.hard_sigmoid(tf.math.imag(z))), dtype=z.dtype)
+                              tf.keras.activations.hard_sigmoid(tf.math.imag(z))), dtype=z.dtype)
 
 
 def cart_relu(z, alpha=0.0, max_value=None, threshold=0):
@@ -166,9 +166,21 @@ def cart_softmax_real(z, axis=-1):
 """
 TYPE B: Polar form.
 """
+# TODO: for all ReLU functions, the polar form makes no real sense. If we keep the phase because abs(z) > 0
+
+
+def pol_selu(z):
+    """
+    Logic:
+        I must mantain the phase (angle) so: cos(theta) = x_0/r_0 = x_1/r_1.
+        For real case, x_0 = r_0 so it also works.
+    """
+    r_0 = tf.abs(z)
+    r_1 = tf.keras.activations.selu(r_0)
+    return tf.cast(tf.complex(tf.math.real(z) * r_1 / r_0, tf.math.imag(z) * r_1 / r_0), dtype=z.dtype)
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

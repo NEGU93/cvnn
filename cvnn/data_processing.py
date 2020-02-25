@@ -8,6 +8,12 @@ from math import sqrt
 from scipy.io import loadmat
 from scipy import signal
 from pdb import set_trace
+from abc import ABC, abstractmethod
+
+from pylab import plot, show, axis, subplot, xlabel, ylabel, grid
+from matplotlib import pyplot as plt
+from scipy.linalg import eigh, cholesky
+from scipy.stats import norm
 
 """
 This files contains all functions used for pre-processing data before training which includes:
@@ -43,17 +49,18 @@ def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=True):
     if pre_rand:
         x, y = randomize(x, y)
     m = np.shape(x)[0]
-    x_train = x[:int(m*ratio)]
-    y_train = y[:int(m*ratio)]
-    x_test = x[int(m*ratio):]
-    y_test = y[int(m*ratio):]
+    x_train = x[:int(m * ratio)]
+    y_train = y[:int(m * ratio)]
+    x_test = x[int(m * ratio):]
+    y_test = y[int(m * ratio):]
     return x_train, y_train, x_test, y_test
 
 
 def sparse_into_categorical(spar, num_classes=None):
     assert len(spar.shape) == 1
+    spar = spar.astype(int)
     if num_classes is None:
-        num_classes = max(spar) + 1     # assumes labels starts at 0
+        num_classes = max(spar) + 1  # assumes labels starts at 0
     cat = np.zeros((spar.shape[0], num_classes))
     for i, k in enumerate(spar):
         cat[i][k] = 1
@@ -91,27 +98,27 @@ def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
     :param num_classes: Number of different classes to be made
     :return: tuple of a (num_classes*m)xn matrix with data and labels regarding it class.
     """
-    x = np.empty((num_classes*m, n)) + 1j*np.empty((num_classes*m, n))
+    x = np.empty((num_classes * m, n)) + 1j * np.empty((num_classes * m, n))
     # I am using zeros instead of empty because although counter intuitive it seams it works faster:
     # https://stackoverflow.com/questions/55145592/performance-of-np-empty-np-zeros-and-np-ones
     # DEBUNKED? https://stackoverflow.com/questions/52262147/speed-of-np-empty-vs-np-zeros?
-    y = np.zeros((num_classes*m, num_classes))      # Initialize all at 0 to later put a 1 on the corresponding place
+    y = np.zeros((num_classes * m, num_classes))  # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
-        mu = int(100*np.random.rand())
-        sigma = 15*np.random.rand()
+        mu = int(100 * np.random.rand())
+        sigma = 15 * np.random.rand()
         print("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
         try:
-            x[k*m:(k+1)*m, :] = noise_gen_dispatcher[noise_type](m, n, mu, sigma)
+            x[k * m:(k + 1) * m, :] = noise_gen_dispatcher[noise_type](m, n, mu, sigma)
         except KeyError:
             sys.exit("_create_gaussian_noise: Unknown type of noise")
-        y[k*m:(k+1)*m, k] = 1
+        y[k * m:(k + 1) * m, k] = 1
 
     return normalize(x), y
 
 
 def _create_constant_classes(m, n, num_classes=2, vect=None):
     if vect is not None:
-        assert len(vect) == num_classes     # TODO: message of error
+        assert len(vect) == num_classes  # TODO: message of error
     x = np.empty((num_classes * m, n)) + 1j * np.empty((num_classes * m, n))
     y = np.zeros((num_classes * m, num_classes))  # Initialize all at 0 to later put a 1 on the corresponding place
     for k in range(num_classes):
@@ -119,7 +126,7 @@ def _create_constant_classes(m, n, num_classes=2, vect=None):
             const = np.random.randint(100)
         else:
             const = vect[k]
-        x[k * m:(k + 1) * m, :] = np.ones((m, n))*const + 1j * np.ones((m, n))*const
+        x[k * m:(k + 1) * m, :] = np.ones((m, n)) * const + 1j * np.ones((m, n)) * const
         y[k * m:(k + 1) * m, k] = 1
         print("Class " + str(k) + " value = " + str(const))
     # set_trace()
@@ -142,13 +149,112 @@ def get_constant(m, n, num_classes=2, vect=None):
     return separate_into_train_and_test(x, y)
 
 
+class Dataset(ABC):
+    def __init__(self, m, n, num_classes=2, ratio=0.8, name='dataset'):
+        self.num_samples_per_class = m
+        self.num_samples = n
+        self.num_classes = num_classes
+        self.ratio = ratio
+        x, y = self.generate_data()
+        self.x, self.y = randomize(x, y)
+        self.x_train, self.y_train, self.x_test, self.y_test = separate_into_train_and_test(self.x, self.y, ratio)
+        self.x_train_real, self.x_test_real = get_real_train_and_test(self.x_train, self.x_test)
+
+    def generate_data(self):
+        pass
+
+    def get_train_and_test(self):
+        return self.x_train, self.y_train, self.x_test, self.y_test
+
+    def get_train_test_real(self):
+        return self.x_train_real, self.y_train, self.x_test_real, self.y_test
+
+    def get_all(self):
+        return self.x, self.y
+
+    def shuffle(self):
+        self.x, self.y = randomize(self.x, self.y)
+        self.x_train, self.y_train, self.x_test, self.y_test = separate_into_train_and_test(self.x, self.y, self.ratio)
+        self.x_train_real, self.x_test_real = get_real_train_and_test(self.x_train, self.x_test)
+
+    def save_data(self):
+        save_npy_array("data", self.x)
+        save_npy_array("labels", self.y)
+
+    def get_categorical_labels(self):
+        return sparse_into_categorical(self.y, self.num_classes)
+
+
+class CorrelatedGaussianNormal(Dataset):
+
+    def __init__(self, m, n, num_classes=2, ratio=0.8, debug=False):
+        self.debug = debug
+        super().__init__(m, n, num_classes, ratio)
+
+    def _create_correlated_gaussian_point(self, r=None, debug=False):
+        # https: // scipy - cookbook.readthedocs.io / items / CorrelatedRandomSamples.html
+        # Choice of cholesky or eigenvector method.
+        method = 'cholesky'
+        # method = 'eigenvectors'
+        if r is None:
+            # The desired covariance matrix.
+            r = np.array([
+                [1, 1.41],
+                [1.41, 2]
+            ])
+        # Generate samples from three independent normally distributed random
+        # variables (with mean 0 and std. dev. 1).
+        x = norm.rvs(size=(2, self.num_samples))
+
+        # We need a matrix `c` for which `c*c^T = r`.  We can use, for example,
+        # the Cholesky decomposition, or the we can construct `c` from the
+        # eigenvectors and eigenvalues.
+        if method == 'cholesky':
+            # Compute the Cholesky decomposition.
+            c = cholesky(r, lower=True)
+        else:
+            # Compute the eigenvalues and eigenvectors.
+            evals, evecs = eigh(r)
+            # Construct c, so c*c^T = r.
+            c = np.dot(evecs, np.diag(np.sqrt(evals)))
+
+        # Convert the data to correlated random variables.
+        y = np.dot(c, x)
+        if debug:
+            plot(y[0], y[1], 'b.')
+            axis('equal')
+            grid(True)
+            plt.gca().set_aspect('equal', adjustable='box')
+            show()
+        return [y[0][i] + 1j * y[1][i] for i in range(y.shape[1])]
+
+    def generate_data(self):
+        x = []
+        y = []
+        sigma_real = 1
+        sigma_imag = 2
+        for signal_class in range(self.num_classes):
+            coeff_correl = -0.999 + 2 * 0.999 * signal_class / (self.num_classes - 1)
+            r = np.array([
+                [sigma_real, coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag)],
+                [coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag), sigma_imag]
+            ])
+            if self.debug:
+                print("Class {} has coeff_correl {}".format(signal_class, coeff_correl))
+                self._create_correlated_gaussian_point(r, True)
+            y.extend(signal_class * np.ones(self.num_samples_per_class))
+            for _ in range(self.num_samples_per_class):
+                x.append(self._create_correlated_gaussian_point(r, debug=False))
+        return np.array(x), np.array(y)
+
+
 """-----------------
 # Save and Load data
 -----------------"""
 
 
 def save_npy_array(array_name, array):
-    np.save("../data/"+array_name+".npy", array)
+    np.save("./data/" + array_name + ".npy", array)
 
 
 def save_dataset(array_name, x_train, y_train, x_test, y_test):
@@ -163,7 +269,7 @@ def save_dataset(array_name, x_train, y_train, x_test, y_test):
     """
     if not os.path.exists("../data"):
         os.makedirs("../data")
-    return np.savez("../data/"+array_name, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
+    return np.savez("../data/" + array_name, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
 
 def load_dataset(array_name):
@@ -178,7 +284,7 @@ def load_dataset(array_name):
         # print(npzfile.files)
         return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
     except FileNotFoundError:
-        sys.exit("Cvnn::load_dataset: The file could not be found")     # TODO: check if better just throw a warning
+        sys.exit("Cvnn::load_dataset: The file could not be found")  # TODO: check if better just throw a warning
 
 
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
@@ -222,7 +328,18 @@ def test_save_load():
                     print("All good!")
 
 
+if __name__ == "__main__":
+    # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
+    m = 1000
+    n = 100
+    num_classes = 4
+    dataset = CorrelatedGaussianNormal(m, n)
+    x, y = dataset.get_all()
+    # create_correlated_gaussian_noise(n, debug=True)
+    set_trace()
+
+
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.10'
+__version__ = '0.0.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

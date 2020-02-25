@@ -17,12 +17,20 @@ def transform_to_real(x_complex):
     :param x_complex: Complex-valued matrix of size mxn
     :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
     """
+    # import pdb; pdb.set_trace()
     m = np.shape(x_complex)[0]
     n = np.shape(x_complex)[1]
     x_real = np.ones((m, 2*n))
     x_real[:, :n] = np.real(x_complex)
     x_real[:, n:] = np.imag(x_complex)
-    return x_real
+    dtype = x_real.dtype
+    if x_complex.dtype == np.complex64:
+        dtype = np.float32
+    elif x_complex.dtype == np.complex128:
+        dtype = np.float64
+    else:
+        print("Warning: transform_to_real: data type unknown: " + str(np.dtype(x_complex)))
+    return x_real.astype(dtype)
 
 
 def cart2polar(z):
@@ -83,6 +91,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
