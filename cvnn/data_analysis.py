@@ -642,7 +642,7 @@ class Plotter:
         if showfig:
             fig.show()
         if savefig:
-            fig.savefig(str(self.path) + key + ".png")
+            fig.savefig(str(self.path / key) + ".png")
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, name=""):
         fig = go.Figure()
@@ -695,7 +695,7 @@ class Plotter:
                           xaxis_title='steps',
                           yaxis_title=key)
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path) + key + ".html")
+            plotly.offline.plot(fig, filename=str(self.path / key) + ".html")
         elif showfig:
             fig.show()
 
@@ -796,6 +796,6 @@ if __name__ == "__main__":
     # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.25'
+__version__ = '0.0.26'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

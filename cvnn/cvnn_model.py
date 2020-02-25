@@ -11,6 +11,7 @@ import cvnn.layers as layers
 import cvnn.data_processing as dp
 import cvnn.data_analysis as da
 from cvnn.utils import randomize, get_next_batch
+from utils import create_folder
 from datetime import datetime
 from pathlib import Path
 from pdb import set_trace
@@ -66,8 +67,7 @@ class CvnnModel:  # (Model)
 
         # Folder management for logs
         self.now = datetime.today()
-        project_path = os.path.abspath("./")
-        self.root_dir = Path(project_path + self.now.strftime("/log/%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
+        self.root_dir = create_folder("./log/", now=self.now)
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
@@ -428,7 +428,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.13'
+__version__ = '0.2.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

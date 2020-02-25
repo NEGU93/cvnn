@@ -22,149 +22,88 @@ This files contains all functions used for pre-processing data before training w
     3. Load and save data files (Save and Load data)
 """
 
-"""----
-# Utils
-----"""
-
-
-def get_real_train_and_test(x_train, x_test):
-    x_train_real = transform_to_real(x_train)
-    x_test_real = transform_to_real(x_test)
-
-    return x_train_real, x_test_real
-
-
-def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=True):
-    """
-    Separates data x with corresponding labels y into train and test set.
-    :param x: data
-    :param y: labels of data x
-    :param ratio: value between 0 and 1.
-        1 meaning all the data x will be the training set and 0 meaning all data x will be the test set.
-    :param pre_rand: if True then x and y will be shuffled first (maintaining coherence between them)
-    :return: tuple (x_train, y_train, x_test, y_test) of the training and test set both data and labels.
-    """
-    if (ratio > 1) or (ratio < 0):
-        sys.exit("Error:separate_into_train_and_test: ratio should be between 0 and 1. Got value " + str(ratio))
-    if pre_rand:
-        x, y = randomize(x, y)
-    m = np.shape(x)[0]
-    x_train = x[:int(m * ratio)]
-    y_train = y[:int(m * ratio)]
-    x_test = x[int(m * ratio):]
-    y_test = y[int(m * ratio):]
-    return x_train, y_train, x_test, y_test
-
-
-def sparse_into_categorical(spar, num_classes=None):
-    assert len(spar.shape) == 1
-    spar = spar.astype(int)
-    if num_classes is None:
-        num_classes = max(spar) + 1  # assumes labels starts at 0
-    cat = np.zeros((spar.shape[0], num_classes))
-    for i, k in enumerate(spar):
-        cat[i][k] = 1
-    return cat
-
-
 """-------------
-# Create dataset
+# Dataset
 -------------"""
 
 
-def _create_non_correlated_gaussian_noise(m, n, mu, sigma):
-    """
-    Creates a numpy matrix of size mxn with random gaussian distribution of mean mu and variance sigma
-    """
-    x = (np.random.normal(mu, sigma, (m, n)) + 1j * np.random.normal(mu, sigma, (m, n))) / sqrt(2)
-    return x
-
-
-def _create_hilbert_gaussian_noise(m, n, mu, sigma):
-    x_real = np.random.normal(mu, sigma, (m, n))
-    return signal.hilbert(x_real)
-
-
-noise_gen_dispatcher = {
-    'non_correlated': _create_non_correlated_gaussian_noise,
-    'hilbert': _create_hilbert_gaussian_noise
-}
-
-
-def _create_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
-    """
-    :param m: Number of examples per class
-    :param n: Size of vector
-    :param num_classes: Number of different classes to be made
-    :return: tuple of a (num_classes*m)xn matrix with data and labels regarding it class.
-    """
-    x = np.empty((num_classes * m, n)) + 1j * np.empty((num_classes * m, n))
-    # I am using zeros instead of empty because although counter intuitive it seams it works faster:
-    # https://stackoverflow.com/questions/55145592/performance-of-np-empty-np-zeros-and-np-ones
-    # DEBUNKED? https://stackoverflow.com/questions/52262147/speed-of-np-empty-vs-np-zeros?
-    y = np.zeros((num_classes * m, num_classes))  # Initialize all at 0 to later put a 1 on the corresponding place
-    for k in range(num_classes):
-        mu = int(100 * np.random.rand())
-        sigma = 15 * np.random.rand()
-        print("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
-        try:
-            x[k * m:(k + 1) * m, :] = noise_gen_dispatcher[noise_type](m, n, mu, sigma)
-        except KeyError:
-            sys.exit("_create_gaussian_noise: Unknown type of noise")
-        y[k * m:(k + 1) * m, k] = 1
-
-    return normalize(x), y
-
-
-def _create_constant_classes(m, n, num_classes=2, vect=None):
-    if vect is not None:
-        assert len(vect) == num_classes  # TODO: message of error
-    x = np.empty((num_classes * m, n)) + 1j * np.empty((num_classes * m, n))
-    y = np.zeros((num_classes * m, num_classes))  # Initialize all at 0 to later put a 1 on the corresponding place
-    for k in range(num_classes):
-        if vect is None:
-            const = np.random.randint(100)
-        else:
-            const = vect[k]
-        x[k * m:(k + 1) * m, :] = np.ones((m, n)) * const + 1j * np.ones((m, n)) * const
-        y[k * m:(k + 1) * m, k] = 1
-        print("Class " + str(k) + " value = " + str(const))
-    # set_trace()
-    return normalize(x), y
-
-
-def get_non_correlated_gaussian_noise(m, n, num_classes=2):
-    return get_gaussian_noise(m, n, num_classes=num_classes, noise_type='non_correlated')
-
-
-def get_gaussian_noise(m, n, num_classes=2, noise_type='hilbert'):
-    x, y = _create_gaussian_noise(m, n, num_classes, noise_type)
-    x, y = randomize(x, y)
-    return separate_into_train_and_test(x, y)
-
-
-def get_constant(m, n, num_classes=2, vect=None):
-    x, y = _create_constant_classes(m, n, num_classes, vect)
-    x, y = randomize(x, y)
-    return separate_into_train_and_test(x, y)
-
-
 class Dataset(ABC):
-    def __init__(self, m, n, num_classes=2, ratio=0.8, name='dataset'):
+    def __init__(self, m, n, num_classes=2, ratio=0.8, validation=0):
+        """
+        :param m: Number of examples per class
+        :param n: Size of vector
+        :param num_classes: Number of different classes to be made
+        """
         self.num_samples_per_class = m
         self.num_samples = n
         self.num_classes = num_classes
         self.ratio = ratio
-        x, y = self.generate_data()
-        self.x, self.y = randomize(x, y)
-        self.x_train, self.y_train, self.x_test, self.y_test = separate_into_train_and_test(self.x, self.y, ratio)
-        self.x_train_real, self.x_test_real = get_real_train_and_test(self.x_train, self.x_test)
+        self.validation = validation
+        self.save_path = create_folder("./data/")
+        self.x = np.empty((self.num_classes * self.num_samples_per_class, self.num_samples)) + \
+                 1j * np.empty((self.num_classes * self.num_samples_per_class, self.num_samples))
+        # I am using zeros instead of empty because although counter intuitive it seams it works faster:
+        # https://stackoverflow.com/questions/55145592/performance-of-np-empty-np-zeros-and-np-ones
+        # DEBUNKED? https://stackoverflow.com/questions/52262147/speed-of-np-empty-vs-np-zeros?
+        # Initialize all at 0 to later put a 1 on the corresponding place
+        # TODO: generate to zero the other parameters as well
+        self.y = np.zeros((self.num_classes * self.num_samples_per_class, self.num_classes))
+        self.generate_data()
+        # Generate data from x and y
+        self.x_train_w_val, self.y_train_w_val, self.x_test, self.y_test = None, None, None, None
+        self.x_train, self.y_train = None, None
+        self.x_val, self.y_val = None, None
+        self.x_train_real, self.x_test_real, self.x_val_real = None, None, None
+        self._generate_data_from_base()
+
+    def _generate_data_from_base(self):
+        """
+            Generates everything once x and y is defined
+        """
+        # This must be run after each case
+        self.x, self.y = randomize(self.x, self.y)
+        self.x_train_w_val, self.y_train_w_val, self.x_test, self.y_test = self.separate_into_train_and_test(self.x,
+                                                                                                             self.y,
+                                                                                                             self.ratio)
+        self.x_test_real = transform_to_real(self.x_test)
+        self._generate_train_and_validation()
+
+    def shuffle(self):
+        """
+            Only changes the validation and train but not the test
+        """
+        self.x_train_w_val, self.y_train_w_val = randomize(self.x_train_w_val, self.y_train_w_val)
+        self._generate_train_and_validation()
+
+    def _generate_train_and_validation(self):
+        self.x_train, self.y_train, self.x_val, self.y_val = self.separate_into_train_and_test(self.x_train_w_val,
+                                                                                               self.y_train_w_val,
+                                                                                               1 - self.validation)
+        self.x_train_real = transform_to_real(self.x_train)
+        self.x_val_real = transform_to_real(self.x_val)
 
     def generate_data(self):
+        """
+            Generates x and y
+        """
         pass
+
+    def save_data(self):
+        np.save(self.save_path / "data.npy", self.x)
+        np.save(self.save_path / "labels.npy", self.y)
+
+    """
+        Getters
+    """
 
     def get_train_and_test(self):
         return self.x_train, self.y_train, self.x_test, self.y_test
+
+    def get_train_and_val(self):
+        return self.x_train, self.y_train, self.x_val, self.y_val
+
+    def get_test(self):
+        return self.x_test, self.y_test
 
     def get_train_test_real(self):
         return self.x_train_real, self.y_train, self.x_test_real, self.y_test
@@ -172,25 +111,53 @@ class Dataset(ABC):
     def get_all(self):
         return self.x, self.y
 
-    def shuffle(self):
-        self.x, self.y = randomize(self.x, self.y)
-        self.x_train, self.y_train, self.x_test, self.y_test = separate_into_train_and_test(self.x, self.y, self.ratio)
-        self.x_train_real, self.x_test_real = get_real_train_and_test(self.x_train, self.x_test)
-
-    def save_data(self):
-        save_npy_array("data", self.x)
-        save_npy_array("labels", self.y)
-
     def get_categorical_labels(self):
-        return sparse_into_categorical(self.y, self.num_classes)
+        return self.sparse_into_categorical(self.y, self.num_classes)
+
+    """
+        Static functions
+    """
+
+    @staticmethod
+    def sparse_into_categorical(spar, num_classes=None):
+        assert len(spar.shape) == 1
+        spar = spar.astype(int)
+        if num_classes is None:
+            num_classes = max(spar) + 1  # assumes labels starts at 0
+        cat = np.zeros((spar.shape[0], num_classes))
+        for i, k in enumerate(spar):
+            cat[i][k] = 1
+        return cat
+
+    @staticmethod
+    def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=True):
+        """
+        Separates data x with corresponding labels y into train and test set.
+        :param x: data
+        :param y: labels of data x
+        :param ratio: value between 0 and 1.
+            1 meaning all the data x will be the training set and 0 meaning all data x will be the test set.
+        :param pre_rand: if True then x and y will be shuffled first (maintaining coherence between them)
+        :return: tuple (x_train, y_train, x_test, y_test) of the training and test set both data and labels.
+        """
+        if (ratio > 1) or (ratio < 0):
+            sys.exit("Error:separate_into_train_and_test: ratio should be between 0 and 1. Got value " + str(ratio))
+        if pre_rand:
+            x, y = randomize(x, y)
+        m = np.shape(x)[0]
+        x_train = x[:int(m * ratio)]
+        y_train = y[:int(m * ratio)]
+        x_test = x[int(m * ratio):]
+        y_test = y[int(m * ratio):]
+        return x_train, y_train, x_test, y_test
 
 
 class CorrelatedGaussianNormal(Dataset):
 
-    def __init__(self, m, n, num_classes=2, ratio=0.8, coeff_correl_limit=0.75, debug=False):
+    def __init__(self, m, n, num_classes=2, ratio=0.8, validation=0, coeff_correl_limit=0.75, debug=False):
         self.coeff_correl_limit = coeff_correl_limit
         self.debug = debug
-        super().__init__(m, n, num_classes, ratio)
+        super().__init__(m, n, num_classes, ratio=ratio, validation=validation)
 
     def _create_correlated_gaussian_point(self, r=None, debug=False):
         # https: // scipy - cookbook.readthedocs.io / items / CorrelatedRandomSamples.html
@@ -235,7 +202,8 @@ class CorrelatedGaussianNormal(Dataset):
         sigma_real = 1
         sigma_imag = 2
         for signal_class in range(self.num_classes):
-            coeff_correl = -self.coeff_correl_limit + 2 * self.coeff_correl_limit * signal_class / (self.num_classes - 1)
+            coeff_correl = -self.coeff_correl_limit + 2 * self.coeff_correl_limit * signal_class / (
+                    self.num_classes - 1)
             r = np.array([
                 [sigma_real, coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag)],
                 [coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag), sigma_imag]
@@ -246,7 +214,42 @@ class CorrelatedGaussianNormal(Dataset):
             y.extend(signal_class * np.ones(self.num_samples_per_class))
             for _ in range(self.num_samples_per_class):
                 x.append(self._create_correlated_gaussian_point(r, debug=False))
-        return np.array(x), np.array(y)
+        self.x = np.array(x)
+        self.y = np.array(y)
+
+
+class GaussianNoise(Dataset):
+
+    def __init__(self, m, n, num_classes=2, ratio=0.8, validation=0, function='hilbert'):
+        super().__init__(m, n, num_classes, ratio, validation)
+        noise_gen_dispatcher = {
+            'non_correlated': self._create_non_correlated_gaussian_noise,
+            'hilbert': self._create_hilbert_gaussian_noise
+        }
+        try:
+            self.function = noise_gen_dispatcher[function]
+        except KeyError:
+            sys.exit("GaussianNoise: Unknown type of noise" + str(function))
+
+    def generate_data(self):
+        for k in range(self.num_classes):
+            mu = int(100 * np.random.rand())
+            sigma = 15 * np.random.rand()
+            print("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
+            self.x[k * self.num_samples_per_class:(k + 1) * self.num_samples_per_class, :] = self.function(mu, sigma)
+            self.y[k * self.num_samples_per_class:(k + 1) * self.num_samples_per_class, k] = 1
+        self.x = normalize(self.x)
+
+    def _create_non_correlated_gaussian_noise(self, mu, sigma):
+        """
+        Creates a numpy matrix of size mxn with random gaussian distribution of mean mu and variance sigma
+        """
+        return (np.random.normal(mu, sigma, (self.num_samples_per_class, self.num_samples)) +
+                1j * np.random.normal(mu, sigma, (self.num_samples_per_class, self.num_samples))) / sqrt(2)
+
+    def _create_hilbert_gaussian_noise(self, mu, sigma):
+        x_real = np.random.normal(mu, sigma, (self.num_samples_per_class, self.num_samples))
+        return signal.hilbert(x_real)
 
 
 """-----------------
@@ -339,8 +342,7 @@ if __name__ == "__main__":
     # create_correlated_gaussian_noise(n, debug=True)
     set_trace()
 
-
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

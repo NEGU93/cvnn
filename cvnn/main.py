@@ -28,9 +28,9 @@ if __name__ == "__main__":
     output_size = y.shape[1]  # Size of output
     h1_size = 100
     h2_size = 40
-    shape = [ComplexDense(input_size=input_size, output_size=h1_size, activation='cart_selu',
+    shape = [ComplexDense(input_size=input_size, output_size=h1_size, activation='cart_relu',
                           input_dtype=np.complex64, output_dtype=np.complex64),
-             ComplexDense(input_size=h1_size, output_size=h2_size, activation='cart_selu',
+             ComplexDense(input_size=h1_size, output_size=h2_size, activation='cart_relu',
                           input_dtype=np.complex64, output_dtype=np.complex64),
              ComplexDense(input_size=h2_size, output_size=output_size, activation='cart_softmax_real',
                           input_dtype=np.complex64, output_dtype=np.float32)]
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     input_size *= 2
     h1_size *= 2
     h2_size *= 2
-    shape = [ComplexDense(input_size=input_size, output_size=h1_size, activation='cart_selu',
+    shape = [ComplexDense(input_size=input_size, output_size=h1_size, activation='cart_relu',
                           input_dtype=np.float32, output_dtype=np.float32),
-             ComplexDense(input_size=h1_size, output_size=h2_size, activation='cart_selu',
+             ComplexDense(input_size=h1_size, output_size=h2_size, activation='cart_relu',
                           input_dtype=np.float32, output_dtype=np.float32),
              ComplexDense(input_size=h2_size, output_size=output_size, activation='cart_softmax_real',
                           input_dtype=np.float32, output_dtype=np.float32)]
@@ -58,6 +58,6 @@ if __name__ == "__main__":
     real_network.plotter.plot_key(key='accuracy', library='plotly', name=real_network.name)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.16'
+__version__ = '0.0.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

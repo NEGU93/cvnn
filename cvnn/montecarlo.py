@@ -3,6 +3,7 @@ import cvnn.data_processing as dp
 from cvnn.cvnn_model import CvnnModel
 from cvnn.data_analysis import MonteCarloPlotter
 from datetime import datetime
+from utils import create_folder
 from pathlib import Path
 import copy
 import sys
@@ -26,10 +27,7 @@ class MonteCarlo:
         x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
         x_train_real = x_train_real.astype(np.float32)
         x_test_real = x_test_real.astype(np.float32)
-        now = datetime.today()
-        path = Path("./monte_carlo_runs/" + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
-        if not os.path.exists(path):
-            os.makedirs(path)
+        path = create_folder("./monte_carlo_runs/")
         self.plotter = MonteCarloPlotter(path)
         files = []
         for model in self.models:

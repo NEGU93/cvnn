@@ -1,6 +1,18 @@
 import tensorflow as tf
 import numpy as np
+from datetime import datetime
+from pathlib import Path
 import sys
+import os
+
+
+def create_folder(root_path, now=None):
+    if now is None:
+        now = datetime.today()
+    path = Path(root_path + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
 
 
 def get_func_name(fun):
@@ -91,6 +103,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
