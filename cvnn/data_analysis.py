@@ -722,9 +722,9 @@ class Plotter:
             assert length == len(data_frame)  # What happens if NaN? Can I cope not having same len?
 
         result = pd.DataFrame({
-            'network': [self.get_net_name()]*length,
+            'network': [self.get_net_name()] * length,
             'step': list(range(length)),
-            'path': [self.path]*length
+            'path': [self.path] * length
         })
 
         for data_frame, data_label in zip(self.pandas_list, self.labels):
@@ -737,7 +737,7 @@ class Plotter:
         str_to_match = "_metadata.txt"
         for file in os.listdir(self.path):
             if file.endswith(str_to_match):
-                return re.sub(str_to_match + "$", '', file)     # See that there is no need to open the file
+                return re.sub(str_to_match + "$", '', file)  # See that there is no need to open the file
         return "Name not found"
 
 
@@ -755,7 +755,8 @@ class MonteCarloPlotter(Plotter):
             if key not in self.filter_keys:
                 self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
-    def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
+    def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True,
+                 index_loc='mean'):
         super().plot_key(key, reload, library, showfig, savefig, index_loc)
 
 
@@ -766,20 +767,20 @@ class MonteCarloPlotter(Plotter):
 class MonteCarloAnalyzer:
 
     def __init__(self, df=None, path=None):
-        if path is not None and df is not None: # I have data and the place where I want to save it
+        if path is not None and df is not None:  # I have data and the place where I want to save it
             self.df = df  # DataFrame with all the data
             self.path = Path(path)
             self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
-        elif path is not None and df is None:   # Load df from Path
+        elif path is not None and df is None:  # Load df from Path
             if not path.endswith('.csv'):
                 path += '.csv'
             self.df = pd.read_csv(path)
             self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
-        elif path is None and df is not None:   # Save df into default path
+        elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./montecarlo/")
-            self.df = df    # DataFrame with all the data
+            self.df = df  # DataFrame with all the data
             self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
-        else:   # I have nothing
+        else:  # I have nothing
             self.path = create_folder("./montecarlo/")
             self.df = pd.DataFrame()
         self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
@@ -837,12 +838,12 @@ class MonteCarloAnalyzer:
         for net in networks_availables:
             title += net + ' '
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
-            data = self.df[filter]      # Get only the data to plot
+            data = self.df[filter]  # Get only the data to plot
             hist_data.append(data[key].to_list())
             group_labels.append(net)
             # fig.add_trace(px.histogram(np.array(data[key]), marginal="box"))
             # fig.add_trace(go.Histogram(x=np.array(data[key]), name=net))
-        fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)    # https://plot.ly/python/distplot/
+        fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)  # https://plot.ly/python/distplot/
         title += key + " comparison"
 
         # Overlay both histograms
@@ -893,6 +894,69 @@ class MonteCarloAnalyzer:
             data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
             data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
 
+    def plot_3d_hist(self, steps=None, key='test accuracy'):
+        if steps is None:
+            # steps = [int(x) for x in np.linspace(min(self.df.step), max(self.df.step), 6)]
+            steps = [int(x) for x in np.logspace(min(self.df.step), np.log2(max(self.df.step)), 8, base=2)]
+            steps[0] = 0
+            # steps = [int(x) for x in np.logspace(min(self.df.step), np.log10(max(self.df.step)), 6)]
+            # steps[0] = 0
+        fill_colors = ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854']
+
+        networks_availables = self.df.network.unique()
+        cols = ['step', key]
+        data = []
+        for step in steps:  # TODO: verify steps are in df
+            for i, net in enumerate(networks_availables):
+                filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+                data_to_plot = self.df[filter][cols]
+                # https://stackoverflow.com/a/60403270/5931672
+                a0, a1 = np.histogram(data_to_plot[key], bins=10, density=False)
+                a0 = a0.tolist()
+                a1 = a1.tolist()
+                a0 = np.repeat(a0, 2).tolist()
+                a0.insert(0, 0)
+                a0.append(0)
+                # a0.pop()
+                a1 = np.repeat(a1, 2)
+                """
+                fig.add_traces(go.Scatter3d(x=[step] * len(a0), y=a1, z=a0,
+                                            mode='lines', name=net + " " + str(step),
+                                            surfacecolor=fill_colors[i], surfaceaxis=1,
+                                            line=dict(color='black', width=4)
+                                            )
+                               )
+                """
+                # set_trace()
+                data.append(dict(type='scatter3d', mode='lines',
+                                 x=[step] * len(a0), y=a1, z=a0,
+                                 name=net + " " + str(step),
+                                 # surfaceaxis=0,  # add a surface axis ('1' refers to axes[1] i.e. the y-axis)
+                                 # surfacecolor=fill_colors[i],
+                                 line=dict(color=fill_colors[i], width=2),
+                                 ))
+        """
+        fig.update_layout(title='Multiple',
+                          xaxis_title='step',
+                          yaxis_title=key,
+                          # zaxis={'title': 'counts'},
+                          showlegend=True)
+        """
+        layout = dict(
+            title='',
+            showlegend=True,
+            scene=dict(
+                xaxis=dict(title='step'),
+                yaxis=dict(title=key),
+                zaxis=dict(title='counts'),
+                xaxis_type="log"
+                # camera=dict(eye=dict(x=-1.7, y=-1.7, z=0.5))
+            )
+        )
+        fig = dict(data=data, layout=layout)
+        plotly.offline.plot(fig, filename=str(self.path / (key + "_3d_histogram.html")))
+        set_trace()
+
 
 if __name__ == "__main__":
     # plotter = Plotter("./log/2020/02February/25Tuesday/run-14h16m23")
@@ -900,10 +964,12 @@ if __name__ == "__main__":
     # plotter.get_full_pandas_dataframe()
     monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
                                               path="./montecarlo/2020/02February/26Wednesday/run-15h51m17/run_data.csv")
-    monte_carlo_analyzer.plot_histogram(library='plotly')
+    # monte_carlo_analyzer.plot_histogram(library='plotly')
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
+    monte_carlo_analyzer.plot_3d_hist()
+    set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
