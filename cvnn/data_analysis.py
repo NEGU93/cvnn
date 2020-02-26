@@ -3,6 +3,7 @@ import matplotlib.transforms as transforms
 import plotly
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
+import plotly.express as px
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -790,11 +791,11 @@ class MonteCarloAnalyzer:
         self.save_stat_results()
         self.monte_carlo_plotter.reload_data()
 
-    def plot_everything_histogram(self, library='matplotlib', step=-1, showfig=False, savefig=True):
+    def plot_everything_histogram(self, library='plotly', step=-1, showfig=False, savefig=True):
         for key in self.plotable_info[0]:
             self.plot_histogram(key, library=library, step=step, showfig=showfig, savefig=savefig)
 
-    def plot_histogram(self, key='test accuracy', step=-1, library='matplotlib', showfig=False, savefig=True):
+    def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True):
         if library == 'matplotlib':
             self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig)
         elif library == 'plotly':
@@ -827,16 +828,21 @@ class MonteCarloAnalyzer:
         return fig, ax
 
     def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True):
-        fig = go.Figure()
         networks_availables = self.df.network.unique()
         title = ''
         if step == -1:
             step = max(self.df.step)
+        hist_data = []
+        group_labels = []
         for net in networks_availables:
             title += net + ' '
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]      # Get only the data to plot
-            fig.add_trace(go.Histogram(x=np.array(data[key]), name=net))
+            hist_data.append(data[key].to_list())
+            group_labels.append(net)
+            # fig.add_trace(px.histogram(np.array(data[key]), marginal="box"))
+            # fig.add_trace(go.Histogram(x=np.array(data[key]), name=net))
+        fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)    # https://plot.ly/python/distplot/
         title += key + " comparison"
 
         # Overlay both histograms
@@ -846,7 +852,7 @@ class MonteCarloAnalyzer:
         fig.update_layout(title=title,
                           xaxis_title=key)
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path / (key + ".html")))
+            plotly.offline.plot(fig, filename=str(self.path / (key + "_histogram.html")))
         elif showfig:
             fig.show()
         return fig
@@ -893,11 +899,11 @@ if __name__ == "__main__":
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
     monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                             path="./montecarlo/2020/02February/26Wednesday/run-15h08m15/run_data.csv")
-    monte_carlo_analyzer.monte_carlo_plotter.plot_key()
-    set_trace()
+                                              path="./montecarlo/2020/02February/26Wednesday/run-15h51m17/run_data.csv")
+    monte_carlo_analyzer.plot_histogram(library='plotly')
+    # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.28'
+__version__ = '0.0.29'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
