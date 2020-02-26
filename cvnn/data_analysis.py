@@ -904,6 +904,6 @@ if __name__ == "__main__":
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.29'
+__version__ = '0.1.0'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
