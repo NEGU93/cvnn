@@ -4,6 +4,7 @@ log/
 out/
 data/
 results/
+montecarlo/
 
 # python cache
 __pycache__/

@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from pdb import set_trace
 import scipy.stats as stats
+from cvnn.utils import create_folder
 
 
 def find_intersection_of_gaussians(m1, m2, std1, std2):
@@ -591,49 +592,57 @@ def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_lege
 
 class Plotter:
 
-    def __init__(self, path):
+    def __init__(self, path, file_suffix=".csv"):
         assert os.path.exists(path)
         self.path = Path(path)
         self.pandas_list = []
         self.labels = []
+        self.file_suffix = file_suffix
+        self._csv_to_pandas()
 
     def _csv_to_pandas(self):
+        self.pandas_list = []
+        self.labels = []
         for file in os.listdir(self.path):
-            if file.endswith(".csv"):
-                # print(file)
+            if file.endswith(self.file_suffix):
                 self.pandas_list.append(pd.read_csv(self.path / file))
                 self.labels.append(os.path.splitext(file)[0])
 
     def reload_data(self):
         self._csv_to_pandas()
 
-    def plot_everything(self, reload=False, library='matplotlib', showfig=False, savefig=True, name=""):
+    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
         if reload:
             self._csv_to_pandas()
         assert len(self.pandas_list) != 0
         for key in self.pandas_list[0]:
-            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, name=name)
+            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
-    def plot_key(self, key='loss', reload=False, library='matplotlib', showfig=False, savefig=True, name=""):
+    def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
         if reload:
             self._csv_to_pandas()
         if library == 'matplotlib':
-            self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig)
+            self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc)
         elif library == 'plotly':
-            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, name=name)
+            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc)
         else:
             print("Warning: Unrecognized library to plot " + library)
 
-    def _plot_matplotlib(self, key='loss', showfig=False, savefig=True):
+    def _plot_matplotlib(self, key='loss', showfig=False, savefig=True, index_loc=None):
         fig, ax = plt.subplots()
         title = None
         for i, data in enumerate(self.pandas_list):
             if key in data:
-                ax.plot(data[key], 'o-', label=self.labels[i])
                 if title is not None:
                     title += " vs. " + self.labels[i]
                 else:
                     title = self.labels[i]
+                if index_loc is not None:
+                    if 'stats' in data.keys():
+                        data = data[data['stats'] == 'mean']
+                    else:
+                        print("Warning: Trying to index an array without index")
+                ax.plot(data[key], 'o-', label=self.labels[i])
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
@@ -644,17 +653,22 @@ class Plotter:
         if savefig:
             fig.savefig(str(self.path / key) + ".png")
 
-    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, name=""):
+    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
         fig = go.Figure()
         colors = ['rgb(255, 0, 0)', 'rgb(0, 255, 0)', 'rgb(0, 0, 255)']  # TODO: This only works for 2 cases, no 3
         annotations = []
-        title = None
+        title = ''
         for i, data in enumerate(self.pandas_list):
             if key in data:
                 if title is not None:
                     title += " vs. " + self.labels[i]
                 else:
                     title = self.labels[i]
+                if index_loc is not None:
+                    if 'stats' in data.keys():
+                        data = data[data['stats'] == 'mean']
+                    else:
+                        print("Warning: Trying to index an array without index")
                 x = list(range(len(data[key])))
                 fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i], line_color=colors[i]))
                 # Add points
@@ -689,7 +703,7 @@ class Plotter:
                                         font=dict(family='Arial',
                                                   size=16),
                                         showarrow=False))
-        title += " " + key + " " + name
+        title += " " + key
         fig.update_layout(annotations=annotations,
                           title=title,
                           xaxis_title='steps',
@@ -728,56 +742,103 @@ class Plotter:
 
 class MonteCarloPlotter(Plotter):
 
-    def plot_everything_histogram(self, reload=False, library='matplotlib', showfig=False, savefig=True):
+    def __init__(self, path):
+        self.filter_keys = ['step', 'stats']
+        super().__init__(path, file_suffix="_statistical_result.csv")
+
+    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
         if reload:
             self._csv_to_pandas()
         assert len(self.pandas_list) != 0
         for key in self.pandas_list[0]:
-            self.plot_histogram(key, reload=False, library=library, showfig=showfig, savefig=savefig)
+            if key not in self.filter_keys:
+                self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
-    def plot_histogram(self, key='loss', reload=False, library='matplotlib', showfig=False, savefig=True):
-        if reload:
-            self._csv_to_pandas()
+    def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
+        super().plot_key(key, reload, library, showfig, savefig, index_loc)
+
+
+# TODO: 3D histogram
+# https://plot.ly/python/v3/3d-filled-line-plots/
+# https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
+# https://matplotlib.org/examples/mplot3d/bars3d_demo.html
+class MonteCarloAnalyzer:
+
+    def __init__(self, df=None, path=None):
+        if path is not None and df is not None: # I have data and the place where I want to save it
+            self.df = df  # DataFrame with all the data
+            self.path = Path(path)
+            self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+        elif path is not None and df is None:   # Load df from Path
+            if not path.endswith('.csv'):
+                path += '.csv'
+            self.df = pd.read_csv(path)
+            self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
+        elif path is None and df is not None:   # Save df into default path
+            self.path = create_folder("./montecarlo/")
+            self.df = df    # DataFrame with all the data
+            self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+        else:   # I have nothing
+            self.path = create_folder("./montecarlo/")
+            self.df = pd.DataFrame()
+        self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+        self.monte_carlo_plotter = MonteCarloPlotter(self.path)
+
+    def set_df(self, df):
+        self.df = df  # DataFrame with all the data
+        self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+        self.save_stat_results()
+        self.monte_carlo_plotter.reload_data()
+
+    def plot_everything_histogram(self, library='matplotlib', step=-1, showfig=False, savefig=True):
+        for key in self.plotable_info[0]:
+            self.plot_histogram(key, library=library, step=step, showfig=showfig, savefig=savefig)
+
+    def plot_histogram(self, key='test accuracy', step=-1, library='matplotlib', showfig=False, savefig=True):
         if library == 'matplotlib':
-            self._plot_histogram_matplotlib(key=key, showfig=showfig, savefig=savefig)
+            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig)
         elif library == 'plotly':
-            self._plot_histogram_plotly(key=key, showfig=showfig, savefig=savefig)
+            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
         elif library == 'seaborn':
-            self._plot_histogram_seaborn(key=key, showfig=showfig, savefig=savefig)
+            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig)
         else:
             print("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_histogram_matplotlib(self, key='loss', showfig=False, savefig=True):
+    def _plot_histogram_matplotlib(self, key='test accuracy', step=-1, showfig=False, savefig=True):
         fig, ax = plt.subplots()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
-        title = None
-        for i, data in enumerate(self.pandas_list):
-            if title is not None:
-                title += " vs. " + self.labels[i]
-            else:
-                title = self.labels[i]
-            ax.hist(data[key], bins, alpha=0.5, label=self.labels[i])
+        networks_availables = self.df.network.unique()
+        title = ''
+        if step == -1:
+            step = max(self.df.step)
+        for net in networks_availables:
+            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            data = self.df[filter]  # Get only the data to plot
+            ax.hist(data[key], bins, alpha=0.5, label=net)
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
-        title += " " + key
+        title += key + " comparison"
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
         add_params(fig, ax, x_label=key, title=title, loc='upper right',
-                   filename=self.path / (key + ".png"), showfig=showfig, savefig=savefig)
+                   filename=self.path / (key + "_matplotlib.png"), showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='loss', showfig=False, savefig=True):
+    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True):
         fig = go.Figure()
-        title = None
-        for i, data in enumerate(self.pandas_list):
-            if title is not None:
-                title += " vs. " + self.labels[i]
-            else:
-                title = self.labels[i]
-            fig.add_trace(go.Histogram(x=np.array(data[key]), name=self.labels[i]))
-        title += " " + key
+        networks_availables = self.df.network.unique()
+        title = ''
+        if step == -1:
+            step = max(self.df.step)
+        for net in networks_availables:
+            title += net + ' '
+            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            data = self.df[filter]      # Get only the data to plot
+            fig.add_trace(go.Histogram(x=np.array(data[key]), name=net))
+        title += key + " comparison"
+
         # Overlay both histograms
         fig.update_layout(barmode='overlay')
         # Reduce opacity to see both histograms
@@ -790,39 +851,53 @@ class MonteCarloPlotter(Plotter):
             fig.show()
         return fig
 
-    def _plot_histogram_seaborn(self, key='loss', showfig=False, savefig=True):
+    def _plot_histogram_seaborn(self, key='test accuracy', step=-1, showfig=False, savefig=True):
         fig = plt.figure()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
-        title = None
         ax = None
-        for i, data in enumerate(self.pandas_list):
-            if title is not None:
-                title += " vs. " + self.labels[i]
-            else:
-                title = self.labels[i]
-            ax = sns.distplot(data[key], bins, label=self.labels[i])
+        networks_availables = self.df.network.unique()
+        title = ''
+        if step == -1:
+            step = max(self.df.step)
+        for net in networks_availables:
+            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            data = self.df[filter]  # Get only the data to plot
+            ax = sns.distplot(data[key], bins, label=net)
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
         title += " " + key
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
         add_params(fig, ax, x_label=key, title=title, loc='upper right',
-                   filename=self.path / (key + ".png"), showfig=showfig, savefig=savefig)
+                   filename=self.path / (key + "_seaborn.png"), showfig=showfig, savefig=savefig)
         return fig, ax
+
+    def save_stat_results(self):
+        # save csv file for each network with 4 columns
+        networks_availables = self.df.network.unique()
+        for net in networks_availables:
+            data = self.df[self.df.network == net]
+            cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+            frames = []
+            keys = []
+            for step in data.step.unique():
+                frames.append(data[data.step == step][cols].describe())
+                keys.append(step)
+            data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
+            data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
 
 
 if __name__ == "__main__":
-    plotter = Plotter("./log/2020/02February/25Tuesday/run-14h16m23")
+    # plotter = Plotter("./log/2020/02February/25Tuesday/run-14h16m23")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
-    plotter.get_full_pandas_dataframe()
-    # res = get_histogram_results('./results')
-    # res = get_pandas_mean_for_each_class(res)
-    # plot_loss_and_acc("/home/barrachina/Documents/cvnn/log/CVNN_testing/run-20200127140842/CVNN_testing.csv"
-    # , visualize=True)
-    # set_trace()
+    # plotter.get_full_pandas_dataframe()
+    monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
+                                             path="./montecarlo/2020/02February/26Wednesday/run-15h08m15/run_data.csv")
+    monte_carlo_analyzer.monte_carlo_plotter.plot_key()
+    set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.27'
+__version__ = '0.0.28'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

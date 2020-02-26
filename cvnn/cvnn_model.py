@@ -10,9 +10,9 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.data_processing as dp
 import cvnn.data_analysis as da
-from cvnn.utils import randomize, get_next_batch
-from utils import create_folder
+from cvnn.utils import randomize, get_next_batch, create_folder
 from datetime import datetime
+import pandas as pd
 from pathlib import Path
 from pdb import set_trace
 from tensorflow.keras import Model
@@ -51,6 +51,7 @@ class CvnnModel:  # (Model)
         self.shape = shape
         self.loss_fun = loss_fun
         self.epochs_done = 0
+        self.run_pandas = pd.DataFrame()
         if not tf.executing_eagerly():
             # tf.compat.v1.enable_eager_execution()
             logging.error("CvnnModel::__init__: TF was not executing eagerly")
@@ -434,7 +435,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.15'
+__version__ = '0.2.16'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
