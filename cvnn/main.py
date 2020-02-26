@@ -3,20 +3,21 @@ from utils import randomize
 from cvnn.layers import ComplexDense
 from cvnn.cvnn_model import CvnnModel
 import tensorflow as tf
+from utils import transform_to_real
 import numpy as np
 from pdb import set_trace
 
 if __name__ == "__main__":
-    # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 10000
     n = 100
     num_classes = 2
     dataset = dp.CorrelatedGaussianNormal(m, n, num_classes, debug=True, coeff_correl_limit=0.75)
     x, y = dataset.get_all()
     x = x.astype(np.complex64)
-    y = dp.sparse_into_categorical(y, num_classes=num_classes).astype(np.float32)
-    x_train, y_train, x_test, y_test = dp.separate_into_train_and_test(x, y)
-    x_train_real, x_test_real = dp.get_real_train_and_test(x_train, x_test)
+    y = dp.Dataset.sparse_into_categorical(y, num_classes=num_classes).astype(np.float32)
+    x_train, y_train, x_test, y_test = dp.Dataset.separate_into_train_and_test(x, y)
+    x_train_real = transform_to_real(x_train)
+    x_test_real = transform_to_real(x_test)
 
     epochs = 100
     batch_size = 100
@@ -58,6 +59,6 @@ if __name__ == "__main__":
     real_network.plotter.plot_key(key='accuracy', library='plotly', name=real_network.name)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
