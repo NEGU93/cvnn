@@ -621,7 +621,7 @@ class Plotter:
         for file in os.listdir(self.path):
             if file.endswith(self.file_suffix):
                 self.pandas_list.append(pd.read_csv(self.path / file))
-                self.labels.append(os.path.splitext(file)[0])
+                self.labels.append(re.sub(self.file_suffix + '$', '', file))
 
     def reload_data(self):
         self._csv_to_pandas()
@@ -758,8 +758,9 @@ class Plotter:
 class MonteCarloPlotter(Plotter):
 
     def __init__(self, path):
+        file_suffix = "_statistical_result.csv"
         self.filter_keys = ['step', 'stats']
-        super().__init__(path, file_suffix="_statistical_result.csv")
+        super().__init__(path, file_suffix=file_suffix)
 
     def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
         if reload:
@@ -808,8 +809,18 @@ class MonteCarloPlotter(Plotter):
                 name=self.labels[i],
             ))
 
+        title = ''
+        for label in self.labels:
+            title += label.replace('_', ' ') + ' vs '
+        title = title[:-3] + key
+
         fig.update_traces(mode='lines')
-        fig.show()
+        fig.update_layout(title=title, xaxis_title='steps', yaxis_title=key)
+
+        if savefig:
+            plotly.offline.plot(fig, filename=str(self.path / key) + ".html")
+        elif showfig:
+            fig.show()
 
 
 class MonteCarloAnalyzer:
@@ -898,7 +909,7 @@ class MonteCarloAnalyzer:
         fig.update_layout(barmode='overlay')
         # Reduce opacity to see both histograms
         fig.update_traces(opacity=0.75)
-        fig.update_layout(title=title,
+        fig.update_layout(title=title.replace('_', ' '),
                           xaxis_title=key)
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / (key + "_histogram.html")))
@@ -1031,9 +1042,9 @@ if __name__ == "__main__":
     # monte_carlo_analyzer.plot_histogram(library='plotly')
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
     monte_carlo_analyzer.monte_carlo_plotter.plot_distribution()
-    set_trace()
+    # monte_carlo_analyzer.monte_carlo_plotter.plot_distribution('test loss')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
