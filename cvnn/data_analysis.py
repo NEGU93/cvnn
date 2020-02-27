@@ -15,6 +15,20 @@ from pdb import set_trace
 import scipy.stats as stats
 from cvnn.utils import create_folder
 
+DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)', 'rgb(255, 127, 14)',
+                         'rgb(44, 160, 44)', 'rgb(214, 39, 40)',
+                         'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
+                         'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
+                         'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
+
+
+def add_transparency(color='rgb(31, 119, 180)', alpha=0.5):
+    pattern = re.compile("^rgb\([0-9]+, [0-9]+, [0-9]+\)$")
+    assert re.match(pattern, color)    # Recognized color format!
+    color = re.sub("^rgb", "rgba", color)
+    color = re.sub("\)$", ", {})".format(alpha), color)
+    return color
+
 
 def find_intersection_of_gaussians(m1, m2, std1, std2):
     a = 1 / (2 * std1 ** 2) - 1 / (2 * std2 ** 2)
@@ -656,7 +670,6 @@ class Plotter:
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
         fig = go.Figure()
-        colors = ['rgb(255, 0, 0)', 'rgb(0, 255, 0)', 'rgb(0, 0, 255)']  # TODO: This only works for 2 cases, no 3
         annotations = []
         title = ''
         for i, data in enumerate(self.pandas_list):
@@ -671,13 +684,14 @@ class Plotter:
                     else:
                         print("Warning: Trying to index an array without index")
                 x = list(range(len(data[key])))
-                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i], line_color=colors[i]))
+                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i],
+                                         line_color=DEFAULT_PLOTLY_COLORS[i]))
                 # Add points
                 fig.add_trace(go.Scatter(x=[x[-1]],
                                          y=[data[key].to_list()[-1]],
                                          mode='markers',
                                          name='last value',
-                                         marker_color=colors[i]))
+                                         marker_color=DEFAULT_PLOTLY_COLORS[i]))
                 # Max/min points
                 func_value = func(data[key])
                 # ATTENTION! this will only give you first occurrence
@@ -689,7 +703,7 @@ class Plotter:
                                              name=func.__name__,
                                              text=['{0:.2f}%'.format(func_value)],
                                              textposition="top center",
-                                             marker_color=colors[i]))
+                                             marker_color=DEFAULT_PLOTLY_COLORS[i]))
                     # Min annotations
                     annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
                                             xanchor='left', yanchor='middle',
@@ -759,11 +773,45 @@ class MonteCarloPlotter(Plotter):
                  index_loc='mean'):
         super().plot_key(key, reload, library, showfig, savefig, index_loc)
 
+    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True):
+        fig = go.Figure()
+        for i, data in enumerate(self.pandas_list):
+            x = data['step'].unique().tolist()
+            x_rev = x[::-1]
+            data_mean = data[data['stats'] == 'mean'][key].tolist()
+            data_max = data[data['stats'] == 'max'][key].tolist()
+            data_min = data[data['stats'] == 'min'][key][::-1].tolist()
+            data_25 = data[data['stats'] == '25%'][key][::-1].tolist()
+            data_75 = data[data['stats'] == '75%'][key].tolist()
+            # set_trace()
+            fig.add_trace(go.Scatter(
+                x=x + x_rev,
+                y=data_max + data_min,
+                fill='toself',
+                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.1),
+                line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                showlegend=True,
+                name=self.labels[i] + " borders",
+            ))
+            fig.add_trace(go.Scatter(
+                x=x + x_rev,
+                y=data_75 + data_25,
+                fill='toself',
+                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.2),
+                line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                showlegend=True,
+                name=self.labels[i] + " 75%",
+            ))
+            fig.add_trace(go.Scatter(
+                x=x, y=data_mean,
+                line_color=DEFAULT_PLOTLY_COLORS[i],
+                name=self.labels[i],
+            ))
 
-# TODO: 3D histogram
-# https://plot.ly/python/v3/3d-filled-line-plots/
-# https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
-# https://matplotlib.org/examples/mplot3d/bars3d_demo.html
+        fig.update_traces(mode='lines')
+        fig.show()
+
+
 class MonteCarloAnalyzer:
 
     def __init__(self, df=None, path=None):
@@ -894,7 +942,23 @@ class MonteCarloAnalyzer:
             data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
             data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
 
+    def show_plotly_table(self):
+        values = [key for key in self.df.keys()]
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=list(self.df.columns),
+                        fill_color='paleturquoise',
+                        align='left'),
+            cells=dict(values=[self.df.values.tolist()],
+                       fill_color='lavender',
+                       align='left'))
+        ])
+        fig.show()
+
     def plot_3d_hist(self, steps=None, key='test accuracy'):
+        # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
+        # https://plot.ly/python/v3/3d-filled-line-plots/
+        # https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
+        # https://matplotlib.org/examples/mplot3d/bars3d_demo.html
         if steps is None:
             # steps = [int(x) for x in np.linspace(min(self.df.step), max(self.df.step), 6)]
             steps = [int(x) for x in np.logspace(min(self.df.step), np.log2(max(self.df.step)), 8, base=2)]
@@ -963,13 +1027,13 @@ if __name__ == "__main__":
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
     monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                              path="./montecarlo/2020/02February/26Wednesday/run-15h51m17/run_data.csv")
+                                              path="./montecarlo/2020/02February/26Wednesday/run-19h16m20/run_data.csv")
     # monte_carlo_analyzer.plot_histogram(library='plotly')
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
-    monte_carlo_analyzer.plot_3d_hist()
+    monte_carlo_analyzer.monte_carlo_plotter.plot_distribution()
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

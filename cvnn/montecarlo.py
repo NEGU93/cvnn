@@ -99,9 +99,9 @@ if __name__ == "__main__":
     x_train_real = transform_to_real(x_train)
     x_test_real = transform_to_real(x_test)
 
-    epochs = 100
+    epochs = 150
     batch_size = 100
-    display_freq = 160
+    display_freq = 320
     learning_rate = 0.002
 
     # Create complex network
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                                 verbose=False, tensorboard=False, save_csv_checkpoints=True)
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network)
-    monte_carlo.run(x, y, iterations=100, learning_rate=learning_rate,
+    monte_carlo.run(x, y, iterations=1000, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size,
                     shuffle=True, debug=False)
     monte_carlo.monte_carlo_analyzer.plot_histogram(library='plotly')
