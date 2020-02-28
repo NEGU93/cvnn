@@ -31,8 +31,7 @@ class MonteCarlo:
         x_train, y_train, x_val, y_val = Dataset.separate_into_train_and_test(x, y)
         x_train_real = transform_to_real(x_train)
         x_test_real = transform_to_real(x_val)
-        if not os.path.exists(self.monte_carlo_analyzer.path / "checkpoints/"):
-            os.makedirs(self.monte_carlo_analyzer.path / "checkpoints/")
+        os.makedirs(self.monte_carlo_analyzer.path / "checkpoints/", exist_ok=True)
         for it in range(iterations):
             print("Iteration {}/{}".format(it + 1, iterations))
             if shuffle:

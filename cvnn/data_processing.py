@@ -271,8 +271,7 @@ def save_dataset(array_name, x_train, y_train, x_test, y_test):
     :param y_test:
     :return: None
     """
-    if not os.path.exists("../data"):
-        os.makedirs("../data")
+    os.makedirs("../data", exist_ok=True)
     return np.savez("../data/" + array_name, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
 

@@ -10,8 +10,7 @@ def create_folder(root_path, now=None):
     if now is None:
         now = datetime.today()
     path = Path(root_path + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
-    if not os.path.exists(path):
-        os.makedirs(path)
+    os.makedirs(path, exist_ok=True)        # Do this not to have a problem if I run in parallel
     return path
 
 
