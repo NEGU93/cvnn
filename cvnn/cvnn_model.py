@@ -69,8 +69,6 @@ class CvnnModel:  # (Model)
         # Folder management for logs
         self.now = datetime.today()
         self.root_dir = create_folder("./log/", now=self.now)
-        if not os.path.exists(self.root_dir):
-            os.makedirs(self.root_dir)
 
         # Chekpoints
         self.save_csv_checkpoints = save_csv_checkpoints
@@ -173,7 +171,7 @@ class CvnnModel:  # (Model)
             filename += '.csv'
         filename = self.root_dir / filename
         # print("Saving to " + str(filename))
-        if not os.path.exists(filename):
+        if not os.path.exists(filename):        # TODO: Can this pose a problem in parallel computing?
             file = open(filename, 'x')
             file.write('loss,accuracy\n')
         else:
@@ -203,8 +201,7 @@ class CvnnModel:  # (Model)
         # https://github.com/tensorflow/tensorflow/issues/33283
         loss, acc = self.evaluate(x, y)
         checkpoint_root = self.root_dir + "saved_models/"
-        if not os.path.exists(checkpoint_root):
-            os.makedirs(checkpoint_root)
+        os.makedirs(checkpoint_root, exist_ok=True)
         save_name = checkpoint_root + "model_checkpoint_epoch" + str(self.epochs_done) + "loss{0:.4f}acc{1:d}".format(
             loss, int(acc * 100))
 
@@ -435,7 +432,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.17'
+__version__ = '0.2.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

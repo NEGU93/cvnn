@@ -288,8 +288,7 @@ def save_dataset(array_name, x_train, y_train, x_test, y_test):
     :param y_test:
     :return: None
     """
-    if not os.path.exists("../data"):
-        os.makedirs("../data")
+    os.makedirs("../data", exist_ok=True)
     return np.savez("../data/" + array_name, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
 
 
@@ -360,6 +359,6 @@ if __name__ == "__main__":
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
