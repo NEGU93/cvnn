@@ -92,6 +92,14 @@ class Dataset(ABC):
         np.save(self.save_path / "data.npy", self.x)
         np.save(self.save_path / "labels.npy", self.y)
 
+    def summary(self, res_str):
+        res_str += "\tNum classes: {}\n".format(self.num_classes)
+        res_str += "\tSamples per class: {}\n".format(self.num_samples_per_class)
+        res_str += "\tVector size: {}\n".format(self.num_samples)
+        res_str += "\tTrain percentage: {}%\n".format(int(self.ratio*100))
+        res_str += "\tTest percentage: {}%\n".format(int((1 - self.ratio)*100))
+        return res_str
+
     """
         Getters
     """
@@ -217,6 +225,11 @@ class CorrelatedGaussianNormal(Dataset):
         self.x = np.array(x)
         self.y = np.array(y)
 
+    def summary(self, res_str=None):
+        res_str = "Correlated Gaussian Noise\n"
+        res_str += "\tPearson correlation coefficient max {}\n".format(self.coeff_correl_limit)
+        return super().summary(res_str)
+
 
 class GaussianNoise(Dataset):
 
@@ -250,6 +263,10 @@ class GaussianNoise(Dataset):
     def _create_hilbert_gaussian_noise(self, mu, sigma):
         x_real = np.random.normal(mu, sigma, (self.num_samples_per_class, self.num_samples))
         return signal.hilbert(x_real)
+
+    def summary(self, res_str=None):
+        res_str = "Gaussian {} Noise\n".format(str(self.function).replace('_', ' '))
+        return super().summary(res_str)
 
 
 """-----------------
@@ -343,6 +360,6 @@ if __name__ == "__main__":
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

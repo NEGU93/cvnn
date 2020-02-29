@@ -1,4 +1,4 @@
-import cvnn.data_processing as dp
+import cvnn.dataset as dp
 from utils import randomize
 from cvnn.layers import ComplexDense
 from cvnn.cvnn_model import CvnnModel
@@ -59,6 +59,6 @@ if __name__ == "__main__":
     real_network.plotter.plot_key(key='accuracy', library='plotly', name=real_network.name)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.18'
+__version__ = '0.0.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

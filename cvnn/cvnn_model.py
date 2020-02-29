@@ -8,7 +8,7 @@ from itertools import count  # To count the number of times fit is called
 import tensorflow as tf
 import cvnn
 import cvnn.layers as layers
-import cvnn.data_processing as dp
+import cvnn.dataset as dp
 import cvnn.data_analysis as da
 from cvnn.utils import randomize, get_next_batch, create_folder
 from datetime import datetime
@@ -435,7 +435,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.16'
+__version__ = '0.2.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
