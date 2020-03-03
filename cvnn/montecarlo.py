@@ -156,22 +156,22 @@ if __name__ == "__main__":
     run_montecarlo()
 
     # change pearson coefficient
-    coefs = np.linspace(0, 0.999, 11)[1:]
+    coefs = np.linspace(0, 0.999, 11)[1:]       # 0.75
     for coef in coefs:
         run_montecarlo(coeff_correl_limit=coef)
 
     # change m
-    per_class_examples = [5000, 2000, 1000, 500]
+    per_class_examples = [5000, 2000, 1000, 500]    # 10000
     for m in per_class_examples:
         run_montecarlo(m=m)
 
     # change learning rate
-    learning_rates = [0.001, 0.01, 0.1]
+    learning_rates = [0.001, 0.01, 0.1]     # 0.002
     for learning_rate in learning_rates:
         run_montecarlo(learning_rate=learning_rate)
 
     # change activation function
-    activation_function = ['cart_sigmoid', 'cart_tanh']
+    activation_function = ['cart_sigmoid', 'cart_tanh']     # cart_relu
     for activation in activation_function:
         run_montecarlo(activation=activation)
 

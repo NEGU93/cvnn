@@ -22,9 +22,27 @@ DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)', 'rgb(255, 127, 14)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
 
+def triangulate_histogtam(x, y, z):
+    # https://community.plot.ly/t/adding-a-shape-to-a-3d-plot/1441/8?u=negu93
+    if len(x) != len(y) != len(z):
+        raise ValueError("The  lists x, y, z, must have the same length")
+    n = len(x)
+    if n % 2:
+        raise ValueError("The length of lists x, y, z must be an even number")
+    pts3d = np.vstack((x, y, z)).T
+    pts3dp = np.array([[x[2 * k + 1], y[2 * k + 1], 0] for k in range(1, n // 2 - 1)])
+    pts3d = np.vstack((pts3d, pts3dp))
+    # triangulate the histogram bars:
+    tri = [[0, 1, 2], [0, 2, n]]
+    for k, i in zip(list(range(n, n - 3 + n // 2)), list(range(3, n - 4, 2))):
+        tri.extend([[k, i, i + 1], [k, i + 1, k + 1]])
+    tri.extend([[n - 3 + n // 2, n - 3, n - 2], [n - 3 + n // 2, n - 2, n - 1]])
+    return pts3d, np.array(tri)
+
+
 def add_transparency(color='rgb(31, 119, 180)', alpha=0.5):
     pattern = re.compile("^rgb\([0-9]+, [0-9]+, [0-9]+\)$")
-    assert re.match(pattern, color)    # Recognized color format!
+    assert re.match(pattern, color)  # Recognized color format!
     color = re.sub("^rgb", "rgba", color)
     color = re.sub("\)$", ", {})".format(alpha), color)
     return color
@@ -90,11 +108,10 @@ def get_trailing_number(s):
     return int(os.path.splitext(m.group())[0]) if m else None
 
 
-"""
-Confusion Matrix
-----------------
-Given results and labels directly
-"""
+# ----------------
+# Confusion Matrix
+# ----------------
+
 
 
 def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=None, showfig=False):
@@ -146,6 +163,81 @@ def sparse_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=N
 def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
     return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename, axis_legends)
 
+# ----------------
+# Comparison
+# ----------------
+
+
+class SeveralMonteCarloComparison:
+
+    def __init__(self, label, x, paths):
+        self.x_label = label
+        self.x = x
+        self.monte_carlo_runs = []
+        for path in paths:
+            self.monte_carlo_runs.append(MonteCarloAnalyzer(path=path))
+        assert len(self.x) == len(self.monte_carlo_runs)
+
+    def box_plot(self, key='test accuracy', library='plotly', step=-1, showfig=False, savefile=None):
+        if library == 'plotly':
+            self._box_plot_plotly(key=key, step=step, showfig=showfig, savefile=savefile)
+        # TODO: https://seaborn.pydata.org/examples/grouped_boxplot.html
+        else:
+            print("Warning: Unrecognized library to plot " + library)
+            return None
+
+    def _box_plot_plotly(self, key='test accuracy', step=-1, showfig=False, savefile=None):
+        # https://en.wikipedia.org/wiki/Box_plot
+        # https://plot.ly/python/box-plots/
+        # https://towardsdatascience.com/understanding-boxplots-5e2df7bcbd51
+        # Median (Q2 / 50th Percentile): Middle value of the dataset. ex. median([1, 3, 3, 6, 7, 8, 9]) = 6
+        # First quartile (Q1 / 25th Percentile): Middle value between the median and the min(dataset) = 1
+        # Third quartile (Q3 / 75th Percentile): Middle value between the median and the max(dataset) = 9
+        # Interquartile Range (IQR) = Q3 - Q1
+        # Whishker: [Q1 - 1.5*IQR, Q3 + 1.5*IQR], whatever is out of this is an outlier.
+        # suspected outlier: [Q1 - 3*IQR, Q3 + 3*IQR]
+        savefig = False
+        if savefile is not None:
+            savefig = True
+        if step == -1:
+            step = max(self.monte_carlo_runs[0].df.step)    # TODO: Assert it's the same for all cases
+        fig = go.Figure()
+        for i, run in enumerate(self.monte_carlo_runs):
+            df = run.df
+            networks_availables = df.network.unique()
+            for col, net in enumerate(networks_availables):
+                filter = [a == net and b == step for a, b in zip(df.network, df.step)]
+                data = df[filter]
+                fig.add_trace(go.Box(
+                    y=data[key],
+                    # x=self.x[i],
+                    name=net.replace('_', ' ') + " {0:.2f}".format(self.x[i]),
+                    whiskerwidth=0.2,
+                    notched=True,       # confidence intervals for the median
+                    fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col], 0.5),
+                    boxpoints='suspectedoutliers',      # to mark the suspected outliers
+                    line=dict(color=DEFAULT_PLOTLY_COLORS[col]),
+                    boxmean=True        # Interesting how sometimes it falls outside the box
+                ))
+        fig.update_layout(
+            title='Several Monte carlo results based on ' + self.x_label + ' Box Plot',
+            yaxis=dict(
+                title=key,
+                autorange=True,
+                showgrid=True,
+                dtick=0.05,
+            ),
+            # boxmode='group'
+            showlegend=True
+
+        )
+        if not savefile.endswith('.html'):
+            savefile += '.html'
+        if savefig:
+            plotly.offline.plot(fig, filename=savefile)
+        elif showfig:
+            fig.show()
+
 
 class Plotter:
 
@@ -160,7 +252,12 @@ class Plotter:
     def _csv_to_pandas(self):
         self.pandas_list = []
         self.labels = []
-        for file in os.listdir(self.path):
+        files = os.listdir(self.path)
+        files.sort()  # Respect the colors for the plot of montecarlo.
+        # For ComplexVsReal Montecarlo it has first the Complex model and SECOND the real one.
+        # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
+        # TODO: Think a better way without loosing generality (This sort is all done because of the ComplexVsReal case)
+        for file in files:
             if file.endswith(self.file_suffix):
                 self.pandas_list.append(pd.read_csv(self.path / file))
                 self.labels.append(re.sub(self.file_suffix + '$', '', file))
@@ -316,7 +413,7 @@ class MonteCarloPlotter(Plotter):
                  index_loc='mean'):
         super().plot_key(key, reload, library, showfig, savefig, index_loc)
 
-    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True):
+    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True, title=''):
         fig = go.Figure()
         for i, data in enumerate(self.pandas_list):
             x = data['step'].unique().tolist()
@@ -350,8 +447,6 @@ class MonteCarloPlotter(Plotter):
                 line_color=DEFAULT_PLOTLY_COLORS[i],
                 name=self.labels[i],
             ))
-
-        title = ''
         for label in self.labels:
             title += label.replace('_', ' ') + ' vs '
         title = title[:-3] + key
@@ -384,7 +479,7 @@ class MonteCarloAnalyzer:
         else:  # I have nothing
             self.path = create_folder("./montecarlo/")
             self.df = pd.DataFrame()
-        self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+        self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']  # TODO: Consider delete
         self.monte_carlo_plotter = MonteCarloPlotter(self.path)
 
     def set_df(self, df):
@@ -393,28 +488,107 @@ class MonteCarloAnalyzer:
         self.save_stat_results()
         self.monte_carlo_plotter.reload_data()
 
-    def plot_everything_histogram(self, library='plotly', step=-1, showfig=False, savefig=True):
-        for key in self.plotable_info[0]:
-            self.plot_histogram(key, library=library, step=step, showfig=showfig, savefig=savefig)
+    def save_stat_results(self):
+        # save csv file for each network with 4 columns
+        networks_availables = self.df.network.unique()
+        for net in networks_availables:
+            data = self.df[self.df.network == net]
+            cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+            frames = []
+            keys = []
+            for step in data.step.unique():
+                frames.append(data[data.step == step][cols].describe())
+                keys.append(step)
+            data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
+            data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
 
-    def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True):
+    # ------------
+    # Plot methods
+    # ------------
+
+    def do_all(self):
+        for key in ['train loss', 'test loss', 'train accuracy', 'test accuracy']:
+            self.plot_3d_hist(key=key)
+            self.monte_carlo_plotter.plot_distribution(key=key)
+            for lib in ['plotly', 'matplotlib', 'seaborn']:
+                self.plot_histogram(key=key, library=lib, showfig=False, savefig=True)
+
+    def show_plotly_table(self):
+        # TODO: Not yet debugged
+        values = [key for key in self.df.keys()]
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=list(self.df.columns),
+                        fill_color='paleturquoise',
+                        align='left'),
+            cells=dict(values=[self.df.values.tolist()],
+                       fill_color='lavender',
+                       align='left'))
+        ])
+        fig.show()
+
+    def plot_3d_hist(self, steps=None, key='test accuracy', title=''):
+        # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
+        # https://plot.ly/python/v3/3d-filled-line-plots/
+        # https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
+        # https://matplotlib.org/examples/mplot3d/bars3d_demo.html
+        if steps is None:
+            # steps = [int(x) for x in np.linspace(min(self.df.step), max(self.df.step), 6)]
+            steps = [int(x) for x in np.logspace(min(self.df.step), np.log2(max(self.df.step)), 8, base=2)]
+            # steps = [int(x) for x in np.logspace(min(self.df.step), np.log10(max(self.df.step)), 8)]
+            steps[0] = 0
+        networks_availables = self.df.network.unique()
+        cols = ['step', key]
+        fig = go.Figure()
+        for step in steps:  # TODO: verify steps are in df
+            for i, net in enumerate(networks_availables):
+                filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+                data_to_plot = self.df[filter][cols]
+                # https://stackoverflow.com/a/60403270/5931672
+                counts, bins = np.histogram(data_to_plot[key], bins=10, density=False)
+                counts = list(np.repeat(counts, 2).tolist())  # I do this to stop pycharm warning
+                counts.insert(0, 0)
+                counts.append(0)
+                bins = np.repeat(bins, 2)
+
+                fig.add_traces(go.Scatter3d(x=[step] * len(counts), y=bins, z=counts,
+                                            mode='lines', name=net.replace("_", " ") + "; step: " + str(step),
+                                            surfacecolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                                            # surfaceaxis=0,
+                                            line=dict(color=DEFAULT_PLOTLY_COLORS[i], width=4)
+                                            )
+                               )
+                verts, tri = triangulate_histogtam([step] * len(counts), bins, counts)
+                x, y, z = verts.T
+                I, J, K = tri.T
+                fig.add_traces(go.Mesh3d(x=x, y=y, z=z, i=I, j=J, k=K, color=DEFAULT_PLOTLY_COLORS[i], opacity=0.4))
+        for net in networks_availables:
+            title += net + ' '
+        title += key + " comparison"
+        fig.update_layout(title=title,
+                          scene=dict(
+                              xaxis=dict(title='step'),
+                              yaxis=dict(title=key),
+                              zaxis=dict(title='counts'),
+                              xaxis_type="log"))
+        plotly.offline.plot(fig, filename=str(self.path / (key + "_3d_histogram.html")))
+
+    def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title=''):
         if library == 'matplotlib':
-            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig)
+            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
         elif library == 'plotly':
-            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
+            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
         elif library == 'seaborn':
-            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig)
+            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
         else:
             print("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_histogram_matplotlib(self, key='test accuracy', step=-1, showfig=False, savefig=True):
+    def _plot_histogram_matplotlib(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
         fig, ax = plt.subplots()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
         networks_availables = self.df.network.unique()
-        title = ''
         if step == -1:
             step = max(self.df.step)
         for net in networks_availables:
@@ -429,9 +603,8 @@ class MonteCarloAnalyzer:
                    filename=self.path / (key + "_matplotlib.png"), showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True):
+    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
         networks_availables = self.df.network.unique()
-        title = ''
         if step == -1:
             step = max(self.df.step)
         hist_data = []
@@ -459,14 +632,13 @@ class MonteCarloAnalyzer:
             fig.show()
         return fig
 
-    def _plot_histogram_seaborn(self, key='test accuracy', step=-1, showfig=False, savefig=True):
+    def _plot_histogram_seaborn(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
         fig = plt.figure()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
         ax = None
         networks_availables = self.df.network.unique()
-        title = ''
         if step == -1:
             step = max(self.df.step)
         for net in networks_availables:
@@ -481,92 +653,35 @@ class MonteCarloAnalyzer:
                    filename=self.path / (key + "_seaborn.png"), showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def save_stat_results(self):
-        # save csv file for each network with 4 columns
-        networks_availables = self.df.network.unique()
-        for net in networks_availables:
-            data = self.df[self.df.network == net]
-            cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
-            frames = []
-            keys = []
-            for step in data.step.unique():
-                frames.append(data[data.step == step][cols].describe())
-                keys.append(step)
-            data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
-            data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
-
-    def show_plotly_table(self):
-        values = [key for key in self.df.keys()]
-        fig = go.Figure(data=[go.Table(
-            header=dict(values=list(self.df.columns),
-                        fill_color='paleturquoise',
-                        align='left'),
-            cells=dict(values=[self.df.values.tolist()],
-                       fill_color='lavender',
-                       align='left'))
-        ])
-        fig.show()
-
-    def plot_3d_hist(self, steps=None, key='test accuracy'):
-        # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
-        # https://plot.ly/python/v3/3d-filled-line-plots/
-        # https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
-        # https://matplotlib.org/examples/mplot3d/bars3d_demo.html
-        if steps is None:
-            # steps = [int(x) for x in np.linspace(min(self.df.step), max(self.df.step), 6)]
-            steps = [int(x) for x in np.logspace(min(self.df.step), np.log2(max(self.df.step)), 8, base=2)]
-            # steps = [int(x) for x in np.logspace(min(self.df.step), np.log10(max(self.df.step)), 8)]
-            steps[0] = 0
-        networks_availables = self.df.network.unique()
-        cols = ['step', key]
-        fig = go.Figure()
-        for step in steps:  # TODO: verify steps are in df
-            for i, net in enumerate(networks_availables):
-                filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
-                data_to_plot = self.df[filter][cols]
-                # https://stackoverflow.com/a/60403270/5931672
-                counts, bins = np.histogram(data_to_plot[key], bins=10, density=False)
-                counts = list(np.repeat(counts, 2).tolist())    # I do this to stop pycharm warning
-                counts.insert(0, 0)
-                counts.append(0)
-                bins = np.repeat(bins, 2)
-
-                fig.add_traces(go.Scatter3d(x=[step] * len(counts), y=bins, z=counts,
-                                            mode='lines', name=net.replace("_", " ") + "; step: " + str(step),
-                                            surfacecolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
-                                            surfaceaxis=0,
-                                            line=dict(color=DEFAULT_PLOTLY_COLORS[i], width=4)
-                                            )
-                               )
-                """
-                # https://plot.ly/python/3d-surface-coloring/
-                fig.add_traces(go.Surface(
-                    x=[step] * len(counts), y=bins, z=counts,
-                    surfacecolor=extract_values(DEFAULT_PLOTLY_COLORS[i]).append(0.3))
-                )"""
-
-        fig.update_layout(title='Multiple',
-                          scene=dict(
-                              xaxis=dict(title='step'),
-                              yaxis=dict(title=key),
-                              zaxis=dict(title='counts'),
-                              xaxis_type="log"))
-        plotly.offline.plot(fig, filename=str(self.path / (key + "_3d_histogram.html")))
-
 
 if __name__ == "__main__":
+    several = SeveralMonteCarloComparison('correlation coefficient',
+                                          x=np.linspace(0, 0.999, 11)[1:],
+                                          paths=[
+                                              "./montecarlo/2020/02February/28Friday/run-03h03m16/run_data",      # 0.1
+                                              "./montecarlo/2020/02February/28Friday/run-12h48m12/run_data",      # 0.2
+                                              "./montecarlo/2020/02February/28Friday/run-22h32m08/run_data",      # 0.3
+                                              "./montecarlo/2020/02February/29Saturday/run-08h14m28/run_data",    # 0.4
+                                              "./montecarlo/2020/02February/29Saturday/run-17h57m42/run_data",    # 0.5
+                                              "./montecarlo/2020/03March/01Sunday/run-03h45m20/run_data",         # 0.6
+                                              "./montecarlo/2020/03March/01Sunday/run-13h32m41/run_data",         # 0.7
+                                              "./montecarlo/2020/03March/01Sunday/run-23h20m08/run_data",         # 0.8
+                                              "./montecarlo/2020/03March/02Monday/run-09h09m32/run_data",         # 0.9
+                                              "./montecarlo/2020/03March/02Monday/run-19h07m26/run_data",         # 1.0
+                                          ])
+    several.box_plot(showfig=True, savefile="./results/Simuls 29-Feb/Corf Correl/box_plot.html")
     # plotter = Plotter("./log/2020/02February/25Tuesday/run-14h16m23")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
-    monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                              path="./montecarlo/2020/02February/26Wednesday/run-19h16m20/run_data.csv")
-    # monte_carlo_analyzer.plot_histogram(library='plotly')
+    # monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path="/home/barrachina/Documents/cvnn/montecarlo/2020/03March/02Monday/run-19h07m26/run_data.csv")
+    # monte_carlo_analyzer.do_all()
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
-    # monte_carlo_analyzer.monte_carlo_plotter.plot_distribution()
-    monte_carlo_analyzer.plot_3d_hist()
-    # monte_carlo_analyzer.monte_carlo_plotter.plot_distribution('test loss')
+    # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
+    # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
+    # monte_carlo_analyzer.monte_carlo_plotter.plot_distribution('test accuracy', title='Correlation Coefficient 0.1 ')
+
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

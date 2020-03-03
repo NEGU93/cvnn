@@ -1,4 +1,3 @@
-import tensorflow as tf
 import numpy as np
 from datetime import datetime
 from pathlib import Path
@@ -46,7 +45,7 @@ def transform_to_real(x_complex):
 
 
 def cart2polar(z):
-    return tf.abs(z), tf.angle(z)
+    return np.abs(z), np.angle(z)
 
 
 def polar2cart(rho, angle):
@@ -103,6 +102,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.9'
+__version__ = '0.0.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
