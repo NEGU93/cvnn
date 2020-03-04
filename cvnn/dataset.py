@@ -100,9 +100,19 @@ class Dataset(ABC):
         res_str += "\tTest percentage: {}%\n".format(int((1 - self.ratio)*100))
         return res_str
 
-    """
-        Getters
-    """
+    def plot_data(self):
+        fig, ax = plt.subplots(self.num_classes)
+        for i in range(self.num_classes):
+            ax[i].plot(np.real(self.x[i*self.num_samples_per_class]),
+                       np.imag(self.x[i*self.num_samples_per_class]), 'b.')
+            ax[i].axis('equal')
+            ax[i].grid(True)
+            ax[i].set_aspect('equal', adjustable='box')
+        return fig, ax
+
+    # ---------
+    # Getters
+    # ---------
 
     def get_train_and_test(self):
         return self.x_train, self.y_train, self.x_test, self.y_test
@@ -122,9 +132,9 @@ class Dataset(ABC):
     def get_categorical_labels(self):
         return self.sparse_into_categorical(self.y, self.num_classes)
 
-    """
-        Static functions
-    """
+    # ----------------
+    # Static functions
+    # ----------------
 
     @staticmethod
     def sparse_into_categorical(spar, num_classes=None):
@@ -350,15 +360,33 @@ def test_save_load():
 
 if __name__ == "__main__":
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
-    m = 1000
+    m = 5
     n = 100
     num_classes = 2
-    dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=True, coeff_correl_limit=0.75)
-    x, y = dataset.get_all()
+    coefs = [0.1, 0.4, 0.75, 0.999]
+    fig, axs = plt.subplots(num_classes, len(coefs), sharex=True, sharey=True)
+    # , gridspec_kw={'hspace': 0, 'wspace': 0})
+    for i, coef in enumerate(coefs):
+        dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=False, coeff_correl_limit=coef)
+        x, y = dataset.get_all()
+        for cls in range(num_classes):
+            for index, label in enumerate(y):
+                if label == cls:
+                    axs[cls, i].plot(np.real(x[index]), np.imag(x[index]), 'b.')
+                    axs[cls, i].axis('equal')
+                    axs[cls, i].grid(True)
+                    axs[cls, i].set_aspect('equal', adjustable='box')
+                    break
+
+    for ax, coef in zip(axs[0], coefs):
+        ax.set_title("coef abs: {}".format(coef))
+    for cls, ax in enumerate(axs[:, 0]):
+        ax.set_ylabel("class {}".format(int(cls)), size='large')
+    fig.show()
     # create_correlated_gaussian_noise(n, debug=True)
-    set_trace()
+    # set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

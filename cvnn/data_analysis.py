@@ -89,6 +89,7 @@ def add_params(fig, ax, y_label=None, x_label=None, loc=None, title=None,
     if showfig:
         fig.show()
     if savefig:
+        os.makedirs(os.path.split(filename)[0], exist_ok=True)
         fig.savefig(filename)
 
 
@@ -111,7 +112,6 @@ def get_trailing_number(s):
 # ----------------
 # Confusion Matrix
 # ----------------
-
 
 
 def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=None, showfig=False):
@@ -172,7 +172,7 @@ class SeveralMonteCarloComparison:
 
     def __init__(self, label, x, paths):
         self.x_label = label
-        self.x = x
+        self.x = np.round(x, 2)
         self.monte_carlo_runs = []
         for path in paths:
             self.monte_carlo_runs.append(MonteCarloAnalyzer(path=path))
@@ -202,6 +202,8 @@ class SeveralMonteCarloComparison:
         if step == -1:
             step = max(self.monte_carlo_runs[0].df.step)    # TODO: Assert it's the same for all cases
         fig = go.Figure()
+
+        cols = [self.x_label, 'network', 'step', 'test accuracy', 'train accuracy', 'test loss', 'train loss']
         for i, run in enumerate(self.monte_carlo_runs):
             df = run.df
             networks_availables = df.network.unique()
@@ -210,8 +212,8 @@ class SeveralMonteCarloComparison:
                 data = df[filter]
                 fig.add_trace(go.Box(
                     y=data[key],
-                    # x=self.x[i],
-                    name=net.replace('_', ' ') + " {0:.2f}".format(self.x[i]),
+                    # x=[self.x[i]] * len(data[key]),
+                    name=net.replace('_', ' ') + str(self.x[i]),
                     whiskerwidth=0.2,
                     notched=True,       # confidence intervals for the median
                     fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col], 0.5),
@@ -219,17 +221,22 @@ class SeveralMonteCarloComparison:
                     line=dict(color=DEFAULT_PLOTLY_COLORS[col]),
                     boxmean=True        # Interesting how sometimes it falls outside the box
                 ))
+
         fig.update_layout(
-            title='Several Monte carlo results based on ' + self.x_label + ' Box Plot',
+            title=self.x_label + ' Box Plot',
+            xaxis=dict(
+                title=self.x_label,
+            ),
             yaxis=dict(
                 title=key,
                 autorange=True,
                 showgrid=True,
                 dtick=0.05,
             ),
-            # boxmode='group'
-            showlegend=True
-
+            # boxmode='group',
+            # boxgroupgap=0,
+            # boxgap=0,
+            showlegend=False
         )
         if not savefile.endswith('.html'):
             savefile += '.html'
@@ -282,7 +289,7 @@ class Plotter:
         else:
             print("Warning: Unrecognized library to plot " + library)
 
-    def _plot_matplotlib(self, key='loss', showfig=False, savefig=True, index_loc=None):
+    def _plot_matplotlib(self, key='loss', showfig=False, savefig=True, index_loc=None, extension=".svg"):
         fig, ax = plt.subplots()
         title = None
         for i, data in enumerate(self.pandas_list):
@@ -305,7 +312,7 @@ class Plotter:
         if showfig:
             fig.show()
         if savefig:
-            fig.savefig(str(self.path / key) + ".png")
+            fig.savefig(str(self.path / key) + extension)
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
         fig = go.Figure()
@@ -421,6 +428,7 @@ class MonteCarloPlotter(Plotter):
             data_mean = data[data['stats'] == 'mean'][key].tolist()
             data_max = data[data['stats'] == 'max'][key].tolist()
             data_min = data[data['stats'] == 'min'][key][::-1].tolist()
+            data_50 = data[data['stats'] == '50%'][key].tolist()
             data_25 = data[data['stats'] == '25%'][key][::-1].tolist()
             data_75 = data[data['stats'] == '75%'][key].tolist()
             # set_trace()
@@ -445,7 +453,12 @@ class MonteCarloPlotter(Plotter):
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean,
                 line_color=DEFAULT_PLOTLY_COLORS[i],
-                name=self.labels[i],
+                name=self.labels[i] + " mean",
+            ))
+            fig.add_trace(go.Scatter(
+                x=x, y=data_50,
+                line=dict(color=DEFAULT_PLOTLY_COLORS[i], dash='dash'),
+                name=self.labels[i] + " median",
             ))
         for label in self.labels:
             title += label.replace('_', ' ') + ' vs '
@@ -455,7 +468,39 @@ class MonteCarloPlotter(Plotter):
         fig.update_layout(title=title, xaxis_title='steps', yaxis_title=key)
 
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path / key) + ".html")
+            plotly.offline.plot(fig, filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html")
+        elif showfig:
+            fig.show()
+
+    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False):
+        fig = go.Figure()
+        # test plots
+        label = 'mean'
+        if median:
+            label = '50%'
+        for i, data in enumerate(self.pandas_list):
+            x = data['step'].unique().tolist()
+            data_mean_test = data[data['stats'] == label]["test " + key].tolist()
+            fig.add_trace(go.Scatter(
+                x=x, y=data_mean_test,
+                line_color=DEFAULT_PLOTLY_COLORS[i],
+                name=self.labels[i] + " test",
+            ))
+            data_mean_train = data[data['stats'] == label]["train " + key].tolist()
+            fig.add_trace(go.Scatter(
+                x=x, y=data_mean_train,
+                line_color=DEFAULT_PLOTLY_COLORS[i + len(self.pandas_list)],
+                name=self.labels[i].replace("_", " ") + " train ",
+            ))
+        title = "train and test " + key + " " + label.replace("50%", "median")
+        fig.update_traces(mode='lines')
+        fig.update_layout(title=title, xaxis_title='steps', yaxis_title=key)
+
+        if savefig:
+            os.makedirs(self.path / "plots/lines/", exist_ok=True)
+            plotly.offline.plot(fig,
+                                filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
+                                         + "_" + label.replace("50%", "median") + ".html")
         elif showfig:
             fig.show()
 
@@ -507,11 +552,60 @@ class MonteCarloAnalyzer:
     # ------------
 
     def do_all(self):
+        self.monte_carlo_plotter.plot_train_vs_test(key='loss')
+        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy')
+        self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
+        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True)
+
         for key in ['train loss', 'test loss', 'train accuracy', 'test accuracy']:
             self.plot_3d_hist(key=key)
             self.monte_carlo_plotter.plot_distribution(key=key)
+            self.box_plot(key=key)
+
             for lib in ['plotly', 'matplotlib', 'seaborn']:
                 self.plot_histogram(key=key, library=lib, showfig=False, savefig=True)
+
+    def box_plot(self, step=-1, key='test accuracy', showfig=False, savefig=True):
+        fig = go.Figure()
+        if step == -1:
+            step = max(self.df.step)
+        networks_availables = self.df.network.unique()
+        for col, net in enumerate(networks_availables):
+            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            data = self.df[filter]
+            fig.add_trace(go.Box(
+                y=data[key],
+                # x=[self.x[i]] * len(data[key]),
+                name=net.replace('_', ' '),
+                whiskerwidth=0.2,
+                notched=True,  # confidence intervals for the median
+                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col], 0.5),
+                boxpoints='suspectedoutliers',  # to mark the suspected outliers
+                line=dict(color=DEFAULT_PLOTLY_COLORS[col]),
+                boxmean=True  # Interesting how sometimes it falls outside the box
+            ))
+        fig.update_layout(
+            title='Montecarlo Box Plot ' + key,
+            xaxis=dict(
+                title="network",
+            ),
+            yaxis=dict(
+                title=key,
+                autorange=True,
+                showgrid=True,
+                dtick=0.05,
+            ),
+            # boxmode='group',
+            # boxgroupgap=0,
+            # boxgap=0,
+            showlegend=False
+        )
+        if savefig:
+            os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
+            plotly.offline.plot(fig,
+                                filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")))
+        elif showfig:
+            fig.show()
 
     def show_plotly_table(self):
         # TODO: Not yet debugged
@@ -570,7 +664,9 @@ class MonteCarloAnalyzer:
                               yaxis=dict(title=key),
                               zaxis=dict(title='counts'),
                               xaxis_type="log"))
-        plotly.offline.plot(fig, filename=str(self.path / (key + "_3d_histogram.html")))
+        os.makedirs(self.path / "plots/histogram/", exist_ok=True)
+        plotly.offline.plot(fig,
+                            filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")))
 
     def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title=''):
         if library == 'matplotlib':
@@ -583,7 +679,8 @@ class MonteCarloAnalyzer:
             print("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_histogram_matplotlib(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
+    def _plot_histogram_matplotlib(self, key='test accuracy', step=-1,
+                                   showfig=False, savefig=True, title='', extension=".svg"):
         fig, ax = plt.subplots()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
@@ -600,7 +697,7 @@ class MonteCarloAnalyzer:
         title += key + " comparison"
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
         add_params(fig, ax, x_label=key, title=title, loc='upper right',
-                   filename=self.path / (key + "_matplotlib.png"), showfig=showfig, savefig=savefig)
+                   filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension), showfig=showfig, savefig=savefig)
         return fig, ax
 
     def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
@@ -627,12 +724,14 @@ class MonteCarloAnalyzer:
         fig.update_layout(title=title.replace('_', ' '),
                           xaxis_title=key)
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path / (key + "_histogram.html")))
+            os.makedirs(self.path / "plots/histogram/", exist_ok=True)
+            plotly.offline.plot(fig, filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")))
         elif showfig:
             fig.show()
         return fig
 
-    def _plot_histogram_seaborn(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
+    def _plot_histogram_seaborn(self, key='test accuracy', step=-1,
+                                showfig=False, savefig=True, title='', extension=".svg"):
         fig = plt.figure()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
@@ -650,31 +749,50 @@ class MonteCarloAnalyzer:
         title += " " + key
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
         add_params(fig, ax, x_label=key, title=title, loc='upper right',
-                   filename=self.path / (key + "_seaborn.png"), showfig=showfig, savefig=savefig)
+                   filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
+                   showfig=showfig, savefig=savefig)
         return fig, ax
 
 
-if __name__ == "__main__":
+def test_coef_correl():
     several = SeveralMonteCarloComparison('correlation coefficient',
                                           x=np.linspace(0, 0.999, 11)[1:],
                                           paths=[
-                                              "./montecarlo/2020/02February/28Friday/run-03h03m16/run_data",      # 0.1
-                                              "./montecarlo/2020/02February/28Friday/run-12h48m12/run_data",      # 0.2
-                                              "./montecarlo/2020/02February/28Friday/run-22h32m08/run_data",      # 0.3
-                                              "./montecarlo/2020/02February/29Saturday/run-08h14m28/run_data",    # 0.4
-                                              "./montecarlo/2020/02February/29Saturday/run-17h57m42/run_data",    # 0.5
-                                              "./montecarlo/2020/03March/01Sunday/run-03h45m20/run_data",         # 0.6
-                                              "./montecarlo/2020/03March/01Sunday/run-13h32m41/run_data",         # 0.7
-                                              "./montecarlo/2020/03March/01Sunday/run-23h20m08/run_data",         # 0.8
-                                              "./montecarlo/2020/03March/02Monday/run-09h09m32/run_data",         # 0.9
-                                              "./montecarlo/2020/03March/02Monday/run-19h07m26/run_data",         # 1.0
+                                              "./montecarlo/2020/02February/28Friday/run-03h03m16/run_data",  # 0.1
+                                              "./montecarlo/2020/02February/28Friday/run-12h48m12/run_data",  # 0.2
+                                              "./montecarlo/2020/02February/28Friday/run-22h32m08/run_data",  # 0.3
+                                              "./montecarlo/2020/02February/29Saturday/run-08h14m28/run_data",  # 0.4
+                                              "./montecarlo/2020/02February/29Saturday/run-17h57m42/run_data",  # 0.5
+                                              "./montecarlo/2020/03March/01Sunday/run-03h45m20/run_data",  # 0.6
+                                              "./montecarlo/2020/03March/01Sunday/run-13h32m41/run_data",  # 0.7
+                                              "./montecarlo/2020/03March/01Sunday/run-23h20m08/run_data",  # 0.8
+                                              "./montecarlo/2020/03March/02Monday/run-09h09m32/run_data",  # 0.9
+                                              "./montecarlo/2020/03March/02Monday/run-19h07m26/run_data",  # 1.0
                                           ])
     several.box_plot(showfig=True, savefile="./results/Simuls 29-Feb/Corf Correl/box_plot.html")
-    # plotter = Plotter("./log/2020/02February/25Tuesday/run-14h16m23")
+
+
+def test_data_size():
+    several = SeveralMonteCarloComparison('data size',
+                                          x=[2*500, 2*1000, 2*2000, 2*5000, 2*10000],
+                                          paths=[
+                                              "./montecarlo/2020/03March/03Tuesday/run-14h32m23/run_data",      # 500
+                                              "./montecarlo/2020/03March/03Tuesday/run-12h51m43/run_data",      # 1000
+                                              "./montecarlo/2020/03March/03Tuesday/run-10h12m58/run_data",      # 2000
+                                              "./montecarlo/2020/03March/03Tuesday/run-04h53m52/run_data",      # 5000
+                                              "./montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # 10000
+                                          ])
+    several.box_plot(showfig=True, savefile="./results/Simuls 29-Feb/data_size/box_plot.html")
+
+
+if __name__ == "__main__":
+    # test_coef_correl()
+    # test_data_size()
+    # plotter = Plotter("./log/2020/02February/27Thursday/run-17h20m56")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
-    # monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path="/home/barrachina/Documents/cvnn/montecarlo/2020/03March/02Monday/run-19h07m26/run_data.csv")
-    # monte_carlo_analyzer.do_all()
+    monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path="/home/barrachina/Documents/cvnn/montecarlo/2020/02February/27Thursday/run-17h20m56/run_data.csv")
+    monte_carlo_analyzer.do_all()
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
     # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
     # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
@@ -682,6 +800,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
