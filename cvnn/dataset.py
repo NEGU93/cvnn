@@ -2,10 +2,7 @@
 from cvnn.utils import *
 import numpy as np
 import sys
-import os
-from os.path import join
 from math import sqrt
-from scipy.io import loadmat
 from scipy import signal
 from pdb import set_trace
 from abc import ABC, abstractmethod
@@ -15,38 +12,37 @@ from matplotlib import pyplot as plt
 from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
 
-"""
-This files contains all functions used for pre-processing data before training which includes:
-    1. Separating into train and test cases with it's corresponding cases (Utils)
-    2. Create own dataset (Crate dataset)
-    3. Load and save data files (Save and Load data)
-"""
-
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
 
-"""-------------
+# =======
 # Dataset
--------------"""
+# =======
 
 
 class Dataset:
-    def __init__(self, m, n, x, y, num_classes=2, ratio=0.8, savedata=False):
+    """
+    This class is used to centralize all dataset management.
+    TODO: make cvnn_model use this class in the fit method.
+    """
+
+    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False):
         """
-        :param m: Number of examples per class
-        :param n: Size of vector
+        :param x: Data
+        :param y: Labels/outputs
         :param num_classes: Number of different classes to be made
         :param ratio: (float) [0, 1]. Percentage of Tran case vs Test case (ratio = #train / (#train + #test))
             Default: 0.8 (80% of the data will be used for train).
         :param savedata: (boolean) If true it will save the generated data into "./data/current/date/path/".
-            Deafault: False
+            Default: False
         """
-        self.num_samples_per_class = m
-        self.num_samples = n
-        self.num_classes = num_classes
-        self.ratio = ratio
-        self.save_path = create_folder("./data/")
         self.x = x
         self.y = y
+        if num_classes is None:
+            self.num_classes = self._deduce_num_classes()   # This is only used for plotting the data example
+        else:
+            self.num_classes = num_classes
+        self.ratio = ratio
+        self.save_path = "./data/"
         # Generate data from x and y
         self.x_test, self.y_test = None, None               # Tests
         self.x_train, self.y_train = None, None             # Train
@@ -54,6 +50,18 @@ class Dataset:
         self._generate_data_from_base()
         if savedata:
             self.save_data()
+
+    def _deduce_num_classes(self):
+        """
+        Tries to deduce the total amount of classes present in the network.
+        ATTENTION: This method will obviously fail for regression data.
+        """
+        # https://jovianlin.io/cat-crossentropy-vs-sparse-cat-crossentropy/
+        if len(self.y.shape) == 1:      # Sparse labels
+            num_samples = max(self.y.astype(int)) - min(self.y.astype(int)) + 1
+        else:                           # Categorical labels
+            num_samples = self.y.shape[1]
+        return num_samples
 
     def _generate_data_from_base(self):
         """
@@ -76,21 +84,23 @@ class Dataset:
         """
         Saves data into the specified path as a numpy array.
         """
-        np.save(self.save_path / "data.npy", self.x)
-        np.save(self.save_path / "labels.npy", self.y)
+        save_path = create_folder(self.save_path)
+        np.save(save_path / "data.npy", self.x)
+        np.save(save_path / "labels.npy", self.y)
+        # Save also an image of the example
+        self.plot_data(overlapped=True, showfig=False, save_path=save_path)
 
     def summary(self, res_str):
         """
         :return: String with the information of the dataset.
         """
         res_str += "\tNum classes: {}\n".format(self.num_classes)
-        res_str += "\tSamples per class: {}\n".format(self.num_samples_per_class)
-        res_str += "\tVector size: {}\n".format(self.num_samples)
+        res_str += "\tTotal Samples: {}\n".format(self.x.shape[0])
+        res_str += "\tVector size: {}\n".format(self.x.shape[1])
         res_str += "\tTrain percentage: {}%\n".format(int(self.ratio * 100))
-        res_str += "\tTest percentage: {}%\n".format(int((1 - self.ratio) * 100))
         return res_str
 
-    def plot_data(self, overlapped=False):
+    def plot_data(self, overlapped=False, showfig=False, save_path=None):
         """
         Generates a figure with an example of the data
         :param overlapped: (boolean) If True it will plot all the examples in the same figure changing the color.
@@ -105,23 +115,33 @@ class Dataset:
                     if label == cls:
                         ax.plot(np.real(self.x[index]),
                                 np.imag(self.x[index]), MARKERS[cls % len(MARKERS)])
+                        ax.axis('equal')
+                        ax.grid(True)
+                        ax.set_aspect('equal', adjustable='box')
                         break
         else:
             fig, ax = plt.subplots(self.num_classes)
             for cls in range(self.num_classes):
                 for index, label in enumerate(self.y):
-                    if label == cls:
+                    if label == cls:        # This is done in case the data is shuffled.
                         ax[cls].plot(np.real(self.x[index]),
                                      np.imag(self.x[index]), 'b.')
                         ax[cls].axis('equal')
                         ax[cls].grid(True)
                         ax[cls].set_aspect('equal', adjustable='box')
                         break
+        if showfig:
+            fig.show()
+        if save_path is not None:
+            prefix = ""
+            if overlapped:
+                prefix = "overlapped_"
+            fig.savefig(save_path / (prefix + "data_example.png"))
         return fig, ax
 
-    # ---------
+    # =======
     # Getters
-    # ---------
+    # =======
 
     def get_train_and_test(self):
         return self.x_train, self.y_train, self.x_test, self.y_test
@@ -138,19 +158,22 @@ class Dataset:
     def get_categorical_labels(self):
         return self.sparse_into_categorical(self.y, self.num_classes)
 
-    # ----------------
+    # ================
     # Static functions
-    # ----------------
+    # ================
 
     @staticmethod
     def sparse_into_categorical(spar, num_classes=None):
-        assert len(spar.shape) == 1
-        spar = spar.astype(int)
-        if num_classes is None:
-            num_classes = max(spar) + 1  # assumes labels starts at 0
-        cat = np.zeros((spar.shape[0], num_classes))
-        for i, k in enumerate(spar):
-            cat[i][k] = 1
+        if len(spar.shape) == 1:    # Check data is indeed sparse
+            spar = spar.astype(int)
+            if num_classes is None:
+                num_classes = max(spar) + 1  # assumes labels starts at 0
+            cat = np.zeros((spar.shape[0], num_classes))
+            for i, k in enumerate(spar):
+                cat[i][k] = 1
+        else:
+            # Data was already categorical (I think)
+            cat = spar
         return cat
 
     @staticmethod
@@ -176,16 +199,50 @@ class Dataset:
         return x_train, y_train, x_test, y_test
 
 
+class OpenDataset(Dataset):
+    """
+    This class is used to init a Dataset with a saved npy data instead of giving the vector directly.
+    Construction overload (either use vector x and y or use a string path)
+        will be maybe cleaner but it does not exist in Python :S
+    """
+
+    def __init__(self, path, num_classes=None, ratio=0.8, savedata=False):
+        x, y = self.load_dataset(path)
+        super().__init__(x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
+
+    @staticmethod
+    def load_dataset(path):
+        try:
+            # print(os.listdir("../data"))
+            x = np.load(path + "data.npy")
+            y = np.load(path + "labels.npy")
+        except FileNotFoundError:
+            sys.exit("OpenDataset::load_dataset: Files data.npy and labels.npy not found in " + path)
+        return x, y
+
+
 class GeneratorDataset(ABC, Dataset):
+    """
+    Is a database method with an automatic x and y (data) generation.
+    Used to automate the generation of data.
+    Must therefore define a method to generate the data.
+
+    Good Practice: Although it is not compulsory,
+        it is recommended to define it's own summary method to know how the dataset was generated.
+    """
 
     def __init__(self, m, n, num_classes=2, ratio=0.8, savedata=False):
+        """
+        This class will first generate x and y with it's own defined method and then initialize a conventional dataset
+        """
         x, y = self._generate_data(m, n, num_classes)
-        super(Dataset).__init__(m, n, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
+        Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
 
     @abstractmethod
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
         """
-        Abstract method. Must be defined to generate x and y
+        Abstract method. It MUST be defined.
+        Method on how to generate x and y.
         """
         pass
 
@@ -310,83 +367,9 @@ class GaussianNoise(GeneratorDataset):
         return super().summary(res_str)
 
 
-"""-----------------
-# Save and Load data
------------------"""
-
-
-def save_npy_array(array_name, array):
-    np.save("./data/" + array_name + ".npy", array)
-
-
-def save_dataset(array_name, x_train, y_train, x_test, y_test):
-    """
-    Saves in a single .npz file the test and training set with corresponding labels
-    :param array_name: Name of the array to be saved into data/ folder.
-    :param x_train:
-    :param y_train:
-    :param x_test:
-    :param y_test:
-    :return: None
-    """
-    os.makedirs("../data", exist_ok=True)
-    return np.savez("../data/" + array_name, x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
-
-
-def load_dataset(array_name):
-    """
-    Gets all x_train, y_train, x_test, y_test from a previously saved .npz file with save_dataset function.
-    :param array_name: name of the file saved in '../data' with .npz termination
-    :return: tuple (x_train, y_train, x_test, y_test)
-    """
-    try:
-        # print(os.listdir("../data"))
-        npzfile = np.load("../data/" + array_name + ".npz")
-        # print(npzfile.files)
-        return npzfile['x_train'], npzfile['y_train'], npzfile['x_test'], npzfile['y_test']
-    except FileNotFoundError:
-        sys.exit("Cvnn::load_dataset: The file could not be found")  # TODO: check if better just throw a warning
-
-
-def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
-    mat_fname = join(path, fname)
-    mat = loadmat(mat_fname)
-    return mat
-
-
 """----------------
 # Testing Functions
 ----------------"""
-
-
-def test_save_load():
-    # Data pre-processing
-    m = 5000
-    n = 30
-    input_size = n
-    output_size = 1
-    total_cases = 2 * m
-    train_ratio = 0.8
-    # x_train, y_train, x_test, y_test = dp.get_non_correlated_gaussian_noise(m, n)
-
-    x_input = np.random.rand(total_cases, input_size) + 1j * np.random.rand(total_cases, input_size)
-    w_real = np.random.rand(input_size, output_size) + 1j * np.random.rand(input_size, output_size)
-    desired_output = np.matmul(x_input, w_real)  # Generate my desired output
-
-    # Separate train and test set
-    x_train = x_input[:int(train_ratio * total_cases), :]
-    y_train = desired_output[:int(train_ratio * total_cases), :]
-    x_test = x_input[int(train_ratio * total_cases):, :]
-    y_test = desired_output[int(train_ratio * total_cases):, :]
-
-    save_dataset("linear_output", x_train, y_train, x_test, y_test)
-    x_loaded_train, y_loaded_train, x_loaded_test, y_loaded_test = load_dataset("linear_output")
-
-    if np.all(x_train == x_loaded_train):
-        if np.all(y_train == y_loaded_train):
-            if np.all(x_test == x_loaded_test):
-                if np.all(y_test == y_loaded_test):
-                    print("All good!")
 
 
 def create_subplots_of_graph():
@@ -439,11 +422,12 @@ if __name__ == "__main__":
     # create_subplots_of_graph()
     m = 5
     n = 100
-    num_classes = 2
-    dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes)
-    set_trace()
+    classes = 2
+    # dataset = CorrelatedGaussianNormal(m, n, num_classes=classes, debug=True, savedata=True)
+    dataset = OpenDataset("/home/barrachina/Documents/cvnn/data/2020/03March/06Friday/run-15h16m42/")
+    dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

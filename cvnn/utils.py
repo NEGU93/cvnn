@@ -4,6 +4,14 @@ from pathlib import Path
 from pdb import set_trace
 import sys
 import os
+from os.path import join
+from scipy.io import loadmat
+
+
+def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
+    mat_fname = join(path, fname)
+    mat = loadmat(mat_fname)
+    return mat
 
 
 def create_folder(root_path, now=None):
@@ -102,6 +110,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.10'
+__version__ = '0.0.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
