@@ -22,7 +22,7 @@ DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)', 'rgb(255, 127, 14)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
 
-def triangulate_histogtam(x, y, z):
+def triangulate_histogram(x, y, z):
     # https://community.plot.ly/t/adding-a-shape-to-a-3d-plot/1441/8?u=negu93
     if len(x) != len(y) != len(z):
         raise ValueError("The  lists x, y, z, must have the same length")
@@ -170,13 +170,44 @@ def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_lege
 
 class SeveralMonteCarloComparison:
 
-    def __init__(self, label, x, paths):
+    def __init__(self, label, x, paths, round=2):
+        """
+        This class is used to compare several monte carlo runs done with cvnn.montecarlo.MonteCarlo class.
+        MonteCarlo let's you compare different models between them but let's you not change other values like epochs.
+        You can run as several MonteCarlo runs and then use SeveralMonteCarloComparison class to compare the results.
+
+        Example of usage:
+
+        ```
+        # Run several Monte Carlo's
+        for learning_rate in learning_rates:
+            monte_carlo = RealVsComplex(complex_network)
+            monte_carlo.run(x, y, iterations=iterations, learning_rate=learning_rate,
+                            epochs=epochs, batch_size=batch_size, display_freq=display_freq,
+                            shuffle=True, debug=debug, data_summary=dataset.summary())
+        # Run self
+        several = SeveralMonteCarloComparison('learning rate', x = learning_rates,
+                                              paths = ["path/to/1st/run/run_data",
+                                                       "path/to/2nd/run/run_data",
+                                                       "path/to/3rd/run/run_data",
+                                                       "path/to/4th/run/run_data"]
+        several.box_plot(showfig=True)
+        ```
+
+        :label: string that describes what changed between each montecarlo run
+        :x: List of the value for each monte carlo run wrt :label:.
+        :paths: Full path to each monte carlo run_data saved file (Must end with run_data)
+            NOTE: x and paths must be the same size
+        """
         self.x_label = label
-        self.x = np.round(x, 2)
+        if all([item.isdigit() for item in x]):
+            self.x = np.round(x, round)
+        else:
+            self.x = x
         self.monte_carlo_runs = []
         for path in paths:
             self.monte_carlo_runs.append(MonteCarloAnalyzer(path=path))
-        assert len(self.x) == len(self.monte_carlo_runs)
+        assert len(self.x) == len(self.monte_carlo_runs)    # x and paths must be the same size
 
     def box_plot(self, key='test accuracy', library='plotly', step=-1, showfig=False, savefile=None):
         if library == 'plotly':
@@ -203,7 +234,6 @@ class SeveralMonteCarloComparison:
             step = max(self.monte_carlo_runs[0].df.step)    # TODO: Assert it's the same for all cases
         fig = go.Figure()
 
-        cols = [self.x_label, 'network', 'step', 'test accuracy', 'train accuracy', 'test loss', 'train loss']
         for i, run in enumerate(self.monte_carlo_runs):
             df = run.df
             networks_availables = df.network.unique()
@@ -213,7 +243,7 @@ class SeveralMonteCarloComparison:
                 fig.add_trace(go.Box(
                     y=data[key],
                     # x=[self.x[i]] * len(data[key]),
-                    name=net.replace('_', ' ') + str(self.x[i]),
+                    name=net.replace('_', ' ') + " " + str(self.x[i]),
                     whiskerwidth=0.2,
                     notched=True,       # confidence intervals for the median
                     fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col], 0.5),
@@ -224,9 +254,7 @@ class SeveralMonteCarloComparison:
 
         fig.update_layout(
             title=self.x_label + ' Box Plot',
-            xaxis=dict(
-                title=self.x_label,
-            ),
+            # xaxis=dict(title=self.x_label),
             yaxis=dict(
                 title=key,
                 autorange=True,
@@ -236,11 +264,12 @@ class SeveralMonteCarloComparison:
             # boxmode='group',
             # boxgroupgap=0,
             # boxgap=0,
-            showlegend=False
+            showlegend=True
         )
         if not savefile.endswith('.html'):
             savefile += '.html'
         if savefig:
+            os.makedirs(os.path.split(savefile)[0], exist_ok=True)
             plotly.offline.plot(fig, filename=savefile)
         elif showfig:
             fig.show()
@@ -249,6 +278,15 @@ class SeveralMonteCarloComparison:
 class Plotter:
 
     def __init__(self, path, file_suffix=".csv"):
+        """
+        This class manages the plot of results for a model train.
+        It opens the csv files (test and train) saved during training and plots results as wrt each step saved.
+        This class is generally used to plot accuracy and loss evolution during training.
+
+        :path: Full path where the csv results are stored
+        :file_suffix: (optional) let's you filter csv files to open only files that ends with the suffix.
+            By default it opens every csv file it finds.
+        """
         assert os.path.exists(path)
         self.path = Path(path)
         self.pandas_list = []
@@ -257,6 +295,11 @@ class Plotter:
         self._csv_to_pandas()
 
     def _csv_to_pandas(self):
+        """
+        Opens the csv files as pandas dataframe and stores them in a list (self.pandas_list).
+        Also saves the name of the file where it got the pandas frame as a label.
+        This function is called by the constructor.
+        """
         self.pandas_list = []
         self.labels = []
         files = os.listdir(self.path)
@@ -270,7 +313,49 @@ class Plotter:
                 self.labels.append(re.sub(self.file_suffix + '$', '', file))
 
     def reload_data(self):
+        """
+        If data inside the working path has changed (new csv files or modified csv files),
+        this function reloads the data to be plotted with that new information.
+        """
         self._csv_to_pandas()
+
+    def get_full_pandas_dataframe(self):
+        """
+        Merges every dataframe obtained from each csv file into a single dataframe.
+        It adds the columns:
+            - network: name of the train model
+            - step: information of the step index
+            - path: path where the information of the train model was saved (used as parameter with the constructor)
+        :retun: pd.Dataframe
+        """
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
+        self._csv_to_pandas()
+        length = len(self.pandas_list[0])
+        for data_frame in self.pandas_list:  # TODO: Check if.
+            assert length == len(data_frame)  # What happens if NaN? Can I cope not having same len?
+
+        result = pd.DataFrame({
+            'network': [self.get_net_name()] * length,
+            'step': list(range(length)),
+            'path': [self.path] * length
+        })
+
+        for data_frame, data_label in zip(self.pandas_list, self.labels):
+            data_frame.columns = [data_label + " " + str(col) for col in data_frame.columns]
+            # concatenated = pd.concat(self.pandas_list, keys=self.labels)
+            result = pd.concat([result, data_frame], axis=1, sort=False)
+        return result
+
+    def get_net_name(self):
+        str_to_match = "_metadata.txt"
+        for file in os.listdir(self.path):
+            if file.endswith(str_to_match):
+                return re.sub(str_to_match + "$", '', file)  # See that there is no need to open the file
+        return "Name not found"
+
+    # ====================
+    #        Plot
+    # ====================
 
     def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
         if reload:
@@ -373,32 +458,6 @@ class Plotter:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html")
         elif showfig:
             fig.show()
-
-    def get_full_pandas_dataframe(self):
-        # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
-        self._csv_to_pandas()
-        length = len(self.pandas_list[0])
-        for data_frame in self.pandas_list:  # TODO: Check if.
-            assert length == len(data_frame)  # What happens if NaN? Can I cope not having same len?
-
-        result = pd.DataFrame({
-            'network': [self.get_net_name()] * length,
-            'step': list(range(length)),
-            'path': [self.path] * length
-        })
-
-        for data_frame, data_label in zip(self.pandas_list, self.labels):
-            data_frame.columns = [data_label + " " + str(col) for col in data_frame.columns]
-            # concatenated = pd.concat(self.pandas_list, keys=self.labels)
-            result = pd.concat([result, data_frame], axis=1, sort=False)
-        return result
-
-    def get_net_name(self):
-        str_to_match = "_metadata.txt"
-        for file in os.listdir(self.path):
-            if file.endswith(str_to_match):
-                return re.sub(str_to_match + "$", '', file)  # See that there is no need to open the file
-        return "Name not found"
 
 
 class MonteCarloPlotter(Plotter):
@@ -651,7 +710,7 @@ class MonteCarloAnalyzer:
                                             line=dict(color=DEFAULT_PLOTLY_COLORS[i], width=4)
                                             )
                                )
-                verts, tri = triangulate_histogtam([step] * len(counts), bins, counts)
+                verts, tri = triangulate_histogram([step] * len(counts), bins, counts)
                 x, y, z = verts.T
                 I, J, K = tri.T
                 fig.add_traces(go.Mesh3d(x=x, y=y, z=z, i=I, j=J, k=K, color=DEFAULT_PLOTLY_COLORS[i], opacity=0.4))
@@ -773,8 +832,9 @@ def test_coef_correl():
 
 
 def test_data_size():
+    mult = 2*0.8
     several = SeveralMonteCarloComparison('data size',
-                                          x=[2*500, 2*1000, 2*2000, 2*5000, 2*10000],
+                                          x=[int(mult*500), int(mult*1000), int(mult*2000), int(mult*5000), int(mult*10000)],
                                           paths=[
                                               "./montecarlo/2020/03March/03Tuesday/run-14h32m23/run_data",      # 500
                                               "./montecarlo/2020/03March/03Tuesday/run-12h51m43/run_data",      # 1000
@@ -782,17 +842,56 @@ def test_data_size():
                                               "./montecarlo/2020/03March/03Tuesday/run-04h53m52/run_data",      # 5000
                                               "./montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # 10000
                                           ])
-    several.box_plot(showfig=True, savefile="./results/Simuls 29-Feb/data_size/box_plot.html")
+    several.box_plot(showfig=True, savefile="./results/Simuls_29-Feb/data_size/box_plot.html")
+
+
+def test_learning_rate():
+    several = SeveralMonteCarloComparison('learning rate',
+                                          x=[0.001, 0.01, 0.1],
+                                          paths=[
+                                              "./montecarlo/2020/03March/03Tuesday/run-15h43m58/run_data",      # 0.001
+                                              "./montecarlo/2020/03March/04Wednesday/run-01h35m45/run_data",    # 0.01
+                                              "./montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data",      # 0.1
+                                          ], round=3)
+    several.box_plot(key='test accuracy', showfig=True,
+                     savefile="./results/Simuls_29-Feb/learning_rate/several_test_accuracy_box_plot.html")
+    several.box_plot(key='test loss', showfig=True,
+                     savefile="./results/Simuls_29-Feb/learning_rate/several_test_loss_box_plot.html")
+    several.box_plot(key='train accuracy', showfig=True,
+                     savefile="./results/Simuls_29-Feb/learning_rate/several_train_accuracy_box_plot.html")
+    several.box_plot(key='train loss', showfig=True,
+                     savefile="./results/Simuls_29-Feb/learning_rate/several_train_loss_box_plot.html")
+
+
+def test_activation_function():
+    several = SeveralMonteCarloComparison('activation function',
+                                          x=['ReLU', 'sigmoid', 'tanh'],
+                                          paths=[
+                                              "./montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # ReLU
+                                              "./montecarlo/2020/03March/04Wednesday/run-21h23m00/run_data",  # sigmoid
+                                              "./montecarlo/2020/03March/05Thursday/run-07h07m39/run_data",  # tanh
+                                          ])
+    several.box_plot(key='test accuracy', showfig=True,
+                     savefile="./results/Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
+    several.box_plot(key='test loss', showfig=True,
+                     savefile="./results/Simuls_29-Feb/activation_function/several_test_loss_box_plot.html")
+    several.box_plot(key='train accuracy', showfig=True,
+                     savefile="./results/Simuls_29-Feb/activation_function/several_train_accuracy_box_plot.html")
+    several.box_plot(key='train loss', showfig=True,
+                     savefile="./results/Simuls_29-Feb/activation_function/several_train_loss_box_plot.html")
 
 
 if __name__ == "__main__":
     # test_coef_correl()
     # test_data_size()
+    # test_learning_rate()
+    test_activation_function()
     # plotter = Plotter("./log/2020/02February/27Thursday/run-17h20m56")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
-    monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path="/home/barrachina/Documents/cvnn/montecarlo/2020/02February/27Thursday/run-17h20m56/run_data.csv")
-    monte_carlo_analyzer.do_all()
+    # monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
+                                              # path="./montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data")
+    # monte_carlo_analyzer.do_all()
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
     # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
     # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
@@ -800,6 +899,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
