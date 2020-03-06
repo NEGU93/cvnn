@@ -73,25 +73,6 @@ def randomize(x, y):
     return shuffled_x, shuffled_y
 
 
-def get_next_batch(x, y, start, end):
-    """
-    Get next batch from x and y using start and end
-    :param x: data
-    :param y: data labels
-    :param start: starting index of the batch to be returned
-    :param end: end index of the batch to be returned (not including)
-    :return: tuple (x, y) of the selected batch
-    """
-    if start < 0:
-        sys.exit("Error:get_next_batch(): start parameter cannot be negative")
-    if start > end:     # What will happen if not? Should I leave this case anyway and just give a warning?
-        sys.exit("Error:get_next_batch(): end should be higher than start")
-    # TODO: Check end < len(x)
-    x_batch = x[start:end]
-    y_batch = y[start:end]
-    return x_batch, y_batch
-
-
 def normalize(x):
     return (x-np.amin(x))/np.abs(np.amax(x)-np.amin(x))     # Checked it works for complex values
 
@@ -110,6 +91,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

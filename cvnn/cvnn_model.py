@@ -10,7 +10,7 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
-from cvnn.utils import randomize, get_next_batch, create_folder
+from cvnn.utils import randomize, create_folder
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
@@ -415,12 +415,13 @@ class CvnnModel:
         for epoch in range(epochs):
             self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
+            # TODO: Next line will be replaced with dataset.shuffle()
             x_train, y_train = randomize(x_train, y_train)      # TODO: keras makes this optional with shuffle opt.
             for iteration in range(num_tr_iter):
-                # Get the next batch
+                # Get the next batch    TODO: This will be replaced with dataset.get_next_batch()
                 start = iteration * batch_size
                 end = (iteration + 1) * batch_size
-                x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
+                x_batch, y_batch = dp.Dataset._get_next_batch(x_train, y_train, start, end)
                 # Save checkpoint if needed
                 if (self.epochs_done * batch_size + iteration) % display_freq == 0:
                     self._run_checkpoint(x_train, y_train, x_test, y_test,
@@ -541,7 +542,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.19'
+__version__ = '0.2.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

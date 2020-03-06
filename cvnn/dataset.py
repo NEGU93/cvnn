@@ -26,7 +26,7 @@ class Dataset:
     TODO: make cvnn_model use this class in the fit method.
     """
 
-    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False):
+    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None):
         """
         :param x: Data
         :param y: Labels/outputs
@@ -51,6 +51,22 @@ class Dataset:
         self._generate_data_from_base()
         if savedata:
             self.save_data()
+
+        self._iteration = 0
+        if batch_size is None:
+            self.batch_size = len(self.x.shape[1])
+        else:
+            self.batch_size = batch_size
+
+    def get_next_batch(self):
+        num_tr_iter = int(len(self.x_train.shape[1]) / self.batch_size)  # Number of training iterations in each epoch
+        assert self._iteration < num_tr_iter     # I did more calls to this function that planned
+        # Get the next batch
+        start = self._iteration * self.batch_size
+        end = (self._iteration + 1) * self.batch_size
+        self._iteration += 1
+
+        return self._get_next_batch(self.x_train, self.y_train, start, end)
 
     def _deduce_num_classes(self):
         """
@@ -77,9 +93,10 @@ class Dataset:
 
     def shuffle(self):
         """
-        Shuffles the train data
+        Shuffles the train data and reset iteration counter
         """
         self.x_train, self.y_train = randomize(self.x_train, self.y_train)
+        self._iteration = 0
 
     def save_data(self):
         """
@@ -226,6 +243,25 @@ class Dataset:
         x_test = x[int(m * ratio):]
         y_test = y[int(m * ratio):]
         return x_train, y_train, x_test, y_test
+
+    @staticmethod
+    def _get_next_batch(x, y, start, end):
+        """
+        Get next batch from x and y using start and end
+        :param x: data
+        :param y: data labels
+        :param start: starting index of the batch to be returned
+        :param end: end index of the batch to be returned (not including)
+        :return: tuple (x, y) of the selected batch
+        """
+        if start < 0:
+            sys.exit("Error:get_next_batch(): start parameter cannot be negative")
+        if start > end:  # What will happen if not? Should I leave this case anyway and just give a warning?
+            sys.exit("Error:get_next_batch(): end should be higher than start")
+        # TODO: Check end < len(x)
+        x_batch = x[start:end]
+        y_batch = y[start:end]
+        return x_batch, y_batch
 
 
 class OpenDataset(Dataset):
@@ -457,6 +493,6 @@ if __name__ == "__main__":
     # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
