@@ -1,3 +1,10 @@
+https://stackoverflow.com/questions/49474575/how-to-install-my-own-python-module-package-via-conda-and-watch-its-changes
+
+https://docs.anaconda.com/anaconda-cloud/user-guide/getting-started/#building-and-uploading-packages
+
+https://github.com/conda/cookiecutter-conda-python
+https://docs.conda.io/projects/conda-build/en/latest/user-guide/index.html
+
 Do a setup.py file to upload code to CONDA and PIP:
 	https://setuptools.readthedocs.io/en/latest/setuptools.html#installing-setuptools
 	https://pythonhosted.org/an_example_pypi_project/setuptools.html

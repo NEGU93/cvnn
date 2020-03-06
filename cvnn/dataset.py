@@ -6,7 +6,8 @@ from math import sqrt
 from scipy import signal
 from pdb import set_trace
 from abc import ABC, abstractmethod
-
+import plotly.graph_objects as go
+import plotly
 from pylab import plot, show, axis, subplot, xlabel, ylabel, grid
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh, cholesky
@@ -100,14 +101,42 @@ class Dataset:
         res_str += "\tTrain percentage: {}%\n".format(int(self.ratio * 100))
         return res_str
 
-    def plot_data(self, overlapped=False, showfig=False, save_path=None):
+    def plot_data(self, overlapped=False, showfig=False, save_path=None, library='plotly'):
         """
         Generates a figure with an example of the data
         :param overlapped: (boolean) If True it will plot all the examples in the same figure changing the color.
             Otherwise it will create a subplot with as many subplots as classes. Default: False
         :return: (fig, ax) matplolib format to be plotted.
         """
+        if library == 'matplotlib':
+            self._plot_data_matplotlib(overlapped=overlapped, showfig=showfig, save_path=save_path)
+        elif library == 'plotly':
+            self._plot_data_plotly(showfig=showfig, save_path=save_path)
+        else:
+            print("Warning: Unrecognized library to plot " + library)
+            return None
 
+    def _plot_data_plotly(self, showfig=False, save_path=None):
+        fig = go.Figure()
+        for cls in range(self.num_classes):
+            for index, label in enumerate(self.y):
+                if label == cls:
+                    fig.add_trace(go.Scatter(x=np.real(self.x[index]), y=np.imag(self.x[index]),
+                                             mode='markers', marker_symbol=cls, marker_size=10,
+                                             name="Class: " + str(cls)))
+                    break
+        fig.update_layout(title='Data Visualization Example',
+                          yaxis=dict(scaleanchor="x", scaleratio=1),
+                          xaxis_title='real (x)',
+                          yaxis_title='imaginary (y)',
+                          showlegend=True)
+        if save_path is not None:
+            # https://plot.ly/python/configuration-options/
+            plotly.offline.plot(fig, filename=str(save_path / "data_example.html"), config={'editable': True})
+        elif showfig:
+            fig.show(config={'scrollZoom': True, 'editable': True})
+
+    def _plot_data_matplotlib(self, overlapped=False, showfig=False, save_path=None):
         if overlapped:
             fig, ax = plt.subplots()
             for cls in range(self.num_classes):
@@ -367,9 +396,9 @@ class GaussianNoise(GeneratorDataset):
         return super().summary(res_str)
 
 
-"""----------------
+# =================
 # Testing Functions
-----------------"""
+# =================
 
 
 def create_subplots_of_graph():
@@ -423,11 +452,11 @@ if __name__ == "__main__":
     m = 5
     n = 100
     classes = 2
-    # dataset = CorrelatedGaussianNormal(m, n, num_classes=classes, debug=True, savedata=True)
-    dataset = OpenDataset("/home/barrachina/Documents/cvnn/data/2020/03March/06Friday/run-15h16m42/")
-    dataset.plot_data(showfig=True)
+    dataset = CorrelatedGaussianNormal(m, n, num_classes=classes, savedata=True)
+    # dataset = OpenDataset("/home/barrachina/Documents/cvnn/data/2020/03March/06Friday/run-15h16m42/")
+    # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

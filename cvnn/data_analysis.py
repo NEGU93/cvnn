@@ -270,9 +270,9 @@ class SeveralMonteCarloComparison:
             savefile += '.html'
         if savefig:
             os.makedirs(os.path.split(savefile)[0], exist_ok=True)
-            plotly.offline.plot(fig, filename=savefile)
+            plotly.offline.plot(fig, filename=savefile, config={'scrollZoom': True, 'editable': True})
         elif showfig:
-            fig.show()
+            fig.show(config={'editable': True})
 
 
 class Plotter:
@@ -455,9 +455,9 @@ class Plotter:
                           xaxis_title='steps',
                           yaxis_title=key)
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path / key) + ".html")
+            plotly.offline.plot(fig, filename=str(self.path / key) + ".html", config={'scrollZoom': True, 'editable': True})
         elif showfig:
-            fig.show()
+            fig.show(config={'editable': True})
 
 
 class MonteCarloPlotter(Plotter):
@@ -527,9 +527,11 @@ class MonteCarloPlotter(Plotter):
         fig.update_layout(title=title, xaxis_title='steps', yaxis_title=key)
 
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html")
+            plotly.offline.plot(fig,
+                                filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html",
+                                config={'scrollZoom': True, 'editable': True})
         elif showfig:
-            fig.show()
+            fig.show(config={'editable': True})
 
     def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False):
         fig = go.Figure()
@@ -559,9 +561,10 @@ class MonteCarloPlotter(Plotter):
             os.makedirs(self.path / "plots/lines/", exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
-                                         + "_" + label.replace("50%", "median") + ".html")
+                                         + "_" + label.replace("50%", "median") + ".html",
+                                config={'scrollZoom': True, 'editable': True})
         elif showfig:
-            fig.show()
+            fig.show(config={'editable': True})
 
 
 class MonteCarloAnalyzer:
@@ -662,9 +665,10 @@ class MonteCarloAnalyzer:
         if savefig:
             os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
             plotly.offline.plot(fig,
-                                filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")))
+                                filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
+                                config={'scrollZoom': True, 'editable': True})
         elif showfig:
-            fig.show()
+            fig.show(config={'editable': True})
 
     def show_plotly_table(self):
         # TODO: Not yet debugged
@@ -677,7 +681,7 @@ class MonteCarloAnalyzer:
                        fill_color='lavender',
                        align='left'))
         ])
-        fig.show()
+        fig.show(config={'editable': True})
 
     def plot_3d_hist(self, steps=None, key='test accuracy', title=''):
         # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
@@ -725,7 +729,8 @@ class MonteCarloAnalyzer:
                               xaxis_type="log"))
         os.makedirs(self.path / "plots/histogram/", exist_ok=True)
         plotly.offline.plot(fig,
-                            filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")))
+                            filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
+                            config={'scrollZoom': True, 'editable': True})
 
     def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title=''):
         if library == 'matplotlib':
@@ -784,9 +789,10 @@ class MonteCarloAnalyzer:
                           xaxis_title=key)
         if savefig:
             os.makedirs(self.path / "plots/histogram/", exist_ok=True)
-            plotly.offline.plot(fig, filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")))
+            plotly.offline.plot(fig, filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")),
+                                config={'scrollZoom': True, 'editable': True})
         elif showfig:
-            fig.show()
+            fig.show(config={'editable': True})
         return fig
 
     def _plot_histogram_seaborn(self, key='test accuracy', step=-1,
@@ -899,6 +905,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
