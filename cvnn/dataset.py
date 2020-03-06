@@ -51,7 +51,7 @@ class Dataset:
         self._generate_data_from_base()
         if savedata:
             self.save_data()
-
+        # Parameters used with the fit method
         self._iteration = 0
         if batch_size is None:
             self.batch_size = len(self.x.shape[1])
@@ -493,6 +493,6 @@ if __name__ == "__main__":
     # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

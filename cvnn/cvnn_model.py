@@ -2,27 +2,24 @@ import os
 import sys
 import re
 import logging
-import threading
 import numpy as np
-from itertools import count  # To count the number of times fit is called
+import pandas as pd
+from itertools import count     # To count the number of times fit is called
 import tensorflow as tf
+from datetime import datetime
+from pdb import set_trace
+
+# My own module!
 import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
 from cvnn.utils import randomize, create_folder
-from datetime import datetime
-import pandas as pd
-from pathlib import Path
-from pdb import set_trace
-from tensorflow.keras import Model
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
-
-FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
 
 
 def run_once(f):
@@ -74,12 +71,7 @@ class CvnnModel:
 
         # Logging parameters
         logging.getLogger('tensorflow').disabled = True
-        logger = logging.getLogger(cvnn.__name__)
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(FORMATTER)
-        logger.setLevel(logging.DEBUG)
-        logger.addHandler(console_handler)
-        self.logger = logger
+        self.logger = logging.getLogger(cvnn.__name__)
 
         # Folder management for logs
         self.now = datetime.today()
@@ -542,7 +534,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.20'
+__version__ = '0.2.21'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
