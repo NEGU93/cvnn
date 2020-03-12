@@ -15,6 +15,7 @@ from scipy.stats import norm
 
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
 
+
 # =======
 # Dataset
 # =======
@@ -39,28 +40,29 @@ class Dataset:
         self.x = x
         self.y = y
         if num_classes is None:
-            self.num_classes = self._deduce_num_classes()   # This is only used for plotting the data example
+            self.num_classes = self._deduce_num_classes()  # This is only used for plotting the data example
         else:
             self.num_classes = num_classes
         self.ratio = ratio
         self.save_path = "./data/"
         # Generate data from x and y
-        self.x_test, self.y_test = None, None               # Tests
-        self.x_train, self.y_train = None, None             # Train
-        self.x_train_real, self.x_test_real = None, None    # Real
+        self.x_test, self.y_test = None, None  # Tests
+        self.x_train, self.y_train = None, None  # Train
+        self.x_train_real, self.x_test_real = None, None  # Real
         self._generate_data_from_base()
         if savedata:
             self.save_data()
         # Parameters used with the fit method
         self._iteration = 0
+        set_trace()
         if batch_size is None:
-            self.batch_size = len(self.x.shape[1])
+            self.batch_size = self.x_train.shape[0]  # Don't use batches at all
         else:
             self.batch_size = batch_size
 
     def get_next_batch(self):
         num_tr_iter = int(len(self.x_train.shape[1]) / self.batch_size)  # Number of training iterations in each epoch
-        assert self._iteration < num_tr_iter     # I did more calls to this function that planned
+        assert self._iteration < num_tr_iter  # I did more calls to this function that planned
         # Get the next batch
         start = self._iteration * self.batch_size
         end = (self._iteration + 1) * self.batch_size
@@ -74,9 +76,9 @@ class Dataset:
         ATTENTION: This method will obviously fail for regression data.
         """
         # https://jovianlin.io/cat-crossentropy-vs-sparse-cat-crossentropy/
-        if len(self.y.shape) == 1:      # Sparse labels
+        if len(self.y.shape) == 1:  # Sparse labels
             num_samples = max(self.y.astype(int)) - min(self.y.astype(int)) + 1
-        else:                           # Categorical labels
+        else:  # Categorical labels
             num_samples = self.y.shape[1]
         return num_samples
 
@@ -169,7 +171,7 @@ class Dataset:
             fig, ax = plt.subplots(self.num_classes)
             for cls in range(self.num_classes):
                 for index, label in enumerate(self.y):
-                    if label == cls:        # This is done in case the data is shuffled.
+                    if label == cls:  # This is done in case the data is shuffled.
                         ax[cls].plot(np.real(self.x[index]),
                                      np.imag(self.x[index]), 'b.')
                         ax[cls].axis('equal')
@@ -210,7 +212,7 @@ class Dataset:
 
     @staticmethod
     def sparse_into_categorical(spar, num_classes=None):
-        if len(spar.shape) == 1:    # Check data is indeed sparse
+        if len(spar.shape) == 1:  # Check data is indeed sparse
             spar = spar.astype(int)
             if num_classes is None:
                 num_classes = max(spar) + 1  # assumes labels starts at 0
@@ -314,8 +316,21 @@ class GeneratorDataset(ABC, Dataset):
 
 class CorrelatedGaussianNormal(GeneratorDataset):
 
-    def __init__(self, m, n, num_classes=2, ratio=0.8, coeff_correl_limit=0.75, debug=False, savedata=False):
-        self.coeff_correl_limit = coeff_correl_limit
+    def __init__(self, m, n, cov_matrix_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
+        if num_classes is None:
+            num_classes = len(cov_matrix_list)
+        assert len(cov_matrix_list) == num_classes, \
+            "cov_matrix_list length ({0}) should have the same size as num_classes ({1})".format(len(cov_matrix_list),
+                                                                                                 num_classes)
+        for cov_mat in cov_matrix_list:  # Each class has a coviariance matrix 2x2
+            # Numpy cast enables data to be either numpy array or list
+            assert np.array(cov_mat).shape == (2, 2), \
+                "covariance matrix must have shape 2x2 but has shape {}".format(np.array(cov_mat).shape)
+            assert cov_mat[0][1] == cov_mat[1][0],\
+                "Elements outside the diagonal must be equal (they are both sigma_{xy}"
+            assert np.abs(cov_mat[0][1] / sqrt(cov_mat[0][0] * cov_mat[1][1])) < 1, \
+                "corelation coefficient module must be lower than one"
+        self.cov_matrix_list = cov_matrix_list
         self.debug = debug
         super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata)
 
@@ -360,16 +375,10 @@ class CorrelatedGaussianNormal(GeneratorDataset):
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
         x = []
         y = []
-        sigma_real = 1
-        sigma_imag = 2
         for signal_class in range(num_classes):
-            coeff_correl = -self.coeff_correl_limit + 2 * self.coeff_correl_limit * signal_class / (num_classes - 1)
-            r = np.array([
-                [sigma_real, coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag)],
-                [coeff_correl * sqrt(sigma_real) * sqrt(sigma_imag), sigma_imag]
-            ])
+            r = self.cov_matrix_list[signal_class]
             if self.debug:
-                print("Class {} has coeff_correl {}".format(signal_class, coeff_correl))
+                print("Class {} has coeff_correl {}".format(signal_class, self.get_coef_correl(signal_class)))
                 self._create_correlated_gaussian_point(num_samples, r, True)
             y.extend(signal_class * np.ones(num_samples_per_class))
             for _ in range(num_samples_per_class):
@@ -378,8 +387,73 @@ class CorrelatedGaussianNormal(GeneratorDataset):
 
     def summary(self, res_str=None):
         res_str = "Correlated Gaussian Noise\n"
-        res_str += "\tPearson correlation coefficient max {}\n".format(self.coeff_correl_limit)
+        res_str += "\tPearson correlation coefficient max {}\n".format(self.cov_matrix_list)
         return super().summary(res_str)
+
+    # =====================================================
+    # Get all the parameter equivalents
+    # https://ieeexplore.ieee.org/abstract/document/4682548
+    # =====================================================
+
+    def get_coef_correl(self, index):
+        rho = None
+        if index < len(self.cov_matrix_list):
+            cov_mat = self.cov_matrix_list[index]
+            rho = cov_mat[0][1] / (sqrt(cov_mat[0][0]) * sqrt(cov_mat[1][1]))
+        else:
+            print("Error:get_coef_correl:  index out of range")  # TODO: manage this better
+        return rho
+
+    def get_variance_and_pseudo_variance(self, index):
+        variance = None
+        pseudo_variance = None
+        if index < len(self.cov_matrix_list):  # TODO: Get the error here
+            variance = self.cov_matrix_list[index][0][0] + self.cov_matrix_list[index][1][1]
+            pseudo_variance = self.cov_matrix_list[index][0][0] - self.cov_matrix_list[index][1][1] + \
+                              2j * self.cov_matrix_list[index][0][1]
+        return variance, pseudo_variance
+
+    def get_circularity_quiotient(self, index):
+        variance, pseudo_variance = self.get_variance_and_pseudo_variance(index)
+        return pseudo_variance / variance
+
+    def get_ellipse_params(self, index):
+        varrho = self.get_circularity_quiotient(index)
+        epsilon = sqrt(np.abs(varrho))
+        alpha = np.angle(varrho)
+        return epsilon, alpha
+
+
+class ComplexNormalVariable(CorrelatedGaussianNormal):
+    """
+    This class is a correlated gaussian normal but instead of defining it's classes with the covariance matrix
+    it is defined with it's complex variance and pseudo-variance.
+    https://ieeexplore.ieee.org/abstract/document/4682548
+    """
+
+    def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
+        if num_classes is None:
+            num_classes = len(param_list)
+        assert len(param_list) == num_classes, \
+            "param_list length ({0}) should have the same size as num_classes ({1})".format(len(param_list),
+                                                                                            num_classes)
+        cov_mat_list = []
+        for param in param_list:
+            assert len(param) == 2, \
+                "Each parameter in param_list should have size 2 (sigma and tau) but {} where given".format(len(param))
+            cov_mat_list.append(self.get_cov_matrix(param[0], param[1]))
+        super().__init__(m=m, n=n, cov_matrix_list=cov_mat_list,
+                         num_classes=num_classes, ratio=ratio, debug=debug, savedata=savedata)
+        for i, param in enumerate(param_list):  # Just for fun
+            assert self.get_circularity_quiotient(i) == param[1] / param[0], \
+                "ComplexNormalVariable::__init__: Error in creating data"
+
+    @staticmethod
+    def get_cov_matrix(sigma, tau):
+        sigma_xx = (sigma + np.real(tau)) / 2
+        sigma_yy = (sigma - np.real(tau)) / 2
+        sigma_xy = np.imag(tau) / 2
+        return [[sigma_xx, sigma_xy], [sigma_xy, sigma_yy]]
 
 
 class GaussianNoise(GeneratorDataset):
@@ -397,7 +471,7 @@ class GaussianNoise(GeneratorDataset):
 
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
         x = np.empty((num_classes * num_samples_per_class, num_samples)) \
-                 + 1j * np.empty((num_classes * num_samples_per_class, num_samples))
+            + 1j * np.empty((num_classes * num_samples_per_class, num_samples))
         # I am using zeros instead of empty because although counter intuitive it seams it works faster:
         # https://stackoverflow.com/questions/55145592/performance-of-np-empty-np-zeros-and-np-ones
         # DEBUNKED? https://stackoverflow.com/questions/52262147/speed-of-np-empty-vs-np-zeros?
@@ -450,7 +524,7 @@ def create_subplots_of_graph():
     fig, axs = plt.subplots(rows, len(coefs), sharex=True, sharey=True)
     # , gridspec_kw={'hspace': 0, 'wspace': 0})
     for i, coef in enumerate(coefs):
-        dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=False, coeff_correl_limit=coef)
+        dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=False, cov_matrix_list=coef)
         x, y = dataset.get_all()
         for r in range(rows):
             for cls in range(num_classes):
@@ -487,12 +561,20 @@ if __name__ == "__main__":
     # create_subplots_of_graph()
     m = 5
     n = 100
-    classes = 2
-    dataset = CorrelatedGaussianNormal(m, n, num_classes=classes, savedata=True)
+    cov_matr_list = [
+        [[1, 0.75], [0.75, 2]],
+        [[1, -0.75], [-0.75, 2]]
+    ]
+    params = [
+        [3, 1+1j],
+        [3, 1-1j]
+    ]
+    # dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=True)
+    dataset = ComplexNormalVariable(m, n, params, debug=True)
     # dataset = OpenDataset("/home/barrachina/Documents/cvnn/data/2020/03March/06Friday/run-15h16m42/")
     # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.9'
+__version__ = '0.1.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -117,7 +117,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, num_classes=2, coeff_correl_
         shape_raw = [100, 40]
     if display_freq is None:
         display_freq = int(m*num_classes*0.8/batch_size)
-    dataset = dp.CorrelatedGaussianNormal(m, n, num_classes, debug=False, coeff_correl_limit=coeff_correl_limit)
+    dataset = dp.CorrelatedGaussianNormal(m, n, num_classes, debug=False, cov_matrix_list=coeff_correl_limit)
     x, y = dataset.get_all()
     x = x.astype(np.complex64)
     y = dp.Dataset.sparse_into_categorical(y, num_classes=num_classes).astype(np.float32)

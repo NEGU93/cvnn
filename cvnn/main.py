@@ -11,7 +11,7 @@ if __name__ == "__main__":
     m = 10000
     n = 100
     num_classes = 2
-    dataset = dp.CorrelatedGaussianNormal(m, n, num_classes, debug=True, coeff_correl_limit=0.75)
+    dataset = dp.CorrelatedGaussianNormal(m, n, num_classes, debug=True, cov_matrix_list=0.75)
     x, y = dataset.get_all()
     x = x.astype(np.complex64)
     y = dp.Dataset.sparse_into_categorical(y, num_classes=num_classes).astype(np.float32)
@@ -59,6 +59,6 @@ if __name__ == "__main__":
     real_network.plotter.plot_key(key='accuracy', library='plotly', name=real_network.name)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
