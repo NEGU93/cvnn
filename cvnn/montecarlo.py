@@ -26,30 +26,22 @@ class MonteCarlo:
         self.models.append(model)
 
     def run(self, x, y, data_summary='',
-            iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=True, debug=False, display_freq=160):
+            iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=False, debug=False, display_freq=160):
         self.pandas_full_data = pd.DataFrame()  # Reset data frame
         self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
                                  data_summary)
-        x_train, y_train, x_val, y_val = Dataset.separate_into_train_and_test(x, y)
-        x_train_real = transform_to_real(x_train)
-        x_test_real = transform_to_real(x_val)
         os.makedirs(self.monte_carlo_analyzer.path / "checkpoints/", exist_ok=True)
         for it in range(iterations):
             print("Iteration {}/{}".format(it + 1, iterations))
-            if shuffle:
+            if shuffle:     # shuffle all data at each iteration
                 x, y = randomize(x, y)
-                x_train, y_train, x_val, y_val = Dataset.separate_into_train_and_test(x, y)
-                x_train_real = transform_to_real(x_train)
-                x_test_real = transform_to_real(x_val)
             for i, model in enumerate(self.models):
                 if model.is_complex():
-                    x_train_iter = x_train
-                    x_val = x_val
+                    x_fit = x
                 else:
-                    x_train_iter = x_train_real
-                    x_val = x_test_real
+                    x_fit = transform_to_real(x)
                 test_model = copy.deepcopy(model)
-                test_model.fit(x_train_iter, y_train, x_test=x_val, y_test=y_val,
+                test_model.fit(x_fit, y,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=not debug, save_to_file=False, display_freq=display_freq)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
@@ -110,24 +102,23 @@ class RealVsComplex(MonteCarlo):
                                  save_csv_checkpoints=complex_model.save_csv_checkpoints))
 
 
-def run_montecarlo(iterations=1000, m=10000, n=128, num_classes=2, coeff_correl_limit=0.75,
+def run_montecarlo(iterations=1000, m=10000, n=128, cov_matrix_list=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.002,
                    shape_raw=None, activation='cart_relu', debug=False):
     if shape_raw is None:
         shape_raw = [100, 40]
+    if cov_matrix_list is None:
+        cov_matrix_list = [
+            [[1, 0.75], [0.75, 2]],
+            [[1, -0.75], [-0.75, 2]]
+        ]
     if display_freq is None:
-        display_freq = int(m*num_classes*0.8/batch_size)
-    dataset = dp.CorrelatedGaussianNormal(m, n, num_classes, debug=False, cov_matrix_list=coeff_correl_limit)
-    x, y = dataset.get_all()
-    x = x.astype(np.complex64)
-    y = dp.Dataset.sparse_into_categorical(y, num_classes=num_classes).astype(np.float32)
-    x_train, y_train, x_test, y_test = dp.Dataset.separate_into_train_and_test(x, y)
-    x_train_real = transform_to_real(x_train)
-    x_test_real = transform_to_real(x_test)
+        display_freq = int(m*len(cov_matrix_list)*0.8/batch_size)
+    dataset = dp.CorrelatedGaussianNormal(m, n, cov_matrix_list, debug=False)
 
     # Create complex network
-    input_size = x.shape[1]  # Size of input
-    output_size = y.shape[1]  # Size of output
+    input_size = dataset.x.shape[1]  # Size of input
+    output_size = dataset.y.shape[1]  # Size of output
     assert len(shape_raw) > 0
 
     shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
@@ -143,35 +134,31 @@ def run_montecarlo(iterations=1000, m=10000, n=128, num_classes=2, coeff_correl_
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network)
-    monte_carlo.run(x, y, iterations=iterations, learning_rate=learning_rate,
+    monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=True, debug=debug, data_summary=dataset.summary())
 
 
 if __name__ == "__main__":
     # testing
-    run_montecarlo(iterations=5, epochs=10, debug=True)
+    # run_montecarlo(iterations=5, epochs=10, debug=True)
 
     # Run the base case
-    run_montecarlo()
-
-    # change pearson coefficient
-    coefs = np.linspace(0, 0.999, 11)[1:]       # 0.75
-    for coef in coefs:
-        run_montecarlo(coeff_correl_limit=coef)
+    run_montecarlo(iterations=5)
+    set_trace()
 
     # change m
-    per_class_examples = [5000, 2000, 1000, 500]    # 10000
+    per_class_examples = [10000, 5000, 2000, 1000, 500]
     for m in per_class_examples:
         run_montecarlo(m=m)
 
     # change learning rate
-    learning_rates = [0.001, 0.01, 0.1]     # 0.002
+    learning_rates = [0.001, 0.01, 0.1]
     for learning_rate in learning_rates:
         run_montecarlo(learning_rate=learning_rate)
 
     # change activation function
-    activation_function = ['cart_sigmoid', 'cart_tanh']     # cart_relu
+    activation_function = ['cart_sigmoid', 'cart_tanh', 'cart_relu']
     for activation in activation_function:
         run_montecarlo(activation=activation)
 

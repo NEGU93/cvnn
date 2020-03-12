@@ -48,7 +48,7 @@ def transform_to_real(x_complex):
     elif x_complex.dtype == np.complex128:
         dtype = np.float64
     else:
-        print("Warning: transform_to_real: data type unknown: " + str(np.dtype(x_complex)))
+        print("Warning: transform_to_real: data type unknown: " + str(x_complex.dtype))
     return x_real.astype(dtype)
 
 
@@ -91,6 +91,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

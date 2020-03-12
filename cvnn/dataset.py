@@ -24,10 +24,9 @@ MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
 class Dataset:
     """
     This class is used to centralize all dataset management.
-    TODO: make cvnn_model use this class in the fit method.
     """
 
-    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None):
+    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None, categorical=True):
         """
         :param x: Data
         :param y: Labels/outputs
@@ -37,8 +36,17 @@ class Dataset:
         :param savedata: (boolean) If true it will save the generated data into "./data/current/date/path/".
             Default: False
         """
+        x = np.array(x)
+        y = np.array(y)
+        if x.dtype == np.complex128:    # Do this cast not to have warning messages when fit
+            x = x.astype(np.complex64)
+        elif x.dtype == np.float64:
+            x = x.astype(np.float32)
         self.x = x
-        self.y = y
+        self.y = y.astype(np.float32)
+        self.categorical = categorical
+        if categorical:
+            self.y = self.sparse_into_categorical(self.y)
         if num_classes is None:
             self.num_classes = self._deduce_num_classes()  # This is only used for plotting the data example
         else:
@@ -48,20 +56,21 @@ class Dataset:
         # Generate data from x and y
         self.x_test, self.y_test = None, None  # Tests
         self.x_train, self.y_train = None, None  # Train
-        self.x_train_real, self.x_test_real = None, None  # Real
         self._generate_data_from_base()
         if savedata:
             self.save_data()
         # Parameters used with the fit method
         self._iteration = 0
-        set_trace()
         if batch_size is None:
             self.batch_size = self.x_train.shape[0]  # Don't use batches at all
         else:
+            if np.shape(self.x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
+                print("Batch size was bigger than total amount of examples")
+                sys.exit(-1)
             self.batch_size = batch_size
 
     def get_next_batch(self):
-        num_tr_iter = int(len(self.x_train.shape[1]) / self.batch_size)  # Number of training iterations in each epoch
+        num_tr_iter = int(self.x_train.shape[0] / self.batch_size)  # Number of training iterations in each epoch
         assert self._iteration < num_tr_iter  # I did more calls to this function that planned
         # Get the next batch
         start = self._iteration * self.batch_size
@@ -84,14 +93,12 @@ class Dataset:
 
     def _generate_data_from_base(self):
         """
-        Generates everything (x_test, y_test, x_train, y_train, x_test_real, x_train_real) once x and y is defined.
+        Generates everything (x_test, y_test, x_train, y_train, x_real) once x and y is defined.
         """
         # This must be run after each case
         self.x, self.y = randomize(self.x, self.y)
         self.x_train, self.y_train, self.x_test, self.y_test = self.separate_into_train_and_test(self.x, self.y,
                                                                                                  self.ratio)
-        self.x_test_real = transform_to_real(self.x_test)
-        self.x_train_real = transform_to_real(self.x_train)
 
     def shuffle(self):
         """
@@ -137,8 +144,11 @@ class Dataset:
 
     def _plot_data_plotly(self, showfig=False, save_path=None):
         fig = go.Figure()
+        labels = self.y
+        if self.categorical:
+            labels = self.categorical_to_sparse(labels)
         for cls in range(self.num_classes):
-            for index, label in enumerate(self.y):
+            for index, label in enumerate(labels):
                 if label == cls:
                     fig.add_trace(go.Scatter(x=np.real(self.x[index]), y=np.imag(self.x[index]),
                                              mode='markers', marker_symbol=cls, marker_size=10,
@@ -197,9 +207,6 @@ class Dataset:
     def get_test(self):
         return self.x_test, self.y_test
 
-    def get_train_test_real(self):
-        return self.x_train_real, self.y_train, self.x_test_real, self.y_test
-
     def get_all(self):
         return self.x, self.y
 
@@ -223,6 +230,10 @@ class Dataset:
             # Data was already categorical (I think)
             cat = spar
         return cat
+
+    @staticmethod
+    def categorical_to_sparse(cat):
+        return np.argmax(cat, axis=1)
 
     @staticmethod
     def separate_into_train_and_test(x, y, ratio=0.8, pre_rand=True):
@@ -575,6 +586,6 @@ if __name__ == "__main__":
     # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.10'
+__version__ = '0.1.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

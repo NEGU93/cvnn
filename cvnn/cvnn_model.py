@@ -58,7 +58,7 @@ class CvnnModel:
         assert pattern.match(tf.version.VERSION)  # Check TF version is at least 2
         self.name = name
         # Check all the data is a Layer object
-        if not all([isinstance(layer, layers.ComplexLayer) for layer in self.shape]):
+        if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
             self.logger.error("CVNN: All layers in shape must be a cvnn.layer.Layer")
             sys.exit(-1)
         self.shape = shape
@@ -368,8 +368,8 @@ class CvnnModel:
             for i, val in enumerate(variables):
                 val.assign(val - learning_rate * gradients[i])      # TODO: For the moment the optimization is only GD
 
-    def fit(self, x_train, y_train, x_test=None, y_test=None, learning_rate=0.01, epochs=10, batch_size=32,
-            verbose=True, display_freq=100, fast_mode=False, save_to_file=True):
+    def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
+            verbose=True, display_freq=None, fast_mode=False, save_to_file=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
         :param x_train: Input data. # TODO: can use dataset class to make this better
@@ -380,7 +380,8 @@ class CvnnModel:
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
         :param verbose: (Boolean) Print results of the training while training
-        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint
+        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
+            If None (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
         :param fast_mode: (Boolean) Takes precedence over "verbose" and "save_to_file"
         :param save_to_file: (Boolean) save a txt with the information of the fit
                     (same as what will be printed if "verbose")
@@ -389,34 +390,33 @@ class CvnnModel:
         assert isinstance(epochs, int) and epochs > 0, "Epochs must be unsigned integer"
         assert isinstance(batch_size, int) and batch_size > 0, "Epochs must be unsigned integer"
         assert learning_rate > 0, "Learning rate must be positive"
-        if np.shape(x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
-            self.logger.error("Batch size was bigger than total amount of examples")
+        if display_freq is None:
+            display_freq = int(x.shape[0] * x.shape[1] * ratio / batch_size)    # Match the epoch number
+        categorical = (len(np.shape(y)) > 1)
+        dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
         # TODO: Consider removing fast_mode
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
         save_fit_filename = None
         if save_to_file:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
 
-        num_tr_iter = int(len(y_train) / batch_size)  # Number of training iterations in each epoch
+        num_tr_iter = int(dataset.x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
                             "\nEpochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
-                            self._get_str_evaluate(x_train, y_train, x_test, y_test),
+                            self._get_str_evaluate(dataset.x_train, dataset.y_train,
+                                                   dataset.x_test, dataset.y_test),   # TODO: use dataset directly
                             verbose, save_fit_filename)
         epochs_done = self.epochs_done
 
         for epoch in range(epochs):
             self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
-            # TODO: Next line will be replaced with dataset.shuffle()
-            x_train, y_train = randomize(x_train, y_train)      # TODO: keras makes this optional with shuffle opt.
+            dataset.shuffle()      # TODO: keras makes this optional with shuffle opt.
             for iteration in range(num_tr_iter):
-                # Get the next batch    TODO: This will be replaced with dataset.get_next_batch()
-                start = iteration * batch_size
-                end = (iteration + 1) * batch_size
-                x_batch, y_batch = dp.Dataset._get_next_batch(x_train, y_train, start, end)
+                x_batch, y_batch = dataset.get_next_batch()     # Get the next batch
                 # Save checkpoint if needed
                 if (self.epochs_done * batch_size + iteration) % display_freq == 0:
-                    self._run_checkpoint(x_train, y_train, x_test, y_test,
+                    self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
                                          iteration=iteration, num_tr_iter=num_tr_iter,
                                          total_epochs=epochs_done + epochs, fast_mode=fast_mode,
                                          verbose=verbose, save_fit_filename=save_fit_filename)
@@ -425,8 +425,9 @@ class CvnnModel:
                 self._train_step(x_batch, y_batch, learning_rate)
                 self._end_graph_tensorflow()
         # After epochs
-        self._run_checkpoint(x_train, y_train, x_test, y_test, fast_mode=True)
-        self._manage_string("Train finished...\n" + self._get_str_evaluate(x_train, y_train, x_test, y_test),
+        self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test, fast_mode=True)
+        self._manage_string("Train finished...\n" + self._get_str_evaluate(dataset.x_train, dataset.y_train,
+                                                                           dataset.x_test, dataset.y_test),
                             verbose, save_fit_filename)
         self.plotter.reload_data()
 
@@ -501,32 +502,34 @@ class CvnnModel:
 
 if __name__ == '__main__':
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
-    m = 1000
+    m = 10000
     n = 100
-    num_classes = 5
-    x_train, y_train, x_test, y_test = dp.get_gaussian_noise(m, n, num_classes, 'hilbert')
+    num_classes = 2
+    cov_matr_list = [
+        [[1, 0.75], [0.75, 2]],
+        [[1, -0.75], [-0.75, 2]]
+    ]
+    dataset = dp.CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)
     cdtype = np.complex64
     if cdtype == np.complex64:
         rdtype = np.float32
     else:
         rdtype = np.float64
 
-    x_train = x_train.astype(np.complex64)
-    x_test = x_test.astype(np.complex64)
+    input_size = np.shape(dataset.x_train)[1]
+    hidden_size1 = 100
+    hidden_size2 = 40
+    output_size = np.shape(dataset.y_train)[1]
 
-    input_size = np.shape(x_train)[1]
-    hidden_size = 10
-    output_size = np.shape(y_train)[1]
-
-    shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size, activation='cart_sigmoid',
+    shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size1, activation='cart_relu',
                                  input_dtype=cdtype, output_dtype=cdtype),
-             layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='cart_softmax_real',
+             layers.ComplexDense(input_size=hidden_size1, output_size=hidden_size2, activation='cart_relu',
+                                 input_dtype=cdtype, output_dtype=cdtype),
+             layers.ComplexDense(input_size=hidden_size2, output_size=output_size, activation='cart_softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(x_train.astype(cdtype), y_train, x_test.astype(cdtype), y_test,
-              learning_rate=0.1, batch_size=100, epochs=10)
-    model.fit(x_train.astype(cdtype), y_train, x_test.astype(cdtype), y_test,
-              learning_rate=0.1, batch_size=100, epochs=10)
+    model.fit(dataset.x, dataset.y, batch_size=100, epochs=150)
+    model.plotter.plot_key(key='accuracy', showfig=True, savefig=False)
 
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
@@ -534,7 +537,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.21'
+__version__ = '0.2.22'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

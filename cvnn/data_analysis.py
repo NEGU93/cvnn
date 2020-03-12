@@ -891,13 +891,13 @@ if __name__ == "__main__":
     # test_coef_correl()
     # test_data_size()
     # test_learning_rate()
-    test_activation_function()
+    # test_activation_function()
     # plotter = Plotter("./log/2020/02February/27Thursday/run-17h20m56")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
-    # monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                              # path="./montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data")
-    # monte_carlo_analyzer.do_all()
+    monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
+                                              path="./montecarlo/2020/03March/12Thursday/run-15h31m08/run_data")
+    monte_carlo_analyzer.do_all()
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
     # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
     # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
@@ -905,6 +905,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
