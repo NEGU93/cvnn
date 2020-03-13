@@ -92,7 +92,7 @@ class CvnnModel:
             self.test_summary_writer = tf.summary.create_file_writer(test_writer_logdir)
             self.weights_summary_writer = tf.summary.create_file_writer(weights_writer_logdir)
 
-        print("Saving {}/{}_metadata.txt".format(self.root_dir, self.name))     # To debug the warning message
+        # print("Saving {}/{}_metadata.txt".format(self.root_dir, self.name))     # To debug the warning message
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
         self.plotter = da.Plotter(self.root_dir)
 
@@ -537,7 +537,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.22'
+__version__ = '0.2.23'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
