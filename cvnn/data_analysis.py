@@ -201,7 +201,9 @@ class SeveralMonteCarloComparison:
         """
         self.x_label = label
         if all([item.isdigit() for item in x]):
-            self.x = np.round(x, round)
+            self.x = list(map(int, x))
+        elif all([item.replace(".", "", 1).isdigit() for item in x]):
+            self.x = np.round(list(map(float, x)), round)
         else:
             self.x = x
         self.monte_carlo_runs = []
@@ -215,7 +217,7 @@ class SeveralMonteCarloComparison:
         # TODO: https://seaborn.pydata.org/examples/grouped_boxplot.html
         else:
             print("Warning: Unrecognized library to plot " + library)
-            return None
+        return None
 
     def _box_plot_plotly(self, key='test accuracy', step=-1, showfig=False, savefile=None):
         # https://en.wikipedia.org/wiki/Box_plot
@@ -271,8 +273,23 @@ class SeveralMonteCarloComparison:
         if savefig:
             os.makedirs(os.path.split(savefile)[0], exist_ok=True)
             plotly.offline.plot(fig, filename=savefile, config={'scrollZoom': True, 'editable': True})
+            fig.write_image(savefile.replace('html', 'pdf'))
         elif showfig:
             fig.show(config={'editable': True})
+
+    def save_pandas_csv_result(self, path, step=-1):
+        # TODO: Check path
+        if step == -1:
+            step = max(self.monte_carlo_runs[0].df.step)    # TODO: Assert it's the same for all cases
+        cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+        for i, run in enumerate(self.monte_carlo_runs):
+            df = run.df
+            networks_availables = df.network.unique()
+            for col, net in enumerate(networks_availables):
+                filter = [a == net and b == step for a, b in zip(df.network, df.step)]
+                data = df[filter].describe()
+                data = data[cols]
+                data.to_csv(path + net + "_" + self.x[i] + "_stats.csv")
 
 
 class Plotter:
@@ -821,20 +838,20 @@ class MonteCarloAnalyzer:
 
 def test_coef_correl():
     several = SeveralMonteCarloComparison('correlation coefficient',
-                                          x=np.linspace(0, 0.707, 11)[1:],
+                                          x=list(map(str, np.linspace(0, 0.707, 11)[1:])),
                                           paths=[
-                                              "./montecarlo/2020/02February/28Friday/run-03h03m16/run_data",  # 0.1
-                                              "./montecarlo/2020/02February/28Friday/run-12h48m12/run_data",  # 0.2
-                                              "./montecarlo/2020/02February/28Friday/run-22h32m08/run_data",  # 0.3
-                                              "./montecarlo/2020/02February/29Saturday/run-08h14m28/run_data",  # 0.4
-                                              "./montecarlo/2020/02February/29Saturday/run-17h57m42/run_data",  # 0.5
-                                              "./montecarlo/2020/03March/01Sunday/run-03h45m20/run_data",  # 0.6
-                                              "./montecarlo/2020/03March/01Sunday/run-13h32m41/run_data",  # 0.7
-                                              "./montecarlo/2020/03March/01Sunday/run-23h20m08/run_data",  # 0.8
-                                              "./montecarlo/2020/03March/02Monday/run-09h09m32/run_data",  # 0.9
-                                              "./montecarlo/2020/03March/02Monday/run-19h07m26/run_data",  # 1.0
-                                          ])
-    several.box_plot(showfig=True, savefile="./results/Simuls 29-Feb/Corf Correl/box_plot.html")
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/28Friday/run-03h03m16/run_data",  # 0.1
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/28Friday/run-12h48m12/run_data",  # 0.2
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/28Friday/run-22h32m08/run_data",  # 0.3
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/29Saturday/run-08h14m28/run_data",  # 0.4
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/29Saturday/run-17h57m42/run_data",  # 0.5
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/01Sunday/run-03h45m20/run_data",  # 0.6
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/01Sunday/run-13h32m41/run_data",  # 0.7
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/01Sunday/run-23h20m08/run_data",  # 0.8
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/02Monday/run-09h09m32/run_data",  # 0.9
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/02Monday/run-19h07m26/run_data",  # 1.0
+                                          ], round=2)
+    several.box_plot(showfig=True, savefile="./results/Simuls_29-Feb/Coef_Correl/box_plot.html")
 
 
 def test_data_size():
@@ -842,22 +859,21 @@ def test_data_size():
     several = SeveralMonteCarloComparison('data size',
                                           x=[int(mult*500), int(mult*1000), int(mult*2000), int(mult*5000), int(mult*10000)],
                                           paths=[
-                                              "./montecarlo/2020/03March/03Tuesday/run-14h32m23/run_data",      # 500
-                                              "./montecarlo/2020/03March/03Tuesday/run-12h51m43/run_data",      # 1000
-                                              "./montecarlo/2020/03March/03Tuesday/run-10h12m58/run_data",      # 2000
-                                              "./montecarlo/2020/03March/03Tuesday/run-04h53m52/run_data",      # 5000
-                                              "./montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # 10000
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/03Tuesday/run-12h51m43/run_data",      # 1000
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/03Tuesday/run-10h12m58/run_data",      # 2000
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/03Tuesday/run-04h53m52/run_data",      # 5000
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # 10000
                                           ])
-    several.box_plot(showfig=True, savefile="./results/Simuls_29-Feb/data_size/box_plot.html")
+    several.box_plot(showfig=True, savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/data_size/box_plot.html")
 
 
 def test_learning_rate():
     several = SeveralMonteCarloComparison('learning rate',
                                           x=['0.001', '0.01', '0.1'],
                                           paths=[
-                                              "./montecarlo/2020/03March/03Tuesday/run-15h43m58/run_data",      # 0.001
-                                              "./montecarlo/2020/03March/04Wednesday/run-01h35m45/run_data",    # 0.01
-                                              "./montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data",      # 0.1
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/03Tuesday/run-15h43m58/run_data",      # 0.001
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-01h35m45/run_data",    # 0.01
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data",      # 0.1
                                           ], round=3)
     several.box_plot(key='test accuracy', showfig=True,
                      savefile="./results/Simuls_29-Feb/learning_rate/several_test_accuracy_box_plot.html")
@@ -869,37 +885,58 @@ def test_learning_rate():
                      savefile="./results/Simuls_29-Feb/learning_rate/several_train_loss_box_plot.html")
 
 
+def test_single_hidden_layer():
+    several = SeveralMonteCarloComparison('correlation coefficient',
+                                          x=["256", "128", "64", "32", "[64, 32]"],
+                                          paths=["/media/barrachina/data/cvnn/montecarlo/2020/03March/06Friday/run-00h42m04/run_data",      # 256
+                                                 "/media/barrachina/data/cvnn/montecarlo/2020/03March/05Thursday/run-16h52m17/run_data",    # 128
+                                                 "/media/barrachina/data/cvnn/montecarlo/2020/03March/06Friday/run-08h40m20/run_data",      # 64
+                                                 "/media/barrachina/data/cvnn/montecarlo/2020/03March/06Friday/run-08h40m20/run_data",      # 32
+                                                 "/media/barrachina/data/cvnn/montecarlo/2020/03March/07Saturday/run-00h26m47/run_data",    # [64, 32]
+                                          ])
+    several.box_plot(key='test accuracy', showfig=True,
+                     savefile="./results/Simuls_29-Feb/one_hidden_layer/several_test_accuracy_box_plot.html")
+    several.box_plot(key='test loss', showfig=True,
+                     savefile="./results/Simuls_29-Feb/one_hidden_layer/several_test_loss_box_plot.html")
+    several.box_plot(key='train accuracy', showfig=True,
+                     savefile="./results/Simuls_29-Feb/one_hidden_layer/several_train_accuracy_box_plot.html")
+    several.box_plot(key='train loss', showfig=True,
+                     savefile="./results/Simuls_29-Feb/one_hidden_layer/several_train_loss_box_plot.html")
+    several.save_pandas_csv_result(path="./results/Simuls_29-Feb/one_hidden_layer/")
+
+
 def test_activation_function():
     several = SeveralMonteCarloComparison('activation function',
                                           x=['ReLU', 'sigmoid', 'tanh'],
                                           paths=[
-                                              "./montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # ReLU
-                                              "./montecarlo/2020/03March/04Wednesday/run-21h23m00/run_data",  # sigmoid
-                                              "./montecarlo/2020/03March/05Thursday/run-07h07m39/run_data",  # tanh
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/02February/27Thursday/run-17h20m56/run_data",  # ReLU
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-21h23m00/run_data",  # sigmoid
+                                              "/media/barrachina/data/cvnn/montecarlo/2020/03March/05Thursday/run-07h07m39/run_data",  # tanh
                                           ])
     several.box_plot(key='test accuracy', showfig=True,
-                     savefile="./results/Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
+                     savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
     several.box_plot(key='test loss', showfig=True,
-                     savefile="./results/Simuls_29-Feb/activation_function/several_test_loss_box_plot.html")
+                     savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/activation_function/several_test_loss_box_plot.html")
     several.box_plot(key='train accuracy', showfig=True,
-                     savefile="./results/Simuls_29-Feb/activation_function/several_train_accuracy_box_plot.html")
+                     savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/activation_function/several_train_accuracy_box_plot.html")
     several.box_plot(key='train loss', showfig=True,
-                     savefile="./results/Simuls_29-Feb/activation_function/several_train_loss_box_plot.html")
+                     savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/activation_function/several_train_loss_box_plot.html")
 
 
 if __name__ == "__main__":
     # test_coef_correl()
     # test_data_size()
-    test_learning_rate()
+    # test_learning_rate()
+    # test_single_hidden_layer()
     # test_activation_function()
     # plotter = Plotter("./log/2020/02February/27Thursday/run-17h20m56")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
-    """
+
     monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                              path="./montecarlo/2020/03March/12Thursday/run-15h31m08/run_data")
+                                              path="/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data")
     monte_carlo_analyzer.do_all()
-    """
+
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
     # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
     # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
@@ -907,6 +944,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.10'
+__version__ = '0.1.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
