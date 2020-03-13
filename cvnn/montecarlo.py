@@ -25,7 +25,7 @@ class MonteCarlo:
         assert model.save_csv_checkpoints
         self.models.append(model)
 
-    def run(self, x, y, data_summary='',
+    def run(self, x, y, data_summary='', polar=False,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=False, debug=False, display_freq=160):
         self.pandas_full_data = pd.DataFrame()  # Reset data frame
         self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
@@ -39,7 +39,17 @@ class MonteCarlo:
                 if model.is_complex():
                     x_fit = x
                 else:
-                    x_fit = transform_to_real(x)
+                    x_fit = transform_to_real(x, polar=False)
+                    if polar:  # Run a second test with polar data
+                        x_fit_polar = transform_to_real(x, polar=True)
+                        test_model = copy.deepcopy(model)
+                        test_model.name += "_polar"
+                        test_model.fit(x_fit_polar, y,
+                                       learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
+                                       verbose=debug, fast_mode=not debug, save_to_file=False,
+                                       display_freq=display_freq)
+                        self.pandas_full_data = pd.concat([self.pandas_full_data,
+                                                           test_model.plotter.get_full_pandas_dataframe()])
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
@@ -102,25 +112,25 @@ class RealVsComplex(MonteCarlo):
                                  save_csv_checkpoints=complex_model.save_csv_checkpoints))
 
 
-def run_montecarlo(iterations=1000, m=10000, n=128, cov_matrix_list=None,
-                   epochs=150, batch_size=100, display_freq=None, learning_rate=0.002,
-                   shape_raw=None, activation='cart_relu', debug=False):
+def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
+                   epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
+                   shape_raw=None, activation='cart_relu', debug=False, polar=False):
+    # Get parameters
     if shape_raw is None:
         shape_raw = [100, 40]
-    if cov_matrix_list is None:
-        cov_matrix_list = [
-            [[1, 0.75], [0.75, 2]],
-            [[1, -0.75], [-0.75, 2]]
+    if param_list is None:
+        param_list = [
+            [0.5, 1, 2],
+            [-0.5, 1, 2]
         ]
     if display_freq is None:
-        display_freq = int(m*len(cov_matrix_list)*0.8/batch_size)
-    dataset = dp.CorrelatedGaussianNormal(m, n, cov_matrix_list, debug=False)
+        display_freq = int(m * len(param_list) * 0.8 / batch_size)
+    dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
 
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
     assert len(shape_raw) > 0
-
     shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
                           input_dtype=np.complex64, output_dtype=np.complex64)]
     for i in range(1, len(shape_raw)):
@@ -136,7 +146,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, cov_matrix_list=None,
     monte_carlo = RealVsComplex(complex_network)
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=True, debug=debug, data_summary=dataset.summary())
+                    shuffle=True, debug=debug, data_summary=dataset.summary(), polar=polar)
 
 
 if __name__ == "__main__":
@@ -144,32 +154,42 @@ if __name__ == "__main__":
     # run_montecarlo(iterations=5, epochs=10, debug=True)
 
     # Run the base case
-    run_montecarlo(iterations=5)
-    set_trace()
+    run_montecarlo(polar=True)
+
+    # Equal variance
+    param_list = [
+        [0.5, 1, 1],
+        [-0.5, 1, 1]
+    ]
+    run_montecarlo(param_list=param_list)
+
+    # No correlation
+    param_list = [[0, 1, 2], [0, 2, 1]]
+    run_montecarlo(param_list=param_list, polar=True)     # I have the theory polar will do bad here...
+
+    # Multi Class
+    coef_correls_list = np.linspace(-0.9, 0.9, 4)       # 4 classes
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 2])
+    run_montecarlo(param_list=param_list)
+    coef_correls_list = np.linspace(-0.9, 0.9, 10)      # 10 classes
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 2])
+    run_montecarlo(param_list=param_list)
+
+    # change activation function
+    activation_function = ['cart_sigmoid', 'cart_tanh', 'cart_leaky_relu']      # relu already done
+    for activation in activation_function:
+        run_montecarlo(activation=activation)
 
     # change m
-    per_class_examples = [10000, 5000, 2000, 1000, 500]
+    per_class_examples = [5000, 2000, 1000, 500]    # 10000 already done
     for m in per_class_examples:
         run_montecarlo(m=m)
 
     # change learning rate
-    learning_rates = [0.001, 0.01, 0.1]
+    learning_rates = [0.001, 0.1, 1]        # 0.01 already done
     for learning_rate in learning_rates:
         run_montecarlo(learning_rate=learning_rate)
-
-    # change activation function
-    activation_function = ['cart_sigmoid', 'cart_tanh', 'cart_relu']
-    for activation in activation_function:
-        run_montecarlo(activation=activation)
-
-    shapes = [
-        [128],
-        [256],
-        [64],
-        [32],
-        [64, 32],
-        [128, 32],
-        [128, 64, 32]
-    ]
-    for shape in shapes:
-        run_montecarlo(shape_raw=shape)

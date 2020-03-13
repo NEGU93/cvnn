@@ -8,6 +8,10 @@ This module contains many complex-valued activation functions to be used by CVNN
 TYPE A: Cartesian form.
 """
 
+# TODO: shall I use tf.nn or tf.keras.activation modules?
+# https://stackoverflow.com/questions/54761088/tf-nn-relu-vs-tf-keras-activations-relu
+# nn has leaky relu, activation doesn't
+
 
 # Regression
 def linear(z):
@@ -82,6 +86,20 @@ def cart_relu(z, alpha=0.0, max_value=None, threshold=0):
     """
     return tf.cast(tf.complex(tf.keras.activations.relu(tf.math.real(z), alpha, max_value, threshold),
                               tf.keras.activations.relu(tf.math.imag(z), alpha, max_value, threshold)), dtype=z.dtype)
+
+
+def cart_leaky_relu(z, alpha=0.2, name=None):
+    """
+    Applies Leaky Rectified Linear Unit to both the real and imag part of z
+    https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu
+    http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf
+    :param z: Input tensor.
+    :param alpha: Slope of the activation function at x < 0. Default: 0.2
+    :param name: A name for the operation (optional).
+    :return: Tensor result of the applied activation function
+    """
+    return tf.cast(tf.complex(tf.nn.leaky_relu(tf.math.real(z), alpha, name),
+                              tf.nn.leaky_relu(tf.math.imag(z), alpha, name)), dtype=z.dtype)
 
 
 def cart_selu(z):
@@ -182,6 +200,6 @@ def pol_selu(z):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

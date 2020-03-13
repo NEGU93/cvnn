@@ -31,17 +31,23 @@ def get_func_name(fun):
         sys.exit("Error::_get_func_name: Function not recognizable")
 
 
-def transform_to_real(x_complex):
+def transform_to_real(x_complex, polar=False):
     """
     :param x_complex: Complex-valued matrix of size mxn
+    :param polar: If True, the data returned will be the amplitude and phase insead of real an imaginary part
+        (Default: False)
     :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
     """
     # import pdb; pdb.set_trace()
     m = np.shape(x_complex)[0]
     n = np.shape(x_complex)[1]
     x_real = np.ones((m, 2*n))
-    x_real[:, :n] = np.real(x_complex)
-    x_real[:, n:] = np.imag(x_complex)
+    if not polar:
+        x_real[:, :n] = np.real(x_complex)
+        x_real[:, n:] = np.imag(x_complex)
+    else:
+        x_real[:, :n] = np.abs(x_complex)
+        x_real[:, n:] = np.angle(x_complex)
     dtype = x_real.dtype
     if x_complex.dtype == np.complex64:
         dtype = np.float32
@@ -91,6 +97,6 @@ def compute_accuracy(x, y):
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.13'
+__version__ = '0.0.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

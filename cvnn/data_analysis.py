@@ -821,7 +821,7 @@ class MonteCarloAnalyzer:
 
 def test_coef_correl():
     several = SeveralMonteCarloComparison('correlation coefficient',
-                                          x=np.linspace(0, 0.999, 11)[1:],
+                                          x=np.linspace(0, 0.707, 11)[1:],
                                           paths=[
                                               "./montecarlo/2020/02February/28Friday/run-03h03m16/run_data",  # 0.1
                                               "./montecarlo/2020/02February/28Friday/run-12h48m12/run_data",  # 0.2
@@ -853,7 +853,7 @@ def test_data_size():
 
 def test_learning_rate():
     several = SeveralMonteCarloComparison('learning rate',
-                                          x=[0.001, 0.01, 0.1],
+                                          x=['0.001', '0.01', '0.1'],
                                           paths=[
                                               "./montecarlo/2020/03March/03Tuesday/run-15h43m58/run_data",      # 0.001
                                               "./montecarlo/2020/03March/04Wednesday/run-01h35m45/run_data",    # 0.01
@@ -890,14 +890,16 @@ def test_activation_function():
 if __name__ == "__main__":
     # test_coef_correl()
     # test_data_size()
-    # test_learning_rate()
+    test_learning_rate()
     # test_activation_function()
     # plotter = Plotter("./log/2020/02February/27Thursday/run-17h20m56")
     # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
     # plotter.get_full_pandas_dataframe()
+    """
     monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
                                               path="./montecarlo/2020/03March/12Thursday/run-15h31m08/run_data")
     monte_carlo_analyzer.do_all()
+    """
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
     # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
     # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
@@ -905,6 +907,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.9'
+__version__ = '0.1.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

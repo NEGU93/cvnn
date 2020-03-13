@@ -398,7 +398,14 @@ class CorrelatedGaussianNormal(GeneratorDataset):
 
     def summary(self, res_str=None):
         res_str = "Correlated Gaussian Noise\n"
-        res_str += "\tPearson correlation coefficient max {}\n".format(self.cov_matrix_list)
+        for cls in self.num_classes:
+            res_str = "class {}\n".format(cls)
+            res_str += "\tPearson correlation coefficient: {}\n".format(self.get_coef_correl(cls))
+            res_str += "\tCircularity quotient: {}\n".format(self.get_circularity_quotient(cls))
+            variance, pseudo_variance = self.get_variance_and_pseudo_variance(cls)
+            res_str += "\t\tvariance: {0}; pseudo-variance: {1}\n".format(variance, pseudo_variance)
+            epsilon, alpha = self.get_ellipse_params(cls, deg=True)
+            res_str += "\tEllipse epsilon: {0}, Angle (alpha): {1} deg\n".format(epsilon, alpha)
         return super().summary(res_str)
 
     # =====================================================
@@ -424,15 +431,34 @@ class CorrelatedGaussianNormal(GeneratorDataset):
                               2j * self.cov_matrix_list[index][0][1]
         return variance, pseudo_variance
 
-    def get_circularity_quiotient(self, index):
+    def get_circularity_quotient(self, index):
         variance, pseudo_variance = self.get_variance_and_pseudo_variance(index)
         return pseudo_variance / variance
 
-    def get_ellipse_params(self, index):
-        varrho = self.get_circularity_quiotient(index)
+    def get_ellipse_params(self, index, deg=False):
+        varrho = self.get_circularity_quotient(index)
         epsilon = sqrt(np.abs(varrho))
-        alpha = np.angle(varrho)
+        alpha = np.angle(varrho, deg)
         return epsilon, alpha
+
+
+class CorrelatedGaussianCoeffCorrel(CorrelatedGaussianNormal):
+
+    def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
+        if num_classes is None:
+            num_classes = len(param_list)
+        assert len(param_list) == num_classes, \
+            "param_list length ({0}) should have the same size as num_classes ({1})".format(len(param_list),
+                                                                                            num_classes)
+        cov_mat_list = []
+        for param in param_list:
+            assert len(param) == 3, \
+                "Each parameter in param_list should have size 3 " \
+                "(coef correl and both variances) but {} where given".format(len(param))
+            sigma_xy = param[0] * sqrt(param[1] * param[2])
+            cov_mat_list.append([[param[1], sigma_xy], [sigma_xy, param[2]]])
+        super().__init__(m=m, n=n, cov_matrix_list=cov_mat_list,
+                         num_classes=num_classes, ratio=ratio, debug=debug, savedata=savedata)
 
 
 class ComplexNormalVariable(CorrelatedGaussianNormal):
@@ -586,6 +612,6 @@ if __name__ == "__main__":
     # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.11'
+__version__ = '0.1.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

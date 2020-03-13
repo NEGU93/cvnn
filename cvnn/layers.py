@@ -21,6 +21,7 @@ act_dispatcher = {
     'cart_exponential': act.cart_exponential,
     'cart_hard_sigmoid': act.cart_hard_sigmoid,
     'cart_relu': act.cart_relu,
+    'cart_leaky_relu': act.cart_leaky_relu,
     'cart_selu': act.cart_selu,
     'cart_softplus': act.cart_softplus,
     'cart_softsign': act.cart_softsign,
@@ -176,7 +177,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
