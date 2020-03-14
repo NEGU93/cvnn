@@ -641,7 +641,7 @@ class MonteCarloAnalyzer:
             self.monte_carlo_plotter.plot_distribution(key=key)
             self.box_plot(key=key)
 
-            for lib in ['plotly', 'matplotlib', 'seaborn']:
+            for lib in [ 'matplotlib', 'seaborn']:  # 'plotly',
                 self.plot_histogram(key=key, library=lib, showfig=False, savefig=True)
 
     def box_plot(self, step=-1, key='test accuracy', showfig=False, savefig=True):
@@ -934,7 +934,7 @@ if __name__ == "__main__":
     # plotter.get_full_pandas_dataframe()
 
     monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                              path="/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data")
+                                              path="/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data")
     monte_carlo_analyzer.do_all()
 
     # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
@@ -944,6 +944,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.11'
+__version__ = '0.1.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

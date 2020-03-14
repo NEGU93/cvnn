@@ -155,20 +155,21 @@ if __name__ == "__main__":
 
     # Run the base case
     print("Running base case monte carlo")
-    run_montecarlo(polar=True)
+    run_montecarlo()
 
+    """
     # Equal variance
     print("Running monte carlo with equal variance")
     param_list = [
         [0.5, 1, 1],
         [-0.5, 1, 1]
     ]
-    run_montecarlo(param_list=param_list)
+    run_montecarlo(param_list=param_list)"""
 
     # No correlation
     print("Running monte carlo with no correlation")
     param_list = [[0, 1, 2], [0, 2, 1]]
-    run_montecarlo(param_list=param_list, polar=True)     # I have the theory polar will do bad here...
+    run_montecarlo(param_list=param_list)     # I have the theory polar will do bad here...
 
     # Multi Class
     print("Running multi-class (4) monte carlo ")
