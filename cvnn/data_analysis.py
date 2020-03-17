@@ -411,7 +411,7 @@ class Plotter:
                         data = data[data['stats'] == 'mean']
                     else:
                         print("Warning: Trying to index an array without index")
-                ax.plot(data[key], 'o-', label=self.labels[i])
+                ax.plot(data[key], 'o-', label=self.labels[i].replace('_', ' '))
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
@@ -422,7 +422,7 @@ class Plotter:
         if savefig:
             fig.savefig(str(self.path / key) + extension, transparent=True)
 
-    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
+    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None, extension=".svg"):
         fig = go.Figure()
         annotations = []
         title = ''
@@ -438,7 +438,7 @@ class Plotter:
                     else:
                         print("Warning: Trying to index an array without index")
                 x = list(range(len(data[key])))
-                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i],
+                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i].replace('_', ' '),
                                          line_color=DEFAULT_PLOTLY_COLORS[i]))
                 # Add points
                 fig.add_trace(go.Scatter(x=[x[-1]],
@@ -480,6 +480,7 @@ class Plotter:
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
+            fig.write_image(filename=str(self.path / key) + extension)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -503,7 +504,7 @@ class MonteCarloPlotter(Plotter):
                  index_loc='mean'):
         super().plot_key(key, reload, library, showfig, savefig, index_loc)
 
-    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True, title=''):
+    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True, title='', full_border=True):
         fig = go.Figure()
         for i, data in enumerate(self.pandas_list):
             x = data['step'].unique().tolist()
@@ -515,15 +516,16 @@ class MonteCarloPlotter(Plotter):
             data_25 = data[data['stats'] == '25%'][key][::-1].tolist()
             data_75 = data[data['stats'] == '75%'][key].tolist()
             # set_trace()
-            fig.add_trace(go.Scatter(
-                x=x + x_rev,
-                y=data_max + data_min,
-                fill='toself',
-                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.1),
-                line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
-                showlegend=True,
-                name=self.labels[i] + " borders",
-            ))
+            if full_border:
+                fig.add_trace(go.Scatter(
+                    x=x + x_rev,
+                    y=data_max + data_min,
+                    fill='toself',
+                    fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.1),
+                    line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                    showlegend=True,
+                    name=self.labels[i].replace('_', ' ') + " borders",
+                ))
             fig.add_trace(go.Scatter(
                 x=x + x_rev,
                 y=data_75 + data_25,
@@ -531,17 +533,17 @@ class MonteCarloPlotter(Plotter):
                 fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.2),
                 line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
                 showlegend=True,
-                name=self.labels[i] + " 75%",
+                name=self.labels[i].replace('_', ' ') + " interquartile",
             ))
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean,
                 line_color=DEFAULT_PLOTLY_COLORS[i],
-                name=self.labels[i] + " mean",
+                name=self.labels[i].replace('_', ' ') + " mean",
             ))
             fig.add_trace(go.Scatter(
                 x=x, y=data_50,
                 line=dict(color=DEFAULT_PLOTLY_COLORS[i], dash='dash'),
-                name=self.labels[i] + " median",
+                name=self.labels[i].replace('_', ' ') + " median",
             ))
         for label in self.labels:
             title += label.replace('_', ' ') + ' vs '
@@ -554,10 +556,12 @@ class MonteCarloPlotter(Plotter):
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
+            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".svg")
         elif showfig:
             fig.show(config={'editable': True})
 
     def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False):
+        # TODO: Change the extension as a variable like matplotlib
         fig = go.Figure()
         # test plots
         label = 'mean'
@@ -587,6 +591,7 @@ class MonteCarloPlotter(Plotter):
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
                                          + "_" + label.replace("50%", "median") + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
+            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + "_" + label.replace("50%", "median") + ".svg")
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -691,6 +696,7 @@ class MonteCarloAnalyzer:
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
+            fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.svg")))
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -814,8 +820,10 @@ class MonteCarloAnalyzer:
                           xaxis_title=key)
         if savefig:
             os.makedirs(self.path / "plots/histogram/", exist_ok=True)
-            plotly.offline.plot(fig, filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")),
+            plotly.offline.plot(fig,
+                                filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")),
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
+            fig.write_image(str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "plotly_histogram.svg")))
         elif showfig:
             fig.show(config={'editable': True})
         return fig
@@ -944,6 +952,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.14'
+__version__ = '0.1.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
