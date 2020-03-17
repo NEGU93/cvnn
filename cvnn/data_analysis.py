@@ -15,11 +15,16 @@ from pdb import set_trace
 import scipy.stats as stats
 from cvnn.utils import create_folder
 
-DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)', 'rgb(255, 127, 14)',
-                         'rgb(44, 160, 44)', 'rgb(214, 39, 40)',
+# TODO: I temporary removed the blue color to make the poster (I use blue background so it did't look good)
+DEFAULT_PLOTLY_COLORS = [  # 'rgb(31, 119, 180)',   # Blue
+                         'rgb(255, 127, 14)',   # Orange
+                         'rgb(44, 160, 44)',    # Green
+                         'rgb(214, 39, 40)',
                          'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
                          'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
+
+DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][1:]
 
 
 def triangulate_histogram(x, y, z):
@@ -90,7 +95,7 @@ def add_params(fig, ax, y_label=None, x_label=None, loc=None, title=None,
         fig.show()
     if savefig:
         os.makedirs(os.path.split(filename)[0], exist_ok=True)
-        fig.savefig(filename)
+        fig.savefig(filename, transparent=True)
 
 
 def get_trailing_number(s):
@@ -393,6 +398,7 @@ class Plotter:
 
     def _plot_matplotlib(self, key='loss', showfig=False, savefig=True, index_loc=None, extension=".svg"):
         fig, ax = plt.subplots()
+        ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         title = None
         for i, data in enumerate(self.pandas_list):
             if key in data:
@@ -414,7 +420,7 @@ class Plotter:
         if showfig:
             fig.show()
         if savefig:
-            fig.savefig(str(self.path / key) + extension)
+            fig.savefig(str(self.path / key) + extension, transparent=True)
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
         fig = go.Figure()
@@ -472,7 +478,8 @@ class Plotter:
                           xaxis_title='steps',
                           yaxis_title=key)
         if savefig:
-            plotly.offline.plot(fig, filename=str(self.path / key) + ".html", config={'scrollZoom': True, 'editable': True})
+            plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
+                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -546,7 +553,7 @@ class MonteCarloPlotter(Plotter):
         if savefig:
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html",
-                                config={'scrollZoom': True, 'editable': True})
+                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -579,7 +586,7 @@ class MonteCarloPlotter(Plotter):
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
                                          + "_" + label.replace("50%", "median") + ".html",
-                                config={'scrollZoom': True, 'editable': True})
+                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -683,7 +690,7 @@ class MonteCarloAnalyzer:
             os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
-                                config={'scrollZoom': True, 'editable': True})
+                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -747,7 +754,7 @@ class MonteCarloAnalyzer:
         os.makedirs(self.path / "plots/histogram/", exist_ok=True)
         plotly.offline.plot(fig,
                             filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
-                            config={'scrollZoom': True, 'editable': True})
+                            config={'scrollZoom': True, 'editable': True}, auto_open=False)
 
     def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title=''):
         if library == 'matplotlib':
@@ -763,6 +770,7 @@ class MonteCarloAnalyzer:
     def _plot_histogram_matplotlib(self, key='test accuracy', step=-1,
                                    showfig=False, savefig=True, title='', extension=".svg"):
         fig, ax = plt.subplots()
+        ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
@@ -807,7 +815,7 @@ class MonteCarloAnalyzer:
         if savefig:
             os.makedirs(self.path / "plots/histogram/", exist_ok=True)
             plotly.offline.plot(fig, filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")),
-                                config={'scrollZoom': True, 'editable': True})
+                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
         elif showfig:
             fig.show(config={'editable': True})
         return fig
@@ -929,21 +937,13 @@ if __name__ == "__main__":
     # test_learning_rate()
     # test_single_hidden_layer()
     # test_activation_function()
-    # plotter = Plotter("./log/2020/02February/27Thursday/run-17h20m56")
-    # plotter.plot_everything(library="plotly", reload=True, showfig=True, savefig=True)
-    # plotter.get_full_pandas_dataframe()
-
-    monte_carlo_analyzer = MonteCarloAnalyzer(df=None,
-                                              path="/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data")
+    # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/13Friday/run-13h40m10/run_data"     # Base case
+    path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data"  # Same variance
+    monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path=path)
     monte_carlo_analyzer.do_all()
-
-    # monte_carlo_analyzer.monte_carlo_plotter.plot_key(library='plotly')
-    # monte_carlo_analyzer.plot_histogram(key='test accuracy', library='matplotlib', title='Correlation coefficient 1 ')
-    # monte_carlo_analyzer.plot_3d_hist(key='test accuracy', title='Correlation Coefficient 0.1 ')
-    # monte_carlo_analyzer.monte_carlo_plotter.plot_distribution('test accuracy', title='Correlation Coefficient 0.1 ')
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.12'
+__version__ = '0.1.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
