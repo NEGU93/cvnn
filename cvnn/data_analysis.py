@@ -780,7 +780,7 @@ class MonteCarloAnalyzer:
         for net in networks_availables:
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]  # Get only the data to plot
-            ax.hist(data[key], bins, alpha=0.5, label=net)
+            ax.hist(data[key], bins, alpha=0.5, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
         title += key + " comparison"
@@ -800,7 +800,7 @@ class MonteCarloAnalyzer:
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]  # Get only the data to plot
             hist_data.append(data[key].to_list())
-            group_labels.append(net)
+            group_labels.append(net.replace("_", " "))
             # fig.add_trace(px.histogram(np.array(data[key]), marginal="box"))
             # fig.add_trace(go.Histogram(x=np.array(data[key]), name=net))
         fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)  # https://plot.ly/python/distplot/
@@ -833,7 +833,7 @@ class MonteCarloAnalyzer:
         for net in networks_availables:
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]  # Get only the data to plot
-            ax = sns.distplot(data[key], bins, label=net)
+            ax = sns.distplot(data[key], bins, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
         title += " " + key
@@ -944,6 +944,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.13'
+__version__ = '0.1.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
