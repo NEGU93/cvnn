@@ -399,7 +399,7 @@ class CorrelatedGaussianNormal(GeneratorDataset):
     def summary(self, res_str=None):
         res_str = "Correlated Gaussian Noise\n"
         for cls in range(self.num_classes):
-            res_str = "class {}\n".format(cls)
+            res_str += "class {}\n".format(cls)
             res_str += "\tPearson correlation coefficient: {}\n".format(self.get_coef_correl(cls))
             res_str += "\tCircularity quotient: {}\n".format(self.get_circularity_quotient(cls))
             variance, pseudo_variance = self.get_variance_and_pseudo_variance(cls)
@@ -612,6 +612,6 @@ if __name__ == "__main__":
     # dataset.plot_data(showfig=True)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.13'
+__version__ = '0.1.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
