@@ -279,7 +279,7 @@ class SeveralMonteCarloComparison:
             os.makedirs(os.path.split(savefile)[0], exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=savefile, config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(savefile.replace('html', extension))
+            fig.write_image(savefile.replace('.html', extension))
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -872,7 +872,7 @@ def test_coef_correl():
 
 
 def test_data_size():
-    mult = 2*0.8
+    mult = 0.8
     x_list = [int(mult*500), int(mult*1000), int(mult*2000), int(mult*5000), int(mult*10000)]
     several = SeveralMonteCarloComparison('data size',
                                           x=[str(x) for x in x_list],
@@ -883,11 +883,11 @@ def test_data_size():
                                               "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/19Thursday/run-16h54m05/run_data",   # 5000
                                               "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-20h50m08/run_data"]   # 10000
                     )
-    several.box_plot(key='test accuracy', showfig=True,
-                     savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/data_size/test_acc_box_plot.html")
-    several.box_plot(key='test loss', showfig=True, savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/data_size/test_loss_box_plot.html")
-    several.box_plot(key='train accuracy', showfig=True, savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/data_size/train_acc_box_plot.html")
-    several.box_plot(key='train loss', showfig=True, savefile="/media/barrachina/data/cvnn/results/Simuls_29-Feb/data_size/box_plot.html")
+    several.box_plot(key='test accuracy', showfig=False,
+                     savefile="./results/Simuls_29-Feb/data_size/test_acc_box_plot.html")
+    several.box_plot(key='test loss', showfig=False, savefile="./results/Simuls_29-Feb/data_size/test_loss_box_plot.html")
+    several.box_plot(key='train accuracy', showfig=False, savefile="./results/Simuls_29-Feb/data_size/train_acc_box_plot.html")
+    several.box_plot(key='train loss', showfig=False, savefile="./results/Simuls_29-Feb/data_size/box_plot.html")
 
 
 def test_learning_rate():
@@ -898,13 +898,13 @@ def test_learning_rate():
                                               "/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-01h35m45/run_data",    # 0.01
                                               "/media/barrachina/data/cvnn/montecarlo/2020/03March/04Wednesday/run-11h24m26/run_data",      # 0.1
                                           ], round=3)
-    several.box_plot(key='test accuracy', showfig=True,
+    several.box_plot(key='test accuracy', showfig=False,
                      savefile="./results/Simuls_29-Feb/learning_rate/several_test_accuracy_box_plot.html")
-    several.box_plot(key='test loss', showfig=True,
+    several.box_plot(key='test loss', showfig=False,
                      savefile="./results/Simuls_29-Feb/learning_rate/several_test_loss_box_plot.html")
-    several.box_plot(key='train accuracy', showfig=True,
+    several.box_plot(key='train accuracy', showfig=False,
                      savefile="./results/Simuls_29-Feb/learning_rate/several_train_accuracy_box_plot.html")
-    several.box_plot(key='train loss', showfig=True,
+    several.box_plot(key='train loss', showfig=False,
                      savefile="./results/Simuls_29-Feb/learning_rate/several_train_loss_box_plot.html")
 
 
@@ -940,32 +940,31 @@ def test_activation_function():
                                               "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/19Thursday/run-06h54m34/run_data"    # Leaky ReLU
                                           ])
     several.box_plot(key='test accuracy', showfig=False,
-                     savefile="/home/barrachina/Documents/cvnn/results/Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
+                     savefile="./Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
     several.box_plot(key='test loss', showfig=False,
-                     savefile="/home/barrachina/Documents/cvnn/results/Simuls_29-Feb/activation_function/several_test_loss_box_plot.html")
+                     savefile="./results/Simuls_29-Feb/activation_function/several_test_loss_box_plot.html")
     several.box_plot(key='train accuracy', showfig=False,
-                     savefile="/home/barrachina/Documents/cvnn/results/Simuls_29-Feb/activation_function/several_train_accuracy_box_plot.html")
+                     savefile="./results/Simuls_29-Feb/activation_function/several_train_accuracy_box_plot.html")
     several.box_plot(key='train loss', showfig=False,
-                     savefile="/home/barrachina/Documents/cvnn/results/Simuls_29-Feb/activation_function/several_train_loss_box_plot.html")
+                     savefile="./results/Simuls_29-Feb/activation_function/several_train_loss_box_plot.html")
 
 
 if __name__ == "__main__":
     # test_coef_correl()
-    # test_data_size()
-    # test_learning_rate()
+    test_data_size()
+    test_learning_rate()
     # test_single_hidden_layer()
-    # test_data_size()
-    # test_activation_function()
-    path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data"  # Same variance
+    test_activation_function()
+    # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data"  # Same variance
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-20h50m08/run_data"  # Base case
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/15Sunday/run-06h44m32/run_data"  # No correl
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/15Sunday/run-16h43m07/run_data"  # 4 classes
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/16Monday/run-11h42m59/run_data"
-    monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path=path)
-    monte_carlo_analyzer.do_all()
+    # monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path=path)
+    # monte_carlo_analyzer.do_all()
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.16'
+__version__ = '0.1.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

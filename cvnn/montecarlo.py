@@ -192,7 +192,7 @@ def first_simus():
     for m in per_class_examples:
         run_montecarlo(m=m)
 
-    # change learning rate
+    # change learning rate TODO: RUN AGAIN!
     learning_rates = [0.001, 0.1, 1]        # 0.01 already done
     for learning_rate in learning_rates:
         run_montecarlo(learning_rate=learning_rate)
