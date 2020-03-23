@@ -940,7 +940,7 @@ def test_activation_function():
                                               "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/19Thursday/run-06h54m34/run_data"    # Leaky ReLU
                                           ])
     several.box_plot(key='test accuracy', showfig=False,
-                     savefile="./Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
+                     savefile="./results/Simuls_29-Feb/activation_function/several_test_accuracy_box_plot.html")
     several.box_plot(key='test loss', showfig=False,
                      savefile="./results/Simuls_29-Feb/activation_function/several_test_loss_box_plot.html")
     several.box_plot(key='train accuracy', showfig=False,
@@ -950,10 +950,10 @@ def test_activation_function():
 
 
 if __name__ == "__main__":
-    # test_coef_correl()
+    test_coef_correl()
     test_data_size()
     test_learning_rate()
-    # test_single_hidden_layer()
+    test_single_hidden_layer()
     test_activation_function()
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data"  # Same variance
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-20h50m08/run_data"  # Base case
@@ -965,6 +965,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.17'
+__version__ = '0.1.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
