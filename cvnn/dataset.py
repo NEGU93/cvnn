@@ -26,7 +26,8 @@ class Dataset:
     This class is used to centralize all dataset management.
     """
 
-    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None, categorical=True):
+    def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None,
+                 categorical=True, debug=False):
         """
         :param x: Data
         :param y: Labels/outputs
@@ -68,6 +69,8 @@ class Dataset:
                 print("Batch size was bigger than total amount of examples")
                 sys.exit(-1)
             self.batch_size = batch_size
+        if debug:
+            self.plot_data(overlapped=True, showfig=True, save_path=None)
 
     def get_next_batch(self):
         num_tr_iter = int(self.x_train.shape[0] / self.batch_size)  # Number of training iterations in each epoch
@@ -127,7 +130,7 @@ class Dataset:
         res_str += "\tTrain percentage: {}%\n".format(int(self.ratio * 100))
         return res_str
 
-    def plot_data(self, overlapped=False, showfig=False, save_path=None, library='plotly'):
+    def plot_data(self, overlapped=False, showfig=True, save_path=None, library='plotly'):
         """
         Generates a figure with an example of the data
         :param overlapped: (boolean) If True it will plot all the examples in the same figure changing the color.
@@ -142,7 +145,7 @@ class Dataset:
             print("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_data_plotly(self, showfig=False, save_path=None):
+    def _plot_data_plotly(self, showfig=False, save_path=None, extension=".svg"):
         fig = go.Figure()
         labels = self.y
         if self.categorical:
@@ -161,26 +164,35 @@ class Dataset:
                           showlegend=True)
         if save_path is not None:
             # https://plot.ly/python/configuration-options/
-            plotly.offline.plot(fig, filename=str(save_path / "data_example.html"), config={'editable': True})
+            os.makedirs(save_path, exist_ok=True)
+            plotly.offline.plot(fig, filename=save_path + "data_example.html", config={'editable': True},
+                                auto_open=showfig)
+            fig.write_image(save_path + "data_example" + extension)
         elif showfig:
             fig.show(config={'scrollZoom': True, 'editable': True})
 
-    def _plot_data_matplotlib(self, overlapped=False, showfig=False, save_path=None):
+    def _plot_data_matplotlib(self, overlapped=False, showfig=False, save_path=None, extension=".svg"):
+        labels = self.y
+        if self.categorical:
+            labels = self.categorical_to_sparse(labels)
         if overlapped:
             fig, ax = plt.subplots()
             for cls in range(self.num_classes):
-                for index, label in enumerate(self.y):
+                for index, label in enumerate(labels):
                     if label == cls:
                         ax.plot(np.real(self.x[index]),
-                                np.imag(self.x[index]), MARKERS[cls % len(MARKERS)])
+                                np.imag(self.x[index]), MARKERS[cls % len(MARKERS)], label="Class " + str(cls))
                         ax.axis('equal')
                         ax.grid(True)
                         ax.set_aspect('equal', adjustable='box')
                         break
+            ax.set_xlabel('real (x)')
+            ax.set_ylabel('imaginary (y)')
+            ax.legend(loc='upper right')
         else:
             fig, ax = plt.subplots(self.num_classes)
             for cls in range(self.num_classes):
-                for index, label in enumerate(self.y):
+                for index, label in enumerate(labels):
                     if label == cls:  # This is done in case the data is shuffled.
                         ax[cls].plot(np.real(self.x[index]),
                                      np.imag(self.x[index]), 'b.')
@@ -191,10 +203,11 @@ class Dataset:
         if showfig:
             fig.show()
         if save_path is not None:
+            os.makedirs(save_path, exist_ok=True)
             prefix = ""
             if overlapped:
                 prefix = "overlapped_"
-            fig.savefig(save_path / (prefix + "data_example.png"))
+            fig.savefig(save_path + prefix + "data_example" + extension, transparent=True)
         return fig, ax
 
     # =======
@@ -309,12 +322,12 @@ class GeneratorDataset(ABC, Dataset):
         it is recommended to define it's own summary method to know how the dataset was generated.
     """
 
-    def __init__(self, m, n, num_classes=2, ratio=0.8, savedata=False):
+    def __init__(self, m, n, num_classes=2, ratio=0.8, savedata=False, debug=False):
         """
         This class will first generate x and y with it's own defined method and then initialize a conventional dataset
         """
         x, y = self._generate_data(m, n, num_classes)
-        Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
+        Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
 
     @abstractmethod
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
@@ -342,11 +355,10 @@ class CorrelatedGaussianNormal(GeneratorDataset):
             assert np.abs(cov_mat[0][1] / sqrt(cov_mat[0][0] * cov_mat[1][1])) < 1, \
                 "corelation coefficient module must be lower than one"
         self.cov_matrix_list = cov_matrix_list
-        self.debug = debug
-        super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata)
+        super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
 
     @staticmethod
-    def _create_correlated_gaussian_point(num_samples, r=None, debug=False):
+    def _create_correlated_gaussian_point(num_samples, r=None):
         # https: // scipy - cookbook.readthedocs.io / items / CorrelatedRandomSamples.html
         # Choice of cholesky or eigenvector method.
         method = 'cholesky'
@@ -375,12 +387,6 @@ class CorrelatedGaussianNormal(GeneratorDataset):
 
         # Convert the data to correlated random variables.
         y = np.dot(c, x)
-        if debug:
-            plot(y[0], y[1], 'b.')
-            axis('equal')
-            grid(True)
-            plt.gca().set_aspect('equal', adjustable='box')
-            show()
         return [y[0][i] + 1j * y[1][i] for i in range(y.shape[1])]
 
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
@@ -388,12 +394,9 @@ class CorrelatedGaussianNormal(GeneratorDataset):
         y = []
         for signal_class in range(num_classes):
             r = self.cov_matrix_list[signal_class]
-            if self.debug:
-                print("Class {} has coeff_correl {}".format(signal_class, self.get_coef_correl(signal_class)))
-                self._create_correlated_gaussian_point(num_samples, r, True)
             y.extend(signal_class * np.ones(num_samples_per_class))
             for _ in range(num_samples_per_class):
-                x.append(self._create_correlated_gaussian_point(num_samples, r, debug=False))
+                x.append(self._create_correlated_gaussian_point(num_samples, r))
         return np.array(x), np.array(y)
 
     def summary(self, res_str=None):
@@ -599,17 +602,18 @@ if __name__ == "__main__":
     m = 5
     n = 100
     cov_matr_list = [
-        [[1, 0.75], [0.75, 2]],
-        [[1, -0.75], [-0.75, 2]]
+        [[1, 0.75], [0.75, 1]],
+        [[1, -0.75], [-0.75, 1]]
     ]
     params = [
         [3, 1+1j],
         [3, 1-1j]
     ]
-    # dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=True)
-    dataset = ComplexNormalVariable(m, n, params, debug=True)
+    dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)
+    # dataset = ComplexNormalVariable(m, n, params, debug=True)
+    # dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.5, 1, 1], [-0.5, 1, 1]])
     # dataset = OpenDataset("/home/barrachina/Documents/cvnn/data/2020/03March/06Friday/run-15h16m42/")
-    # dataset.plot_data(showfig=True)
+    dataset.plot_data(overlapped=True, save_path="./data/tests/", showfig=False, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.13'
