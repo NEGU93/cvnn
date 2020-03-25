@@ -4,7 +4,7 @@ import tensorflow as tf
 import sys
 import cvnn
 import logging
-import cvnn.activation_functions as act
+from cvnn.activation_functions import apply_activation
 from cvnn.utils import get_func_name
 import numpy as np
 from tensorflow.keras import layers
@@ -13,23 +13,6 @@ from pdb import set_trace
 # Initializers:
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers
 # https://keras.io/initializers/
-
-act_dispatcher = {
-    'linear': act.linear,
-    'cart_sigmoid': act.cart_sigmoid,
-    'cart_elu': act.cart_elu,
-    'cart_exponential': act.cart_exponential,
-    'cart_hard_sigmoid': act.cart_hard_sigmoid,
-    'cart_relu': act.cart_relu,
-    'cart_leaky_relu': act.cart_leaky_relu,
-    'cart_selu': act.cart_selu,
-    'cart_softplus': act.cart_softplus,
-    'cart_softsign': act.cart_softsign,
-    'cart_tanh': act.cart_tanh,
-    'cart_softmax': act.cart_softmax,
-    'cart_softmax_real': act.cart_softmax_real,
-    'pol_selu': act.pol_selu
-}
 
 supported_dtypes = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)        # Used to count the number of layers
@@ -58,31 +41,6 @@ class ComplexLayer(layers.Layer, ABC):
 
     def get_input_dtype(self):
         return self.input_dtype
-
-    def _apply_activation(self, act_fun, out):
-        """
-        Applies activation function `act` to variable `out`
-        :param out: Tensor to whom the activation function will be applied
-        :param act_fun: function to be applied to out. See the list fo possible activation functions on:
-            https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
-        :return: Tensor with the applied activation function
-        """
-        if act_fun is None:     # No activation function declared
-            return out
-        elif callable(act_fun):
-            if act_fun.__module__ == 'activation_functions' or \
-                    act_fun.__module__ == 'tensorflow.python.keras.activations':
-                return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
-            else:
-                self.logger.error("Cvnn::_apply_activation Unknown activation function.\n\t "
-                                  "Can only use activations declared on activation_functions.py or keras.activations")
-                sys.exit(-1)
-        elif isinstance(act_fun, str):
-            try:
-                return act_dispatcher[act_fun](out)
-            except KeyError:
-                self.logger.warning("WARNING: Cvnn::_apply_function: " + str(act_fun) + " is not callable, ignoring it")
-            return out
 
     @abstractmethod
     def get_description(self):
@@ -143,7 +101,7 @@ class ComplexDense(ComplexLayer):
                 self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
                                     + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
             out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
-            y_out = self._apply_activation(self.activation, out)
+            y_out = apply_activation(self.activation, out)
             if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
                 self.logger.warning("Dense::apply_layer: Automatically casting output")
             return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))

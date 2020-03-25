@@ -1,70 +1,104 @@
 CVNN
 ===========
 
-.. py:class:: Cvnn
+.. py:class:: CvnnModel
 
 .. py:method:: __init__(self, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True)
 
         Constructor
 
-        :param learning_rate: Learning rate at which the network will train
-        :param tensorboard: True if want the network to save tensorboard graph and summary
-        :param verbose: True for verbose mode (print and output results)
-        :param automatic_restore: True if network should search for saved models (will look for the newest saved model)
+        :param name: Name of the model. It will be used to distinguish models
+        :param shape: List of :code:`cvnn.layers.ComplexLayer` objects
+        :param loss_fun: :code:`tensorflow.python.keras.losses` to be used.
+        :param verbose: if :code:`True` it will print information of the model just created
+        :param tensorboard: If :code:`True` it will save tensorboard information inside :code:`log/.../tensorboard_logs/`
 
+                * Loss and accuracy
+                * Graph
+                * Weights histogram
 
-.. py:method:: __del__(self)
+        :param save_model_checkpoints: Save the model to be able to load and continue training later
+        :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files
+        .. warning::
+                :code:`save_model_checkpoints` Not yet working.
+        
 
-	Destructor
+Train
+-----
 
+.. py:method:: fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
+            verbose=True, display_freq=None, fast_mode=False, save_to_file=True)
 
-Train and Predict
------------------
+	Trains the model for a fixed number of epochs (iterations on a dataset).
 
-.. py:method:: train(self, x_train, y_train, x_test, y_test, epochs=100, batch_size=100, display_freq=1000)
-
-	Performs the training of the neural network.
-        If automatic_restore is True but not metadata was found, it will try to load the weights of the newest previously saved model.
-
-        :param x_train: Training data of shape (<training examples>, <input_size>)
-        :param y_train: Labels of the training data of shape (<training examples>, <output_size>)
-        :param x_test: Test data to display accuracy at the end of shape (<test examples>, <input_size>)
-        :param y_test: Test labels of shape (<test examples>, <output_size>)
-        :param epochs: Total number of training epochs
-        :param batch_size: Training batch size. If this number is bigger than the total amount of training examples will display an error
-        :param display_freq: Display results frequency. The frequency will be for each (epoch * batch_size + iteration) / display_freq
+        :param x: Input data. 
+        :param y: Labels
+        :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
+            Default: 0.8 (80% as train set and 20% as validation set)
+        :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
+        :param epochs: (uint) Number of epochs to do.
+        :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
+        :param verbose: (Boolean) Print results of the training while training
+        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
+            If :code:`None` (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
+        :param fast_mode: (Boolean) Takes precedence over :code:`verbose` and :code:`save_to_file`
+        :param save_to_file: (Boolean) save a txt with the information of the fit
+                    (same as what will be printed if :code:`verbose`)
         :return: None
+
+Results
+-------
+
+.. py:method:: call(self, x)
+
+        Forward result of the network
+
+        :param x: Data input to be calculated
+        :return: Output of the netowrk
 
 .. py:method:: predict(self, x)
 
-	Runs a single feedforward computation
+	Predicts the value of the class.
+        
+        .. warning:: 
+                ATTENTION: Use this only for classification tasks. For regression use :code:`call` method.
 
-        :param x: Input of the network
-        :return: Output of the network
+        :param x: Input
+        :return: Prediction of the class that x belongs to.
 
-Graph Creation
---------------
+.. py:method:: evaluate_loss(self, x, y)
 
-Graphs
-^^^^^^
+	Computes the output of x and computes the loss using y
 
-.. py:method:: create_mlp_graph(self, shape)
+        :param x: Input of the netwotk
+        :param y: Labels
+        :return: loss value
 
-	Creates a complex-fully-connected dense graph using a shape as parameter
+.. py:method:: evaluate_accuracy(self, x, y)
 
-        :param shape: List of tuple
-            1. each number of shape[i][0] correspond to the total neurons of layer i.
-            2. a string in shape[i][1] corresponds to the activation function listed on :ref:`activation_functions`
-                ATTENTION: shape[0][0] will be ignored! A future version will apply the activation function to the input but not implemented for the moment.
-            Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.
-        :return: None
+        Computes the output of x and returns the accuracy using y as labels
+
+        :param x: Input of the netwotk
+        :param y: Labels
+        :return: accuracy
+
+.. py:method:: evaluate(self, x, y)
+
+        Compues both the loss and accuracy using :code:`evaluate_loss` and :code:`evaluate_accuracy`
+
+        :param x: Input of the netwotk
+        :param y: Labels
+        :return: tuple (loss, accuracy)
 
 Others
-^^^^^^
+------
 
-.. py:method:: restore_graph_from_meta(self, latest_file=None)
+.. py:method:: summary(self)
 
-	Restores an existing graph from meta data file
+	Generates a string of a summary representation of your model.
 
-        :param latest_file: Path to the file to be restored. If no latest_file given and self.automatic_restore is True, the function will try to load the newest metadata inside `saved_models/` folder.
-        :return: None
+        :return: string of the summary of the model
+
+.. py:method:: is_complex(self)
+
+        :return: :code:`True` if the network is complex. :code:`False` otherwise.

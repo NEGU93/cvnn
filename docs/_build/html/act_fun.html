@@ -35,43 +35,63 @@
             
   <div class="section" id="id1">
 <h1>Activation Functions<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
-<p>This functions will be used when creating the graph of the network. For each corresponding string of options you can use any of the follwing activation functions.</p>
-<p>Activation functions are created inside the class and referenced using the function:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apply_activation</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">act</span><span class="p">)</span>
+<p>It is recommended to only use the activation functions using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apply_activation</span><span class="p">(</span><span class="n">act_fun</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You can define your own activation function, just create it inside the Cvnn class. The function must however be static.</p>
+<p>You can define your own activation function, just create it inside the <code class="code docutils literal notranslate"><span class="pre">activation_function.py</span></code> and add it to <code class="code docutils literal notranslate"><span class="pre">act_dispatcher</span></code></p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Convention: The predecind <cite>act</cite> on <cite>Cvnn</cite> methods means it is an activation function. The following <cite>cart</cite> or <cite>polar</cite> means either type A (cartesian) or type B (polar) according to <a class="reference internal" href="#cit2003-kuroe" id="id2"><span>[CIT2003-KUROE]</span></a> notation.</p>
+<p>The following <code class="code docutils literal notranslate"><span class="pre">cart</span></code> or <code class="code docutils literal notranslate"><span class="pre">pol</span></code> means either type A (cartesian) or type B (polar) according to <a class="reference internal" href="#cit2003-kuroe" id="id2"><span>[CIT2003-KUROE]</span></a> notation.</p>
 </div>
-<dl class="class">
-<dt id="Cvnn">
-<em class="property">class </em><code class="sig-name descname">Cvnn</code><a class="headerlink" href="#Cvnn" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="apply_activation">
-<code class="sig-name descname">apply_activation</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">act</em>, <em class="sig-param">out</em><span class="sig-paren">)</span><a class="headerlink" href="#apply_activation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies activation function <cite>act</cite> to variable <cite>out</cite>
-:param out: Tensor to whom the activation function will be applied
-:param act: function to be applied to out. See the list fo possible activation functions on: <a class="reference internal" href="#implemented-activation-functions">Implemented Activation Functions</a></p>
+<code class="sig-name descname">apply_activation</code><span class="sig-paren">(</span><em class="sig-param">act_fun</em>, <em class="sig-param">out</em><span class="sig-paren">)</span><a class="headerlink" href="#apply_activation" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies activation function <code class="code docutils literal notranslate"><span class="pre">act</span></code> to variable <code class="code docutils literal notranslate"><span class="pre">out</span></code></p>
+</div></blockquote>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Tensor with the applied activation function</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>out</strong> – Tensor to whom the activation function will be applied</p></li>
+<li><p><strong>act_fun</strong> – function to be applied to out.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor with the applied activation function</p>
 </dd>
 </dl>
 </dd></dl>
 
-<div class="section" id="implemented-activation-functions">
-<h2>Implemented Activation Functions<a class="headerlink" href="#implemented-activation-functions" title="Permalink to this headline">¶</a></h2>
 <dl class="method">
-<dt id="act_null">
-<code class="sig-name descname">act_null</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#act_null" title="Permalink to this definition">¶</a></dt>
-<dd><p>Does not apply any activation function. It just outputs the input</p>
+<dt id="softmax_real">
+<code class="sig-name descname">softmax_real</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">axis=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#softmax_real" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax">softmax</a> function to the modulus of z.
+The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+It is often used as the activation for the last layer of a classification network because the result could be
+interpreted as a probability distribution.
+The softmax of x is calculated by:</p>
+<div class="math notranslate nohighlight">
+\[\frac{e^x}{\textrm{tf.reduce_sum}(e^x)}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Real-valued tensor of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="linear">
+<code class="sig-name descname">linear</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#linear" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Does not apply any activation function. It just outputs the input.</p>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>z</strong> – Input tensor variable</p>
@@ -82,19 +102,253 @@
 </dl>
 </dd></dl>
 
+<div class="section" id="type-a-cartesian-form">
+<h2>TYPE A: Cartesian form<a class="headerlink" href="#type-a-cartesian-form" title="Permalink to this headline">¶</a></h2>
 <dl class="method">
-<dt id="act_cart_sigmoid">
-<code class="sig-name descname">act_cart_sigmoid</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#act_cart_sigmoid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called with <cite>‘act_cart_sigmoid’</cite> string.
-Applies the function</p>
+<dt id="cart_sigmoid">
+<code class="sig-name descname">cart_sigmoid</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Called with <code class="code docutils literal notranslate"><span class="pre">'cart_sigmoid'</span></code> string.</p>
+<p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/sigmoid">sigmoid</a> function to both the real and imag part of z.</p>
 <div class="math notranslate nohighlight">
 \[\frac{1}{1 + e^{-x}} + j  \frac{1}{1 + e^{-y}}\]</div>
 <p>where</p>
 <div class="math notranslate nohighlight">
 \[z = x + j y\]</div>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>z</strong> – Tensor to be used as input of the activation function</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_elu">
+<code class="sig-name descname">cart_elu</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">alpha=0.1</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_elu" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/elu">Exponential linear unit</a>. To both the real and imaginary part of z.</p>
+<div class="math notranslate nohighlight">
+\[x if x &gt; 0 and alpha * (exp(x)-1) if x &lt; 0\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> – Input tensor.</p></li>
+<li><p><strong>alpha</strong> – A scalar, slope of negative section.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_exponential">
+<code class="sig-name descname">cart_exponential</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_exponential" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Exponential activation function. Applies to both the real and imag part of z the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/exponential">exponential activation</a>:</p>
+<div class="math notranslate nohighlight">
+\[e^x\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_hard_sigmoid">
+<code class="sig-name descname">cart_hard_sigmoid</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_hard_sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid">hard Sigmoid</a> function to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The hard sigmoid function is faster to compute than sigmoid activation.
+Hard sigmoid activation:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\begin{split}            0               ,\quad x &lt; -2.5 \\
+1               ,\quad x &gt; 2.5 \\
+0.2 * x + 0.5   ,\quad -2.5 &lt;= x &lt;= 2.5\end{split}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_relu">
+<code class="sig-name descname">cart_relu</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">alpha=0.0</em>, <em class="sig-param">max_value=None</em>, <em class="sig-param">threshold=0</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_relu" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/relu">Rectified Linear Unit</a> to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The relu function, with default values, it returns element-wise max(x, 0).</p>
+<p>Otherwise, it follows:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\begin{split}            f(x) = \textrm{max_value}, \quad \textrm{for} \quad x &gt;= \textrm{max_value} \\
+f(x) = x, \quad \textrm{for} \quad \textrm{threshold} &lt;= x &lt; \textrm{max_value} \\
+f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_leaky_relu">
+<code class="sig-name descname">cart_leaky_relu</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">alpha=0.2</em>, <em class="sig-param">name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_leaky_relu" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu">Leaky Rectified Linear Unit</a> to both the real and imag part of z.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf">source</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> – Input tensor.</p></li>
+<li><p><strong>alpha</strong> – Slope of the activation function at x &lt; 0. Default: 0.2</p></li>
+<li><p><strong>name</strong> – A name for the operation (optional).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_selu">
+<code class="sig-name descname">cart_selu</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_selu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> to both the real and imag part of z.</p>
+<p><a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a></p>
+<p>The scaled exponential unit activation:</p>
+<div class="math notranslate nohighlight">
+\[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">cart_softplus(z):</code></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/softplus">Softplus</a> activation function to both the real and imag part of z.
+The Softplus function:</p>
+<div class="math notranslate nohighlight">
+\[log(e^x + 1)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">cart_softsign(z):</code></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/softsign">Softsign</a> activation function to both the real and imag part of z.
+The softsign activation:</p>
+<div class="math notranslate nohighlight">
+\[\frac{x}{\lvert x \rvert + 1}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="cart_tanh">
+<code class="sig-name descname">cart_tanh</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_tanh" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/tanh">Hyperbolic Tangent</a> (tanh) activation function to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The tanh activation:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[tanh(x) = \frac{sinh(x)}{cosh(x)} = \frac{e^x - e^{-x}}{e^x + e^{-x}}.\]</div>
+</div></blockquote>
+<p>The derivative if tanh is computed as  <span class="math notranslate nohighlight">\(1 - tanh^2\)</span> so it should be fast to compute for backprop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="section" id="classification">
+<h3>Classification<a class="headerlink" href="#classification" title="Permalink to this headline">¶</a></h3>
+<dl class="method">
+<dt id="cart_softmax">
+<code class="sig-name descname">cart_softmax</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">axis=-1</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_softmax" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax">softmax function</a> to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+It is often used as the activation for the last layer of a classification network because the result could be
+interpreted as a probability distribution.
+The softmax of x is calculated by:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\frac{e^x}{\textrm{tf.reduce_sum}(e^x)}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="type-b-polar-form">
+<h2>TYPE B: Polar form<a class="headerlink" href="#type-b-polar-form" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt>
+<code class="sig-name descname">pol_selu(z):</code></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> to the absolute value of z, keeping the phase unchanged.</p>
+<p><a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a></p>
+<p>The scaled exponential unit activation:</p>
+<div class="math notranslate nohighlight">
+\[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Tensor result of the applied activation function</p>
@@ -130,7 +384,11 @@ Applies the function</p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Activation Functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#implemented-activation-functions">Implemented Activation Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#type-a-cartesian-form">TYPE A: Cartesian form</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#classification">Classification</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#type-b-polar-form">TYPE B: Polar form</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="data_processing.html">Data Processing</a></li>
@@ -171,7 +429,7 @@ Applies the function</p>
       &copy;2020, J Agustin BARRACHINA.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

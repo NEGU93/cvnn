@@ -36,8 +36,8 @@
   <div class="section" id="cvnn">
 <h1>CVNN<a class="headerlink" href="#cvnn" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
-<dt id="Cvnn">
-<em class="property">class </em><code class="sig-name descname">Cvnn</code><a class="headerlink" href="#Cvnn" title="Permalink to this definition">¶</a></dt>
+<dt id="CvnnModel">
+<em class="property">class </em><code class="sig-name descname">CvnnModel</code><a class="headerlink" href="#CvnnModel" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -47,42 +47,73 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>learning_rate</strong> – Learning rate at which the network will train</p></li>
-<li><p><strong>tensorboard</strong> – True if want the network to save tensorboard graph and summary</p></li>
-<li><p><strong>verbose</strong> – True for verbose mode (print and output results)</p></li>
-<li><p><strong>automatic_restore</strong> – True if network should search for saved models (will look for the newest saved model)</p></li>
+<li><p><strong>name</strong> – Name of the model. It will be used to distinguish models</p></li>
+<li><p><strong>shape</strong> – List of <code class="code docutils literal notranslate"><span class="pre">cvnn.layers.ComplexLayer</span></code> objects</p></li>
+<li><p><strong>loss_fun</strong> – <code class="code docutils literal notranslate"><span class="pre">tensorflow.python.keras.losses</span></code> to be used.</p></li>
+<li><p><strong>verbose</strong> – if <code class="code docutils literal notranslate"><span class="pre">True</span></code> it will print information of the model just created</p></li>
+<li><p><strong>tensorboard</strong> – <p>If <code class="code docutils literal notranslate"><span class="pre">True</span></code> it will save tensorboard information inside <code class="code docutils literal notranslate"><span class="pre">log/.../tensorboard_logs/</span></code></p>
+<ul>
+<li><p>Loss and accuracy</p></li>
+<li><p>Graph</p></li>
+<li><p>Weights histogram</p></li>
+</ul>
+</p></li>
+<li><p><strong>save_model_checkpoints</strong> – Save the model to be able to load and continue training later</p></li>
+<li><p><strong>save_csv_checkpoints</strong> – Save information of the train and test loss and accuracy on csv files</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="code docutils literal notranslate"><span class="pre">save_model_checkpoints</span></code> Not yet working.</p>
+</div>
 </dd></dl>
 
+<div class="section" id="train">
+<h2>Train<a class="headerlink" href="#train" title="Permalink to this headline">¶</a></h2>
 <dl class="method">
-<dt id="__del__">
-<code class="sig-name descname">__del__</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#__del__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Destructor</p>
-</dd></dl>
-
-<div class="section" id="train-and-predict">
-<h2>Train and Predict<a class="headerlink" href="#train-and-predict" title="Permalink to this headline">¶</a></h2>
-<dl class="method">
-<dt id="train">
-<code class="sig-name descname">train</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x_train</em>, <em class="sig-param">y_train</em>, <em class="sig-param">x_test</em>, <em class="sig-param">y_test</em>, <em class="sig-param">epochs=100</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">display_freq=1000</em><span class="sig-paren">)</span><a class="headerlink" href="#train" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs the training of the neural network.
-If automatic_restore is True but not metadata was found, it will try to load the weights of the newest previously saved model.</p>
+<dt>
+<code class="sig-name descname">fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,</code></dt>
+<dt>
+<code class="sig-name descname">verbose=True, display_freq=None, fast_mode=False, save_to_file=True)</code></dt>
+<dd><p>Trains the model for a fixed number of epochs (iterations on a dataset).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x_train</strong> – Training data of shape (&lt;training examples&gt;, &lt;input_size&gt;)</p></li>
-<li><p><strong>y_train</strong> – Labels of the training data of shape (&lt;training examples&gt;, &lt;output_size&gt;)</p></li>
-<li><p><strong>x_test</strong> – Test data to display accuracy at the end of shape (&lt;test examples&gt;, &lt;input_size&gt;)</p></li>
-<li><p><strong>y_test</strong> – Test labels of shape (&lt;test examples&gt;, &lt;output_size&gt;)</p></li>
-<li><p><strong>epochs</strong> – Total number of training epochs</p></li>
-<li><p><strong>batch_size</strong> – Training batch size. If this number is bigger than the total amount of training examples will display an error</p></li>
-<li><p><strong>display_freq</strong> – Display results frequency. The frequency will be for each (epoch * batch_size + iteration) / display_freq</p></li>
+<li><p><strong>x</strong> – Input data.</p></li>
+<li><p><strong>y</strong> – Labels</p></li>
+<li><p><strong>ratio</strong> – Percentage of the input data to be used as train set (the rest will be use as validation set)
+Default: 0.8 (80% as train set and 20% as validation set)</p></li>
+<li><p><strong>learning_rate</strong> – Learning rate for the gradient descent. For the moment only GD is supported.</p></li>
+<li><p><strong>epochs</strong> – (uint) Number of epochs to do.</p></li>
+<li><p><strong>batch_size</strong> – (uint) Batch size of the data. Default 32 (because keras use 32 so… why not?)</p></li>
+<li><p><strong>verbose</strong> – (Boolean) Print results of the training while training</p></li>
+<li><p><strong>display_freq</strong> – Frequency on terms of steps for saving information and running a checkpoint.
+If <code class="code docutils literal notranslate"><span class="pre">None</span></code> (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)</p></li>
+<li><p><strong>fast_mode</strong> – (Boolean) Takes precedence over <code class="code docutils literal notranslate"><span class="pre">verbose</span></code> and <code class="code docutils literal notranslate"><span class="pre">save_to_file</span></code></p></li>
+<li><p><strong>save_to_file</strong> – (Boolean) save a txt with the information of the fit
+(same as what will be printed if <code class="code docutils literal notranslate"><span class="pre">verbose</span></code>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="results">
+<h2>Results<a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="call">
+<code class="sig-name descname">call</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#call" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward result of the network</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> – Data input to be calculated</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Output of the netowrk</p>
 </dd>
 </dl>
 </dd></dl>
@@ -90,61 +121,96 @@ If automatic_restore is True but not metadata was found, it will try to load the
 <dl class="method">
 <dt id="predict">
 <code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Runs a single feedforward computation</p>
+<dd><p>Predicts the value of the class.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>ATTENTION: Use this only for classification tasks. For regression use <code class="code docutils literal notranslate"><span class="pre">call</span></code> method.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> – Input of the network</p>
+<dd class="field-odd"><p><strong>x</strong> – Input</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Output of the network</p>
+<dd class="field-even"><p>Prediction of the class that x belongs to.</p>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="graph-creation">
-<h2>Graph Creation<a class="headerlink" href="#graph-creation" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="graphs">
-<h3>Graphs<a class="headerlink" href="#graphs" title="Permalink to this headline">¶</a></h3>
 <dl class="method">
-<dt id="create_mlp_graph">
-<code class="sig-name descname">create_mlp_graph</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em><span class="sig-paren">)</span><a class="headerlink" href="#create_mlp_graph" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a complex-fully-connected dense graph using a shape as parameter</p>
+<dt id="evaluate_loss">
+<code class="sig-name descname">evaluate_loss</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="headerlink" href="#evaluate_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the output of x and computes the loss using y</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>shape</strong> – <p>List of tuple
-1. each number of shape[i][0] correspond to the total neurons of layer i.
-2. a string in shape[i][1] corresponds to the activation function listed on <span class="xref std std-ref">activation_functions</span></p>
-<blockquote>
-<div><p>ATTENTION: shape[0][0] will be ignored! A future version will apply the activation function to the input but not implemented for the moment.</p>
-</div></blockquote>
-<p>Where i = 0 corresponds to the input layer and the last value of the list corresponds to the output layer.</p>
-</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Input of the netwotk</p></li>
+<li><p><strong>y</strong> – Labels</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dd class="field-even"><p>loss value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="evaluate_accuracy">
+<code class="sig-name descname">evaluate_accuracy</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="headerlink" href="#evaluate_accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the output of x and returns the accuracy using y as labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Input of the netwotk</p></li>
+<li><p><strong>y</strong> – Labels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>accuracy</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="evaluate">
+<code class="sig-name descname">evaluate</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span><a class="headerlink" href="#evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compues both the loss and accuracy using <code class="code docutils literal notranslate"><span class="pre">evaluate_loss</span></code> and <code class="code docutils literal notranslate"><span class="pre">evaluate_accuracy</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Input of the netwotk</p></li>
+<li><p><strong>y</strong> – Labels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple (loss, accuracy)</p>
 </dd>
 </dl>
 </dd></dl>
 
 </div>
 <div class="section" id="others">
-<h3>Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h3>
+<h2>Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h2>
 <dl class="method">
-<dt id="restore_graph_from_meta">
-<code class="sig-name descname">restore_graph_from_meta</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">latest_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#restore_graph_from_meta" title="Permalink to this definition">¶</a></dt>
-<dd><p>Restores an existing graph from meta data file</p>
+<dt id="summary">
+<code class="sig-name descname">summary</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a string of a summary representation of your model.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>latest_file</strong> – Path to the file to be restored. If no latest_file given and self.automatic_restore is True, the function will try to load the newest metadata inside <cite>saved_models/</cite> folder.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>None</p>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>string of the summary of the model</p>
 </dd>
 </dl>
 </dd></dl>
 
-</div>
+<dl class="method">
+<dt id="is_complex">
+<code class="sig-name descname">is_complex</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#is_complex" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><code class="code docutils literal notranslate"><span class="pre">True</span></code> if the network is complex. <code class="code docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 
@@ -167,12 +233,9 @@ If automatic_restore is True but not metadata was found, it will try to load the
 <h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">CVNN</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#train-and-predict">Train and Predict</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#graph-creation">Graph Creation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#graphs">Graphs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#others">Others</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results">Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#others">Others</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
@@ -214,7 +277,7 @@ If automatic_restore is True but not metadata was found, it will try to load the
       &copy;2020, J Agustin BARRACHINA.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

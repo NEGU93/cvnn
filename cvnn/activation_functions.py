@@ -1,16 +1,49 @@
 import tensorflow as tf
+import sys
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
 """
 
-"""
-TYPE A: Cartesian form.
-"""
 
-# TODO: shall I use tf.nn or tf.keras.activation modules?
-# https://stackoverflow.com/questions/54761088/tf-nn-relu-vs-tf-keras-activations-relu
-# nn has leaky relu, activation doesn't
+def apply_activation(act_fun, out):
+    """
+    Applies activation function `act` to variable `out`
+    :param out: Tensor to whom the activation function will be applied
+    :param act_fun: function to be applied to out. See the list fo possible activation functions on:
+        https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
+    :return: Tensor with the applied activation function
+    """
+    if act_fun is None:  # No activation function declared
+        return out
+    elif callable(act_fun):
+        if act_fun.__module__ == 'activation_functions' or \
+                act_fun.__module__ == 'tensorflow.python.keras.activations':
+            return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
+        else:
+            print("apply_activation Unknown activation function.\n\t "
+                              "Can only use activations declared on activation_functions.py or keras.activations")
+            sys.exit(-1)
+    elif isinstance(act_fun, str):
+        try:
+            return act_dispatcher[act_fun](out)
+        except KeyError:
+            print("WARNING: apply_function: " + str(act_fun) + " is not callable, ignoring it")
+        return out
+
+
+def softmax_real(z, axis=-1):
+    """
+    Applies the softmax function to the modulus of z.
+    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+    It is often used as the activation for the last layer of a classification network because the result could be
+    interpreted as a probability distribution.
+    The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
+    return tf.keras.activations.softmax(tf.math.abs(z), axis)
 
 
 # Regression
@@ -21,6 +54,15 @@ def linear(z):
     :return: z
     """
     return z
+
+
+"""
+TYPE A: Cartesian form.
+"""
+
+# TODO: shall I use tf.nn or tf.keras.activation modules?
+# https://stackoverflow.com/questions/54761088/tf-nn-relu-vs-tf-keras-activations-relu
+# nn has leaky relu, activation doesn't
 
 
 def cart_sigmoid(z):
@@ -167,21 +209,6 @@ def cart_softmax(z, axis=-1):
     return tf.cast(tf.complex(tf.keras.activations.softmax(tf.math.real(z), axis),
                               tf.keras.activations.softmax(tf.math.imag(z), axis)), dtype=z.dtype)
 
-
-def cart_softmax_real(z, axis=-1):
-    """
-        Applies the softmax function to the modulus of z.
-        The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
-        It is often used as the activation for the last layer of a classification network because the result could be
-        interpreted as a probability distribution.
-        The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
-        https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
-        :param z: Input tensor.
-        :return: Real-valued tensor of the applied activation function
-        """
-    return tf.keras.activations.softmax(tf.math.abs(z), axis)
-
-
 """
 TYPE B: Polar form.
 """
@@ -190,6 +217,13 @@ TYPE B: Polar form.
 
 def pol_selu(z):
     """
+    Applies Scaled Exponential Linear Unit (SELU) to the absolute value of z, keeping the phase unchanged.
+    The scaled exponential unit activation: scale * elu(x, alpha).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu
+    https://arxiv.org/abs/1706.02515
+    :param z: Input tensor.
+    :return: Tensor result of the applied activation function
+
     Logic:
         I must mantain the phase (angle) so: cos(theta) = x_0/r_0 = x_1/r_1.
         For real case, x_0 = r_0 so it also works.
@@ -197,6 +231,24 @@ def pol_selu(z):
     r_0 = tf.abs(z)
     r_1 = tf.keras.activations.selu(r_0)
     return tf.cast(tf.complex(tf.math.real(z) * r_1 / r_0, tf.math.imag(z) * r_1 / r_0), dtype=z.dtype)
+
+
+act_dispatcher = {
+    'linear': linear,
+    'cart_sigmoid': cart_sigmoid,
+    'cart_elu': cart_elu,
+    'cart_exponential': cart_exponential,
+    'cart_hard_sigmoid': cart_hard_sigmoid,
+    'cart_relu': cart_relu,
+    'cart_leaky_relu': cart_leaky_relu,
+    'cart_selu': cart_selu,
+    'cart_softplus': cart_softplus,
+    'cart_softsign': cart_softsign,
+    'cart_tanh': cart_tanh,
+    'cart_softmax': cart_softmax,
+    'softmax_real': softmax_real,
+    'pol_selu': pol_selu
+}
 
 
 __author__ = 'J. Agustin BARRACHINA'

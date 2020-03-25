@@ -372,10 +372,10 @@ class CvnnModel:
             verbose=True, display_freq=None, fast_mode=False, save_to_file=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
-        :param x_train: Input data. # TODO: can use dataset class to make this better
-        :param y_train: Labels
-        :param x_test: Test data (optional) - Only used for printing results. Will not be use for training any param.
-        :param y_test: Test labels (optional)
+        :param x: Input data.
+        :param y: Labels
+        :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
+            Default: 0.8 (80% as train set and 20% as validation set)
         :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
@@ -525,7 +525,7 @@ if __name__ == '__main__':
                                  input_dtype=cdtype, output_dtype=cdtype),
              layers.ComplexDense(input_size=hidden_size1, output_size=hidden_size2, activation='cart_relu',
                                  input_dtype=cdtype, output_dtype=cdtype),
-             layers.ComplexDense(input_size=hidden_size2, output_size=output_size, activation='cart_softmax_real',
+             layers.ComplexDense(input_size=hidden_size2, output_size=output_size, activation='softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
     model.fit(dataset.x, dataset.y, batch_size=100, epochs=150)

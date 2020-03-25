@@ -136,7 +136,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
     for i in range(1, len(shape_raw)):
         shape.append(ComplexDense(input_size=shape_raw[i - 1], output_size=shape_raw[i], activation=activation,
                                   input_dtype=np.complex64, output_dtype=np.complex64))
-    shape.append(ComplexDense(input_size=shape_raw[-1], output_size=output_size, activation='cart_softmax_real',
+    shape.append(ComplexDense(input_size=shape_raw[-1], output_size=output_size, activation='softmax_real',
                               input_dtype=np.complex64, output_dtype=np.float32))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
