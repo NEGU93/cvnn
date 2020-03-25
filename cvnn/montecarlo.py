@@ -39,17 +39,7 @@ class MonteCarlo:
                 if model.is_complex():
                     x_fit = x
                 else:
-                    x_fit = transform_to_real(x, polar=False)
-                    if polar:  # Run a second test with polar data
-                        x_fit_polar = transform_to_real(x, polar=True)
-                        test_model = copy.deepcopy(model)
-                        test_model.name += "_polar"
-                        test_model.fit(x_fit_polar, y,
-                                       learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
-                                       verbose=debug, fast_mode=not debug, save_to_file=False,
-                                       display_freq=display_freq)
-                        self.pandas_full_data = pd.concat([self.pandas_full_data,
-                                                           test_model.plotter.get_full_pandas_dataframe()])
+                    x_fit = transform_to_real(x, polar=polar)
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
@@ -198,7 +188,7 @@ def first_simus():
         run_montecarlo(learning_rate=learning_rate)
 
 
-if __name__ == "__main__":
+def shapes_simus():
     # Single hidden layers
     shapes = [
         [512],
@@ -225,3 +215,21 @@ if __name__ == "__main__":
     for shape in shapes:
         print("Running for 2 hidden layers".format(shape[0]))
         run_montecarlo(shape_raw=shape)
+
+
+if __name__ == "__main__":
+    print("Running base case monte carlo")
+    run_montecarlo(polar=True)
+
+    # Equal variance
+    print("Running monte carlo with equal variance")
+    param_list = [
+        [0.5, 1, 1],
+        [-0.5, 1, 1]
+    ]
+    run_montecarlo(param_list=param_list, polar=True)
+
+    # No correlation
+    print("Running monte carlo with no correlation")
+    param_list = [[0, 1, 2], [0, 2, 1]]
+    run_montecarlo(param_list=param_list, polar=True)  # I have the theory polar will do bad here...
