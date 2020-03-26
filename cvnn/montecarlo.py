@@ -59,8 +59,7 @@ class MonteCarlo:
                                                                     test_model.get_confusion_matrix(dataset.x_test,
                                                                                                     dataset.y_test)))
             # Save checkpoint in case Monte Carlo stops in the middle
-            self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "checkpoints/iteration{}.csv".format(it + 1),
-                                         index=False)
+            self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
         conf_mat = None
         if do_conf_mat:
@@ -171,20 +170,6 @@ def first_simus():
     param_list = [[0, 1, 2], [0, 2, 1]]
     run_montecarlo(param_list=param_list)  # I have the theory polar will do bad here...
 
-    # Multi Class
-    print("Running multi-class (4) monte carlo ")
-    coef_correls_list = np.linspace(-0.9, 0.9, 4)  # 4 classes
-    param_list = []
-    for coef in coef_correls_list:
-        param_list.append([coef, 1, 2])
-    run_montecarlo(param_list=param_list)
-    print("Running multi-class (10) monte carlo ")
-    coef_correls_list = np.linspace(-0.9, 0.9, 10)  # 10 classes
-    param_list = []
-    for coef in coef_correls_list:
-        param_list.append([coef, 1, 2])
-    run_montecarlo(param_list=param_list)
-
     # change activation function
     print("Running monte carlo for different activation functions")
     activation_function = ['cart_sigmoid', 'cart_tanh', 'cart_leaky_relu']  # relu already done
@@ -201,6 +186,22 @@ def first_simus():
     learning_rates = [0.001, 0.1, 1]        # 0.01 already done
     for learning_rate in learning_rates:
         run_montecarlo(learning_rate=learning_rate)
+
+
+def multi_class_simus():
+    # Multi Class
+    print("Running multi-class (4) monte carlo ")
+    coef_correls_list = np.linspace(-0.9, 0.9, 4)  # 4 classes
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 2])
+    run_montecarlo(param_list=param_list)
+    print("Running multi-class (10) monte carlo ")
+    coef_correls_list = np.linspace(-0.9, 0.9, 10)  # 10 classes
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 2])
+    run_montecarlo(param_list=param_list)
 
 
 def shapes_simus():
@@ -251,8 +252,5 @@ def polar_simus():
 
 
 if __name__ == "__main__":
-    coef_correls_list = np.linspace(-0.9, 0.9, 4)  # 4 classes
-    param_list = []
-    for coef in coef_correls_list:
-        param_list.append([coef, 1, 2])
-    run_montecarlo(param_list=param_list, epochs=20, iterations=5, shape_raw=[64])
+    polar_simus()
+    multi_class_simus()
