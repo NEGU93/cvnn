@@ -15,7 +15,7 @@ from pdb import set_trace
 import scipy.stats as stats
 from cvnn.utils import create_folder
 
-# TODO: I temporary removed the blue color to make the poster (I use blue background so it did't look good)
+
 DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',   # Blue
                          'rgb(255, 127, 14)',   # Orange
                          'rgb(44, 160, 44)',    # Green
@@ -24,7 +24,7 @@ DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',   # Blue
                          'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
-DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][1:]
+DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']   # [1:] # Uncomment to remove blue color
 
 
 def triangulate_histogram(x, y, z):
@@ -157,16 +157,18 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
         fig.show()
 
 
-def sparse_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
+def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
+    categorical = (len(np.shape(y_label_np)) > 1)
+    if categorical:
+        y_pred_np = np.argmax(y_pred_np, axis=1)
+        y_label_np = np.argmax(y_label_np, axis=1)
     y_pred_pd = pd.Series(y_pred_np, name='Predicted')
     y_label_pd = pd.Series(y_label_np, name='Actual')
     df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
-    plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
+    if filename is not None:
+        df.to_csv(filename, index=False)
+    # plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
     return df
-
-
-def categorical_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
-    return sparse_confusion_matrix(np.argmax(y_pred_np, axis=1), np.argmax(y_label_np, axis=1), filename, axis_legends)
 
 # ----------------
 # Comparison
@@ -600,6 +602,7 @@ class MonteCarloPlotter(Plotter):
 class MonteCarloAnalyzer:
 
     def __init__(self, df=None, path=None):
+        self.confusion_matrix = []
         if path is not None and df is not None:  # I have data and the place where I want to save it
             self.df = df  # DataFrame with all the data
             self.path = Path(path)
@@ -619,9 +622,14 @@ class MonteCarloAnalyzer:
         self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']  # TODO: Consider delete
         self.monte_carlo_plotter = MonteCarloPlotter(self.path)
 
-    def set_df(self, df):
-        self.df = df  # DataFrame with all the data
+    def set_df(self, df, conf_mat=None):
+        self.df = df                                # DataFrame with all the data
         self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+        if conf_mat is not None:
+            for i in range(len(conf_mat)):
+                mat = conf_mat[i]["matrix"]
+                group = mat.groupby(mat.index)
+                self.confusion_matrix.append({"name": conf_mat[i]["name"], "matrix": group.mean()})
         self.save_stat_results()
         self.monte_carlo_plotter.reload_data()
 
@@ -638,6 +646,10 @@ class MonteCarloAnalyzer:
                 keys.append(step)
             data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
             data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
+        # Save confusion matrix
+        for i in range(len(self.confusion_matrix)):
+            self.confusion_matrix[i]["matrix"].to_csv(self.path / (self.confusion_matrix[i]["name"]
+                                                                   + "_confusion_matrix.csv"))
 
     # ------------
     # Plot methods
@@ -951,10 +963,10 @@ def test_activation_function():
 
 if __name__ == "__main__":
     test_coef_correl()
-    test_data_size()
-    test_learning_rate()
-    test_single_hidden_layer()
-    test_activation_function()
+    # test_data_size()
+    # test_learning_rate()
+    # test_single_hidden_layer()
+    # test_activation_function()
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-04h07m46/run_data"  # Same variance
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/14Saturday/run-20h50m08/run_data"  # Base case
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/15Sunday/run-06h44m32/run_data"  # No correl
@@ -962,6 +974,7 @@ if __name__ == "__main__":
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/16Monday/run-11h42m59/run_data"
     # monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path=path)
     # monte_carlo_analyzer.do_all()
+
 
 
 __author__ = 'J. Agustin BARRACHINA'

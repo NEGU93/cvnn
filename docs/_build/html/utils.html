@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Utils &#8212; cvnn 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Activation Functions" href="act_fun.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="utils">
+<h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="get_func_name">
+<code class="sig-name descname">get_func_name</code><span class="sig-paren">(</span><em class="sig-param">fun</em><span class="sig-paren">)</span><a class="headerlink" href="#get_func_name" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Returns the name of a function passed as parameter being either a function itself or a string with the function name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">cvnn.utils</span> <span class="k">import</span> <span class="n">get_func_name</span>
+
+<span class="n">get_func_name</span><span class="p">(</span><span class="nb">print</span><span class="p">)</span>    <span class="c1"># output: &#39;print&#39;</span>
+<span class="n">get_func_name</span><span class="p">(</span><span class="s1">&#39;print&#39;</span><span class="p">)</span>  <span class="c1"># output: &#39;print&#39;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>fun</strong> – function or function name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>function name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="create_folder">
+<code class="sig-name descname">create_folder</code><span class="sig-paren">(</span><em class="sig-param">root_path</em>, <em class="sig-param">now=None</em><span class="sig-paren">)</span><a class="headerlink" href="#create_folder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates folders within <code class="code docutils literal notranslate"><span class="pre">root_path</span></code> using a date format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root_path</strong> – root path where to create the folder chain</p></li>
+<li><p><strong>now</strong> – date to be used. If <code class="code docutils literal notranslate"><span class="pre">None</span></code> then it will use current time</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the created path in pathlib format (compatible across different OS)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="transform_to_real">
+<code class="sig-name descname">transform_to_real</code><span class="sig-paren">(</span><em class="sig-param">x_complex</em>, <em class="sig-param">polar=False</em><span class="sig-paren">)</span><a class="headerlink" href="#transform_to_real" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Transforms a complex input matrix into a real value matrix (double size)</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_complex</strong> – Complex-valued matrix of size mxn</p></li>
+<li><p><strong>polar</strong> – If <code class="code docutils literal notranslate"><span class="pre">True</span></code>, the data returned will be the amplitude and phase instead of real an imaginary part
+(Default: <code class="code docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="sig-name descname">randomize(x, y):</code></dt>
+<dd><p>Randomizes the order of data samples and their corresponding labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – data</p></li>
+<li><p><strong>y</strong> – data labels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple of (shuffled_x, shuffled_y) maintaining coherence of elements labels</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="sig-name descname">polar2cart(rho, angle):</code></dt>
+<dd><div class="math notranslate nohighlight">
+\[z = \rho \cdot e^{j\phi}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> – absolute value</p></li>
+<li><p><strong>angle</strong> – phase</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>complex number using phase and angle</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="sig-name descname">cart2polar(z):</code></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – complex input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>tuple with the absolute value of the input and the phase</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">cvnn</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Utils</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="act_fun.html" title="previous chapter">Activation Functions</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, J Agustin BARRACHINA.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/utils.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

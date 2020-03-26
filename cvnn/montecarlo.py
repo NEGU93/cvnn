@@ -2,7 +2,7 @@ import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.dataset import Dataset
 from cvnn.cvnn_model import CvnnModel
-from cvnn.data_analysis import MonteCarloAnalyzer
+from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix
 from cvnn.layers import ComplexDense
 from utils import create_folder, transform_to_real, randomize
 import tensorflow as tf
@@ -19,15 +19,21 @@ class MonteCarlo:
     def __init__(self):
         self.models = []
         self.pandas_full_data = pd.DataFrame()
+        self.confusion_matrix = []
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
 
     def add_model(self, model):
         assert model.save_csv_checkpoints
         self.models.append(model)
 
-    def run(self, x, y, data_summary='', polar=False,
+    def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, ratio=0.8,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=False, debug=False, display_freq=160):
-        self.pandas_full_data = pd.DataFrame()  # Reset data frame
+        x, y = randomize(x, y)
+        # Reset data frame
+        self.pandas_full_data = pd.DataFrame()
+        if do_conf_mat:
+            for i in range(len(self.models)):
+                self.confusion_matrix.append({"name": "model_name", "matrix": pd.DataFrame()})
         self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
                                  data_summary)
         os.makedirs(self.monte_carlo_analyzer.path / "checkpoints/", exist_ok=True)
@@ -41,16 +47,25 @@ class MonteCarlo:
                 else:
                     x_fit = transform_to_real(x, polar=polar)
                 test_model = copy.deepcopy(model)
-                test_model.fit(x_fit, y,
+                test_model.fit(x_fit, y, ratio=ratio,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=not debug, save_to_file=False, display_freq=display_freq)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()])
-            # Save checkpoint in case montecarlo stops in the middle
+                if do_conf_mat:
+                    dataset = dp.Dataset(x_fit, y, ratio=ratio)
+                    self.confusion_matrix[i]["name"] = test_model.name
+                    self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
+                                                                    test_model.get_confusion_matrix(dataset.x_test,
+                                                                                                    dataset.y_test)))
+            # Save checkpoint in case Monte Carlo stops in the middle
             self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "checkpoints/iteration{}.csv".format(it + 1),
                                          index=False)
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
-        self.monte_carlo_analyzer.set_df(self.pandas_full_data)
+        conf_mat = None
+        if do_conf_mat:
+            conf_mat = self.confusion_matrix
+        self.monte_carlo_analyzer.set_df(self.pandas_full_data, conf_mat)
 
     @staticmethod
     def _run_summary(iterations, learning_rate, epochs, batch_size, shuffle):
@@ -136,7 +151,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
     monte_carlo = RealVsComplex(complex_network)
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=True, debug=debug, data_summary=dataset.summary(), polar=polar)
+                    shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
 
 
 def first_simus():
@@ -217,7 +232,7 @@ def shapes_simus():
         run_montecarlo(shape_raw=shape)
 
 
-if __name__ == "__main__":
+def polar_simus():
     print("Running base case monte carlo")
     run_montecarlo(polar=True)
 
@@ -233,3 +248,11 @@ if __name__ == "__main__":
     print("Running monte carlo with no correlation")
     param_list = [[0, 1, 2], [0, 2, 1]]
     run_montecarlo(param_list=param_list, polar=True)  # I have the theory polar will do bad here...
+
+
+if __name__ == "__main__":
+    coef_correls_list = np.linspace(-0.9, 0.9, 4)  # 4 classes
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 2])
+    run_montecarlo(param_list=param_list, epochs=20, iterations=5, shape_raw=[64])

@@ -321,6 +321,12 @@ class CvnnModel:
         """
         return self.evaluate_loss(x, y), self.evaluate_accuracy(x, y)
 
+    def get_confusion_matrix(self, x, y, save_result=False):
+        filename = None
+        if save_result:
+            filename = self.root_dir + "/categorical.csv"
+        return da.confusion_matrix(self.call(x), y, filename=filename)
+
     # ====================
     #          Train 
     # ====================
@@ -502,34 +508,38 @@ class CvnnModel:
 
 if __name__ == '__main__':
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
-    m = 10000
+    m = 5000
     n = 100
-    num_classes = 2
-    cov_matr_list = [
-        [[1, 0.75], [0.75, 2]],
-        [[1, -0.75], [-0.75, 2]]
-    ]
-    dataset = dp.CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)
+    coef_correls_list = np.linspace(-0.9, 0.9, 4)  # 4 classes
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 2])
+    dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+
+    # Define shape
     cdtype = np.complex64
     if cdtype == np.complex64:
         rdtype = np.float32
     else:
         rdtype = np.float64
-
     input_size = np.shape(dataset.x_train)[1]
     hidden_size1 = 100
     hidden_size2 = 40
     output_size = np.shape(dataset.y_train)[1]
-
     shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size1, activation='cart_relu',
                                  input_dtype=cdtype, output_dtype=cdtype),
              layers.ComplexDense(input_size=hidden_size1, output_size=hidden_size2, activation='cart_relu',
                                  input_dtype=cdtype, output_dtype=cdtype),
              layers.ComplexDense(input_size=hidden_size2, output_size=output_size, activation='softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
+
+    # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(dataset.x, dataset.y, batch_size=100, epochs=150)
-    model.plotter.plot_key(key='accuracy', showfig=True, savefig=False)
+    model.fit(dataset.x, dataset.y, batch_size=100, epochs=50)
+    # model.plotter.plot_key(key='accuracy', showfig=True, savefig=False)
+    # Analyze data
+    df = da.confusion_matrix(model.call(dataset.x_test), dataset.y_test)
+    set_trace()
 
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731

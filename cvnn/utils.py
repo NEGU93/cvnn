@@ -9,12 +9,24 @@ from scipy.io import loadmat
 
 
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
+    """
+    Opens Matlab matrix (.mat) as numpy array.
+    :param fname: file name to be opened
+    :param path: path to file
+    :return: numpy array with the Matlab matrix information
+    """
     mat_fname = join(path, fname)
     mat = loadmat(mat_fname)
     return mat
 
 
 def create_folder(root_path, now=None):
+    """
+    Creates folders within root_path using a date format.
+    :param root_path: root path where to create the folder chain
+    :param now: date to be used. If None then it will use current time
+    :return: the created path in pathlib format (compatible across different OS)
+    """
     if now is None:
         now = datetime.today()
     path = Path(__file__).parents[1].absolute() / Path(root_path + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
@@ -23,18 +35,24 @@ def create_folder(root_path, now=None):
 
 
 def get_func_name(fun):
+    """
+    Returns the name of a function passed as parameter being either a function itself or a string with the function name
+    :param fun: function or function name
+    :return: function name
+    """
     if callable(fun):
         return fun.__name__
     elif isinstance(fun, str):
         return fun
     else:
-        sys.exit("Error::_get_func_name: Function not recognizable")
+        sys.exit("Error::get_func_name: Function not recognizable")
 
 
 def transform_to_real(x_complex, polar=False):
     """
+    Transforms a complex input matrix into a real value matrix (double size)
     :param x_complex: Complex-valued matrix of size mxn
-    :param polar: If True, the data returned will be the amplitude and phase insead of real an imaginary part
+    :param polar: If True, the data returned will be the amplitude and phase instead of real an imaginary part
         (Default: False)
     :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
     """
@@ -59,10 +77,19 @@ def transform_to_real(x_complex, polar=False):
 
 
 def cart2polar(z):
+    """
+    :param z: complex input
+    :return: tuple with the absolute value of the input and the phase
+    """
     return np.abs(z), np.angle(z)
 
 
 def polar2cart(rho, angle):
+    """
+    :param rho: absolute value
+    :param angle: phase
+    :return: complex number using phase and angle
+    """
     return rho * np.exp(1j*angle)
 
 

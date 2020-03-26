@@ -15,7 +15,7 @@ from pdb import set_trace
 # https://keras.io/initializers/
 
 supported_dtypes = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
-layer_count = count(0)        # Used to count the number of layers
+layer_count = count(0)                          # Used to count the number of layers
 
 
 class ComplexLayer(layers.Layer, ABC):

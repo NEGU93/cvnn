@@ -576,7 +576,7 @@ class Cvnn:
         print('---------------------------------------------------------')
 
     def confusion_matrix(self, x_test, y_test):
-        print(da.categorical_confusion_matrix(self.predict(x_test), y_test, None))
+        print(da.confusion_matrix(self.predict(x_test), y_test, None))
 
     def plot_loss_and_acc(self, library='plotly'):
         self.plot_loss(library=library)
@@ -826,7 +826,7 @@ if __name__ == "__main__":
 
     cvnn.train(x_train, y_train, x_test, y_test)
 
-    print(da.categorical_confusion_matrix(cvnn.predict(x_test), y_test, "output.png"))
+    print(da.confusion_matrix(cvnn.predict(x_test), y_test, "output.png"))
     cvnn.plot_loss()
 
 # How to comment script header

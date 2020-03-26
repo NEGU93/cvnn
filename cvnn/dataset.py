@@ -27,7 +27,7 @@ class Dataset:
     """
 
     def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None,
-                 categorical=True, debug=False):
+                 categorical=True, debug=False, shuffle=False):
         """
         :param x: Data
         :param y: Labels/outputs
@@ -37,6 +37,7 @@ class Dataset:
         :param savedata: (boolean) If true it will save the generated data into "./data/current/date/path/".
             Default: False
         """
+        self.random_shuffle = shuffle
         x = np.array(x)
         y = np.array(y)
         if x.dtype == np.complex128:    # Do this cast not to have warning messages when fit
@@ -45,7 +46,7 @@ class Dataset:
             x = x.astype(np.float32)
         self.x = x
         self.y = y.astype(np.float32)
-        self.categorical = categorical
+        self.categorical = categorical      # TODO: know it automatically as done in other functions
         if categorical:
             self.y = self.sparse_into_categorical(self.y)
         if num_classes is None:
@@ -98,10 +99,9 @@ class Dataset:
         """
         Generates everything (x_test, y_test, x_train, y_train, x_real) once x and y is defined.
         """
-        # This must be run after each case
-        self.x, self.y = randomize(self.x, self.y)
         self.x_train, self.y_train, self.x_test, self.y_test = self.separate_into_train_and_test(self.x, self.y,
-                                                                                                 self.ratio)
+                                                                                                 self.ratio,
+                                                                                                 pre_rand=self.random_shuffle)
 
     def shuffle(self):
         """

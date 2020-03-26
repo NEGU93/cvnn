@@ -1,7 +1,22 @@
 CVNN
 ===========
 
+Short example::
+
+        # Assume you already have complex data x with its labels y...
+
+        shape = [layers.ComplexDense(input_size=np.shape(x)[1], output_size=100, 
+                                     activation='cart_relu'),
+                layers.ComplexDense(input_size=100, output_size=40, 
+                                    activation='cart_relu'),
+                layers.ComplexDense(input_size=40, output_size=np.shape(y)[1], 
+                                    activation='softmax_real', output_dtype=np.float32)]
+        model = CvnnModel("cvnn_example", shape, tf.keras.losses.categorical_crossentropy)
+        model.fit(x, y, batch_size=100, epochs=150)
+
+
 .. py:class:: CvnnModel
+
 
 .. py:method:: __init__(self, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True)
 
@@ -95,10 +110,19 @@ Others
 
 .. py:method:: summary(self)
 
-	Generates a string of a summary representation of your model.
+	Generates a string of a summary representation of your model::
+
+                model.summary()
+                
 
         :return: string of the summary of the model
 
 .. py:method:: is_complex(self)
 
-        :return: :code:`True` if the network is complex. :code:`False` otherwise.
+        :return: :code:`True` if the network is complex. :code:`False` otherwise::
+
+                # x dtype is np.complex64
+                if not model.is_complex():
+                        x = cvnn.utils.transform_to_real(x)
+
+

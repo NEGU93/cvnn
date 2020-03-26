@@ -35,6 +35,19 @@
             
   <div class="section" id="cvnn">
 <h1>CVNN<a class="headerlink" href="#cvnn" title="Permalink to this headline">¶</a></h1>
+<p>Short example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume you already have complex data x with its labels y...</span>
+
+<span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                             <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
+        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                            <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
+        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">,</span> <span class="n">output_dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">CvnnModel</span><span class="p">(</span><span class="s2">&quot;cvnn_example&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">categorical_crossentropy</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="class">
 <dt id="CvnnModel">
 <em class="property">class </em><code class="sig-name descname">CvnnModel</code><a class="headerlink" href="#CvnnModel" title="Permalink to this definition">¶</a></dt>
@@ -193,7 +206,10 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
 <dl class="method">
 <dt id="summary">
 <code class="sig-name descname">summary</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#summary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generates a string of a summary representation of your model.</p>
+<dd><p>Generates a string of a summary representation of your model:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>string of the summary of the model</p>
@@ -206,7 +222,15 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
 <code class="sig-name descname">is_complex</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#is_complex" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="code docutils literal notranslate"><span class="pre">True</span></code> if the network is complex. <code class="code docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+<dd class="field-odd"><p><p><code class="code docutils literal notranslate"><span class="pre">True</span></code> if the network is complex. <code class="code docutils literal notranslate"><span class="pre">False</span></code> otherwise:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># x dtype is np.complex64</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>if not model.is_complex():</dt><dd><p>x = cvnn.utils.transform_to_real(x)</p>
+</dd>
+</dl>
+</p>
 </dd>
 </dl>
 </dd></dl>
@@ -239,7 +263,7 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data_processing.html">Data Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
 
 <div class="relations">
