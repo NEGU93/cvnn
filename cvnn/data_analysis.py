@@ -166,7 +166,7 @@ def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
     y_label_pd = pd.Series(y_label_np, name='Actual')
     df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
     if filename is not None:
-        df.to_csv(filename, index=False)
+        df.to_csv(filename)
     # plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
     return df
 

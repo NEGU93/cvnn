@@ -327,6 +327,7 @@ class GeneratorDataset(ABC, Dataset):
         This class will first generate x and y with it's own defined method and then initialize a conventional dataset
         """
         x, y = self._generate_data(m, n, num_classes)
+        x, y = randomize(x, y)
         Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
 
     @abstractmethod

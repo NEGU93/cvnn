@@ -327,7 +327,7 @@ class CvnnModel:
     def get_confusion_matrix(self, x, y, save_result=False):
         filename = None
         if save_result:
-            filename = self.root_dir + "/categorical.csv"
+            filename = self.root_dir / "categorical.csv"
         return da.confusion_matrix(self.call(x), y, filename=filename)
 
     # ====================
@@ -539,12 +539,12 @@ if __name__ == '__main__':
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(dataset.x, dataset.y, batch_size=100, epochs=50, verbose=True)
+    model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True)
 
     # Analyze data
-    model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)
-    model.plotter.plot_key(key='accuracy', library='matplotlib', showfig=False, savefig=True)
-    # df = da.confusion_matrix(model.call(dataset.x_test), dataset.y_test)
+    # model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)
+    # model.plotter.plot_key(key='accuracy', library='matplotlib', showfig=False, savefig=True)
+    model.get_confusion_matrix(dataset.x_test, dataset.y_test, save_result=True)
     # set_trace()
 
 # How to comment script header
