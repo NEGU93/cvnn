@@ -10,6 +10,7 @@ import numpy as np
 import glob
 import re
 import os
+import sys
 from pathlib import Path
 from pdb import set_trace
 import scipy.stats as stats
@@ -312,7 +313,9 @@ class Plotter:
         :file_suffix: (optional) let's you filter csv files to open only files that ends with the suffix.
             By default it opens every csv file it finds.
         """
-        assert os.path.exists(path)
+        if not os.path.exists(path):
+            print("Plotter::__init__: path {} does not exist".format(path))
+            sys.exit(-1)
         self.path = Path(path)
         if not file_suffix.endswith(".csv"):
             file_suffix += ".csv"
@@ -389,7 +392,7 @@ class Plotter:
         if reload:
             self._csv_to_pandas()
         assert len(self.pandas_list) != 0
-        for key in self.pandas_list[0]:
+        for key in ["loss", "accuracy"]:
             self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
     def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
@@ -407,18 +410,18 @@ class Plotter:
         ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         title = None
         for i, data in enumerate(self.pandas_list):
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
             for k in data:
                 if key in k:
-                    if title is not None:
-                        title += " vs. " + self.labels[i]
-                    else:
-                        title = self.labels[i]
                     if index_loc is not None:
                         if 'stats' in data.keys():
                             data = data[data['stats'] == 'mean']
                         else:
                             print("Warning: Trying to index an array without index")
-                    ax.plot(data[k], 'o-', label=self.labels[i].replace('_', ' '))
+                    ax.plot(data[k], 'o-', label=(k.replace(key, '') + self.labels[i]).replace('_', ' '))
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
@@ -427,33 +430,37 @@ class Plotter:
         if showfig:
             fig.show()
         if savefig:
-            fig.savefig(str(self.path / key) + extension, transparent=True)
+            fig.savefig(str(self.path / key) + "_matplotlib" + extension, transparent=True)
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None, extension=".svg"):
         fig = go.Figure()
         annotations = []
-        title = ''
+        title = None
         for i, data in enumerate(self.pandas_list):
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
+            j = 0
             for k in data:
                 if key in k:
-                    if title is not None:
-                        title += " vs. " + self.labels[i]
-                    else:
-                        title = self.labels[i]
+                    color = DEFAULT_PLOTLY_COLORS[j*len(self.pandas_list) + i]
+                    j += 1
                     if index_loc is not None:
                         if 'stats' in data.keys():
                             data = data[data['stats'] == 'mean']
                         else:
                             print("Warning: Trying to index an array without index")
                     x = list(range(len(data[k])))
-                    fig.add_trace(go.Scatter(x=x, y=data[k], mode='lines', name=self.labels[i].replace('_', ' '),
-                                             line_color=DEFAULT_PLOTLY_COLORS[i]))
+                    fig.add_trace(go.Scatter(x=x, y=data[k], mode='lines',
+                                             name=(k.replace(key, '') + self.labels[i]).replace('_', ' '),
+                                             line_color=color))
                     # Add points
                     fig.add_trace(go.Scatter(x=[x[-1]],
                                              y=[data[k].to_list()[-1]],
                                              mode='markers',
                                              name='last value',
-                                             marker_color=DEFAULT_PLOTLY_COLORS[i]))
+                                             marker_color=color))
                     # Max/min points
                     func_value = func(data[k])
                     # ATTENTION! this will only give you first occurrence
@@ -465,7 +472,7 @@ class Plotter:
                                                  name=func.__name__,
                                                  text=['{0:.2f}%'.format(func_value)],
                                                  textposition="top center",
-                                                 marker_color=DEFAULT_PLOTLY_COLORS[i]))
+                                                 marker_color=color))
                         # Min annotations
                         annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
                                                 xanchor='left', yanchor='middle',
@@ -488,7 +495,7 @@ class Plotter:
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / key) + extension)
+            fig.write_image(str(self.path / key) + "_plotly" + extension)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -497,19 +504,15 @@ class MonteCarloPlotter(Plotter):
 
     def __init__(self, path):
         file_suffix = "_statistical_result.csv"
-        self.filter_keys = ['step', 'stats']
         super().__init__(path, file_suffix=file_suffix)
 
     def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
-        if reload:
-            self._csv_to_pandas()
-        assert len(self.pandas_list) != 0
-        for key in self.pandas_list[0]:
-            if key not in self.filter_keys:
-                self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
+        # Rename this function to change index_loc default value
+        super().plot_key(reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
     def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True,
                  index_loc='mean'):
+        # Rename this function to change index_loc default value
         super().plot_key(key, reload, library, showfig, savefig, index_loc)
 
     def plot_distribution(self, key='test accuracy', showfig=False, savefig=True, title='', full_border=True):
@@ -967,7 +970,7 @@ def test_activation_function():
 
 
 if __name__ == "__main__":
-    test_coef_correl()
+    # test_coef_correl()
     # test_data_size()
     # test_learning_rate()
     # test_single_hidden_layer()
@@ -979,7 +982,14 @@ if __name__ == "__main__":
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/16Monday/run-11h42m59/run_data"
     # monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path=path)
     # monte_carlo_analyzer.do_all()
-
+    path = "W:/HardDiskDrive/Documentos/GitHub/cvnn/montecarlo/2020/03March/26Thursday/run-18h16m02"
+    plotter = MonteCarloPlotter(path=path)
+    plotter.plot_key(key='accuracy')
+    plotter.plot_key(key='accuracy', library='matplotlib')
+    """
+    path = "W:/HardDiskDrive/Documentos/GitHub/cvnn/log/2020/03March/27Friday/run-18h47m07"
+    plotter = Plotter(path=path)
+    plotter.plot_key(key='accuracy')"""
 
 
 __author__ = 'J. Agustin BARRACHINA'
