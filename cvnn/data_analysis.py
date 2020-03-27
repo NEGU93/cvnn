@@ -302,7 +302,7 @@ class SeveralMonteCarloComparison:
 
 class Plotter:
 
-    def __init__(self, path, file_suffix=".csv"):
+    def __init__(self, path, file_suffix="_results_fit.csv"):
         """
         This class manages the plot of results for a model train.
         It opens the csv files (test and train) saved during training and plots results as wrt each step saved.
@@ -314,9 +314,11 @@ class Plotter:
         """
         assert os.path.exists(path)
         self.path = Path(path)
+        if not file_suffix.endswith(".csv"):
+            file_suffix += ".csv"
+        self.file_suffix = file_suffix
         self.pandas_list = []
         self.labels = []
-        self.file_suffix = file_suffix
         self._csv_to_pandas()
 
     def _csv_to_pandas(self):
@@ -328,14 +330,14 @@ class Plotter:
         self.pandas_list = []
         self.labels = []
         files = os.listdir(self.path)
-        files.sort()  # Respect the colors for the plot of montecarlo.
-        # For ComplexVsReal Montecarlo it has first the Complex model and SECOND the real one.
+        files.sort()  # Respect the colors for the plot of Monte Carlo.
+        # For ComplexVsReal Monte Carlo it has first the Complex model and SECOND the real one.
         # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
         # TODO: Think a better way without loosing generality (This sort is all done because of the ComplexVsReal case)
         for file in files:
             if file.endswith(self.file_suffix):
                 self.pandas_list.append(pd.read_csv(self.path / file))
-                self.labels.append(re.sub(self.file_suffix + '$', '', file))
+                self.labels.append(re.sub(self.file_suffix + '$', '', file).replace('_', ' '))
 
     def reload_data(self):
         """
@@ -375,7 +377,8 @@ class Plotter:
         str_to_match = "_metadata.txt"
         for file in os.listdir(self.path):
             if file.endswith(str_to_match):
-                return re.sub(str_to_match + "$", '', file)  # See that there is no need to open the file
+                # See that there is no need to open the file
+                return re.sub(str_to_match + "$", '', file).replace('_', ' ')
         return "Name not found"
 
     # ====================
@@ -404,17 +407,18 @@ class Plotter:
         ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         title = None
         for i, data in enumerate(self.pandas_list):
-            if key in data:
-                if title is not None:
-                    title += " vs. " + self.labels[i]
-                else:
-                    title = self.labels[i]
-                if index_loc is not None:
-                    if 'stats' in data.keys():
-                        data = data[data['stats'] == 'mean']
+            for k in data:
+                if key in k:
+                    if title is not None:
+                        title += " vs. " + self.labels[i]
                     else:
-                        print("Warning: Trying to index an array without index")
-                ax.plot(data[key], 'o-', label=self.labels[i].replace('_', ' '))
+                        title = self.labels[i]
+                    if index_loc is not None:
+                        if 'stats' in data.keys():
+                            data = data[data['stats'] == 'mean']
+                        else:
+                            print("Warning: Trying to index an array without index")
+                    ax.plot(data[k], 'o-', label=self.labels[i].replace('_', ' '))
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
@@ -430,51 +434,52 @@ class Plotter:
         annotations = []
         title = ''
         for i, data in enumerate(self.pandas_list):
-            if key in data:
-                if title is not None:
-                    title += " vs. " + self.labels[i]
-                else:
-                    title = self.labels[i]
-                if index_loc is not None:
-                    if 'stats' in data.keys():
-                        data = data[data['stats'] == 'mean']
+            for k in data:
+                if key in k:
+                    if title is not None:
+                        title += " vs. " + self.labels[i]
                     else:
-                        print("Warning: Trying to index an array without index")
-                x = list(range(len(data[key])))
-                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i].replace('_', ' '),
-                                         line_color=DEFAULT_PLOTLY_COLORS[i]))
-                # Add points
-                fig.add_trace(go.Scatter(x=[x[-1]],
-                                         y=[data[key].to_list()[-1]],
-                                         mode='markers',
-                                         name='last value',
-                                         marker_color=DEFAULT_PLOTLY_COLORS[i]))
-                # Max/min points
-                func_value = func(data[key])
-                # ATTENTION! this will only give you first occurrence
-                func_index = data[key].to_list().index(func_value)
-                if func_index != len(data[key]) - 1:
-                    fig.add_trace(go.Scatter(x=[func_index],
-                                             y=[func_value],
+                        title = self.labels[i]
+                    if index_loc is not None:
+                        if 'stats' in data.keys():
+                            data = data[data['stats'] == 'mean']
+                        else:
+                            print("Warning: Trying to index an array without index")
+                    x = list(range(len(data[k])))
+                    fig.add_trace(go.Scatter(x=x, y=data[k], mode='lines', name=self.labels[i].replace('_', ' '),
+                                             line_color=DEFAULT_PLOTLY_COLORS[i]))
+                    # Add points
+                    fig.add_trace(go.Scatter(x=[x[-1]],
+                                             y=[data[k].to_list()[-1]],
                                              mode='markers',
-                                             name=func.__name__,
-                                             text=['{0:.2f}%'.format(func_value)],
-                                             textposition="top center",
+                                             name='last value',
                                              marker_color=DEFAULT_PLOTLY_COLORS[i]))
-                    # Min annotations
-                    annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
+                    # Max/min points
+                    func_value = func(data[k])
+                    # ATTENTION! this will only give you first occurrence
+                    func_index = data[k].to_list().index(func_value)
+                    if func_index != len(data[k]) - 1:
+                        fig.add_trace(go.Scatter(x=[func_index],
+                                                 y=[func_value],
+                                                 mode='markers',
+                                                 name=func.__name__,
+                                                 text=['{0:.2f}%'.format(func_value)],
+                                                 textposition="top center",
+                                                 marker_color=DEFAULT_PLOTLY_COLORS[i]))
+                        # Min annotations
+                        annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
+                                                xanchor='left', yanchor='middle',
+                                                text='{0:.2f}'.format(func_value),
+                                                font=dict(family='Arial',
+                                                          size=14),
+                                                showarrow=False, ay=-40))
+                    # Right annotations
+                    annotations.append(dict(xref='paper', x=0.95, y=data[k].to_list()[-1],
                                             xanchor='left', yanchor='middle',
-                                            text='{0:.2f}'.format(func_value),
+                                            text='{0:.2f}'.format(data[k].to_list()[-1]),
                                             font=dict(family='Arial',
-                                                      size=14),
-                                            showarrow=False, ay=-40))
-                # Right annotations
-                annotations.append(dict(xref='paper', x=0.95, y=data[key].to_list()[-1],
-                                        xanchor='left', yanchor='middle',
-                                        text='{0:.2f}'.format(data[key].to_list()[-1]),
-                                        font=dict(family='Arial',
-                                                  size=16),
-                                        showarrow=False))
+                                                      size=16),
+                                            showarrow=False))
         title += " " + key
         fig.update_layout(annotations=annotations,
                           title=title,
@@ -483,7 +488,7 @@ class Plotter:
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(filename=str(self.path / key) + extension)
+            fig.write_image(str(self.path / key) + extension)
         elif showfig:
             fig.show(config={'editable': True})
 

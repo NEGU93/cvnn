@@ -176,21 +176,20 @@ class CvnnModel:
         :param save_fit_filename: Filename to save the training messages. If None, no information will be saved.
         :return: None
         """
+        if (x_test is not None and y_test is None) or (y_test is not None and x_test is None):
+            # TODO: Write this in a more complex logic. XOR?
+            print("CVNN::_run_checkpoint: Either both x_test and y_test are None or neither")
+            sys.exit(-1)
         if self.tensorboard:    # Save tensorboard data
             self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
-        # Save train and (maybe) test acc and loss
-        # I do this instead of making and internal vector because I make sure that it can be recovered at any time.
-        # Even if the training stopped in the middle by any reason. This way my result is saved many times (Backup!)
-        # Other more efficient method would be to create a vector and save it at the end but I risk loosing info
-        # if the training stops at any point.
         if self.save_csv_checkpoints:
-            self._save_csv(x_train, y_train, 'train')
-            if x_test is not None:
-                assert y_test is not None, "CVNN::_run_checkpoint: x_test was not None but y_test was None"
-                self._save_csv(x_test, y_test, 'test')
+            # I do this instead of making and internal vector because I make sure that it can be recovered at any time.
+            # Even if the training stopped in the middle by any reason. This way my result is saved many times (Backup!)
+            # Other more efficient method would be to create a vector and save it at the end but I risk loosing info
+            # if the training stops at any point.
+            self._save_csv(self.name + '_results_fit', x_train, y_train, x_test, y_test)
         if self.save_model_checkpoints:             # Save model weights
             if x_test is not None:                  # Better to save the loss and acc of test
-                assert y_test is not None, "CVNN::_run_checkpoint: x_test was not None but y_test was None"
                 self.save(x_test, y_test)
             else:
                 self.save(x_train, y_train)         # If I have no info of the test then save the values of the train
@@ -200,18 +199,20 @@ class CvnnModel:
                                                     iteration, num_tr_iter, x_test, y_test)
             self._manage_string(epoch_str, verbose, save_fit_filename)
 
-    def _save_csv(self, x, y, filename):
-        loss = self.evaluate_loss(x, y)
-        acc = self.evaluate_accuracy(x, y)
+    def _save_csv(self, filename, x_train, y_train, x_test, y_test):
+        train_loss = self.evaluate_loss(x_train, y_train)
+        train_acc = self.evaluate_accuracy(x_train, y_train)
+        test_loss = self.evaluate_loss(x_test, y_test)
+        test_acc = self.evaluate_accuracy(x_test, y_test)
         if not filename.endswith('.csv'):
             filename += '.csv'
         filename = self.root_dir / filename
         if not os.path.exists(filename):        # TODO: Can this pose a problem in parallel computing?
             file = open(filename, 'x')
-            file.write('loss,accuracy\n')
+            file.write('train loss,train accuracy,test loss,test accuracy\n')
         else:
             file = open(filename, 'a')
-        file.write(str(loss) + ',' + str(acc) + '\n')
+        file.write("{0},{1},{2},{3}\n".format(train_loss, train_acc, test_loss, test_acc))
         file.close()
 
     def _tensorboard_checkpoint(self, x_train, y_train, x_test=None, y_test=None):
@@ -239,7 +240,8 @@ class CvnnModel:
         for layer in self.shape:
             layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
 
-    def save(self, x, y):  # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
+    def save(self, x, y):
+        # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
         # TODO: TypeError: can't pickle _thread._local objects
         # https://github.com/tensorflow/tensorflow/issues/33283
         loss, acc = self.evaluate(x, y)
@@ -397,7 +399,8 @@ class CvnnModel:
         assert isinstance(batch_size, int) and batch_size > 0, "Epochs must be unsigned integer"
         assert learning_rate > 0, "Learning rate must be positive"
         if display_freq is None:
-            display_freq = int(x.shape[0] * x.shape[1] * ratio / batch_size)    # Match the epoch number
+            display_freq = int((x.shape[0] * ratio) / batch_size)    # Match the epoch number
+        # set_trace()
         categorical = (len(np.shape(y)) > 1)
         dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
         # TODO: Consider removing fast_mode
@@ -412,24 +415,24 @@ class CvnnModel:
                             self._get_str_evaluate(dataset.x_train, dataset.y_train,
                                                    dataset.x_test, dataset.y_test),   # TODO: use dataset directly
                             verbose, save_fit_filename)
-        epochs_done = self.epochs_done
-
+        epochs_before_fit = self.epochs_done
         for epoch in range(epochs):
-            self.epochs_done += 1
             # Randomly shuffle the training data at the beginning of each epoch
             dataset.shuffle()      # TODO: keras makes this optional with shuffle opt.
             for iteration in range(num_tr_iter):
                 x_batch, y_batch = dataset.get_next_batch()     # Get the next batch
                 # Save checkpoint if needed
-                if (self.epochs_done * batch_size + iteration) % display_freq == 0:
+                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
+                    # set_trace()
                     self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
                                          iteration=iteration, num_tr_iter=num_tr_iter,
-                                         total_epochs=epochs_done + epochs, fast_mode=fast_mode,
+                                         total_epochs=epochs_before_fit + epochs, fast_mode=fast_mode,
                                          verbose=verbose, save_fit_filename=save_fit_filename)
                 # Run optimization op (backpropagation)
                 self._start_graph_tensorflow()
                 self._train_step(x_batch, y_batch, learning_rate)
                 self._end_graph_tensorflow()
+            self.epochs_done += 1
         # After epochs
         self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test, fast_mode=True)
         self._manage_string("Train finished...\n" + self._get_str_evaluate(dataset.x_train, dataset.y_train,
@@ -510,7 +513,7 @@ if __name__ == '__main__':
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 5000
     n = 100
-    coef_correls_list = np.linspace(-0.9, 0.9, 4)  # 4 classes
+    coef_correls_list = np.linspace(-0.9, 0.9, 2)  # 4 classes
     param_list = []
     for coef in coef_correls_list:
         param_list.append([coef, 1, 2])
@@ -523,23 +526,22 @@ if __name__ == '__main__':
     else:
         rdtype = np.float64
     input_size = np.shape(dataset.x_train)[1]
-    hidden_size1 = 100
-    hidden_size2 = 40
+    hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
-    shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size1, activation='cart_relu',
+    shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size, activation='cart_relu',
                                  input_dtype=cdtype, output_dtype=cdtype),
-             layers.ComplexDense(input_size=hidden_size1, output_size=hidden_size2, activation='cart_relu',
-                                 input_dtype=cdtype, output_dtype=cdtype),
-             layers.ComplexDense(input_size=hidden_size2, output_size=output_size, activation='softmax_real',
+             layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(dataset.x, dataset.y, batch_size=100, epochs=50)
-    # model.plotter.plot_key(key='accuracy', showfig=True, savefig=False)
+    model.fit(dataset.x, dataset.y, batch_size=100, epochs=50, verbose=True)
+
     # Analyze data
-    df = da.confusion_matrix(model.call(dataset.x_test), dataset.y_test)
-    set_trace()
+    model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)
+    model.plotter.plot_key(key='accuracy', library='matplotlib', showfig=False, savefig=True)
+    # df = da.confusion_matrix(model.call(dataset.x_test), dataset.y_test)
+    # set_trace()
 
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
