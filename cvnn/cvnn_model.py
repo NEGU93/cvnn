@@ -160,17 +160,17 @@ class CvnnModel:
     # ===========
 
     def _run_checkpoint(self, x_train, y_train, x_test=None, y_test=None,
-                        iteration=0, num_tr_iter=0, total_epochs=0,
+                        step=0, num_tr_iter=0, total_epochs=0,
                         fast_mode=True, verbose=False, save_fit_filename=None):
         """
         Saves whatever needs to be saved (tensorboard, csv of train and test acc and loss, model weigths, etc.
-        :param x_train: Train data
-        :param y_train: Tran labels
+        :param x_train: Train data.
+        :param y_train: Tran labels.
         :param x_test: Test data (optional)
         :param y_test: Test labels (optional)
-        :param iteration: Step of the training.
-        :param num_tr_iter: Total number of iterations per epoch
-        :param total_epochs: Total epochs to be done on the training
+        :param step: step of the training.
+        :param num_tr_iter: Total number of iterations per epoch.
+        :param total_epochs: Total epochs to be done on the training.
         :param fast_mode: Prevents printing results and saving it to the txt. Takes precedence over verbose.
         :param verbose: Print the results on console to visualize the training step. (Unless fast_mode = True)
         :param save_fit_filename: Filename to save the training messages. If None, no information will be saved.
@@ -187,7 +187,7 @@ class CvnnModel:
             # Even if the training stopped in the middle by any reason. This way my result is saved many times (Backup!)
             # Other more efficient method would be to create a vector and save it at the end but I risk loosing info
             # if the training stops at any point.
-            self._save_csv(self.name + '_results_fit', x_train, y_train, x_test, y_test)
+            self._save_csv(self.name + '_results_fit', x_train, y_train, x_test, y_test, step)
         if self.save_model_checkpoints:             # Save model weights
             if x_test is not None:                  # Better to save the loss and acc of test
                 self.save(x_test, y_test)
@@ -196,10 +196,10 @@ class CvnnModel:
         if not fast_mode:       # Print checkpoint state (and maybe save to file)
             epoch_str = self._get_str_current_epoch(x_train, y_train,
                                                     self.epochs_done, total_epochs,
-                                                    iteration, num_tr_iter, x_test, y_test)
+                                                    step % num_tr_iter, num_tr_iter, x_test, y_test)
             self._manage_string(epoch_str, verbose, save_fit_filename)
 
-    def _save_csv(self, filename, x_train, y_train, x_test, y_test):
+    def _save_csv(self, filename, x_train, y_train, x_test, y_test, step):
         train_loss = self.evaluate_loss(x_train, y_train)
         train_acc = self.evaluate_accuracy(x_train, y_train)
         test_loss = self.evaluate_loss(x_test, y_test)
@@ -209,10 +209,11 @@ class CvnnModel:
         filename = self.root_dir / filename
         if not os.path.exists(filename):        # TODO: Can this pose a problem in parallel computing?
             file = open(filename, 'x')
-            file.write('train loss,train accuracy,test loss,test accuracy\n')
+            file.write('step,epoch,train loss,train accuracy,test loss,test accuracy\n')
         else:
             file = open(filename, 'a')
-        file.write("{0},{1},{2},{3}\n".format(train_loss, train_acc, test_loss, test_acc))
+        file.write("{0},{1},{2},{3},{4},{5}\n".format(step, self.epochs_done,
+                                                      train_loss, train_acc, test_loss, test_acc))
         file.close()
 
     def _tensorboard_checkpoint(self, x_train, y_train, x_test=None, y_test=None):
@@ -425,7 +426,8 @@ class CvnnModel:
                 if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
                     # set_trace()
                     self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
-                                         iteration=iteration, num_tr_iter=num_tr_iter,
+                                         step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
+                                         num_tr_iter=num_tr_iter,
                                          total_epochs=epochs_before_fit + epochs, fast_mode=fast_mode,
                                          verbose=verbose, save_fit_filename=save_fit_filename)
                 # Run optimization op (backpropagation)
@@ -434,7 +436,9 @@ class CvnnModel:
                 self._end_graph_tensorflow()
             self.epochs_done += 1
         # After epochs
-        self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test, fast_mode=True)
+        self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
+                             step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
+                             total_epochs=epochs_before_fit + epochs, fast_mode=True)
         self._manage_string("Train finished...\n" + self._get_str_evaluate(dataset.x_train, dataset.y_train,
                                                                            dataset.x_test, dataset.y_test),
                             verbose, save_fit_filename)
