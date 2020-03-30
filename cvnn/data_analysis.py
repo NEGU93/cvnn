@@ -961,8 +961,44 @@ def test_activation_function():
                      savefile="./results/Simuls_29-Feb/activation_function/several_train_loss_box_plot.html")
 
 
+def test_polar_mode():
+    several = SeveralMonteCarloComparison('polar mode',
+                                          x=['same variance', 'no correlation'],
+                                          paths=[
+                                              # "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/26Thursday/run-19h46m15/run_data",     # Base
+                                              "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/27Friday/run-05h56m03/run_data",         # Same Variance
+                                              "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/27Friday/run-16h08m23/run_data"          # No coef correl
+                                          ])
+    several.box_plot(key='test accuracy', showfig=False,
+                     savefile="./results/Simuls_29-Feb/polar_mode/several_test_accuracy_box_plot.html")
+    several.box_plot(key='test loss', showfig=False,
+                     savefile="./results/Simuls_29-Feb/polar_mode/several_test_loss_box_plot.html")
+    several.box_plot(key='train accuracy', showfig=False,
+                     savefile="./results/Simuls_29-Feb/polar_mode/several_train_accuracy_box_plot.html")
+    several.box_plot(key='train loss', showfig=False,
+                     savefile="./results/Simuls_29-Feb/polar_mode/several_train_loss_box_plot.html")
+
+
+def test_multi_class():
+    several = SeveralMonteCarloComparison('Multi-class',
+                                          x=['4', '10'],
+                                          paths=[
+                                              "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/28Saturday/run-02h19m46/run_data",   # 4
+                                              "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/28Saturday/run-21h28m38/run_data"      # 10
+                                          ])
+    several.box_plot(key='test accuracy', showfig=False,
+                     savefile="./results/Simuls_29-Feb/multi_class/several_test_accuracy_box_plot.html")
+    several.box_plot(key='test loss', showfig=False,
+                     savefile="./results/Simuls_29-Feb/multi_class/several_test_loss_box_plot.html")
+    several.box_plot(key='train accuracy', showfig=False,
+                     savefile="./results/Simuls_29-Feb/multi_class/several_train_accuracy_box_plot.html")
+    several.box_plot(key='train loss', showfig=False,
+                     savefile="./results/Simuls_29-Feb/multi_class/several_train_loss_box_plot.html")
+
+
 if __name__ == "__main__":
-    test_coef_correl()
+    # test_coef_correl()
+    test_polar_mode()
     # test_data_size()
     # test_learning_rate()
     # test_single_hidden_layer()
@@ -978,6 +1014,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.18'
+__version__ = '0.1.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
