@@ -10,6 +10,7 @@ import numpy as np
 import glob
 import re
 import os
+import sys
 from pathlib import Path
 from pdb import set_trace
 import scipy.stats as stats
@@ -166,7 +167,7 @@ def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
     y_label_pd = pd.Series(y_label_np, name='Actual')
     df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
     if filename is not None:
-        df.to_csv(filename, index=False)
+        df.to_csv(filename)
     # plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
     return df
 
@@ -302,7 +303,7 @@ class SeveralMonteCarloComparison:
 
 class Plotter:
 
-    def __init__(self, path, file_suffix=".csv"):
+    def __init__(self, path, file_suffix="_results_fit.csv"):
         """
         This class manages the plot of results for a model train.
         It opens the csv files (test and train) saved during training and plots results as wrt each step saved.
@@ -312,11 +313,15 @@ class Plotter:
         :file_suffix: (optional) let's you filter csv files to open only files that ends with the suffix.
             By default it opens every csv file it finds.
         """
-        assert os.path.exists(path)
+        if not os.path.exists(path):
+            print("Plotter::__init__: path {} does not exist".format(path))
+            sys.exit(-1)
         self.path = Path(path)
+        if not file_suffix.endswith(".csv"):
+            file_suffix += ".csv"
+        self.file_suffix = file_suffix
         self.pandas_list = []
         self.labels = []
-        self.file_suffix = file_suffix
         self._csv_to_pandas()
 
     def _csv_to_pandas(self):
@@ -328,14 +333,14 @@ class Plotter:
         self.pandas_list = []
         self.labels = []
         files = os.listdir(self.path)
-        files.sort()  # Respect the colors for the plot of montecarlo.
-        # For ComplexVsReal Montecarlo it has first the Complex model and SECOND the real one.
+        files.sort()  # Respect the colors for the plot of Monte Carlo.
+        # For ComplexVsReal Monte Carlo it has first the Complex model and SECOND the real one.
         # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
         # TODO: Think a better way without loosing generality (This sort is all done because of the ComplexVsReal case)
         for file in files:
             if file.endswith(self.file_suffix):
                 self.pandas_list.append(pd.read_csv(self.path / file))
-                self.labels.append(re.sub(self.file_suffix + '$', '', file))
+                self.labels.append(re.sub(self.file_suffix + '$', '', file).replace('_', ' '))
 
     def reload_data(self):
         """
@@ -375,7 +380,8 @@ class Plotter:
         str_to_match = "_metadata.txt"
         for file in os.listdir(self.path):
             if file.endswith(str_to_match):
-                return re.sub(str_to_match + "$", '', file)  # See that there is no need to open the file
+                # See that there is no need to open the file
+                return re.sub(str_to_match + "$", '', file).replace('_', ' ')
         return "Name not found"
 
     # ====================
@@ -386,7 +392,7 @@ class Plotter:
         if reload:
             self._csv_to_pandas()
         assert len(self.pandas_list) != 0
-        for key in self.pandas_list[0]:
+        for key in ["loss", "accuracy"]:
             self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
     def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
@@ -404,17 +410,18 @@ class Plotter:
         ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         title = None
         for i, data in enumerate(self.pandas_list):
-            if key in data:
-                if title is not None:
-                    title += " vs. " + self.labels[i]
-                else:
-                    title = self.labels[i]
-                if index_loc is not None:
-                    if 'stats' in data.keys():
-                        data = data[data['stats'] == 'mean']
-                    else:
-                        print("Warning: Trying to index an array without index")
-                ax.plot(data[key], 'o-', label=self.labels[i].replace('_', ' '))
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
+            for k in data:
+                if key in k:
+                    if index_loc is not None:
+                        if 'stats' in data.keys():
+                            data = data[data['stats'] == 'mean']
+                        else:
+                            print("Warning: Trying to index an array without index")
+                    ax.plot(data[k], 'o-', label=(k.replace(key, '') + self.labels[i]).replace('_', ' '))
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
@@ -423,58 +430,63 @@ class Plotter:
         if showfig:
             fig.show()
         if savefig:
-            fig.savefig(str(self.path / key) + extension, transparent=True)
+            fig.savefig(str(self.path / key) + "_matplotlib" + extension, transparent=True)
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None, extension=".svg"):
         fig = go.Figure()
         annotations = []
-        title = ''
+        title = None
         for i, data in enumerate(self.pandas_list):
-            if key in data:
-                if title is not None:
-                    title += " vs. " + self.labels[i]
-                else:
-                    title = self.labels[i]
-                if index_loc is not None:
-                    if 'stats' in data.keys():
-                        data = data[data['stats'] == 'mean']
-                    else:
-                        print("Warning: Trying to index an array without index")
-                x = list(range(len(data[key])))
-                fig.add_trace(go.Scatter(x=x, y=data[key], mode='lines', name=self.labels[i].replace('_', ' '),
-                                         line_color=DEFAULT_PLOTLY_COLORS[i]))
-                # Add points
-                fig.add_trace(go.Scatter(x=[x[-1]],
-                                         y=[data[key].to_list()[-1]],
-                                         mode='markers',
-                                         name='last value',
-                                         marker_color=DEFAULT_PLOTLY_COLORS[i]))
-                # Max/min points
-                func_value = func(data[key])
-                # ATTENTION! this will only give you first occurrence
-                func_index = data[key].to_list().index(func_value)
-                if func_index != len(data[key]) - 1:
-                    fig.add_trace(go.Scatter(x=[func_index],
-                                             y=[func_value],
+            if title is not None:
+                title += " vs. " + self.labels[i]
+            else:
+                title = self.labels[i]
+            j = 0
+            for k in data:
+                if key in k:
+                    color = DEFAULT_PLOTLY_COLORS[j*len(self.pandas_list) + i]
+                    j += 1
+                    if index_loc is not None:
+                        if 'stats' in data.keys():
+                            data = data[data['stats'] == 'mean']
+                        else:
+                            print("Warning: Trying to index an array without index")
+                    x = list(range(len(data[k])))
+                    fig.add_trace(go.Scatter(x=x, y=data[k], mode='lines',
+                                             name=(k.replace(key, '') + self.labels[i]).replace('_', ' '),
+                                             line_color=color))
+                    # Add points
+                    fig.add_trace(go.Scatter(x=[x[-1]],
+                                             y=[data[k].to_list()[-1]],
                                              mode='markers',
-                                             name=func.__name__,
-                                             text=['{0:.2f}%'.format(func_value)],
-                                             textposition="top center",
-                                             marker_color=DEFAULT_PLOTLY_COLORS[i]))
-                    # Min annotations
-                    annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
+                                             name='last value',
+                                             marker_color=color))
+                    # Max/min points
+                    func_value = func(data[k])
+                    # ATTENTION! this will only give you first occurrence
+                    func_index = data[k].to_list().index(func_value)
+                    if func_index != len(data[k]) - 1:
+                        fig.add_trace(go.Scatter(x=[func_index],
+                                                 y=[func_value],
+                                                 mode='markers',
+                                                 name=func.__name__,
+                                                 text=['{0:.2f}%'.format(func_value)],
+                                                 textposition="top center",
+                                                 marker_color=color))
+                        # Min annotations
+                        annotations.append(dict(xref="x", yref="y", x=func_index, y=func_value,
+                                                xanchor='left', yanchor='middle',
+                                                text='{0:.2f}'.format(func_value),
+                                                font=dict(family='Arial',
+                                                          size=14),
+                                                showarrow=False, ay=-40))
+                    # Right annotations
+                    annotations.append(dict(xref='paper', x=0.95, y=data[k].to_list()[-1],
                                             xanchor='left', yanchor='middle',
-                                            text='{0:.2f}'.format(func_value),
+                                            text='{0:.2f}'.format(data[k].to_list()[-1]),
                                             font=dict(family='Arial',
-                                                      size=14),
-                                            showarrow=False, ay=-40))
-                # Right annotations
-                annotations.append(dict(xref='paper', x=0.95, y=data[key].to_list()[-1],
-                                        xanchor='left', yanchor='middle',
-                                        text='{0:.2f}'.format(data[key].to_list()[-1]),
-                                        font=dict(family='Arial',
-                                                  size=16),
-                                        showarrow=False))
+                                                      size=16),
+                                            showarrow=False))
         title += " " + key
         fig.update_layout(annotations=annotations,
                           title=title,
@@ -483,7 +495,7 @@ class Plotter:
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(filename=str(self.path / key) + extension)
+            fig.write_image(str(self.path / key) + "_plotly" + extension)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -492,19 +504,15 @@ class MonteCarloPlotter(Plotter):
 
     def __init__(self, path):
         file_suffix = "_statistical_result.csv"
-        self.filter_keys = ['step', 'stats']
         super().__init__(path, file_suffix=file_suffix)
 
     def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
-        if reload:
-            self._csv_to_pandas()
-        assert len(self.pandas_list) != 0
-        for key in self.pandas_list[0]:
-            if key not in self.filter_keys:
-                self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
+        # Rename this function to change index_loc default value
+        super().plot_key(reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
     def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True,
                  index_loc='mean'):
+        # Rename this function to change index_loc default value
         super().plot_key(key, reload, library, showfig, savefig, index_loc)
 
     def plot_distribution(self, key='test accuracy', showfig=False, savefig=True, title='', full_border=True):
@@ -1010,10 +1018,17 @@ if __name__ == "__main__":
     # path = "/home/barrachina/Documents/cvnn/montecarlo/2020/03March/16Monday/run-11h42m59/run_data"
     # monte_carlo_analyzer = MonteCarloAnalyzer(df=None, path=path)
     # monte_carlo_analyzer.do_all()
-
+    path = "W:/HardDiskDrive/Documentos/GitHub/cvnn/montecarlo/2020/03March/26Thursday/run-18h16m02"
+    plotter = MonteCarloPlotter(path=path)
+    plotter.plot_key(key='accuracy')
+    plotter.plot_key(key='accuracy', library='matplotlib')
+    """
+    path = "W:/HardDiskDrive/Documentos/GitHub/cvnn/log/2020/03March/27Friday/run-18h47m07"
+    plotter = Plotter(path=path)
+    plotter.plot_key(key='accuracy')"""
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.19'
+__version__ = '0.1.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

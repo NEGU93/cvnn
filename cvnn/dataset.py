@@ -327,6 +327,7 @@ class GeneratorDataset(ABC, Dataset):
         This class will first generate x and y with it's own defined method and then initialize a conventional dataset
         """
         x, y = self._generate_data(m, n, num_classes)
+        x, y = randomize(x, y)
         Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
 
     @abstractmethod
@@ -616,6 +617,6 @@ if __name__ == "__main__":
     dataset.plot_data(overlapped=True, save_path="./data/tests/", showfig=False, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.14'
+__version__ = '0.1.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
