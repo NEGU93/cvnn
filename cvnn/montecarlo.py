@@ -4,7 +4,7 @@ from cvnn.dataset import Dataset
 from cvnn.cvnn_model import CvnnModel
 from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix
 from cvnn.layers import ComplexDense
-from utils import create_folder, transform_to_real, randomize
+from cvnn.utils import create_folder, transform_to_real, randomize
 import tensorflow as tf
 import pandas as pd
 import copy
@@ -27,7 +27,8 @@ class MonteCarlo:
         self.models.append(model)
 
     def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, ratio=0.8,
-            iterations=100, learning_rate=0.01, epochs=10, batch_size=100, shuffle=False, debug=False, display_freq=160):
+            iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
+            shuffle=False, debug=False, display_freq=160):
         x, y = randomize(x, y)
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
@@ -51,7 +52,7 @@ class MonteCarlo:
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=not debug, save_to_file=False, display_freq=display_freq)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
-                                                   test_model.plotter.get_full_pandas_dataframe()])
+                                                   test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
                     dataset = dp.Dataset(x_fit, y, ratio=ratio)
                     self.confusion_matrix[i]["name"] = test_model.name

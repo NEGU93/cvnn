@@ -366,12 +366,12 @@ class Plotter:
 
         result = pd.DataFrame({
             'network': [self.get_net_name()] * length,
-            'step': list(range(length)),
+            # 'step': list(range(length)), # No longer needed, already added in base file
             'path': [self.path] * length
         })
 
         for data_frame, data_label in zip(self.pandas_list, self.labels):
-            data_frame.columns = [data_label + " " + str(col) for col in data_frame.columns]
+            # data_frame.columns = [data_label + " " + str(col) for col in data_frame.columns]
             # concatenated = pd.concat(self.pandas_list, keys=self.labels)
             result = pd.concat([result, data_frame], axis=1, sort=False)
         return result
@@ -875,6 +875,6 @@ class MonteCarloAnalyzer:
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.20'
+__version__ = '0.1.21'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
