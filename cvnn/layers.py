@@ -52,9 +52,36 @@ class ComplexLayer(layers.Layer, ABC):
 
 
 class ComplexDense(ComplexLayer):
+    """
+    Fully connected complex-valued layer
+    Implements the operation:
+        activation(dot(input, weights) + bias)
+    - where data types can be either complex or real.
+    - activation is the element-wise activation function passed as the activation argument,
+    - weights is a matrix created by the layer
+    - bias is a bias vector created by the layer
+    """
 
     def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
                  weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros):
+        """
+        Initializer of the Dense layer
+        :param input_size: Input size of the layer  # TODO: make it compulsory only for the first layer.
+        :param output_size: Output size of the layer
+        :param activation: Activation function to be used.
+            Can be either the function from cvnn.activation or tensorflow.python.keras.activations
+            or a string as listed in act_dispatcher
+        :param input_dtype: data type of the input. Default: np.complex64
+            Supported data types:
+                - np.complex64
+                - np.float32
+        :param output_dtype: data type of the output function.
+            Default: np.complex64   # TODO: Shall I make it not necessary? Let the activation function decide it.
+        :param weight_initializer: Initializer for the weights.
+            Default: tensorflow.keras.initializers.GlorotUniform
+        :param bias_initializer: Initializer fot the bias.
+            Default: tensorflow.keras.initializers.Zeros
+        """
         super(ComplexDense, self).__init__(input_size, output_size, input_dtype, output_dtype)
         self.output_dtype = output_dtype
         self.activation = activation

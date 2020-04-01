@@ -1,6 +1,6 @@
-﻿.. _activation_functions:
-Activation Functions
+﻿Activation Functions
 ====================
+.. _activation_functions:
 
 It is recommended to only use the activation functions using::
 
@@ -33,8 +33,7 @@ It is recommended to only use the activation functions using::
 
     :param z: Input tensor.
     :return: Real-valued tensor of the applied activation function
-    
-
+   
 .. py:method:: linear(z)
 
 	Does not apply any activation function. It just outputs the input.

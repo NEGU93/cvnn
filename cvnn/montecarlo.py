@@ -37,10 +37,9 @@ class MonteCarlo:
                 self.confusion_matrix.append({"name": "model_name", "matrix": pd.DataFrame()})
         self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
                                  data_summary)
-        os.makedirs(self.monte_carlo_analyzer.path / "checkpoints/", exist_ok=True)
         for it in range(iterations):
             print("Iteration {}/{}".format(it + 1, iterations))
-            if shuffle:     # shuffle all data at each iteration
+            if shuffle:  # shuffle all data at each iteration
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
                 if model.is_complex():
@@ -117,20 +116,26 @@ class RealVsComplex(MonteCarlo):
                                  save_csv_checkpoints=complex_model.save_csv_checkpoints))
 
 
-def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
+def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
                    shape_raw=None, activation='cart_relu', debug=False, polar=False):
     # Get parameters
-    if shape_raw is None:
-        shape_raw = [100, 40]
-    if param_list is None:
-        param_list = [
-            [0.5, 1, 2],
-            [-0.5, 1, 2]
-        ]
     if display_freq is None:
         display_freq = int(m * len(param_list) * 0.8 / batch_size)
-    dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+    if shape_raw is None:
+        shape_raw = [100, 40]
+    if open_dataset:
+        assert param_list is None, "If the parameter to open_dataset is passed, giving param_list makes no sense"
+        assert m == 10000, "If the parameter to open_dataset is passed, giving m makes no sense"
+        assert n == 128, "If the parameter to open_dataset is passed, giving n makes no sense"
+        dataset = dp.OpenDataset(open_dataset)
+    else:
+        if param_list is None:
+            param_list = [
+                [0.5, 1, 2],
+                [-0.5, 1, 2]
+            ]
+        dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
 
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
@@ -149,7 +154,11 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network)
+    dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
 
+
+if __name__ == "__main__":
+    run_montecarlo(m=5000, shape_raw=[64], epochs=50, iterations=5, debug=True)

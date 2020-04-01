@@ -13,5 +13,6 @@ Content
 	:maxdepth: 2
 
 	cvnn
+	layers
 	act_fun
 	utils

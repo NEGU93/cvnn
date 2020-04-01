@@ -34,6 +34,15 @@ def create_folder(root_path, now=None):
     return path
 
 
+def cast_to_path(path):
+    if isinstance(path, str):
+        path = Path(path)
+    elif not isinstance(path, Path):
+        print("Error: OpenDataset::__init__: path datatype not recognized")
+        sys.exit(-1)
+    return path
+
+
 def get_func_name(fun):
     """
     Returns the name of a function passed as parameter being either a function itself or a string with the function name

@@ -110,15 +110,22 @@ class Dataset:
         self.x_train, self.y_train = randomize(self.x_train, self.y_train)
         self._iteration = 0
 
-    def save_data(self):
+    def save_data(self, save_path=None):
         """
         Saves data into the specified path as a numpy array.
         """
-        save_path = create_folder(self.save_path)
-        np.save(save_path / "data.npy", self.x)
-        np.save(save_path / "labels.npy", self.y)
-        # Save also an image of the example
-        self.plot_data(overlapped=True, showfig=False, save_path=save_path)
+        if save_path is None:
+            save_path = create_folder(self.save_path)
+        else:
+            os.makedirs(save_path, exist_ok=True)
+            save_path = Path(save_path)
+        if os.path.exists(save_path):
+            np.save(save_path / "data.npy", self.x)
+            np.save(save_path / "labels.npy", self.y)
+            # Save also an image of the example
+            self.plot_data(overlapped=True, showfig=False, save_path=save_path)
+        else:
+            print("Error: Dataset::save_data: Path {} does not exist".format(save_path))
 
     def summary(self, res_str):
         """
@@ -165,9 +172,9 @@ class Dataset:
         if save_path is not None:
             # https://plot.ly/python/configuration-options/
             os.makedirs(save_path, exist_ok=True)
-            plotly.offline.plot(fig, filename=save_path + "data_example.html", config={'editable': True},
+            plotly.offline.plot(fig, filename=str(save_path / "data_example.html"), config={'editable': True},
                                 auto_open=showfig)
-            fig.write_image(save_path + "data_example" + extension)
+            fig.write_image(str(save_path / "data_example") + extension)
         elif showfig:
             fig.show(config={'scrollZoom': True, 'editable': True})
 
@@ -298,6 +305,7 @@ class OpenDataset(Dataset):
     """
 
     def __init__(self, path, num_classes=None, ratio=0.8, savedata=False):
+        path = cast_to_path(path)
         x, y = self.load_dataset(path)
         super().__init__(x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
 
@@ -305,8 +313,8 @@ class OpenDataset(Dataset):
     def load_dataset(path):
         try:
             # print(os.listdir("../data"))
-            x = np.load(path + "data.npy")
-            y = np.load(path + "labels.npy")
+            x = np.load(path / "data.npy")
+            y = np.load(path / "labels.npy")
         except FileNotFoundError:
             sys.exit("OpenDataset::load_dataset: Files data.npy and labels.npy not found in " + path)
         return x, y
@@ -602,19 +610,16 @@ if __name__ == "__main__":
     # create_subplots_of_graph()
     m = 5
     n = 100
-    cov_matr_list = [
+    """cov_matr_list = [
         [[1, 0.75], [0.75, 1]],
         [[1, -0.75], [-0.75, 1]]
     ]
-    params = [
-        [3, 1+1j],
-        [3, 1-1j]
-    ]
-    dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)
-    # dataset = ComplexNormalVariable(m, n, params, debug=True)
-    # dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.5, 1, 1], [-0.5, 1, 1]])
-    # dataset = OpenDataset("/home/barrachina/Documents/cvnn/data/2020/03March/06Friday/run-15h16m42/")
-    dataset.plot_data(overlapped=True, save_path="./data/tests/", showfig=False, library="matplotlib")
+    dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)"""
+    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.5, 1, 1], [-0.5, 1, 1]])
+    dataset.save_data("./data/MLSP/")
+
+    dataset = OpenDataset("./data/MLSP/")
+    dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.15'
