@@ -608,8 +608,8 @@ def create_subplots_of_graph():
 
 if __name__ == "__main__":
     # create_subplots_of_graph()
-    m = 5
-    n = 100
+    m = 10000
+    n = 128
     """cov_matr_list = [
         [[1, 0.75], [0.75, 1]],
         [[1, -0.75], [-0.75, 1]]
@@ -622,6 +622,6 @@ if __name__ == "__main__":
     dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.15'
+__version__ = '0.1.16'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
