@@ -6,6 +6,9 @@ import sys
 import os
 from os.path import join
 from scipy.io import loadmat
+# To test logger:
+import cvnn
+import logging
 
 
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
@@ -29,7 +32,9 @@ def create_folder(root_path, now=None):
     """
     if now is None:
         now = datetime.today()
-    path = Path(__file__).parents[1].absolute() / Path(root_path + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
+    # path = Path(__file__).parents[1].absolute() / Path(root_path + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
+    # Last line was to create inside cvnn. I prefer now to save stuff on each project folder and not on libraries folder
+    path = Path(root_path + now.strftime("%Y/%m%B/%d%A/run-%Hh%Mm%S/"))
     os.makedirs(path, exist_ok=True)        # Do this not to have a problem if I run in parallel
     return path
 
@@ -130,6 +135,11 @@ def tensorflow_argmax_np_equivalent(x, num_classes):
 
 def compute_accuracy(x, y):
     return np.average(np.equal(x, y).all(axis=1))
+
+
+if __name__ == "__main__":
+    logger = logging.getLogger(cvnn.__name__)
+    logger.warning("Testing logger")
 
 
 __author__ = 'J. Agustin BARRACHINA'

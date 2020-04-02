@@ -23,12 +23,12 @@ class MonteCarlo:
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
 
     def add_model(self, model):
-        assert model.save_csv_checkpoints
+        assert model.save_csv_checkpoints       # Without checkpoints I have no results of the monte carlo
         self.models.append(model)
 
     def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, ratio=0.8,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
-            shuffle=False, debug=False, display_freq=160):
+            shuffle=False, debug=False, display_freq=160, checkpoints=False):
         x, y = randomize(x, y)
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
@@ -49,7 +49,7 @@ class MonteCarlo:
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y, ratio=ratio,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
-                               verbose=debug, fast_mode=not debug, save_to_file=False, display_freq=display_freq)
+                               verbose=debug, fast_mode=False, save_to_file=False, display_freq=display_freq)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
@@ -58,8 +58,9 @@ class MonteCarlo:
                     self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
                                                                     test_model.get_confusion_matrix(dataset.x_test,
                                                                                                     dataset.y_test)))
-            # Save checkpoint in case Monte Carlo stops in the middle
-            self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
+            if checkpoints:
+                # Save checkpoint in case Monte Carlo stops in the middle
+                self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
         conf_mat = None
         if do_conf_mat:
@@ -120,8 +121,6 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
                    shape_raw=None, activation='cart_relu', debug=False, polar=False):
     # Get parameters
-    if display_freq is None:
-        display_freq = int(m * len(param_list) * 0.8 / batch_size)
     if shape_raw is None:
         shape_raw = [100, 40]
     if open_dataset:
@@ -136,6 +135,8 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
                 [-0.5, 1, 2]
             ]
         dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+    if display_freq is None:
+        display_freq = int(m * dataset.num_classes * 0.8 / batch_size)
 
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input

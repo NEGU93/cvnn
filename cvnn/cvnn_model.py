@@ -8,6 +8,13 @@ from itertools import count     # To count the number of times fit is called
 import tensorflow as tf
 from datetime import datetime
 from pdb import set_trace
+import tqdm
+# from keras_tqdm import TQDMCallback
+# from tqdm.keras import TqdmCallback
+import progressbar
+import time
+# from tqdm import tqdm
+from time import sleep
 
 # My own module!
 import cvnn
@@ -72,6 +79,7 @@ class CvnnModel:
         # Logging parameters
         logging.getLogger('tensorflow').disabled = True
         self.logger = logging.getLogger(cvnn.__name__)
+        self.logger.error("Trying an error message")
 
         # Folder management for logs
         self.now = datetime.today()
@@ -171,14 +179,14 @@ class CvnnModel:
         :param step: step of the training.
         :param num_tr_iter: Total number of iterations per epoch.
         :param total_epochs: Total epochs to be done on the training.
-        :param fast_mode: Prevents printing results and saving it to the txt. Takes precedence over verbose.
+        :param fast_mode:
         :param verbose: Print the results on console to visualize the training step. (Unless fast_mode = True)
         :param save_fit_filename: Filename to save the training messages. If None, no information will be saved.
         :return: None
         """
         if (x_test is not None and y_test is None) or (y_test is not None and x_test is None):
-            # TODO: Write this in a more complex logic. XOR?
-            print("CVNN::_run_checkpoint: Either both x_test and y_test are None or neither")
+            # TODO: Write this in a more legible logic. XOR?
+            self.logger.error("Either both x_test and y_test are None or neither")
             sys.exit(-1)
         if self.tensorboard:    # Save tensorboard data
             self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
@@ -187,13 +195,14 @@ class CvnnModel:
             # Even if the training stopped in the middle by any reason. This way my result is saved many times (Backup!)
             # Other more efficient method would be to create a vector and save it at the end but I risk loosing info
             # if the training stops at any point.
+            # TODO: new meaning for fast mode. I can make it either save to csv or pandas according to fast mode
             self._save_csv(self.name + '_results_fit', x_train, y_train, x_test, y_test, step)
         if self.save_model_checkpoints:             # Save model weights
             if x_test is not None:                  # Better to save the loss and acc of test
                 self.save(x_test, y_test)
             else:
                 self.save(x_train, y_train)         # If I have no info of the test then save the values of the train
-        if not fast_mode:       # Print checkpoint state (and maybe save to file)
+        if verbose or save_fit_filename is not None:       # I first check if it makes sense to get the string
             epoch_str = self._get_str_current_epoch(x_train, y_train,
                                                     self.epochs_done, total_epochs,
                                                     step % num_tr_iter, num_tr_iter, x_test, y_test)
@@ -258,6 +267,130 @@ class CvnnModel:
             # for lay in self.shape:
             #    pickle.dump(lay.__dict__, saver)
         # CvnnModel._loadtolocal(self)
+
+    # ====================
+    #          Train
+    # ====================
+
+    @run_once
+    def _start_graph_tensorflow(self):
+        # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
+        # Bracket the function call with
+        # tf.summary.trace_on() and tf.summary.trace_export().
+        # https://stackoverflow.com/questions/4103773/efficient-way-of-having-a-function-only-execute-once-in-a-loop
+        tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
+
+    @run_once
+    def _end_graph_tensorflow(self):
+        with self.graph_writer.as_default():
+            tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
+
+    # Add '@tf.function' to accelerate the code by a lot!
+    @tf.function
+    def _train_step(self, x_train_batch, y_train_batch, learning_rate):
+        """
+        Performs one step of the training
+        :param x_train_batch: input
+        :param y_train_batch: labels
+        :param learning_rate: learning rate fot the gradient descent
+        :return: None
+        """
+        with tf.GradientTape() as tape:
+            with tf.name_scope("Forward_Phase") as scope:
+                x_called = self.call(x_train_batch)  # Forward mode computation
+            # Loss function computation
+            with tf.name_scope("Loss") as scope:
+                current_loss = self._apply_loss(y_train_batch, x_called)  # Compute loss
+
+        # Calculating gradient
+        with tf.name_scope("Gradient") as scope:
+            variables = []
+            for lay in self.shape:
+                variables.extend(lay.trainable_variables)
+            gradients = tape.gradient(current_loss, variables)  # Compute gradients
+            assert all(g is not None for g in gradients)
+
+        # Backpropagation
+        with tf.name_scope("Optimizer") as scope:
+            for i, val in enumerate(variables):
+                val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
+
+    def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
+            verbose=True, display_freq=None, fast_mode=False, save_to_file=True):
+        """
+        Trains the model for a fixed number of epochs (iterations on a dataset).
+        :param x: Input data.
+        :param y: Labels
+        :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
+            Default: 0.8 (80% as train set and 20% as validation set)
+        :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
+        :param epochs: (uint) Number of epochs to do.
+        :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
+        :param verbose: (Boolean) Print results of the training while training
+        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
+            If None (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
+        :param fast_mode: (Boolean)
+        :param save_to_file: (Boolean) save a txt with the information of the fit
+                    (same as what will be printed if "verbose")
+        :return: None
+        """
+        assert isinstance(epochs, int) and epochs > 0, "Epochs must be unsigned integer"
+        assert isinstance(batch_size, int) and batch_size > 0, "Epochs must be unsigned integer"
+        assert learning_rate > 0, "Learning rate must be positive"
+        if display_freq is None:
+            display_freq = int((x.shape[0] * ratio) / batch_size)  # Match the epoch number
+        # set_trace()
+        categorical = (len(np.shape(y)) > 1)
+        dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
+        fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
+        save_fit_filename = None
+        if save_to_file:
+            save_fit_filename = "fit_" + str(fit_count) + ".txt"
+
+        num_tr_iter = int(dataset.x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
+        self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
+                            "\nEpochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
+                            self._get_str_evaluate(dataset.x_train, dataset.y_train,
+                                                   dataset.x_test, dataset.y_test),  # TODO: use dataset directly
+                            verbose, save_fit_filename)
+        epochs_before_fit = self.epochs_done
+        for epoch in range(epochs):
+            if verbose:
+                tf.print("\nEpoch {0}/{1}".format(epoch, epochs))
+            # Randomly shuffle the training data at the beginning of each epoch
+            dataset.shuffle()  # TODO: keras makes this optional with shuffle opt.
+            """
+            progress = progressbar.ProgressBar(maxval=num_tr_iter,
+                                               widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+            for iteration in progress(range(num_tr_iter)):
+            """
+            # for iteration in tqdm.trange(num_tr_iter, disable=not verbose):
+            if verbose:
+                progbar = tf.keras.utils.Progbar(num_tr_iter)
+            for iteration in range(num_tr_iter):
+                x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
+                if verbose:
+                    progbar.update(iteration+1)
+                # Save checkpoint if needed
+                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
+                    self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
+                                         step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
+                                         num_tr_iter=num_tr_iter,
+                                         total_epochs=epochs_before_fit + epochs, fast_mode=fast_mode,
+                                         verbose=False, save_fit_filename=save_fit_filename)
+                # Run optimization op (backpropagation)
+                self._start_graph_tensorflow()
+                self._train_step(x_batch, y_batch, learning_rate)
+                self._end_graph_tensorflow()
+            self.epochs_done += 1
+        # After epochs
+        self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
+                             step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
+                             total_epochs=epochs_before_fit + epochs, fast_mode=True)
+        self._manage_string("Train finished...\n" + self._get_str_evaluate(dataset.x_train, dataset.y_train,
+                                                                           dataset.x_test, dataset.y_test),
+                            verbose, save_fit_filename)
+        self.plotter.reload_data()
 
     """
     @classmethod
@@ -330,120 +463,6 @@ class CvnnModel:
             filename = self.root_dir / "categorical.csv"
         return da.confusion_matrix(self.call(x), y, filename=filename)
 
-    # ====================
-    #          Train 
-    # ====================
-
-    @run_once
-    def _start_graph_tensorflow(self):
-        # https://github.com/tensorflow/agents/issues/162#issuecomment-512553963
-        # Bracket the function call with
-        # tf.summary.trace_on() and tf.summary.trace_export().
-        # https://stackoverflow.com/questions/4103773/efficient-way-of-having-a-function-only-execute-once-in-a-loop
-        tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
-
-    @run_once
-    def _end_graph_tensorflow(self):
-        with self.graph_writer.as_default():
-            tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
-
-    # Add '@tf.function' to accelerate the code by a lot!
-    @tf.function
-    def _train_step(self, x_train_batch, y_train_batch, learning_rate):
-        """
-        Performs one step of the training
-        :param x_train_batch: input
-        :param y_train_batch: labels
-        :param learning_rate: learning rate fot the gradient descent
-        :return: None
-        """
-        with tf.GradientTape() as tape:
-            with tf.name_scope("Forward_Phase") as scope:
-                x_called = self.call(x_train_batch)     # Forward mode computation
-            # Loss function computation
-            with tf.name_scope("Loss") as scope:
-                current_loss = self._apply_loss(y_train_batch, x_called)  # Compute loss
-
-        # Calculating gradient
-        with tf.name_scope("Gradient") as scope:
-            variables = []
-            for lay in self.shape:
-                variables.extend(lay.trainable_variables)
-            gradients = tape.gradient(current_loss, variables)  # Compute gradients
-            assert all(g is not None for g in gradients)
-
-        # Backpropagation
-        with tf.name_scope("Optimizer") as scope:
-            for i, val in enumerate(variables):
-                val.assign(val - learning_rate * gradients[i])      # TODO: For the moment the optimization is only GD
-
-    def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
-            verbose=True, display_freq=None, fast_mode=False, save_to_file=True):
-        """
-        Trains the model for a fixed number of epochs (iterations on a dataset).
-        :param x: Input data.
-        :param y: Labels
-        :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
-            Default: 0.8 (80% as train set and 20% as validation set)
-        :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
-        :param epochs: (uint) Number of epochs to do.
-        :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
-        :param verbose: (Boolean) Print results of the training while training
-        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
-            If None (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
-        :param fast_mode: (Boolean) Takes precedence over "verbose" and "save_to_file"
-        :param save_to_file: (Boolean) save a txt with the information of the fit
-                    (same as what will be printed if "verbose")
-        :return: None
-        """
-        assert isinstance(epochs, int) and epochs > 0, "Epochs must be unsigned integer"
-        assert isinstance(batch_size, int) and batch_size > 0, "Epochs must be unsigned integer"
-        assert learning_rate > 0, "Learning rate must be positive"
-        if display_freq is None:
-            display_freq = int((x.shape[0] * ratio) / batch_size)    # Match the epoch number
-        # set_trace()
-        categorical = (len(np.shape(y)) > 1)
-        dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
-        # TODO: Consider removing fast_mode
-        fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
-        save_fit_filename = None
-        if save_to_file:
-            save_fit_filename = "fit_" + str(fit_count) + ".txt"
-
-        num_tr_iter = int(dataset.x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
-        self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
-                            "\nEpochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
-                            self._get_str_evaluate(dataset.x_train, dataset.y_train,
-                                                   dataset.x_test, dataset.y_test),   # TODO: use dataset directly
-                            verbose, save_fit_filename)
-        epochs_before_fit = self.epochs_done
-        for epoch in range(epochs):
-            # Randomly shuffle the training data at the beginning of each epoch
-            dataset.shuffle()      # TODO: keras makes this optional with shuffle opt.
-            for iteration in range(num_tr_iter):
-                x_batch, y_batch = dataset.get_next_batch()     # Get the next batch
-                # Save checkpoint if needed
-                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
-                    # set_trace()
-                    self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
-                                         step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
-                                         num_tr_iter=num_tr_iter,
-                                         total_epochs=epochs_before_fit + epochs, fast_mode=fast_mode,
-                                         verbose=verbose, save_fit_filename=save_fit_filename)
-                # Run optimization op (backpropagation)
-                self._start_graph_tensorflow()
-                self._train_step(x_batch, y_batch, learning_rate)
-                self._end_graph_tensorflow()
-            self.epochs_done += 1
-        # After epochs
-        self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
-                             step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
-                             total_epochs=epochs_before_fit + epochs, fast_mode=True)
-        self._manage_string("Train finished...\n" + self._get_str_evaluate(dataset.x_train, dataset.y_train,
-                                                                           dataset.x_test, dataset.y_test),
-                            verbose, save_fit_filename)
-        self.plotter.reload_data()
-
     # ================
     # Managing strings
     # ================
@@ -472,21 +491,19 @@ class CvnnModel:
         :return: None
         """
         if verbose:
-            print(string, end='')
+            self.logger.info(string)
         if filename is not None:
             filename = self.root_dir / filename
             try:
                 with open(filename, mode) as file:
                     file.write(string)
             except FileExistsError:  # TODO: Check if this is the actual error
-                logging.error("CvnnModel::manage_string: Same file already exists. Aborting to not override results" +
-                              str(filename))
+                logging.error("Same file already exists. Aborting to not override results" + str(filename))
             except FileNotFoundError:
-                logging.error("CvnnModel::manage_string: No such file or directory: " + self.root_dir)
+                logging.error("No such file or directory: " + self.root_dir)
                 sys.exit(-1)
 
     def _get_str_evaluate(self, x_train, y_train, x_test, y_test):
-        # TODO: Use the print function of JG
         loss, acc = self.evaluate(x_train, y_train)
         ret_str = "---------------------------------------------------------\n"
         ret_str += "Training Loss: {0:.4f}, Training Accuracy: {1:.2f} %\n".format(loss, acc * 100)
@@ -539,7 +556,14 @@ if __name__ == '__main__':
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
+    start = time.time()
     model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True)
+    end = time.time()
+    print(end - start)
+    # start = time.time()
+    # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
+    # end = time.time()
+    # print(end - start)
 
     # Analyze data
     # model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)

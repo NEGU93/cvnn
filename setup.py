@@ -4,10 +4,9 @@ import versioneer
 requirements = [
     'tensorflow',
     'numpy',
-    'matplotlib',
-    'pandas',
-    'seaborn',
-    'scipy', 'plotly'
+    'pandas', 'scipy',                      # Data
+    'colorlog', 'tqdm',     # 'logging',    # Logging
+    'matplotlib', 'seaborn', 'plotly'       # Plotting
 ]
 
 setup(
