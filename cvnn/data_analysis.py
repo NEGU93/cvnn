@@ -240,15 +240,21 @@ class SeveralMonteCarloComparison:
         savefig = False
         if savefile is not None:
             savefig = True
-        if step == -1:
-            step = max(self.monte_carlo_runs[0].df.step)    # TODO: Assert it's the same for all cases
+
+        steps = []
+        for i in range(len(self.monte_carlo_runs)):
+            if step == -1:
+                steps.append(max(self.monte_carlo_runs[i].df.step))
+            else:
+                steps.append(step)
+
         fig = go.Figure()
 
-        for i, run in enumerate(self.monte_carlo_runs):
-            df = run.df
+        for i, mc_run in enumerate(self.monte_carlo_runs):
+            df = mc_run.df
             networks_availables = df.network.unique()
-            for col, net in enumerate(networks_availables):
-                filter = [a == net and b == step for a, b in zip(df.network, df.step)]
+            for color_index, net in enumerate(networks_availables):
+                filter = [a == net and b == steps[i] for a, b in zip(df.network, df.step)]
                 data = df[filter]
                 fig.add_trace(go.Box(
                     y=data[key],
@@ -256,9 +262,9 @@ class SeveralMonteCarloComparison:
                     name=net.replace('_', ' ') + " " + str(self.x[i]),
                     whiskerwidth=0.2,
                     notched=True,       # confidence intervals for the median
-                    fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col], 0.5),
+                    fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[color_index], 0.5),
                     boxpoints='suspectedoutliers',      # to mark the suspected outliers
-                    line=dict(color=DEFAULT_PLOTLY_COLORS[col]),
+                    line=dict(color=DEFAULT_PLOTLY_COLORS[color_index]),
                     boxmean=True        # Interesting how sometimes it falls outside the box
                 ))
 
