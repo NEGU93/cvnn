@@ -202,7 +202,7 @@ class CvnnModel:
 
     def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
             verbose=True, display_freq=None, fast_mode=True, save_to_file=False,
-            save_model_checkpoints=False, save_csv_checkpoints=True):
+            save_model_checkpoints=False, save_csv_checkpoints=True, shuffle=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
         :param x: Input data.
@@ -222,6 +222,7 @@ class CvnnModel:
         :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
         :return: None
         """
+        # Check input
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         if not (isinstance(epochs, int) and epochs > 0):
             self.logger.error("Epochs must be unsigned integer")
@@ -234,20 +235,24 @@ class CvnnModel:
             sys.exit(-1)
         if display_freq is None:
             display_freq = int((x.shape[0] * ratio) / batch_size)  # Match the epoch number
-        # set_trace()
+        # Manage dataset
         categorical = (len(np.shape(y)) > 1)
         dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
+        # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
         save_fit_filename = None
         if save_to_file:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
-
-        num_tr_iter = int(dataset.x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
+        # Print start condition
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
-                            "\nEpochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
+                            "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
                             self._get_str_evaluate(dataset.x_train, dataset.y_train,
                                                    dataset.x_test, dataset.y_test),  # TODO: use dataset directly
                             verbose, save_fit_filename)
+
+        # -----------------------------------------------------
+        # input processing ended
+        num_tr_iter = int(dataset.x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
         epochs_before_fit = self.epochs_done
         for epoch in range(epochs):
             if verbose:
@@ -259,21 +264,21 @@ class CvnnModel:
                                                      self.evaluate_accuracy(dataset.x_test, dataset.y_test)))
                 progbar = tf.keras.utils.Progbar(num_tr_iter)
             # Randomly shuffle the training data at the beginning of each epoch
-            dataset.shuffle()  # TODO: keras makes this optional with shuffle opt.
+            if shuffle:
+                dataset.shuffle()
             for iteration in range(num_tr_iter):
-                x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 if verbose:
                     progbar.update(iteration+1)
                 # Save checkpoint if needed
                 if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
                     self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
-                                         num_tr_iter=num_tr_iter,
-                                         total_epochs=epochs_before_fit + epochs, fast_mode=fast_mode,
-                                         verbose=False, save_fit_filename=save_fit_filename,
+                                         num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
+                                         fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
                                          save_model_checkpoints=save_model_checkpoints,
                                          save_csv_checkpoints=save_csv_checkpoints)
                 # Run optimization op (backpropagation)
+                x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()
                 self._train_step(x_batch, y_batch, learning_rate)
                 self._end_graph_tensorflow()
