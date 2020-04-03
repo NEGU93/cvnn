@@ -52,8 +52,8 @@ class MonteCarlo:
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y, ratio=ratio,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
-                               verbose=debug, fast_mode=False, save_to_file=False, display_freq=display_freq,
-                               save_csv_checkpoints=True)
+                               verbose=debug, fast_mode=True, save_txt_fit_summary=False, display_freq=display_freq,
+                               save_csv_history=True)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:

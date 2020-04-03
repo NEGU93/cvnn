@@ -195,8 +195,8 @@ class CvnnModel:
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
     def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
-            verbose=True, display_freq=None, fast_mode=True, save_to_file=False,
-            save_model_checkpoints=False, save_csv_checkpoints=True, shuffle=True):
+            verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,
+            save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
         :param x: Input data.
@@ -212,10 +212,10 @@ class CvnnModel:
         :param fast_mode: (Boolean) Does 2 things if False:
                     1. Saves csv files with each checkpoint
                     2. Prints loss and accuracy if verbose = True
-        :param save_to_file: (Boolean) save a txt with the information of the fit
+        :param save_txt_fit_summary: (Boolean) save a txt with the information of the fit
                     (same as what will be printed if "verbose")
         :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
-        :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
+        :param save_csv_history: Save information of the train and test loss and accuracy on csv files.
         :return: None
         """
         # Check input
@@ -237,7 +237,7 @@ class CvnnModel:
         # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
         save_fit_filename = None
-        if save_to_file:
+        if save_txt_fit_summary:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
         # Print start condition
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
@@ -265,7 +265,7 @@ class CvnnModel:
                                          num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
                                          fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
                                          save_model_checkpoints=save_model_checkpoints,
-                                         save_csv_checkpoints=save_csv_checkpoints)
+                                         save_csv_checkpoints=save_csv_history)
                 # Run optimization op (backpropagation)
                 x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()
@@ -542,7 +542,7 @@ if __name__ == '__main__':
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True, save_csv_checkpoints=True)
+    model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True, save_csv_history=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
