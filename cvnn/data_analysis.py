@@ -630,11 +630,11 @@ class MonteCarloAnalyzer:
             self.df = pd.read_csv(path)
             self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
         elif path is None and df is not None:  # Save df into default path
-            self.path = create_folder("./montecarlo/")
+            self.path = create_folder("./log/montecarlo/")
             self.df = df  # DataFrame with all the data
             self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
         else:  # I have nothing
-            self.path = create_folder("./montecarlo/")
+            self.path = create_folder("./log/montecarlo/")
             self.df = pd.DataFrame()
         self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']  # TODO: Consider delete
         self.monte_carlo_plotter = MonteCarloPlotter(self.path)
