@@ -1,9 +1,13 @@
 import tensorflow as tf
 import sys
+import cvnn
+import logging
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
 """
+
+logger = logging.getLogger(cvnn.__name__)
 
 
 def apply_activation(act_fun, out):
@@ -21,14 +25,14 @@ def apply_activation(act_fun, out):
                 act_fun.__module__ == 'tensorflow.python.keras.activations':
             return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
         else:
-            print("apply_activation Unknown activation function.\n\t "
-                              "Can only use activations declared on activation_functions.py or keras.activations")
+            logger.error("apply_activation Unknown activation function.\n\t"
+                         "Can only use activations declared on activation_functions.py or keras.activations")
             sys.exit(-1)
     elif isinstance(act_fun, str):
         try:
             return act_dispatcher[act_fun](out)
         except KeyError:
-            print("WARNING: apply_function: " + str(act_fun) + " is not callable, ignoring it")
+            logger.warning(str(act_fun) + " is not callable, ignoring it")
         return out
 
 

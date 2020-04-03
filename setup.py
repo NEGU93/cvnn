@@ -2,12 +2,11 @@ from setuptools import setup
 import versioneer
 
 requirements = [
-    'tensorflow',
+    'tensorflow>=2.0',
     'numpy',
-    'matplotlib',
-    'pandas',
-    'seaborn',
-    'scipy', 'plotly'
+    'pandas', 'scipy',                      # Data
+    'colorlog',                             # Logging
+    'matplotlib', 'seaborn', 'plotly'       # Plotting
 ]
 
 setup(

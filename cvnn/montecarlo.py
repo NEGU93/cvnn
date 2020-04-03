@@ -1,3 +1,5 @@
+import logging
+import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.dataset import Dataset
@@ -13,6 +15,8 @@ import os
 import numpy as np
 from pdb import set_trace
 
+logger = logging.getLogger(cvnn.__name__)
+
 
 class MonteCarlo:
 
@@ -23,12 +27,11 @@ class MonteCarlo:
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
 
     def add_model(self, model):
-        assert model.save_csv_checkpoints
         self.models.append(model)
 
     def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, ratio=0.8,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
-            shuffle=False, debug=False, display_freq=160):
+            shuffle=False, debug=False, display_freq=160, checkpoints=False):
         x, y = randomize(x, y)
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
@@ -38,7 +41,7 @@ class MonteCarlo:
         self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
                                  data_summary)
         for it in range(iterations):
-            print("Iteration {}/{}".format(it + 1, iterations))
+            logger.info("Iteration {}/{}".format(it + 1, iterations))
             if shuffle:  # shuffle all data at each iteration
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
@@ -49,7 +52,8 @@ class MonteCarlo:
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y, ratio=ratio,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
-                               verbose=debug, fast_mode=not debug, save_to_file=False, display_freq=display_freq)
+                               verbose=debug, fast_mode=False, save_to_file=False, display_freq=display_freq,
+                               save_csv_checkpoints=True)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
@@ -58,8 +62,9 @@ class MonteCarlo:
                     self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
                                                                     test_model.get_confusion_matrix(dataset.x_test,
                                                                                                     dataset.y_test)))
-            # Save checkpoint in case Monte Carlo stops in the middle
-            self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
+            if checkpoints:
+                # Save checkpoint in case Monte Carlo stops in the middle
+                self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
         conf_mat = None
         if do_conf_mat:
@@ -111,23 +116,25 @@ class RealVsComplex(MonteCarlo):
         # add models
         self.add_model(complex_model)
         self.add_model(CvnnModel(name="real_network", shape=real_shape, loss_fun=complex_model.loss_fun,
-                                 tensorboard=complex_model.tensorboard, verbose=False,
-                                 save_model_checkpoints=complex_model.save_model_checkpoints,
-                                 save_csv_checkpoints=complex_model.save_csv_checkpoints))
+                                 tensorboard=complex_model.tensorboard, verbose=False))
 
 
 def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
                    shape_raw=None, activation='cart_relu', debug=False, polar=False):
     # Get parameters
-    if display_freq is None:
-        display_freq = int(m * len(param_list) * 0.8 / batch_size)
     if shape_raw is None:
         shape_raw = [100, 40]
     if open_dataset:
-        assert param_list is None, "If the parameter to open_dataset is passed, giving param_list makes no sense"
-        assert m == 10000, "If the parameter to open_dataset is passed, giving m makes no sense"
-        assert n == 128, "If the parameter to open_dataset is passed, giving n makes no sense"
+        if not param_list is None:
+            logger.error("If the parameter to open_dataset is passed, giving param_list makes no sense")
+            sys.exit(-1)
+        if not m == 10000:
+            logger.error("If the parameter to open_dataset is passed, giving m makes no sense")
+            sys.exit(-1)
+        if not n == 128:
+            logger.error("If the parameter to open_dataset is passed, giving n makes no sense")
+            sys.exit(-1)
         dataset = dp.OpenDataset(open_dataset)
     else:
         if param_list is None:
@@ -136,11 +143,15 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
                 [-0.5, 1, 2]
             ]
         dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+    if display_freq is None:
+        display_freq = int(m * dataset.num_classes * 0.8 / batch_size)
 
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
-    assert len(shape_raw) > 0
+    if not len(shape_raw) > 0:
+        logger.error("Shape raw was empty")
+        sys.exit(-1)
     shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
                           input_dtype=np.complex64, output_dtype=np.complex64)]
     for i in range(1, len(shape_raw)):
@@ -150,7 +161,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
                               input_dtype=np.complex64, output_dtype=np.float32))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
-                                verbose=False, tensorboard=False, save_csv_checkpoints=True)
+                                verbose=False, tensorboard=False)
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network)
@@ -161,4 +172,4 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
 
 
 if __name__ == "__main__":
-    run_montecarlo(m=5000, shape_raw=[64], epochs=50, iterations=5, debug=True)
+    run_montecarlo(m=5000, shape_raw=[64], epochs=30, iterations=5, debug=True)
