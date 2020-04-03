@@ -46,7 +46,7 @@ class CvnnModel:
     # =====================
 
     def __init__(self, name, shape, loss_fun,
-                 verbose=True, tensorboard=True, save_model_checkpoints=False, save_csv_checkpoints=True):
+                 verbose=True, tensorboard=True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models
@@ -57,38 +57,28 @@ class CvnnModel:
                 - Loss and accuracy
                 - Graph
                 - Weights histogram
-        :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
-        :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
         """
-        assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
-        pattern = re.compile("^[2-9][0-9]*")
-        assert pattern.match(tf.version.VERSION)  # Check TF version is at least 2
+        self.logger = logging.getLogger(cvnn.__name__)
         self.name = name
         # Check all the data is a Layer object
         if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
-            self.logger.error("CVNN: All layers in shape must be a cvnn.layer.Layer")
+            self.logger.error("All layers in shape must be a cvnn.layer.Layer")
             sys.exit(-1)
         self.shape = shape
         self.loss_fun = loss_fun
         self.epochs_done = 0
-        self.run_pandas = pd.DataFrame()
+        self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
+                                                'train loss', 'train accuracy', 'test loss', 'test accuracy'])
         if not tf.executing_eagerly():      # Make sure nobody disabled eager execution before running the model
             logging.error("CvnnModel::__init__: TF was not executing eagerly")
             sys.exit(-1)
 
-        # Logging parameters
-        logging.getLogger('tensorflow').disabled = True
-        self.logger = logging.getLogger(cvnn.__name__)
-        self.logger.error("Trying an error message")
-
         # Folder management for logs
         self.now = datetime.today()
-        self.root_dir = create_folder("./log/", now=self.now)   # Create folder to store all the information
+        self.root_dir = create_folder("./log/models/", now=self.now)   # Create folder to store all the information
 
         # Chekpoints
-        self.save_csv_checkpoints = save_csv_checkpoints
         self.tensorboard = tensorboard
-        self.save_model_checkpoints = save_model_checkpoints
         # The graph will be saved no matter what. It is only computed once so it won't impact much on the training
         self.graph_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train_func"))
         self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
@@ -163,111 +153,6 @@ class CvnnModel:
         else:
             return False
 
-    # ===========
-    # Checkpoints
-    # ===========
-
-    def _run_checkpoint(self, x_train, y_train, x_test=None, y_test=None,
-                        step=0, num_tr_iter=0, total_epochs=0,
-                        fast_mode=True, verbose=False, save_fit_filename=None):
-        """
-        Saves whatever needs to be saved (tensorboard, csv of train and test acc and loss, model weigths, etc.
-        :param x_train: Train data.
-        :param y_train: Tran labels.
-        :param x_test: Test data (optional)
-        :param y_test: Test labels (optional)
-        :param step: step of the training.
-        :param num_tr_iter: Total number of iterations per epoch.
-        :param total_epochs: Total epochs to be done on the training.
-        :param fast_mode:
-        :param verbose: Print the results on console to visualize the training step. (Unless fast_mode = True)
-        :param save_fit_filename: Filename to save the training messages. If None, no information will be saved.
-        :return: None
-        """
-        if (x_test is not None and y_test is None) or (y_test is not None and x_test is None):
-            # TODO: Write this in a more legible logic. XOR?
-            self.logger.error("Either both x_test and y_test are None or neither")
-            sys.exit(-1)
-        if self.tensorboard:    # Save tensorboard data
-            self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
-        if self.save_csv_checkpoints:
-            # I do this instead of making and internal vector because I make sure that it can be recovered at any time.
-            # Even if the training stopped in the middle by any reason. This way my result is saved many times (Backup!)
-            # Other more efficient method would be to create a vector and save it at the end but I risk loosing info
-            # if the training stops at any point.
-            # TODO: new meaning for fast mode. I can make it either save to csv or pandas according to fast mode
-            self._save_csv(self.name + '_results_fit', x_train, y_train, x_test, y_test, step)
-        if self.save_model_checkpoints:             # Save model weights
-            if x_test is not None:                  # Better to save the loss and acc of test
-                self.save(x_test, y_test)
-            else:
-                self.save(x_train, y_train)         # If I have no info of the test then save the values of the train
-        if verbose or save_fit_filename is not None:       # I first check if it makes sense to get the string
-            epoch_str = self._get_str_current_epoch(x_train, y_train,
-                                                    self.epochs_done, total_epochs,
-                                                    step % num_tr_iter, num_tr_iter, x_test, y_test)
-            self._manage_string(epoch_str, verbose, save_fit_filename)
-
-    def _save_csv(self, filename, x_train, y_train, x_test, y_test, step):
-        train_loss = self.evaluate_loss(x_train, y_train)
-        train_acc = self.evaluate_accuracy(x_train, y_train)
-        test_loss = self.evaluate_loss(x_test, y_test)
-        test_acc = self.evaluate_accuracy(x_test, y_test)
-        if not filename.endswith('.csv'):
-            filename += '.csv'
-        filename = self.root_dir / filename
-        if not os.path.exists(filename):        # TODO: Can this pose a problem in parallel computing?
-            file = open(filename, 'x')
-            file.write('step,epoch,train loss,train accuracy,test loss,test accuracy\n')
-        else:
-            file = open(filename, 'a')
-        file.write("{0},{1},{2},{3},{4},{5}\n".format(step, self.epochs_done,
-                                                      train_loss, train_acc, test_loss, test_acc))
-        file.close()
-
-    def _tensorboard_checkpoint(self, x_train, y_train, x_test=None, y_test=None):
-        """
-        Saves the tensorboard data
-        :param x_train: Train data
-        :param y_train: Tran labels
-        :param x_test: Test data (optional)
-        :param y_test: Test labels (optional)
-        :return: None
-        """
-        # Save train loss and accuracy
-        train_loss, train_accuracy = self.evaluate(x_train, y_train)
-        with self.train_summary_writer.as_default():
-            tf.summary.scalar('loss', train_loss, step=self.epochs_done)
-            tf.summary.scalar('accuracy', train_accuracy * 100, step=self.epochs_done)
-        # Save test loss and accuracy
-        if x_test is not None:
-            assert y_test is not None
-            test_loss, test_accuracy = self.evaluate(x_test, y_test)
-            with self.test_summary_writer.as_default():
-                tf.summary.scalar('loss', test_loss, step=self.epochs_done)
-                tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
-        # Save weights histogram
-        for layer in self.shape:
-            layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
-
-    def save(self, x, y):
-        # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
-        # TODO: TypeError: can't pickle _thread._local objects
-        # https://github.com/tensorflow/tensorflow/issues/33283
-        loss, acc = self.evaluate(x, y)
-        checkpoint_root = self.root_dir + "saved_models/"
-        os.makedirs(checkpoint_root, exist_ok=True)
-        save_name = checkpoint_root + "model_checkpoint_epoch" + str(self.epochs_done) + "loss{0:.4f}acc{1:d}".format(
-            loss, int(acc * 100))
-
-        # CvnnModel._extractfromlocal(self)
-        with open(save_name.replace(".", ",") + ".pickle", "wb") as saver:
-            # set_trace()
-            pickle.dump(self.__dict__, saver)
-            # for lay in self.shape:
-            #    pickle.dump(lay.__dict__, saver)
-        # CvnnModel._loadtolocal(self)
-
     # ====================
     #          Train
     # ====================
@@ -316,7 +201,8 @@ class CvnnModel:
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
     def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
-            verbose=True, display_freq=None, fast_mode=False, save_to_file=True):
+            verbose=True, display_freq=None, fast_mode=True, save_to_file=False,
+            save_model_checkpoints=False, save_csv_checkpoints=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
         :param x: Input data.
@@ -332,11 +218,20 @@ class CvnnModel:
         :param fast_mode: (Boolean)
         :param save_to_file: (Boolean) save a txt with the information of the fit
                     (same as what will be printed if "verbose")
+        :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
+        :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
         :return: None
         """
-        assert isinstance(epochs, int) and epochs > 0, "Epochs must be unsigned integer"
-        assert isinstance(batch_size, int) and batch_size > 0, "Epochs must be unsigned integer"
-        assert learning_rate > 0, "Learning rate must be positive"
+        assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
+        if not (isinstance(epochs, int) and epochs > 0):
+            self.logger.error("Epochs must be unsigned integer")
+            sys.exit(-1)
+        if not (isinstance(batch_size, int) and batch_size > 0):
+            self.logger.error("Batch size must be unsigned integer")
+            sys.exit(-1)
+        if not learning_rate > 0:
+            self.logger.error("Learning rate must be positive")
+            sys.exit(-1)
         if display_freq is None:
             display_freq = int((x.shape[0] * ratio) / batch_size)  # Match the epoch number
         # set_trace()
@@ -356,17 +251,15 @@ class CvnnModel:
         epochs_before_fit = self.epochs_done
         for epoch in range(epochs):
             if verbose:
-                tf.print("\nEpoch {0}/{1}".format(epoch, epochs))
+                tf.print("\nEpoch {0}/{1} - train loss: {2} - train accuracy: {3} - test loss: {4} - "
+                         "test accuracy: {5}".format(epoch, epochs,
+                                                     self.evaluate_loss(dataset.x_train, dataset.y_train),
+                                                     self.evaluate_accuracy(dataset.x_train, dataset.y_train),
+                                                     self.evaluate_loss(dataset.x_test, dataset.y_test),
+                                                     self.evaluate_accuracy(dataset.x_test, dataset.y_test)))
+                progbar = tf.keras.utils.Progbar(num_tr_iter)
             # Randomly shuffle the training data at the beginning of each epoch
             dataset.shuffle()  # TODO: keras makes this optional with shuffle opt.
-            """
-            progress = progressbar.ProgressBar(maxval=num_tr_iter,
-                                               widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-            for iteration in progress(range(num_tr_iter)):
-            """
-            # for iteration in tqdm.trange(num_tr_iter, disable=not verbose):
-            if verbose:
-                progbar = tf.keras.utils.Progbar(num_tr_iter)
             for iteration in range(num_tr_iter):
                 x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 if verbose:
@@ -377,7 +270,9 @@ class CvnnModel:
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
                                          num_tr_iter=num_tr_iter,
                                          total_epochs=epochs_before_fit + epochs, fast_mode=fast_mode,
-                                         verbose=False, save_fit_filename=save_fit_filename)
+                                         verbose=False, save_fit_filename=save_fit_filename,
+                                         save_model_checkpoints=save_model_checkpoints,
+                                         save_csv_checkpoints=save_csv_checkpoints)
                 # Run optimization op (backpropagation)
                 self._start_graph_tensorflow()
                 self._train_step(x_batch, y_batch, learning_rate)
@@ -386,7 +281,7 @@ class CvnnModel:
         # After epochs
         self._run_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test,
                              step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
-                             total_epochs=epochs_before_fit + epochs, fast_mode=True)
+                             total_epochs=epochs_before_fit + epochs, fast_mode=False)
         self._manage_string("Train finished...\n" + self._get_str_evaluate(dataset.x_train, dataset.y_train,
                                                                            dataset.x_test, dataset.y_test),
                             verbose, save_fit_filename)
@@ -463,22 +358,121 @@ class CvnnModel:
             filename = self.root_dir / "categorical.csv"
         return da.confusion_matrix(self.call(x), y, filename=filename)
 
+    # ===========
+    # Checkpoints
+    # ===========
+
+    def _run_checkpoint(self, x_train, y_train, x_test=None, y_test=None,
+                        step=0, num_tr_iter=0, total_epochs=0,
+                        fast_mode=False, verbose=False, save_fit_filename=None,
+                        save_model_checkpoints=False, save_csv_checkpoints=True):
+        """
+        Saves whatever needs to be saved (tensorboard, csv of train and test acc and loss, model weigths, etc.
+        :param x_train: Train data.
+        :param y_train: Tran labels.
+        :param x_test: Test data (optional)
+        :param y_test: Test labels (optional)
+        :param step: step of the training.
+        :param num_tr_iter: Total number of iterations per epoch.
+        :param total_epochs: Total epochs to be done on the training.
+        :param fast_mode: if True it will save the loss and accuracy as a csv on each file.
+                This will prevent the loss of data but will make the training longer.
+                Default: False.
+        :param verbose: Print the results on console to visualize the training step.
+        :param save_fit_filename: Filename to save the training messages. If None, no information will be saved.
+        :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
+        :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
+        :return: None
+        """
+        if (x_test is not None and y_test is None) or (y_test is not None and x_test is None):
+            # TODO: Write this in a more legible logic. XOR?
+            self.logger.error("Either both x_test and y_test are None or neither")
+            sys.exit(-1)
+        if save_csv_checkpoints or save_model_checkpoints or verbose or save_fit_filename is not None:
+            train_loss, train_acc = self.evaluate(x_train, y_train)
+            test_loss, test_acc = self.evaluate(x_test, y_test)
+        if self.tensorboard:  # Save tensorboard data
+            self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
+        if save_csv_checkpoints:   # TODO: save_csv_checkpoint should be passed on fit and not constructor
+            # With fast mode I save the checkpoint in a csv.
+            # It will take longer to run because I create a file each time
+            # but if I don't do it and something happens I will loose all the information
+            self._save_current_loss_and_acc(self.name + '_results_fit',
+                                            train_loss, train_acc, test_loss, test_acc, step, fast_mode)
+        if save_model_checkpoints:  # Save model weights
+            self.save(test_loss, test_acc)
+        if save_fit_filename is not None or verbose:  # I first check if it makes sense to get the string
+            epoch_str = self._get_str_current_epoch(train_loss, train_acc, test_loss, test_acc,
+                                                    self.epochs_done, total_epochs,
+                                                    step % num_tr_iter, num_tr_iter)
+            self._manage_string(epoch_str, verbose, save_fit_filename)
+
+    def _save_current_loss_and_acc(self, filename, train_loss, train_acc, test_loss, test_acc, step, fast_mode=False):
+        a_series = pd.Series([step, self.epochs_done, train_loss, train_acc, test_loss, test_acc],
+                             index=self.run_pandas.columns)
+        self.run_pandas = self.run_pandas.append(a_series, ignore_index=True)
+        if not filename.endswith('.csv'):
+            filename += '.csv'
+        filename = self.root_dir / filename
+        if not fast_mode:
+            self.run_pandas.to_csv(filename, index=False)
+
+    def _tensorboard_checkpoint(self, x_train, y_train, x_test=None, y_test=None):
+        """
+        Saves the tensorboard data
+        :param x_train: Train data
+        :param y_train: Tran labels
+        :param x_test: Test data (optional)
+        :param y_test: Test labels (optional)
+        :return: None
+        """
+        # Save train loss and accuracy
+        train_loss, train_accuracy = self.evaluate(x_train, y_train)
+        with self.train_summary_writer.as_default():
+            tf.summary.scalar('loss', train_loss, step=self.epochs_done)
+            tf.summary.scalar('accuracy', train_accuracy * 100, step=self.epochs_done)
+        # Save test loss and accuracy
+        if x_test is not None:
+            assert y_test is not None
+            test_loss, test_accuracy = self.evaluate(x_test, y_test)
+            with self.test_summary_writer.as_default():
+                tf.summary.scalar('loss', test_loss, step=self.epochs_done)
+                tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
+        # Save weights histogram
+        for layer in self.shape:
+            layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
+
+    def save(self, loss, acc):
+        # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
+        # TODO: TypeError: can't pickle _thread._local objects
+        # https://github.com/tensorflow/tensorflow/issues/33283
+        # loss, acc = self.evaluate(x, y)
+        checkpoint_root = self.root_dir + "saved_models/"
+        os.makedirs(checkpoint_root, exist_ok=True)
+        save_name = checkpoint_root + "model_checkpoint_epoch" + str(self.epochs_done) + "loss{0:.4f}acc{1:d}".format(
+            loss, int(acc * 100))
+
+        # CvnnModel._extractfromlocal(self)
+        with open(save_name.replace(".", ",") + ".pickle", "wb") as saver:
+            # set_trace()
+            pickle.dump(self.__dict__, saver)
+            # for lay in self.shape:
+            #    pickle.dump(lay.__dict__, saver)
+        # CvnnModel._loadtolocal(self)
+
     # ================
     # Managing strings
     # ================
 
-    def _get_str_current_epoch(self, x, y, epoch, epochs, iteration, num_tr_iter, x_val=None, y_val=None):
-        current_loss, current_acc = self.evaluate(x, y)
+    @staticmethod
+    def _get_str_current_epoch(train_loss, train_acc, test_loss, test_acc, epoch, epochs, iteration, num_tr_iter):
         ret_str = "Epoch: {0}/{1}; batch {2}/{3}; train loss: " \
                   "{4:.4f} train accuracy: {5:.2f} %".format(epoch, epochs,
                                                              iteration,
                                                              num_tr_iter,
-                                                             current_loss,
-                                                             current_acc * 100)
-        if x_val is not None:
-            assert y_val is not None
-            val_loss, val_acc = self.evaluate(x_val, y_val)
-            ret_str += "; validation loss: {0:.4f} validation accuracy: {1:.2f} %".format(val_loss, val_acc * 100)
+                                                             train_loss,
+                                                             train_acc * 100)
+        ret_str += "; validation loss: {0:.4f} validation accuracy: {1:.2f} %".format(test_loss, test_acc * 100)
         return ret_str + "\n"
 
     def _manage_string(self, string, verbose=False, filename=None, mode="a"):
@@ -555,7 +549,7 @@ if __name__ == '__main__':
                                  input_dtype=cdtype, output_dtype=rdtype)]
 
     # Train model
-    model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
+    model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy, save_csv_checkpoints=True)
     start = time.time()
     model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True)
     end = time.time()

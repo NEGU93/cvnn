@@ -1,5 +1,6 @@
 import logging
 import colorlog
+from cvnn.utils import create_folder
 
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
@@ -16,7 +17,9 @@ STRING_FORMATTER = "%(asctime)s — %(levelname)s:%(name)s — %(message)s"
 
 FORMATTER = logging.Formatter(STRING_FORMATTER)
 
-file_handler = logging.FileHandler("./log/logs.log")
+logging.getLogger('tensorflow').disabled = True
+
+file_handler = logging.FileHandler(create_folder("./log/logs/") / "logs.log")
 file_handler.setFormatter(FORMATTER)
 
 # https://github.com/borntyping/python-colorlog
