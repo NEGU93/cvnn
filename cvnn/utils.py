@@ -11,6 +11,9 @@ import cvnn
 import logging
 
 
+logger = logging.getLogger(cvnn.__name__)
+
+
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
     """
     Opens Matlab matrix (.mat) as numpy array.
@@ -43,7 +46,7 @@ def cast_to_path(path):
     if isinstance(path, str):
         path = Path(path)
     elif not isinstance(path, Path):
-        print("Error: OpenDataset::__init__: path datatype not recognized")
+        logger.error("Path datatype not recognized")
         sys.exit(-1)
     return path
 
@@ -59,7 +62,8 @@ def get_func_name(fun):
     elif isinstance(fun, str):
         return fun
     else:
-        sys.exit("Error::get_func_name: Function not recognizable")
+        logger.error("Function not recognizable")
+        sys.exit(-1)
 
 
 def transform_to_real(x_complex, polar=False):
@@ -86,7 +90,7 @@ def transform_to_real(x_complex, polar=False):
     elif x_complex.dtype == np.complex128:
         dtype = np.float64
     else:
-        print("Warning: transform_to_real: data type unknown: " + str(x_complex.dtype))
+        logger.warning("data type unknown: " + str(x_complex.dtype))
     return x_real.astype(dtype)
 
 
