@@ -1,21 +1,20 @@
 import matplotlib.pyplot as plt
-import matplotlib.transforms as transforms
 import plotly
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-import plotly.express as px
 import seaborn as sns
 import pandas as pd
 import numpy as np
-import glob
 import re
 import os
 import sys
 from pathlib import Path
 from pdb import set_trace
-import scipy.stats as stats
 from cvnn.utils import create_folder
+import logging
+import cvnn
 
+logger = logging.getLogger(cvnn.__name__)
 
 DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',   # Blue
                          'rgb(255, 127, 14)',   # Orange
@@ -48,7 +47,9 @@ def triangulate_histogram(x, y, z):
 
 def add_transparency(color='rgb(31, 119, 180)', alpha=0.5):
     pattern = re.compile("^rgb\([0-9]+, [0-9]+, [0-9]+\)$")
-    assert re.match(pattern, color)  # Recognized color format!
+    if not re.match(pattern, color):
+        logger.error("Unrecognized color format")
+        sys.exit(-1)
     color = re.sub("^rgb", "rgba", color)
     color = re.sub("\)$", ", {})".format(alpha), color)
     return color
@@ -56,7 +57,9 @@ def add_transparency(color='rgb(31, 119, 180)', alpha=0.5):
 
 def extract_values(color='rgb(31, 119, 180)'):
     pattern = re.compile("^rgb\([0-9]+, [0-9]+, [0-9]+\)$")
-    assert re.match(pattern, color)  # Recognized color format!
+    if not re.match(pattern, color):
+        logger.error("Unrecognized color format")
+        sys.exit(-1)
     return [float(s) for s in re.findall(r'\b\d+\b', color)]
 
 
@@ -144,14 +147,14 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
                 elif isinstance(j, str):
                     y.append(j)
                 else:
-                    print("WTF?! should never have arrived here")
+                    logger.critical("WTF?! should never have arrived here")
             for i in data.axes[1].tolist():
                 if isinstance(i, int):
                     x.append(axis_legends[i])
                 elif isinstance(i, str):
                     x.append(i)
                 else:
-                    print("WTF?! should never have arrived here")
+                    logger.critical("WTF?! should never have arrived here")
         # fig = go.Figure(data=go.Heatmap(z=z, x=x, y=y))
         fig = ff.create_annotated_heatmap(z, x=x, y=y)
     if showfig:
@@ -217,14 +220,16 @@ class SeveralMonteCarloComparison:
         self.monte_carlo_runs = []
         for path in paths:
             self.monte_carlo_runs.append(MonteCarloAnalyzer(path=path))
-        assert len(self.x) == len(self.monte_carlo_runs)    # x and paths must be the same size
+        if not len(self.x) == len(self.monte_carlo_runs):
+            logger.error("x ({0}) and paths ({1}) must be the same size".format(len(self.x),
+                                                                                len(self.monte_carlo_runs)))
 
     def box_plot(self, key='test accuracy', library='plotly', step=-1, showfig=False, savefile=None):
         if library == 'plotly':
             self._box_plot_plotly(key=key, step=step, showfig=showfig, savefile=savefile)
         # TODO: https://seaborn.pydata.org/examples/grouped_boxplot.html
         else:
-            print("Warning: Unrecognized library to plot " + library)
+            logger.warning("Unrecognized library to plot " + library)
         return None
 
     def _box_plot_plotly(self, key='test accuracy', step=-1, showfig=False, savefile=None, extension=".svg"):
@@ -314,7 +319,7 @@ class Plotter:
             By default it opens every csv file it finds.
         """
         if not os.path.exists(path):
-            print("Plotter::__init__: path {} does not exist".format(path))
+            logger.error("Path {} does not exist".format(path))
             sys.exit(-1)
         self.path = Path(path)
         if not file_suffix.endswith(".csv"):
@@ -362,7 +367,8 @@ class Plotter:
         self._csv_to_pandas()
         length = len(self.pandas_list[0])
         for data_frame in self.pandas_list:  # TODO: Check if.
-            assert length == len(data_frame)  # What happens if NaN? Can I cope not having same len?
+            if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?
+                logger.error("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))
 
         result = pd.DataFrame({
             'network': [self.get_net_name()] * length,
@@ -391,7 +397,9 @@ class Plotter:
     def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
         if reload:
             self._csv_to_pandas()
-        assert len(self.pandas_list) != 0
+        if not len(self.pandas_list) != 0:
+            logger.error("Empty pandas list to plot")
+            return None
         for key in ["loss", "accuracy"]:
             self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
@@ -403,7 +411,7 @@ class Plotter:
         elif library == 'plotly':
             self._plot_plotly(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc)
         else:
-            print("Warning: Unrecognized library to plot " + library)
+            logger.warning("Unrecognized library to plot " + library)
 
     def _plot_matplotlib(self, key='loss', showfig=False, savefig=True, index_loc=None, extension=".svg"):
         fig, ax = plt.subplots()
@@ -420,7 +428,7 @@ class Plotter:
                         if 'stats' in data.keys():
                             data = data[data['stats'] == 'mean']
                         else:
-                            print("Warning: Trying to index an array without index")
+                            logger.warning("Warning: Trying to index an array without index")
                     ax.plot(data[k], 'o-', label=(k.replace(key, '') + self.labels[i]).replace('_', ' '))
         title += " " + key
         fig.legend(loc="upper right")
@@ -450,7 +458,7 @@ class Plotter:
                         if 'stats' in data.keys():
                             data = data[data['stats'] == 'mean']
                         else:
-                            print("Warning: Trying to index an array without index")
+                            logger.warning("Trying to index an array without index")
                     x = list(range(len(data[k])))
                     fig.add_trace(go.Scatter(x=x, y=data[k], mode='lines',
                                              name=(k.replace(key, '') + self.labels[i]).replace('_', ' '),
@@ -792,7 +800,7 @@ class MonteCarloAnalyzer:
         elif library == 'seaborn':
             self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
         else:
-            print("Warning: Unrecognized library to plot " + library)
+            logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
     def _plot_histogram_matplotlib(self, key='test accuracy', step=-1,

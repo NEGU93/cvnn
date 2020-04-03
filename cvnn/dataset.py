@@ -15,7 +15,6 @@ from scipy.stats import norm
 
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
 
-
 # =======
 # Dataset
 # =======
@@ -67,7 +66,7 @@ class Dataset:
             self.batch_size = self.x_train.shape[0]  # Don't use batches at all
         else:
             if np.shape(self.x_train)[0] < batch_size:  # TODO: make this case work as well. Just display a warning
-                print("Batch size was bigger than total amount of examples")
+                logger.error("Batch size was bigger than total amount of examples")
                 sys.exit(-1)
             self.batch_size = batch_size
         if debug:
@@ -75,7 +74,9 @@ class Dataset:
 
     def get_next_batch(self):
         num_tr_iter = int(self.x_train.shape[0] / self.batch_size)  # Number of training iterations in each epoch
-        assert self._iteration < num_tr_iter  # I did more calls to this function that planned
+        if not self._iteration < num_tr_iter:
+            logger.error("I did more calls to this function that planned")
+            sys.exit(-1)
         # Get the next batch
         start = self._iteration * self.batch_size
         end = (self._iteration + 1) * self.batch_size
@@ -125,7 +126,7 @@ class Dataset:
             # Save also an image of the example
             self.plot_data(overlapped=True, showfig=False, save_path=save_path)
         else:
-            print("Error: Dataset::save_data: Path {} does not exist".format(save_path))
+            logger.error("Path {} does not exist".format(save_path))
 
     def summary(self, res_str):
         """
@@ -149,7 +150,7 @@ class Dataset:
         elif library == 'plotly':
             self._plot_data_plotly(showfig=showfig, save_path=save_path)
         else:
-            print("Warning: Unrecognized library to plot " + library)
+            logger.warning("Unrecognized library to plot " + library)
             return None
 
     def _plot_data_plotly(self, showfig=False, save_path=None, extension=".svg"):
@@ -312,7 +313,6 @@ class OpenDataset(Dataset):
     @staticmethod
     def load_dataset(path):
         try:
-            # print(os.listdir("../data"))
             x = np.load(path / "data.npy")
             y = np.load(path / "labels.npy")
         except FileNotFoundError:
@@ -352,17 +352,20 @@ class CorrelatedGaussianNormal(GeneratorDataset):
     def __init__(self, m, n, cov_matrix_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
         if num_classes is None:
             num_classes = len(cov_matrix_list)
-        assert len(cov_matrix_list) == num_classes, \
-            "cov_matrix_list length ({0}) should have the same size as num_classes ({1})".format(len(cov_matrix_list),
-                                                                                                 num_classes)
+        if not len(cov_matrix_list) == num_classes:
+            logger.error("cov_matrix_list length ({0}) should have the same size as num_classes ({1})".format(len(cov_matrix_list), num_classes))
+            sys.exit(-1)
         for cov_mat in cov_matrix_list:  # Each class has a coviariance matrix 2x2
             # Numpy cast enables data to be either numpy array or list
-            assert np.array(cov_mat).shape == (2, 2), \
-                "covariance matrix must have shape 2x2 but has shape {}".format(np.array(cov_mat).shape)
-            assert cov_mat[0][1] == cov_mat[1][0],\
-                "Elements outside the diagonal must be equal (they are both sigma_{xy}"
-            assert np.abs(cov_mat[0][1] / sqrt(cov_mat[0][0] * cov_mat[1][1])) < 1, \
-                "corelation coefficient module must be lower than one"
+            if not np.array(cov_mat).shape == (2, 2):
+                logger.error("covariance matrix must have shape 2x2 but has shape {}".format(np.array(cov_mat).shape))
+                sys.exit(-1)
+            if not cov_mat[0][1] == cov_mat[1][0]:
+                logger.error("Elements outside the diagonal must be equal (they are both sigma_{xy}")
+                sys.exit(-1)
+            if not np.abs(cov_mat[0][1] / sqrt(cov_mat[0][0] * cov_mat[1][1])) < 1:
+                logger.error("corelation coefficient module must be lower than one")
+                sys.exit(-1)
         self.cov_matrix_list = cov_matrix_list
         super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
 
@@ -431,7 +434,7 @@ class CorrelatedGaussianNormal(GeneratorDataset):
             cov_mat = self.cov_matrix_list[index]
             rho = cov_mat[0][1] / (sqrt(cov_mat[0][0]) * sqrt(cov_mat[1][1]))
         else:
-            print("Error:get_coef_correl:  index out of range")  # TODO: manage this better
+            logger.error("Index out of range")
         return rho
 
     def get_variance_and_pseudo_variance(self, index):
@@ -459,14 +462,15 @@ class CorrelatedGaussianCoeffCorrel(CorrelatedGaussianNormal):
     def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
         if num_classes is None:
             num_classes = len(param_list)
-        assert len(param_list) == num_classes, \
-            "param_list length ({0}) should have the same size as num_classes ({1})".format(len(param_list),
-                                                                                            num_classes)
+        if not len(param_list) == num_classes:
+            logger.error("param_list length ({0}) should have the same "
+                         "size as num_classes ({1})".format(len(param_list), num_classes))
         cov_mat_list = []
         for param in param_list:
-            assert len(param) == 3, \
-                "Each parameter in param_list should have size 3 " \
-                "(coef correl and both variances) but {} where given".format(len(param))
+            if not len(param) == 3:
+                logger.error("Each parameter in param_list should have size 3 "
+                             "(coef correl and both variances) but {} where given".format(len(param)))
+                sys.exit(-1)
             sigma_xy = param[0] * sqrt(param[1] * param[2])
             cov_mat_list.append([[param[1], sigma_xy], [sigma_xy, param[2]]])
         super().__init__(m=m, n=n, cov_matrix_list=cov_mat_list,
@@ -483,13 +487,16 @@ class ComplexNormalVariable(CorrelatedGaussianNormal):
     def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
         if num_classes is None:
             num_classes = len(param_list)
-        assert len(param_list) == num_classes, \
-            "param_list length ({0}) should have the same size as num_classes ({1})".format(len(param_list),
-                                                                                            num_classes)
+        if not len(param_list) == num_classes:
+            logger.error("param_list length ({0}) should have the same size "
+                         "as num_classes ({1})".format(len(param_list), num_classes))
+            sys.exit(-1)
         cov_mat_list = []
         for param in param_list:
-            assert len(param) == 2, \
-                "Each parameter in param_list should have size 2 (sigma and tau) but {} where given".format(len(param))
+            if not len(param) == 2:
+                logger.error("Each parameter in param_list should have size 2 "
+                             "(sigma and tau) but {} where given".format(len(param)))
+                sys.exit(-1)
             cov_mat_list.append(self.get_cov_matrix(param[0], param[1]))
         super().__init__(m=m, n=n, cov_matrix_list=cov_mat_list,
                          num_classes=num_classes, ratio=ratio, debug=debug, savedata=savedata)
@@ -531,7 +538,7 @@ class GaussianNoise(GeneratorDataset):
         for k in range(num_classes):
             mu = int(100 * np.random.rand())
             sigma = 15 * np.random.rand()
-            print("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
+            logger.info("Class " + str(k) + ": mu = " + str(mu) + "; sigma = " + str(sigma))
             x[k * num_samples_per_class:(k + 1) * num_samples_per_class, :] = self.function(num_samples_per_class,
                                                                                             num_samples, mu, sigma)
             y[k * num_samples_per_class:(k + 1) * num_samples_per_class, k] = 1

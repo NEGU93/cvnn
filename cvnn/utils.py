@@ -11,9 +11,6 @@ import cvnn
 import logging
 
 
-logger = logging.getLogger(cvnn.__name__)
-
-
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
     """
     Opens Matlab matrix (.mat) as numpy array.
