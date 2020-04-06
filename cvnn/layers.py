@@ -19,20 +19,34 @@ layer_count = count(0)                          # Used to count the number of la
 
 
 class ComplexLayer(layers.Layer, ABC):
+    # Being ComplexLayer an abstract class, then this can be called using:
+    #   self.__class__.__bases__.<variable>
+    # As all child's will have this class as base, mro gives a full list so won't work.
+    last_layer_output_dtype = None
 
-    def __init__(self, input_size, output_size, input_dtype=np.complex64, output_dtype=np.complex64):
+    def __init__(self, input_size, output_size, input_dtype=None, output_dtype=None):
         self.logger = logging.getLogger(cvnn.__name__)
+        if input_dtype is None:     # input dtype not given
+            if self.__class__.__bases__[0].last_layer_output_dtype is None:
+                self.logger.error("First layer must be given an input dtype")
+                sys.exit(-1)
+            self.input_dtype = self.__class__.__bases__[0].last_layer_output_dtype
+        else:   # Input dtype given as parameter
+            if input_dtype not in supported_dtypes:
+                self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype))
+                sys.exit(-1)
+            self.input_dtype = input_dtype
+            # set_trace()
+            self.__class__.__bases__[0].last_layer_output_dtype = self.input_dtype
         self.input_size = input_size
         self.output_size = output_size
         self.layer_number = next(layer_count)        # Know it's own number
+        if output_dtype is None:
+            output_dtype = self.input_dtype
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             self.logger.error("Layer::__init__: if input dtype is real output cannot be complex")
             sys.exit(-1)
-        if input_dtype not in supported_dtypes:
-            self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype))
-            sys.exit(-1)
-        self.input_dtype = input_dtype
         if output_dtype not in supported_dtypes:
             self.logger.error("Layer::__init__: unsupported output_dtype " + str(output_dtype))
             sys.exit(-1)
@@ -83,7 +97,6 @@ class ComplexDense(ComplexLayer):
             Default: tensorflow.keras.initializers.Zeros
         """
         super(ComplexDense, self).__init__(input_size, output_size, input_dtype, output_dtype)
-        self.output_dtype = output_dtype
         self.activation = activation
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
@@ -156,6 +169,29 @@ class ComplexDense(ComplexLayer):
                 # This case should never happen. The constructor should already have checked this
                 self.logger.error("Input_dtype not supported.")
                 sys.exit(-1)
+
+
+class ComplexDropout(ComplexLayer):
+
+    def __init__(self, rate, noise_shape=None, seed=None):
+        # tf.random.set_seed(seed)
+        self.rate = rate
+        self.noise_shape = noise_shape
+        self.seed = seed
+        super().__init__(input_size=None, output_size=None, input_dtype=None, output_dtype=None)
+
+    def call(self, inputs, **kwargs):
+        return tf.cast(tf.complex(tf.nn.dropout(tf.math.real(inputs), rate=self.rate,
+                                                noise_shape=self.noise_shape, seed=self.seed),
+                                  tf.nn.dropout(tf.math.imag(inputs), rate=self.rate,
+                                                noise_shape=self.noise_shape, seed=self.seed)), dtype=inputs.dtype)
+
+    def save_tensorboard_checkpoint(self, summary, step=None):
+        # No tensorboard things to save
+        return None
+
+    def get_description(self):
+        return "Complex Dropout:\n\trate={}".format(self.rate)
 
 
 __author__ = 'J. Agustin BARRACHINA'

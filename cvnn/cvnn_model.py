@@ -15,7 +15,7 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
-from cvnn.utils import randomize, create_folder
+from cvnn.utils import randomize, create_folder, transform_to_real
 
 try:
     import cPickle as pickle
@@ -525,6 +525,7 @@ if __name__ == '__main__':
     for coef in coef_correls_list:
         param_list.append([coef, 1, 2])
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+    x_fit = transform_to_real(dataset.x)
 
     # Define shape
     cdtype = np.complex64
@@ -532,17 +533,18 @@ if __name__ == '__main__':
         rdtype = np.float32
     else:
         rdtype = np.float64
-    input_size = np.shape(dataset.x_train)[1]
+    input_size = np.shape(x_fit)[1]
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
     shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size, activation='cart_relu',
-                                 input_dtype=cdtype, output_dtype=cdtype),
+                                 input_dtype=rdtype, output_dtype=rdtype),
+             layers.ComplexDropout(rate=0.5),
              layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='softmax_real',
-                                 input_dtype=cdtype, output_dtype=rdtype)]
+                                 input_dtype=rdtype, output_dtype=rdtype)]
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True, save_csv_history=True)
+    model.fit(x_fit, dataset.y, batch_size=100, epochs=150, verbose=True, save_csv_history=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
@@ -550,8 +552,8 @@ if __name__ == '__main__':
 
     # Analyze data
     # model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)
-    # model.plotter.plot_key(key='accuracy', library='matplotlib', showfig=False, savefig=True)
-    model.get_confusion_matrix(dataset.x_test, dataset.y_test, save_result=True)
+    model.plotter.plot_key(key='loss', library='matplotlib', showfig=False, savefig=True)
+    # model.get_confusion_matrix(dataset.x_test, dataset.y_test, save_result=True)
     # set_trace()
 
 # How to comment script header
