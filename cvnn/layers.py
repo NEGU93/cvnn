@@ -61,7 +61,7 @@ class ComplexLayer(layers.Layer, ABC):
         if input_size is None:
             if self.__class__.__bases__[0].last_layer_output_size is None:
                 # None input size given but it's the first layer declared
-                self.logger.error("First layer must be given an input size", exc_info=True)
+                self.logger.error("First layer must be given an input size")
                 sys.exit(-1)
             else:       # self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 self.input_size = self.__class__.__bases__[0].last_layer_output_size
@@ -69,7 +69,7 @@ class ComplexLayer(layers.Layer, ABC):
             if self.__class__.__bases__[0].last_layer_output_size is not None:
                 if input_size != self.__class__.__bases__[0].last_layer_output_size:
                     self.logger.warning("Input size " + str(input_size) + " is not equal to last layer's output size " +
-                                      str(self.__class__.__bases__[0].last_layer_output_size), exc_info=True)
+                                        str(self.__class__.__bases__[0].last_layer_output_size))
             self.input_size = input_size
 
         self.output_size = output_size

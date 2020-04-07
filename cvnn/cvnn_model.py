@@ -102,12 +102,13 @@ class CvnnModel:
         new_shape = []
         for layer in self.shape:
             if isinstance(layer, layers.ComplexDense):
-                new_shape.append(layers.ComplexDense(layer.input_size, layer.output_size,
+                # TODO: do this with deepcopy!
+                new_shape.append(layers.ComplexDense(output_size=layer.output_size, input_size=layer.input_size,
                                                      activation=layer.activation,
                                                      input_dtype=layer.input_dtype,
                                                      output_dtype=layer.output_dtype,
                                                      weight_initializer=layer.weight_initializer,
-                                                     bias_initializer=layer.bias_initializer
+                                                     bias_initializer=layer.bias_initializer, dropout=layer.dropout
                                                      ))
             else:
                 sys.exit("Layer " + str(layer) + " unknown")

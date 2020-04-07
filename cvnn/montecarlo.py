@@ -104,12 +104,14 @@ class RealVsComplex(MonteCarlo):
             if i == len(complex_model.shape) - 1:
                 output_mult = 1  # Do not multiply last layer
             # Do all the supported layers
+            # TODO: Implement deepcopy for each layer!
             if isinstance(layer, layers.ComplexDense):
-                real_shape.append(layers.ComplexDense(layer.output_size * output_mult, input_size=layer.input_size * 2,
+                real_shape.append(layers.ComplexDense(output_size=layer.output_size * output_mult,
+                                                      input_size=layer.input_size * 2,
                                                       activation=layer.activation,
                                                       input_dtype=np.float32, output_dtype=np.float32,
                                                       weight_initializer=layer.weight_initializer,
-                                                      bias_initializer=layer.bias_initializer
+                                                      bias_initializer=layer.bias_initializer, dropout=layer.dropout
                                                       ))
             else:
                 sys.exit("Layer " + str(layer) + " unknown")
@@ -126,7 +128,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     if shape_raw is None:
         shape_raw = [100, 40]
     if open_dataset:
-        if not param_list is None:
+        if param_list is not None:
             logger.error("If the parameter to open_dataset is passed, giving param_list makes no sense")
             sys.exit(-1)
         if not m == 10000:
