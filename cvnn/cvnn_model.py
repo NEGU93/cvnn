@@ -111,9 +111,7 @@ class CvnnModel:
                                                      ))
             else:
                 sys.exit("Layer " + str(layer) + " unknown")
-        return CvnnModel(self.name, new_shape, self.loss_fun,
-                         verbose=False, tensorboard=self.tensorboard,
-                         save_model_checkpoints=False, save_csv_checkpoints=self.save_csv_checkpoints)
+        return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
     def call(self, x):
         """
