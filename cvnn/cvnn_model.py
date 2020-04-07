@@ -15,7 +15,7 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
-from cvnn.utils import randomize, create_folder
+from cvnn.utils import randomize, create_folder, transform_to_real
 
 try:
     import cPickle as pickle
@@ -56,7 +56,7 @@ class CvnnModel:
         self.name = name
         # Check all the data is a Layer object
         if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
-            self.logger.error("All layers in shape must be a cvnn.layer.Layer")
+            self.logger.error("All layers in shape must be a cvnn.layer.Layer", exc_info=True)
             sys.exit(-1)
         self.shape = shape
         self.loss_fun = loss_fun
@@ -64,7 +64,7 @@ class CvnnModel:
         self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
                                                 'train loss', 'train accuracy', 'test loss', 'test accuracy'])
         if not tf.executing_eagerly():      # Make sure nobody disabled eager execution before running the model
-            logging.error("CvnnModel::__init__: TF was not executing eagerly")
+            logging.error("CvnnModel::__init__: TF was not executing eagerly", exc_info=True)
             sys.exit(-1)
 
         # Folder management for logs
@@ -131,7 +131,7 @@ class CvnnModel:
         if callable(self.loss_fun):
             if self.loss_fun.__module__ != 'tensorflow.python.keras.losses':
                 self.logger.error("Unknown loss function.\n\t "
-                                  "Can only use losses declared on tensorflow.python.keras.losses")
+                                  "Can only use losses declared on tensorflow.python.keras.losses", exc_info=True)
                 sys.exit(-1)
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
 
@@ -219,13 +219,13 @@ class CvnnModel:
         # Check input
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         if not (isinstance(epochs, int) and epochs > 0):
-            self.logger.error("Epochs must be unsigned integer")
+            self.logger.error("Epochs must be unsigned integer", exc_info=True)
             sys.exit(-1)
         if not (isinstance(batch_size, int) and batch_size > 0):
-            self.logger.error("Batch size must be unsigned integer")
+            self.logger.error("Batch size must be unsigned integer", exc_info=True)
             sys.exit(-1)
         if not learning_rate > 0:
-            self.logger.error("Learning rate must be positive")
+            self.logger.error("Learning rate must be positive", exc_info=True)
             sys.exit(-1)
         if display_freq is None:
             display_freq = int((x.shape[0] * ratio) / batch_size)  # Match the epoch number
@@ -362,6 +362,7 @@ class CvnnModel:
                         save_model_checkpoints=False, save_csv_checkpoints=True):
         """
         Saves whatever needs to be saved (tensorboard, csv of train and test acc and loss, model weigths, etc.
+
         :param dataset: dataset object of cvnn.dataset
         :param step: step of the training.
         :param num_tr_iter: Total number of iterations per epoch.
@@ -479,9 +480,10 @@ class CvnnModel:
                 with open(filename, mode) as file:
                     file.write(string)
             except FileExistsError:  # TODO: Check if this is the actual error
-                logging.error("Same file already exists. Aborting to not override results" + str(filename))
+                logging.error("Same file already exists. Aborting to not override results" + str(filename),
+                              exc_info=True)
             except FileNotFoundError:
-                logging.error("No such file or directory: " + self.root_dir)
+                logging.error("No such file or directory: " + self.root_dir, exc_info=True)
                 sys.exit(-1)
 
     def _get_str_evaluate(self, epochs, dataset, fast_mode=False):
@@ -523,6 +525,8 @@ if __name__ == '__main__':
     for coef in coef_correls_list:
         param_list.append([coef, 1, 2])
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+    # x_fit = transform_to_real(dataset.x)
+    x_fit = dataset.x
 
     # Define shape
     cdtype = np.complex64
@@ -530,17 +534,17 @@ if __name__ == '__main__':
         rdtype = np.float32
     else:
         rdtype = np.float64
-    input_size = np.shape(dataset.x_train)[1]
+    input_size = np.shape(x_fit)[1]
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
-    shape = [layers.ComplexDense(input_size=input_size, output_size=hidden_size, activation='cart_relu',
-                                 input_dtype=cdtype, output_dtype=cdtype),
-             layers.ComplexDense(input_size=hidden_size, output_size=output_size, activation='softmax_real',
+    shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
+                                 input_dtype=cdtype, output_dtype=cdtype, dropout=0.5),
+             layers.ComplexDense(output_size=output_size, input_size=hidden_size, activation='softmax_real',
                                  input_dtype=cdtype, output_dtype=rdtype)]
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=True, save_csv_history=True)
+    model.fit(x_fit, dataset.y, batch_size=100, epochs=150, verbose=True, save_csv_history=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
@@ -548,8 +552,8 @@ if __name__ == '__main__':
 
     # Analyze data
     # model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)
-    # model.plotter.plot_key(key='accuracy', library='matplotlib', showfig=False, savefig=True)
-    model.get_confusion_matrix(dataset.x_test, dataset.y_test, save_result=True)
+    model.plotter.plot_key(key='loss', library='matplotlib', showfig=False, savefig=True)
+    # model.get_confusion_matrix(dataset.x_test, dataset.y_test, save_result=True)
     # set_trace()
 
 # How to comment script header

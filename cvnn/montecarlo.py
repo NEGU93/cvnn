@@ -105,7 +105,7 @@ class RealVsComplex(MonteCarlo):
                 output_mult = 1  # Do not multiply last layer
             # Do all the supported layers
             if isinstance(layer, layers.ComplexDense):
-                real_shape.append(layers.ComplexDense(layer.input_size * 2, layer.output_size * output_mult,
+                real_shape.append(layers.ComplexDense(layer.output_size * output_mult, input_size=layer.input_size * 2,
                                                       activation=layer.activation,
                                                       input_dtype=np.float32, output_dtype=np.float32,
                                                       weight_initializer=layer.weight_initializer,
