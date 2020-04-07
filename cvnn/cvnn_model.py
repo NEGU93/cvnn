@@ -537,8 +537,7 @@ if __name__ == '__main__':
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
     shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
-                                 input_dtype=rdtype, output_dtype=rdtype),
-             layers.ComplexDropout(rate=0.5),
+                                 input_dtype=rdtype, output_dtype=rdtype, dropout=None),
              layers.ComplexDense(output_size=output_size, input_size=hidden_size, activation='softmax_real',
                                  input_dtype=rdtype, output_dtype=rdtype)]
 

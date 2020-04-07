@@ -103,10 +103,11 @@ class ComplexDense(ComplexLayer):
     """
 
     def __init__(self, output_size, input_size=None,  activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros):
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
+                 dropout=None):
         """
         Initializer of the Dense layer
-        :param input_size: Input size of the layer  # TODO: make it compulsory only for the first layer.
+        :param input_size: Input size of the layer
         :param output_size: Output size of the layer
         :param activation: Activation function to be used.
             Can be either the function from cvnn.activation or tensorflow.python.keras.activations
@@ -125,6 +126,9 @@ class ComplexDense(ComplexLayer):
         super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size,
                                            input_dtype=input_dtype, output_dtype=output_dtype)
         self.activation = activation
+        self.dropout = dropout
+        if dropout:
+            tf.random.set_seed(0)
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
         self.w = None
@@ -171,10 +175,11 @@ class ComplexDense(ComplexLayer):
             y_out = apply_activation(self.activation, out)
             if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
                 self.logger.warning("Dense::apply_layer: Automatically casting output")
-            return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))
 
-    def call_v1(self, inputs):
-        return self.call(inputs), [self.w, self.b]
+            if self.dropout:
+                y_out = tf.cast(tf.complex(tf.nn.dropout(tf.math.real(y_out), rate=self.dropout),
+                                           tf.nn.dropout(tf.math.imag(y_out), rate=self.dropout)), dtype=y_out.dtype)
+            return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))
 
     def save_tensorboard_checkpoint(self, summary, step=None):
         with summary.as_default():
