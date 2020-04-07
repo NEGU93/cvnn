@@ -97,28 +97,9 @@ class RealVsComplex(MonteCarlo):
 
     def __init__(self, complex_model):
         super().__init__()
-        # generate real network shape
-        real_shape = []
-        output_mult = 2
-        for i, layer in enumerate(complex_model.shape):
-            if i == len(complex_model.shape) - 1:
-                output_mult = 1  # Do not multiply last layer
-            # Do all the supported layers
-            # TODO: Implement deepcopy for each layer!
-            if isinstance(layer, layers.ComplexDense):
-                real_shape.append(layers.ComplexDense(output_size=layer.output_size * output_mult,
-                                                      input_size=layer.input_size * 2,
-                                                      activation=layer.activation,
-                                                      input_dtype=np.float32, output_dtype=np.float32,
-                                                      weight_initializer=layer.weight_initializer,
-                                                      bias_initializer=layer.bias_initializer, dropout=layer.dropout
-                                                      ))
-            else:
-                sys.exit("Layer " + str(layer) + " unknown")
         # add models
         self.add_model(complex_model)
-        self.add_model(CvnnModel(name="real_network", shape=real_shape, loss_fun=complex_model.loss_fun,
-                                 tensorboard=complex_model.tensorboard, verbose=False))
+        self.add_model(complex_model.get_real_equivalent(name="real_network"))
 
 
 def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,

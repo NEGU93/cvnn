@@ -1,5 +1,6 @@
 import os
 import sys
+import copy
 import re
 import logging
 import numpy as np
@@ -101,18 +102,27 @@ class CvnnModel:
             memodict = {}
         new_shape = []
         for layer in self.shape:
-            if isinstance(layer, layers.ComplexDense):
-                # TODO: do this with deepcopy!
-                new_shape.append(layers.ComplexDense(output_size=layer.output_size, input_size=layer.input_size,
-                                                     activation=layer.activation,
-                                                     input_dtype=layer.input_dtype,
-                                                     output_dtype=layer.output_dtype,
-                                                     weight_initializer=layer.weight_initializer,
-                                                     bias_initializer=layer.bias_initializer, dropout=layer.dropout
-                                                     ))
+            if isinstance(layer, layers.ComplexLayer):
+                new_shape.append(copy.deepcopy(layer))
+            else:
+                self.logger.error("Layer " + str(layer) + " not child of cvnn.layers.ComplexLayer")
+                sys.exit(-1)
+        return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
+
+    def get_real_equivalent(self, name=None):
+        real_shape = []
+        output_mult = 2
+        for i, layer in enumerate(self.shape):
+            if i == len(self.shape) - 1:
+                output_mult = 1  # Do not multiply last layer
+            if isinstance(layer, layers.ComplexLayer):
+                real_shape.append(layer.get_real_equivalent(output_mult=output_mult))
             else:
                 sys.exit("Layer " + str(layer) + " unknown")
-        return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
+        if name is None:
+            name = self.name + "_real_equiv"
+        return CvnnModel(name=name, shape=real_shape, loss_fun=self.loss_fun,
+                         tensorboard=self.tensorboard, verbose=False)
 
     def call(self, x):
         """

@@ -14,8 +14,8 @@ from pdb import set_trace
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers
 # https://keras.io/initializers/
 
-SUPPORTED_DTYPES = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
-layer_count = count(0)                          # Used to count the number of layers
+SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
+layer_count = count(0)  # Used to count the number of layers
 
 
 class ComplexLayer(layers.Layer, ABC):
@@ -46,7 +46,7 @@ class ComplexLayer(layers.Layer, ABC):
             self.input_dtype = input_dtype
 
         if output_dtype is None:
-            output_dtype = self.input_dtype         # If output_dtype not declared then just keep it.
+            output_dtype = self.input_dtype  # If output_dtype not declared then just keep it.
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             self.logger.error("Layer::__init__: if input dtype is real output cannot be complex", exc_info=True)
@@ -63,7 +63,7 @@ class ComplexLayer(layers.Layer, ABC):
                 # None input size given but it's the first layer declared
                 self.logger.error("First layer must be given an input size")
                 sys.exit(-1)
-            else:       # self.__class__.__bases__[0].last_layer_output_dtype is not None:
+            else:  # self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 self.input_size = self.__class__.__bases__[0].last_layer_output_size
         elif input_size is not None:
             if self.__class__.__bases__[0].last_layer_output_size is not None:
@@ -74,12 +74,20 @@ class ComplexLayer(layers.Layer, ABC):
 
         self.output_size = output_size
         self.__class__.__bases__[0].last_layer_output_size = self.output_size
-        self.layer_number = next(layer_count)        # Know it's own number
+        self.layer_number = next(layer_count)  # Know it's own number
 
         super().__init__()
 
+    @abstractmethod
+    def __deepcopy__(self, memodict=None):
+        pass
+
     def get_input_dtype(self):
         return self.input_dtype
+
+    @abstractmethod
+    def get_real_equivalent(self, output_mult=2):
+        pass
 
     @abstractmethod
     def get_description(self):
@@ -101,7 +109,8 @@ class ComplexDense(ComplexLayer):
     - bias is a bias vector created by the layer
     """
 
-    def __init__(self, output_size, input_size=None,  activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
+    def __init__(self, output_size, input_size=None, activation=None, input_dtype=np.complex64,
+                 output_dtype=np.complex64,
                  weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
                  dropout=None):
         """
@@ -134,12 +143,32 @@ class ComplexDense(ComplexLayer):
         self.b = None
         self.init_weights()
 
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
+        return ComplexDense(output_size=self.output_size, input_size=self.input_size,
+                            activation=self.activation,
+                            input_dtype=self.input_dtype,
+                            output_dtype=self.output_dtype,
+                            weight_initializer=self.weight_initializer,
+                            bias_initializer=self.bias_initializer, dropout=self.dropout
+                            )
+
+    def get_real_equivalent(self, output_mult=2):
+        return ComplexDense(output_size=self.output_size * output_mult, input_size=self.input_size * 2,
+                            activation=self.activation,
+                            input_dtype=np.float32, output_dtype=np.float32,
+                            weight_initializer=self.weight_initializer,
+                            bias_initializer=self.bias_initializer, dropout=self.dropout
+                            )
+
     def init_weights(self):
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
-            self.w = tf.cast(tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                                                    self.weight_initializer()(shape=(self.input_size, self.output_size))),
-                                         name="weights" + str(self.layer_number)),
-                             dtype=self.input_dtype)
+            self.w = tf.cast(
+                tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
+                                       self.weight_initializer()(shape=(self.input_size, self.output_size))),
+                            name="weights" + str(self.layer_number)),
+                dtype=self.input_dtype)
             self.b = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(self.output_size),
                                                     self.bias_initializer()(self.output_size)),
                                          name="bias" + str(self.layer_number))
@@ -223,6 +252,14 @@ class ComplexDropout(ComplexLayer):
 
     def get_description(self):
         return "Complex Dropout:\n\trate={}".format(self.rate)
+
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
+        return ComplexDropout(rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
+
+    def get_real_equivalent(self, output_mult=2):
+        return self.__deepcopy__()      # Dropout layer is dtype agnostic
 
 
 __author__ = 'J. Agustin BARRACHINA'
