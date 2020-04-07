@@ -14,7 +14,7 @@ from pdb import set_trace
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers
 # https://keras.io/initializers/
 
-supported_dtypes = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
+SUPPORTED_DTYPES = (np.complex64, np.float32)   # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)                          # Used to count the number of layers
 
 
@@ -23,34 +23,60 @@ class ComplexLayer(layers.Layer, ABC):
     #   self.__class__.__bases__.<variable>
     # As all child's will have this class as base, mro gives a full list so won't work.
     last_layer_output_dtype = None
+    last_layer_output_size = None
 
-    def __init__(self, input_size, output_size, input_dtype=None, output_dtype=None):
+    def __init__(self, output_size, input_size=None, input_dtype=None, output_dtype=None):
+        # TODO: Is it worth to use output_dtype? the equation will give it automatically.
         self.logger = logging.getLogger(cvnn.__name__)
-        if input_dtype is None:     # input dtype not given
-            if self.__class__.__bases__[0].last_layer_output_dtype is None:
-                self.logger.error("First layer must be given an input dtype")
-                sys.exit(-1)
+
+        if input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is None:
+            # None input dtype given but it's the first layer declared
+            self.logger.error("First layer must be given an input dtype")
+            sys.exit(-1)
+        elif input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is not None:
+            # Use automatic mode
             self.input_dtype = self.__class__.__bases__[0].last_layer_output_dtype
-        else:   # Input dtype given as parameter
-            if input_dtype not in supported_dtypes:
+        elif input_dtype is not None:
+            if input_dtype not in SUPPORTED_DTYPES:
                 self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype))
                 sys.exit(-1)
+            if self.__class__.__bases__[0].last_layer_output_dtype is not None:
+                if self.__class__.__bases__[0].last_layer_output_dtype != input_dtype:
+                    self.logger.warning("Input dtype is not equal to last layer's input dtype")
             self.input_dtype = input_dtype
-            # set_trace()
-            self.__class__.__bases__[0].last_layer_output_dtype = self.input_dtype
-        self.input_size = input_size
-        self.output_size = output_size
-        self.layer_number = next(layer_count)        # Know it's own number
+
         if output_dtype is None:
-            output_dtype = self.input_dtype
+            output_dtype = self.input_dtype         # If output_dtype not declared then just keep it.
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
             self.logger.error("Layer::__init__: if input dtype is real output cannot be complex")
             sys.exit(-1)
-        if output_dtype not in supported_dtypes:
+        if output_dtype not in SUPPORTED_DTYPES:
             self.logger.error("Layer::__init__: unsupported output_dtype " + str(output_dtype))
             sys.exit(-1)
         self.output_dtype = output_dtype
+        self.__class__.__bases__[0].last_layer_output_dtype = self.output_dtype  # Save output_dtype for next one
+
+        # Input Size
+        if input_size is None:
+            if self.__class__.__bases__[0].last_layer_output_size is None:
+                # None input size given but it's the first layer declared
+                self.logger.error("First layer must be given an input size")
+                sys.exit(-1)
+            else:       # self.__class__.__bases__[0].last_layer_output_dtype is not None:
+                self.input_size = self.__class__.__bases__[0].last_layer_output_size
+        elif input_size is not None:
+            if self.__class__.__bases__[0].last_layer_output_size is not None:
+                if input_size != self.__class__.__bases__[0].last_layer_output_size:
+                    self.logger.error("Input size " + str(input_size) + " is not equal to last layer's output size " +
+                                      str(self.__class__.__bases__[0].last_layer_output_size))
+                    sys.exit(-1)
+            self.input_size = input_size
+
+        self.output_size = output_size
+        self.__class__.__bases__[0].last_layer_output_size = self.output_size
+        self.layer_number = next(layer_count)        # Know it's own number
+
         super().__init__()
 
     def get_input_dtype(self):
@@ -76,7 +102,7 @@ class ComplexDense(ComplexLayer):
     - bias is a bias vector created by the layer
     """
 
-    def __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
+    def __init__(self, output_size, input_size=None,  activation=None, input_dtype=np.complex64, output_dtype=np.complex64,
                  weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros):
         """
         Initializer of the Dense layer
@@ -96,7 +122,8 @@ class ComplexDense(ComplexLayer):
         :param bias_initializer: Initializer fot the bias.
             Default: tensorflow.keras.initializers.Zeros
         """
-        super(ComplexDense, self).__init__(input_size, output_size, input_dtype, output_dtype)
+        super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size,
+                                           input_dtype=input_dtype, output_dtype=output_dtype)
         self.activation = activation
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
