@@ -31,14 +31,14 @@ class ComplexLayer(layers.Layer, ABC):
 
         if input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is None:
             # None input dtype given but it's the first layer declared
-            self.logger.error("First layer must be given an input dtype")
+            self.logger.error("First layer must be given an input dtype", exc_info=True)
             sys.exit(-1)
         elif input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is not None:
             # Use automatic mode
             self.input_dtype = self.__class__.__bases__[0].last_layer_output_dtype
         elif input_dtype is not None:
             if input_dtype not in SUPPORTED_DTYPES:
-                self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype))
+                self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype), exc_info=True)
                 sys.exit(-1)
             if self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 if self.__class__.__bases__[0].last_layer_output_dtype != input_dtype:
@@ -49,10 +49,10 @@ class ComplexLayer(layers.Layer, ABC):
             output_dtype = self.input_dtype         # If output_dtype not declared then just keep it.
         if output_dtype == np.complex64 and input_dtype == np.float32:
             # TODO: can't it?
-            self.logger.error("Layer::__init__: if input dtype is real output cannot be complex")
+            self.logger.error("Layer::__init__: if input dtype is real output cannot be complex", exc_info=True)
             sys.exit(-1)
         if output_dtype not in SUPPORTED_DTYPES:
-            self.logger.error("Layer::__init__: unsupported output_dtype " + str(output_dtype))
+            self.logger.error("Layer::__init__: unsupported output_dtype " + str(output_dtype), exc_info=True)
             sys.exit(-1)
         self.output_dtype = output_dtype
         self.__class__.__bases__[0].last_layer_output_dtype = self.output_dtype  # Save output_dtype for next one
@@ -61,7 +61,7 @@ class ComplexLayer(layers.Layer, ABC):
         if input_size is None:
             if self.__class__.__bases__[0].last_layer_output_size is None:
                 # None input size given but it's the first layer declared
-                self.logger.error("First layer must be given an input size")
+                self.logger.error("First layer must be given an input size", exc_info=True)
                 sys.exit(-1)
             else:       # self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 self.input_size = self.__class__.__bases__[0].last_layer_output_size
@@ -69,7 +69,7 @@ class ComplexLayer(layers.Layer, ABC):
             if self.__class__.__bases__[0].last_layer_output_size is not None:
                 if input_size != self.__class__.__bases__[0].last_layer_output_size:
                     self.logger.error("Input size " + str(input_size) + " is not equal to last layer's output size " +
-                                      str(self.__class__.__bases__[0].last_layer_output_size))
+                                      str(self.__class__.__bases__[0].last_layer_output_size), exc_info=True)
                     sys.exit(-1)
             self.input_size = input_size
 
@@ -154,7 +154,7 @@ class ComplexDense(ComplexLayer):
                              dtype=self.input_dtype)
         else:
             # This case should never happen. The abstract constructor should already have checked this
-            self.logger.error("Input_dtype not supported.")
+            self.logger.error("Input_dtype not supported.", exc_info=True)
             sys.exit(-1)
 
     def get_description(self):
@@ -199,7 +199,7 @@ class ComplexDense(ComplexLayer):
                                      data=self.b, step=step)
             else:
                 # This case should never happen. The constructor should already have checked this
-                self.logger.error("Input_dtype not supported.")
+                self.logger.error("Input_dtype not supported.", exc_info=True)
                 sys.exit(-1)
 
 

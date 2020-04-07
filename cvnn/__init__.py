@@ -13,7 +13,7 @@ __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
 
-STRING_FORMATTER = "%(asctime)s — %(levelname)s:%(name)s — %(message)s"
+STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s — %(message)s"
 
 FORMATTER = logging.Formatter(STRING_FORMATTER)
 
