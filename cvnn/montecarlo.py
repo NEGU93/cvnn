@@ -121,7 +121,7 @@ class RealVsComplex(MonteCarlo):
 
 def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
-                   shape_raw=None, activation='cart_relu', debug=False, polar=False):
+                   shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True):
     # Get parameters
     if shape_raw is None:
         shape_raw = [100, 40]
@@ -169,6 +169,10 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
+    if do_all:
+        monte_carlo.monte_carlo_analyzer.do_all()
+
+    return monte_carlo.monte_carlo_analyzer.path
 
 
 if __name__ == "__main__":
