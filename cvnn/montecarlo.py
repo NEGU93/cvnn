@@ -121,7 +121,7 @@ class RealVsComplex(MonteCarlo):
 
 def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
-                   shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True):
+                   shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=None):
     # Get parameters
     if shape_raw is None:
         shape_raw = [100, 40]
@@ -156,7 +156,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
                           input_dtype=np.complex64, output_dtype=np.complex64)]
     for i in range(1, len(shape_raw)):
         shape.append(ComplexDense(input_size=shape_raw[i - 1], output_size=shape_raw[i], activation=activation,
-                                  input_dtype=np.complex64, output_dtype=np.complex64))
+                                  input_dtype=np.complex64, output_dtype=np.complex64, dropout=dropout))
     shape.append(ComplexDense(input_size=shape_raw[-1], output_size=output_size, activation='softmax_real',
                               input_dtype=np.complex64, output_dtype=np.float32))
 
