@@ -68,9 +68,8 @@ class ComplexLayer(layers.Layer, ABC):
         elif input_size is not None:
             if self.__class__.__bases__[0].last_layer_output_size is not None:
                 if input_size != self.__class__.__bases__[0].last_layer_output_size:
-                    self.logger.error("Input size " + str(input_size) + " is not equal to last layer's output size " +
+                    self.logger.warning("Input size " + str(input_size) + " is not equal to last layer's output size " +
                                       str(self.__class__.__bases__[0].last_layer_output_size), exc_info=True)
-                    sys.exit(-1)
             self.input_size = input_size
 
         self.output_size = output_size
