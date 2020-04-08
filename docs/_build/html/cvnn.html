@@ -1,37 +1,159 @@
 
-<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta charset="utf-8" />
-    <title>CVNN &#8212; cvnn 0.1.0 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>CVNN &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Activation Functions" href="act_fun.html" />
-    <link rel="prev" title="Complex-Valued Neural Network (CVNN)" href="index.html" />
+    <link rel="next" title="Layers" href="layers.html" />
+    <link rel="prev" title="Complex-Valued Neural Network (CVNN)" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
    
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
-  </head><body>
-  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
           
 
-          <div class="body" role="main">
+          
+            <a href="index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CVNN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results">Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#others">Others</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>CVNN</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/cvnn.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="cvnn">
 <h1>CVNN<a class="headerlink" href="#cvnn" title="Permalink to this headline">¶</a></h1>
@@ -40,10 +162,8 @@
 
 <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
                              <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
-        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-                            <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
-        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
-                            <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">,</span> <span class="n">output_dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span>
+        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
+        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">,</span> <span class="n">output_dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">CvnnModel</span><span class="p">(</span><span class="s2">&quot;cvnn_example&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">categorical_crossentropy</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
 </pre></div>
@@ -71,24 +191,16 @@
 <li><p>Weights histogram</p></li>
 </ul>
 </p></li>
-<li><p><strong>save_model_checkpoints</strong> – Save the model to be able to load and continue training later</p></li>
-<li><p><strong>save_csv_checkpoints</strong> – Save information of the train and test loss and accuracy on csv files</p></li>
 </ul>
 </dd>
 </dl>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><code class="code docutils literal notranslate"><span class="pre">save_model_checkpoints</span></code> Not yet working.</p>
-</div>
 </dd></dl>
 
 <div class="section" id="train">
 <h2>Train<a class="headerlink" href="#train" title="Permalink to this headline">¶</a></h2>
 <dl class="method">
-<dt>
-<code class="sig-name descname">fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,</code></dt>
-<dt>
-<code class="sig-name descname">verbose=True, display_freq=None, fast_mode=False, save_to_file=True)</code></dt>
+<dt id="fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">ratio=0.8</em>, <em class="sig-param">learning_rate=0.01</em>, <em class="sig-param">epochs=10</em>, <em class="sig-param">batch_size=32</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">display_freq=None</em>, <em class="sig-param">fast_mode=True</em>, <em class="sig-param">save_txt_fit_summary=False</em>, <em class="sig-param">save_model_checkpoints=False</em>, <em class="sig-param">save_csv_history=True</em>, <em class="sig-param">shuffle=True</em><span class="sig-paren">)</span><a class="headerlink" href="#fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trains the model for a fixed number of epochs (iterations on a dataset).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -103,15 +215,27 @@ Default: 0.8 (80% as train set and 20% as validation set)</p></li>
 <li><p><strong>verbose</strong> – (Boolean) Print results of the training while training</p></li>
 <li><p><strong>display_freq</strong> – Frequency on terms of steps for saving information and running a checkpoint.
 If <code class="code docutils literal notranslate"><span class="pre">None</span></code> (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)</p></li>
-<li><p><strong>fast_mode</strong> – (Boolean) Takes precedence over <code class="code docutils literal notranslate"><span class="pre">verbose</span></code> and <code class="code docutils literal notranslate"><span class="pre">save_to_file</span></code></p></li>
+<li><p><strong>fast_mode</strong> – <p>(Boolean) Does 2 things if False:</p>
+<ol class="arabic simple">
+<li><p>Saves csv files with each checkpoint</p></li>
+<li><p>Prints loss and accuracy if <code class="code docutils literal notranslate"><span class="pre">verbose</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
+</ol>
+</p></li>
 <li><p><strong>save_to_file</strong> – (Boolean) save a txt with the information of the fit
 (same as what will be printed if <code class="code docutils literal notranslate"><span class="pre">verbose</span></code>)</p></li>
+<li><p><strong>save_model_checkpoints</strong> – Save the model to be able to load and continue training later</p></li>
+<li><p><strong>save_csv_history</strong> – Save information of the train and test loss and accuracy on csv files</p></li>
+<li><p><strong>shuffle</strong> – (Boolean) Whether to shuffle the training data before each epoch. Default: True</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>None</p>
 </dd>
 </dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="code docutils literal notranslate"><span class="pre">save_model_checkpoints</span></code> Not yet working. So default is False and will through error otherwise.</p>
+</div>
 </dd></dl>
 
 </div>
@@ -200,6 +324,24 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
 </dl>
 </dd></dl>
 
+<dl class="method">
+<dt>
+<code class="sig-name descname">get_confusion_matrix(self, x, y, save_result=False):</code></dt>
+<dd><p>Generates a pandas data-frame with the confusion matrix of result of x and y (labels)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – data to which apply the model</p></li>
+<li><p><strong>y</strong> – labels</p></li>
+<li><p><strong>save_result</strong> – if <code class="code docutils literal notranslate"><span class="pre">True</span></code> it will save the confusion matrix as a csv at models path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Confusion matrix pandas data-frame</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="others">
 <h2>Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h2>
@@ -235,82 +377,71 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
 </dl>
 </dd></dl>
 
+<dl class="method">
+<dt>
+<code class="sig-name descname">get_real_equivalent(self, name=None):</code></dt>
+<dd><p>Creates a new model equivalent of current model. If model is already real throws and error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – name of the new network to be created.
+If None (Default) it will use same name as current model with “_real_equiv” suffix</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>CvnnModel() real equivalent model</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 
 
+           </div>
+           
           </div>
-          
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">cvnn</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">CVNN</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#train">Train</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#results">Results</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#others">Others</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Complex-Valued Neural Network (CVNN)</a></li>
-      <li>Next: <a href="act_fun.html" title="next chapter">Activation Functions</a></li>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="layers.html" class="btn btn-neutral float-right" title="Layers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="Complex-Valued Neural Network (CVNN)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
     </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+  
 
+  <hr/>
 
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
 
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
-
-
-
+</footer>
 
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &copy;2020, J Agustin BARRACHINA.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="_sources/cvnn.rst.txt"
-          rel="nofollow">Page source</a>
-    </div>
 
-    
+    </section>
 
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
     
-  </body>
+   
+
+</body>
 </html>

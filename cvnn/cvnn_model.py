@@ -89,41 +89,6 @@ class CvnnModel:
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
         self.plotter = da.Plotter(self.root_dir)
 
-    def __deepcopy__(self, memodict=None):
-        """
-        This function is used to create a copy of the model.
-        Used for the Monte Carlo simulation. Creates a copy of the model and then trains them.
-        ATTENTION: This does not keep the model's weights but randomly initializes them.
-            (makes sense like that for the Monte Carlo simulation)
-        :param memodict:
-        :return: A copy of the current model
-        """
-        if memodict is None:
-            memodict = {}
-        new_shape = []
-        for layer in self.shape:
-            if isinstance(layer, layers.ComplexLayer):
-                new_shape.append(copy.deepcopy(layer))
-            else:
-                self.logger.error("Layer " + str(layer) + " not child of cvnn.layers.ComplexLayer")
-                sys.exit(-1)
-        return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
-
-    def get_real_equivalent(self, name=None):
-        real_shape = []
-        output_mult = 2
-        for i, layer in enumerate(self.shape):
-            if i == len(self.shape) - 1:
-                output_mult = 1  # Do not multiply last layer
-            if isinstance(layer, layers.ComplexLayer):
-                real_shape.append(layer.get_real_equivalent(output_mult=output_mult))
-            else:
-                sys.exit("Layer " + str(layer) + " unknown")
-        if name is None:
-            name = self.name + "_real_equiv"
-        return CvnnModel(name=name, shape=real_shape, loss_fun=self.loss_fun,
-                         tensorboard=self.tensorboard, verbose=False)
-
     def call(self, x):
         """
         Forward result of the network
@@ -155,6 +120,54 @@ class CvnnModel:
             return True
         else:
             return False
+
+    # ====================
+    #     Copy methods
+    # ====================
+
+    def __deepcopy__(self, memodict=None):
+        """
+        This function is used to create a copy of the model.
+        Used for the Monte Carlo simulation. Creates a copy of the model and then trains them.
+        ATTENTION: This does not keep the model's weights but randomly initializes them.
+            (makes sense like that for the Monte Carlo simulation)
+        :param memodict:
+        :return: A copy of the current model
+        """
+        if memodict is None:
+            memodict = {}
+        new_shape = []
+        for layer in self.shape:
+            if isinstance(layer, layers.ComplexLayer):
+                new_shape.append(copy.deepcopy(layer))
+            else:
+                self.logger.error("Layer " + str(layer) + " not child of cvnn.layers.ComplexLayer")
+                sys.exit(-1)
+        return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
+
+    def get_real_equivalent(self, name=None):
+        """
+        Creates a new model equivalent of current model. If model is already real throws and error.
+        :param name: name of the new network to be created.
+            If None (Default) it will use same name as current model with "_real_equiv" suffix
+        :return: CvnnModel() real equivalent model
+        """
+        if not self.is_complex():
+            self.logger.error("model {} was already real".format(self.name))
+            sys.exit(-1)
+        real_shape = []
+        output_mult = 2
+        for i, layer in enumerate(self.shape):
+            if i == len(self.shape) - 1:
+                output_mult = 1  # Do not multiply last layer
+            if isinstance(layer, layers.ComplexLayer):
+                real_shape.append(layer.get_real_equivalent(output_mult=output_mult))
+            else:
+                sys.exit("Layer " + str(layer) + " unknown")
+        if name is None:
+            name = self.name + "_real_equiv"
+        return CvnnModel(name=name, shape=real_shape, loss_fun=self.loss_fun,
+                         tensorboard=self.tensorboard, verbose=False)
 
     # ====================
     #          Train
@@ -208,6 +221,7 @@ class CvnnModel:
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
+
         :param x: Input data.
         :param y: Labels
         :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
@@ -225,6 +239,7 @@ class CvnnModel:
                     (same as what will be printed if "verbose")
         :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
         :param save_csv_history: Save information of the train and test loss and accuracy on csv files.
+        :param shuffle: (Boolean) Whether to shuffle the training data before each epoch. Default: True
         :return: None
         """
         # Check input
@@ -358,6 +373,13 @@ class CvnnModel:
         return self.evaluate_loss(x, y), self.evaluate_accuracy(x, y)
 
     def get_confusion_matrix(self, x, y, save_result=False):
+        """
+        Generates a pandas data-frame with the confusion matrix of result of x and y (labels)
+        :param x: data to which apply the model
+        :param y: labels
+        :param save_result: if True it will save the confusion matrix as a csv at models path
+        :return: Confusion matrix pandas data-frame
+        """
         filename = None
         if save_result:
             filename = self.root_dir / "categorical.csv"

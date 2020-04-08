@@ -7,10 +7,8 @@ Short example::
 
         shape = [layers.ComplexDense(input_size=np.shape(x)[1], output_size=100, 
                                      activation='cart_relu'),
-                layers.ComplexDense(input_size=100, output_size=40, 
-                                    activation='cart_relu'),
-                layers.ComplexDense(input_size=40, output_size=np.shape(y)[1], 
-                                    activation='softmax_real', output_dtype=np.float32)]
+                layers.ComplexDense(output_size=40, activation='cart_relu'),
+                layers.ComplexDense(output_size=np.shape(y)[1], activation='softmax_real', output_dtype=np.float32)]
         model = CvnnModel("cvnn_example", shape, tf.keras.losses.categorical_crossentropy)
         model.fit(x, y, batch_size=100, epochs=150)
 
@@ -32,17 +30,10 @@ Short example::
                 * Graph
                 * Weights histogram
 
-        :param save_model_checkpoints: Save the model to be able to load and continue training later
-        :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files
-        .. warning::
-                :code:`save_model_checkpoints` Not yet working.
-        
-
 Train
 -----
 
-.. py:method:: fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
-            verbose=True, display_freq=None, fast_mode=False, save_to_file=True)
+.. py:method:: fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32, verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,save_model_checkpoints=False, save_csv_history=True, shuffle=True)
 
 	Trains the model for a fixed number of epochs (iterations on a dataset).
 
@@ -56,10 +47,20 @@ Train
         :param verbose: (Boolean) Print results of the training while training
         :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
             If :code:`None` (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
-        :param fast_mode: (Boolean) Takes precedence over :code:`verbose` and :code:`save_to_file`
+        :param fast_mode: (Boolean) Does 2 things if False:
+        
+                    1. Saves csv files with each checkpoint
+                    2. Prints loss and accuracy if :code:`verbose = True` 
         :param save_to_file: (Boolean) save a txt with the information of the fit
                     (same as what will be printed if :code:`verbose`)
+        :param save_model_checkpoints: Save the model to be able to load and continue training later
+        :param save_csv_history: Save information of the train and test loss and accuracy on csv files
+        :param shuffle: (Boolean) Whether to shuffle the training data before each epoch. Default: True
         :return: None
+
+        .. warning::
+                :code:`save_model_checkpoints` Not yet working. So default is False and will through error otherwise.
+        
 
 Results
 -------
@@ -105,6 +106,15 @@ Results
         :param y: Labels
         :return: tuple (loss, accuracy)
 
+.. py:method:: get_confusion_matrix(self, x, y, save_result=False):
+
+        Generates a pandas data-frame with the confusion matrix of result of x and y (labels)
+
+        :param x: data to which apply the model
+        :param y: labels
+        :param save_result: if :code:`True` it will save the confusion matrix as a csv at models path
+        :return: Confusion matrix pandas data-frame
+
 Others
 ------
 
@@ -125,4 +135,11 @@ Others
                 if not model.is_complex():
                         x = cvnn.utils.transform_to_real(x)
 
+.. py:method:: get_real_equivalent(self, name=None):
+        
+        Creates a new model equivalent of current model. If model is already real throws and error.
+
+        :param name: name of the new network to be created.
+            If None (Default) it will use same name as current model with "_real_equiv" suffix
+        :return: CvnnModel() real equivalent model
 
