@@ -22,10 +22,16 @@ class ComplexLayer(layers.Layer, ABC):
     # Being ComplexLayer an abstract class, then this can be called using:
     #   self.__class__.__bases__.<variable>
     # As all child's will have this class as base, mro gives a full list so won't work.
-    last_layer_output_dtype = None
+    last_layer_output_dtype = None      # TODO: Make it work both with np and tf dtypes
     last_layer_output_size = None
 
-    def __init__(self, output_size, input_size=None, input_dtype=None, output_dtype=None):
+    def __init__(self, output_size, input_size=None, input_dtype=None):
+        """
+
+        :param output_size:
+        :param input_size:
+        :param input_dtype:
+        """
         # TODO: Is it worth to use output_dtype? the equation will give it automatically.
         self.logger = logging.getLogger(cvnn.__name__)
 
@@ -42,20 +48,14 @@ class ComplexLayer(layers.Layer, ABC):
                 sys.exit(-1)
             if self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 if self.__class__.__bases__[0].last_layer_output_dtype != input_dtype:
-                    self.logger.warning("Input dtype is not equal to last layer's input dtype")
+                    self.logger.warning("Input dtype " + str(input_dtype) +
+                                        " is not equal to last layer's input dtype " +
+                                        str(self.__class__.__bases__[0].last_layer_output_dtype))
             self.input_dtype = input_dtype
 
-        if output_dtype is None:
-            output_dtype = self.input_dtype  # If output_dtype not declared then just keep it.
-        if output_dtype == np.complex64 and input_dtype == np.float32:
-            # TODO: can't it?
-            self.logger.error("Layer::__init__: if input dtype is real output cannot be complex", exc_info=True)
-            sys.exit(-1)
-        if output_dtype not in SUPPORTED_DTYPES:
-            self.logger.error("Layer::__init__: unsupported output_dtype " + str(output_dtype), exc_info=True)
-            sys.exit(-1)
-        self.output_dtype = output_dtype
-        self.__class__.__bases__[0].last_layer_output_dtype = self.output_dtype  # Save output_dtype for next one
+        # This will be normally the case.
+        # Each layer must change this value if needed.
+        self.__class__.__bases__[0].last_layer_output_dtype = self.input_dtype
 
         # Input Size
         if input_size is None:
@@ -94,7 +94,7 @@ class ComplexLayer(layers.Layer, ABC):
         pass
 
     @abstractmethod
-    def save_tensorboard_checkpoint(self, summary, step=None):
+    def _save_tensorboard_checkpoint(self, summary, step=None):
         pass
 
 
@@ -109,14 +109,13 @@ class ComplexDense(ComplexLayer):
     - bias is a bias vector created by the layer
     """
 
-    def __init__(self, output_size, input_size=None, activation=None, input_dtype=np.complex64,
-                 output_dtype=np.complex64,
+    def __init__(self, output_size, input_size=None, activation=None, input_dtype=None,
                  weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
                  dropout=None):
         """
         Initializer of the Dense layer
-        :param input_size: Input size of the layer
         :param output_size: Output size of the layer
+        :param input_size: Input size of the layer
         :param activation: Activation function to be used.
             Can be either the function from cvnn.activation or tensorflow.python.keras.activations
             or a string as listed in act_dispatcher
@@ -124,16 +123,18 @@ class ComplexDense(ComplexLayer):
             Supported data types:
                 - np.complex64
                 - np.float32
-        :param output_dtype: data type of the output function.
-            Default: np.complex64   # TODO: Shall I make it not necessary? Let the activation function decide it.
         :param weight_initializer: Initializer for the weights.
             Default: tensorflow.keras.initializers.GlorotUniform
         :param bias_initializer: Initializer fot the bias.
             Default: tensorflow.keras.initializers.Zeros
         """
-        super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size,
-                                           input_dtype=input_dtype, output_dtype=output_dtype)
+        super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
         self.activation = activation
+        # Test if the activation function changes datatype or not...
+        self.__class__.__bases__[0].last_layer_output_dtype = \
+            apply_activation(self.activation,
+                             tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
+                             ).numpy().dtype
         self.dropout = dropout
         if dropout:
             tf.random.set_seed(0)
@@ -149,15 +150,13 @@ class ComplexDense(ComplexLayer):
         return ComplexDense(output_size=self.output_size, input_size=self.input_size,
                             activation=self.activation,
                             input_dtype=self.input_dtype,
-                            output_dtype=self.output_dtype,
                             weight_initializer=self.weight_initializer,
                             bias_initializer=self.bias_initializer, dropout=self.dropout
                             )
 
     def get_real_equivalent(self, output_mult=2):
         return ComplexDense(output_size=self.output_size * output_mult, input_size=self.input_size * 2,
-                            activation=self.activation,
-                            input_dtype=np.float32, output_dtype=np.float32,
+                            activation=self.activation, input_dtype=np.float32,
                             weight_initializer=self.weight_initializer,
                             bias_initializer=self.bias_initializer, dropout=self.dropout
                             )
@@ -187,9 +186,9 @@ class ComplexDense(ComplexLayer):
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
-        out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype.__name__) + \
-                  ") -> output size = " + str(self.output_size) + "(" + str(self.output_dtype.__name__) + \
-                  ");\n\tact_fun = " + fun_name + ";\n\tweight init = " \
+        out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype) + \
+                  ") -> output size = " + str(self.output_size) + \
+                  ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
                   + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + \
                   "\nDropout: " + str(self.dropout)
         return out_str
@@ -199,18 +198,17 @@ class ComplexDense(ComplexLayer):
         with tf.name_scope("ComplexDense_" + str(self.layer_number)) as scope:
             if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
                 self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
-                                    + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) + "). Trying cast")
+                                    + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) +
+                                    "). Casting input but you most likely have a bug")
             out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
             y_out = apply_activation(self.activation, out)
-            if tf.dtypes.as_dtype(np.dtype(self.output_dtype)) != y_out.dtype:  # Case for real output / real labels
-                self.logger.warning("Dense::apply_layer: Automatically casting output")
 
             if self.dropout:
                 y_out = tf.cast(tf.complex(tf.nn.dropout(tf.math.real(y_out), rate=self.dropout),
                                            tf.nn.dropout(tf.math.imag(y_out), rate=self.dropout)), dtype=y_out.dtype)
-            return tf.cast(y_out, tf.dtypes.as_dtype(np.dtype(self.output_dtype)))
+            return y_out
 
-    def save_tensorboard_checkpoint(self, summary, step=None):
+    def _save_tensorboard_checkpoint(self, summary, step=None):
         with summary.as_default():
             if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:
                 tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_w_real",
@@ -235,6 +233,13 @@ class ComplexDense(ComplexLayer):
 class ComplexDropout(ComplexLayer):
 
     def __init__(self, rate, noise_shape=None, seed=None):
+        """
+        :param rate: A scalar Tensor with the same type as x.
+            The probability that each element is dropped.
+            For example, setting rate=0.1 would drop 10% of input elements.
+        :param noise_shape: A 1-D Tensor of type int32, representing the shape for randomly generated keep/drop flags.
+        :param seed:  A Python integer. Used to create random seeds. See tf.random.set_seed for behavior.
+        """
         # tf.random.set_seed(seed)
         self.rate = rate
         self.noise_shape = noise_shape
@@ -247,7 +252,7 @@ class ComplexDropout(ComplexLayer):
                                   tf.nn.dropout(tf.math.imag(inputs), rate=self.rate,
                                                 noise_shape=self.noise_shape, seed=self.seed)), dtype=inputs.dtype)
 
-    def save_tensorboard_checkpoint(self, summary, step=None):
+    def _save_tensorboard_checkpoint(self, summary, step=None):
         # No tensorboard things to save
         return None
 

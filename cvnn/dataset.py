@@ -416,8 +416,8 @@ class CorrelatedGaussianNormal(GeneratorDataset):
         for cls in range(self.num_classes):
             res_str += "class {}\n".format(cls)
             res_str += "\tPearson correlation coefficient: {}\n".format(self.get_coef_correl(cls))
-            res_str += "\t\sigma_x^2 = " + str(self.cov_matrix_list[cls][0][0]) + \
-                       "\sigma_y^2 = " + str(self.cov_matrix_list[cls][1][1])
+            res_str += "\tsigma_x^2 = " + str(self.cov_matrix_list[cls][0][0]) + \
+                       "sigma_y^2 = " + str(self.cov_matrix_list[cls][1][1])
             res_str += "\tCircularity quotient: {}\n".format(self.get_circularity_quotient(cls))
             variance, pseudo_variance = self.get_variance_and_pseudo_variance(cls)
             res_str += "\t\tvariance: {0}; pseudo-variance: {1}\n".format(variance, pseudo_variance)

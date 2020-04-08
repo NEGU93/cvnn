@@ -137,6 +137,8 @@ class CvnnModel:
         if memodict is None:
             memodict = {}
         new_shape = []
+        layers.ComplexLayer.last_layer_output_dtype = None
+        layers.ComplexLayer.last_layer_output_size = None
         for layer in self.shape:
             if isinstance(layer, layers.ComplexLayer):
                 new_shape.append(copy.deepcopy(layer))
@@ -157,6 +159,8 @@ class CvnnModel:
             sys.exit(-1)
         real_shape = []
         output_mult = 2
+        layers.ComplexLayer.last_layer_output_dtype = None
+        layers.ComplexLayer.last_layer_output_size = None
         for i, layer in enumerate(self.shape):
             if i == len(self.shape) - 1:
                 output_mult = 1  # Do not multiply last layer
@@ -461,7 +465,7 @@ class CvnnModel:
                 tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
         # Save weights histogram
         for layer in self.shape:
-            layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
+            layer._save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
 
     def save(self, loss, acc):
         # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
@@ -558,8 +562,8 @@ if __name__ == '__main__':
     for coef in coef_correls_list:
         param_list.append([coef, 1, 2])
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    # x_fit = transform_to_real(dataset.x)
-    x_fit = dataset.x
+    x_fit = transform_to_real(dataset.x)
+    # x_fit = dataset.x
 
     # Define shape
     cdtype = np.complex64
@@ -571,9 +575,8 @@ if __name__ == '__main__':
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
     shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
-                                 input_dtype=cdtype, output_dtype=cdtype, dropout=0.5),
-             layers.ComplexDense(output_size=output_size, input_size=hidden_size, activation='softmax_real',
-                                 input_dtype=cdtype, output_dtype=rdtype)]
+                                 input_dtype=rdtype, dropout=0.5),
+             layers.ComplexDense(output_size=output_size, activation='softmax_real')]
 
     # Train model
     model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)

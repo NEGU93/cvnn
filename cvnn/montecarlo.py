@@ -136,12 +136,12 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
         logger.error("Shape raw was empty")
         sys.exit(-1)
     shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
-                          input_dtype=np.complex64, output_dtype=np.complex64)]
+                          input_dtype=np.complex64)]
     for i in range(1, len(shape_raw)):
         shape.append(ComplexDense(input_size=shape_raw[i - 1], output_size=shape_raw[i], activation=activation,
-                                  input_dtype=np.complex64, output_dtype=np.complex64, dropout=dropout))
+                                  input_dtype=np.complex64, dropout=dropout))
     shape.append(ComplexDense(input_size=shape_raw[-1], output_size=output_size, activation='softmax_real',
-                              input_dtype=np.complex64, output_dtype=np.float32))
+                              input_dtype=np.complex64))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
                                 verbose=False, tensorboard=False)

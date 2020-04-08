@@ -1,5 +1,5 @@
-Layers
-===========
+Complex Layers
+==============
 
 .. py:class:: ComplexDense
 
@@ -15,15 +15,7 @@ Fully connected complex-valued layer
     * weights is a matrix created by the layer
     * bias is a bias vector created by the layer
 
-.. py:method:: __init__(self, 
-                        input_size, 
-                        output_size, 
-                        activation=None, 
-                        input_dtype=np.complex64, 
-                        output_dtype=np.complex64,
-                        weight_initializer=tf.keras.initializers.GlorotUniform, 
-                        bias_initializer=tf.keras.initializers.Zeros
-                        )
+.. py:method:: __init__(self, input_size, output_size, activation=None, input_dtype=np.complex64, output_dtype=np.complex64, weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros)
 
         Initializer of the Dense layer
 

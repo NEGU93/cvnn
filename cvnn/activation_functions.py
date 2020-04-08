@@ -213,6 +213,7 @@ def cart_softmax(z, axis=-1):
     return tf.cast(tf.complex(tf.keras.activations.softmax(tf.math.real(z), axis),
                               tf.keras.activations.softmax(tf.math.imag(z), axis)), dtype=z.dtype)
 
+
 """
 TYPE B: Polar form.
 """
