@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Layers &mdash; cvnn 0.1.0 documentation</title>
+  <title>Complex Layers &mdash; cvnn 0.1.0 documentation</title>
   
 
   
@@ -83,7 +83,10 @@
             
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Layers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Complex Layers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#complex-dense">Complex Dense</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
@@ -131,7 +134,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Layers</li>
+      <li>Complex Layers</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -150,15 +153,81 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="layers">
-<h1>Layers<a class="headerlink" href="#layers" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="complex-layers">
+<h1>Complex Layers<a class="headerlink" href="#complex-layers" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+<code class="sig-name descname">ComplexLayer(layers.Layer, ABC):</code></dt>
+<dd><p>All the complex layers defined here inherit from <code class="code docutils literal notranslate"><span class="pre">ComplexLayer</span></code></p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">__init__(self, output_size, input_size=None, input_dtype=None):</code></dt>
+<dd><p>Base constructor for a complex layer. The first layer will need a input_dtype and input_size.</p>
+<p>For the other classes is optional, if input_size or input_dtype does not match last layer it will throw a warning</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_size</strong> – Output size of the layer</p></li>
+<li><p><strong>input_size</strong> – Input size of the layer</p></li>
+<li><p><strong>input_dtype</strong> – data type of the input <code class="code docutils literal notranslate"><span class="pre">SUPPORTED_DTYPES</span> <span class="pre">=</span> <span class="pre">(np.complex64,</span> <span class="pre">np.float32)</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>Supported data types:</dt><dd><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">np.complex64</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">np.float32</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">call(self, inputs):</code></dt>
+<dd><p>Applies the layer to an input</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inputs</strong> – input</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>result of applying the layer to the inputs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">get_real_equivalent(self):</code></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Gets a real-valued COPY of the Complex Layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">get_description(self):</code></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A string containing all the information of the layer</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="section" id="complex-dense">
+<h2>Complex Dense<a class="headerlink" href="#complex-dense" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="ComplexDense">
 <em class="property">class </em><code class="sig-name descname">ComplexDense</code><a class="headerlink" href="#ComplexDense" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl>
-<dt>Fully connected complex-valued layer</dt><dd><p>Implements the operation:</p>
+<dd><p>Fully connected complex-valued layer</p>
+<p>Implements the operation:</p>
 <div class="math notranslate nohighlight">
 \[\sigma(\textrm{input * weights + bias})\]</div>
 <ul class="simple">
@@ -166,61 +235,79 @@
 <li><p>activation (<span class="math notranslate nohighlight">\(\sigma\)</span>) is the element-wise activation function passed as the activation argument,</p></li>
 <li><p>weights is a matrix created by the layer</p></li>
 <li><p>bias is a bias vector created by the layer</p></li>
+<li><p>dropout can be applied as well after the activation function if specified</p></li>
 </ul>
-</dd>
-</dl>
+</dd></dl>
+
 <dl class="method">
 <dt>
-<code class="sig-name descname">__init__(self,</code></dt>
-<dt>
-<code class="sig-name descname">input_size,</code></dt>
-<dt>
-<code class="sig-name descname">output_size,</code></dt>
-<dt>
-<code class="sig-name descname">activation=None,</code></dt>
-<dt>
-<code class="sig-name descname">input_dtype=np.complex64,</code></dt>
-<dt>
-<code class="sig-name descname">output_dtype=np.complex64,</code></dt>
-<dt>
-<code class="sig-name descname">weight_initializer=tf.keras.initializers.GlorotUniform,</code></dt>
-<dt>
-<code class="sig-name descname">bias_initializer=tf.keras.initializers.Zeros</code></dt>
-<dt>
-<code class="sig-name descname">)</code></dt>
+<code class="sig-name descname">__init__(self, output_size, input_size=None, activation=None, input_dtype=None, weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros, dropout=None):</code></dt>
 <dd><p>Initializer of the Dense layer</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input_size</strong> – Input size of the layer</p></li>
 <li><p><strong>output_size</strong> – Output size of the layer</p></li>
+<li><p><strong>input_size</strong> – Input size of the layer (if <code class="code docutils literal notranslate"><span class="pre">None</span></code> it will automatically be defined)</p></li>
 <li><p><strong>activation</strong> – Activation function to be used.
 Can be either the function from <span class="xref std std-ref">activation_functions</span> or <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations">tensorflow.python.keras.activations</a>
-or a string as listed in act_dispatcher</p></li>
-<li><p><strong>input_dtype</strong> – <p>data type of the input.</p>
-<p>Default: <code class="code docutils literal notranslate"><span class="pre">np.complex64</span></code></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<dl class="simple">
-<dt>Supported data types:</dt><dd><ul>
-<li><p><code class="code docutils literal notranslate"><span class="pre">np.complex64</span></code></p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">np.float32</span></code></p></li>
-</ul>
-</dd>
-</dl>
-</div>
-</p></li>
-<li><p><strong>output_dtype</strong> – data type of the output function.
-Default: <code class="code docutils literal notranslate"><span class="pre">np.complex64</span></code></p></li>
+or a string as listed in <code class="code docutils literal notranslate"><span class="pre">act_dispatcher</span></code></p></li>
+<li><p><strong>input_dtype</strong> – data type of the input. If <code class="code docutils literal notranslate"><span class="pre">None</span></code> (default) it will be defined automatically.</p></li>
 <li><p><strong>weight_initializer</strong> – Initializer for the weights.
 Default: <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/initializers/GlorotUniform">tensorflow.keras.initializers.GlorotUniform</a></p></li>
 <li><p><strong>bias_initializer</strong> – Initializer fot the bias.
 Default: <code class="code docutils literal notranslate"><span class="pre">tensorflow.keras.initializers.Zeros</span></code></p></li>
+<li><p><strong>dropout</strong> – <p>Either None (default) and no dropout will be applied or a scalar that will be the probability that each element is dropped.</p>
+<p>Example: setting rate=0.1 would drop 10% of input elements.</p>
+</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
+<dl class="method">
+<dt>
+<code class="sig-name descname">get_real_equivalent(self, output_multiplier=2):</code></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>output_multiplier</strong> – Multiplier of output and input size (normally by 2). Can be used 1 for the output layer of a classifier.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>real-valued copy of self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="ComplexDropout">
+<em class="property">class </em><code class="sig-name descname">ComplexDropout</code><a class="headerlink" href="#ComplexDropout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes dropout: randomly sets elements to zero to prevent overfitting.</p>
+<p>Dropout <a class="reference internal" href="#cit2014-srivastava" id="id1"><span>[CIT2014-SRIVASTAVA]</span></a> consists in randomly setting a fraction <code class="code docutils literal notranslate"><span class="pre">rate</span></code> of input units to 0 at each update during training time, which helps prevent overfitting.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">__init__(self, rate, noise_shape=None, seed=None):</code></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rate</strong> – A scalar Tensor with the same type as x.
+The probability that each element is dropped.
+For example, setting rate=0.1 would drop 10% of input elements.</p></li>
+<li><p><strong>noise_shape</strong> – A 1-D Tensor of type int32, representing the shape for randomly generated keep/drop flags.</p></li>
+<li><p><strong>seed</strong> – A Python integer. Used to create random seeds. See tf.random.set_seed for behavior.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="citation">
+<dt class="label" id="cit2014-srivastava"><span class="brackets"><a class="fn-backref" href="#id1">CIT2014-SRIVASTAVA</a></span></dt>
+<dd><ol class="upperalpha simple" start="14">
+<li><p>Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and R. Salakhutdinov, “Dropout: a simple way to prevent neural networks from overfitting,” J. Mach. Learn. Res., vol. 15, no. 1, pp. 1929–1958, Jan. 2014</p></li>
+</ol>
+</dd>
+</dl>
+</div>
 </div>
 
 

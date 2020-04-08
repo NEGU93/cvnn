@@ -3,12 +3,11 @@ CVNN
 
 Short example::
 
-        # Assume you already have complex data x with its labels y...
+        # Assume you already have complex data 'x' with its labels 'y'...
 
-        shape = [layers.ComplexDense(input_size=np.shape(x)[1], output_size=100, 
-                                     activation='cart_relu'),
+        shape = [layers.ComplexDense(output_size=100, input_size=np.shape(x)[1], activation='cart_relu'),
                 layers.ComplexDense(output_size=40, activation='cart_relu'),
-                layers.ComplexDense(output_size=np.shape(y)[1], activation='softmax_real', output_dtype=np.float32)]
+                layers.ComplexDense(output_size=np.shape(y)[1], activation='softmax_real')]
         model = CvnnModel("cvnn_example", shape, tf.keras.losses.categorical_crossentropy)
         model.fit(x, y, batch_size=100, epochs=150)
 
@@ -135,11 +134,12 @@ Others
                 if not model.is_complex():
                         x = cvnn.utils.transform_to_real(x)
 
-.. py:method:: get_real_equivalent(self, name=None):
+.. py:method:: get_real_equivalent(self, classifier=True, name=None):
         
         Creates a new model equivalent of current model. If model is already real throws and error.
 
+        :param classifier: :code:`True` (default) if the model is a classification model. :code:`False` otherwise.
         :param name: name of the new network to be created.
-            If None (Default) it will use same name as current model with "_real_equiv" suffix
-        :return: CvnnModel() real equivalent model
+            If :code:`None` (Default) it will use same name as current model with "_real_equiv" suffix
+        :return: :code:`CvnnModel()` real equivalent model
 

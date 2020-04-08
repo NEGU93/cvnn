@@ -40,8 +40,7 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name, shape, loss_fun,
-                 verbose=True, tensorboard=True):
+    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models
@@ -147,9 +146,10 @@ class CvnnModel:
                 sys.exit(-1)
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
-    def get_real_equivalent(self, name=None):
+    def get_real_equivalent(self, classifier=True, name=None):
         """
         Creates a new model equivalent of current model. If model is already real throws and error.
+        :param classifier: True (default) if the model is a classification model. False otherwise.
         :param name: name of the new network to be created.
             If None (Default) it will use same name as current model with "_real_equiv" suffix
         :return: CvnnModel() real equivalent model
@@ -162,10 +162,13 @@ class CvnnModel:
         layers.ComplexLayer.last_layer_output_dtype = None
         layers.ComplexLayer.last_layer_output_size = None
         for i, layer in enumerate(self.shape):
-            if i == len(self.shape) - 1:
+            if classifier and i == len(self.shape) - 1:
                 output_mult = 1  # Do not multiply last layer
             if isinstance(layer, layers.ComplexLayer):
-                real_shape.append(layer.get_real_equivalent(output_mult=output_mult))
+                if isinstance(layer, layers.ComplexDense):  # TODO: Check if I can do this with kargs or sth
+                    real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult))
+                else:
+                    real_shape.append(layer.get_real_equivalent())
             else:
                 sys.exit("Layer " + str(layer) + " unknown")
         if name is None:
@@ -465,7 +468,7 @@ class CvnnModel:
                 tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
         # Save weights histogram
         for layer in self.shape:
-            layer._save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
+            layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
 
     def save(self, loss, acc):
         # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself

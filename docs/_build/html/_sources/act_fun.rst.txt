@@ -122,9 +122,7 @@ TYPE A: Cartesian form
 
 .. py:method:: cart_leaky_relu(z, alpha=0.2, name=None)
 
-	Applies `Leaky Rectified Linear Unit <https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu>`_ to both the real and imag part of z.
-
-    `source <http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf>`_
+	Applies `Leaky Rectified Linear Unit <https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu>`_ [CIT2013-MAAS]_ (`source <http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf>`_) to both the real and imag part of z.
 
     :param z: Input tensor.
     :param alpha: Slope of the activation function at x < 0. Default: 0.2
@@ -133,9 +131,9 @@ TYPE A: Cartesian form
 
 .. py:method:: cart_selu(z)
 
-    Applies `Scaled Exponential Linear Unit (SELU) <https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu>`_ to both the real and imag part of z.
+    Applies `Scaled Exponential Linear Unit (SELU) <https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu>`_ [CIT2017-KLAMBAUER]_ (`source <https://arxiv.org/abs/1706.02515>`_) to both the real and imag part of z.
     
-    `source <https://arxiv.org/abs/1706.02515>`_
+    
 
     The scaled exponential unit activation:
 
@@ -208,9 +206,7 @@ TYPE B: Polar form
 
 .. py:method:: pol_selu(z):
 
-    Applies `Scaled Exponential Linear Unit (SELU) <https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu>`_ to the absolute value of z, keeping the phase unchanged.
-    
-    `source <https://arxiv.org/abs/1706.02515>`_
+    Applies `Scaled Exponential Linear Unit (SELU) <https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu>`_ [CIT2017-KLAMBAUER]_ (`source <https://arxiv.org/abs/1706.02515>`_) to the absolute value of z, keeping the phase unchanged.
 
     The scaled exponential unit activation:
 
@@ -222,4 +218,8 @@ TYPE B: Polar form
     :return: Tensor result of the applied activation function
 
 .. [CIT2003-KUROE] Kuroe, Yasuaki, Mitsuo Yoshid, and Takehiro Mori. "On activation functions for complex-valued neural networks—existence of energy functions—." Artificial Neural Networks and Neural Information Processing—ICANN/ICONIP 2003. Springer, Berlin, Heidelberg, 2003. 985-992.
+
+.. [CIT2013-MAAS] A. L. Maas, A. Y. Hannun, and A. Y. Ng, “Rectifier Nonlinearities Improve Neural Network Acoustic Models,” 2013.
+
+.. [CIT2017-KLAMBAUER] G. Klambauer, T. Unterthiner, A. Mayr, and S. Hochreiter, “Self-Normalizing Neural Networks,” ArXiv170602515 Cs Stat, Sep. 2017. Available: http://arxiv.org/abs/1706.02515.
 

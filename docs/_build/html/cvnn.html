@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Layers" href="layers.html" />
+    <link rel="next" title="Complex Layers" href="layers.html" />
     <link rel="prev" title="Complex-Valued Neural Network (CVNN)" href="index.html" /> 
 </head>
 
@@ -88,7 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#others">Others</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="layers.html">Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
 </ul>
@@ -158,12 +158,11 @@
   <div class="section" id="cvnn">
 <h1>CVNN<a class="headerlink" href="#cvnn" title="Permalink to this headline">¶</a></h1>
 <p>Short example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume you already have complex data x with its labels y...</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume you already have complex data &#39;x&#39; with its labels &#39;y&#39;...</span>
 
-<span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-                             <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">input_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
         <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">),</span>
-        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">,</span> <span class="n">output_dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)]</span>
+        <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">)]</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">CvnnModel</span><span class="p">(</span><span class="s2">&quot;cvnn_example&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">categorical_crossentropy</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
 </pre></div>
@@ -379,15 +378,18 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
 
 <dl class="method">
 <dt>
-<code class="sig-name descname">get_real_equivalent(self, name=None):</code></dt>
+<code class="sig-name descname">get_real_equivalent(self, classifier=True, name=None):</code></dt>
 <dd><p>Creates a new model equivalent of current model. If model is already real throws and error.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>name</strong> – name of the new network to be created.
-If None (Default) it will use same name as current model with “_real_equiv” suffix</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classifier</strong> – <code class="code docutils literal notranslate"><span class="pre">True</span></code> (default) if the model is a classification model. <code class="code docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p></li>
+<li><p><strong>name</strong> – name of the new network to be created.
+If <code class="code docutils literal notranslate"><span class="pre">None</span></code> (Default) it will use same name as current model with “_real_equiv” suffix</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>CvnnModel() real equivalent model</p>
+<dd class="field-even"><p><code class="code docutils literal notranslate"><span class="pre">CvnnModel()</span></code> real equivalent model</p>
 </dd>
 </dl>
 </dd></dl>
@@ -403,7 +405,7 @@ If None (Default) it will use same name as current model with “_real_equiv” 
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="layers.html" class="btn btn-neutral float-right" title="Layers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="layers.html" class="btn btn-neutral float-right" title="Complex Layers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral float-left" title="Complex-Valued Neural Network (CVNN)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

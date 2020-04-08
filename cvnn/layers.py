@@ -27,12 +27,13 @@ class ComplexLayer(layers.Layer, ABC):
 
     def __init__(self, output_size, input_size=None, input_dtype=None):
         """
-
-        :param output_size:
-        :param input_size:
-        :param input_dtype:
+        Base constructor for a complex layer. The first layer will need a input_dtype and input_size.
+        For the other classes is optional,
+            if input_size or input_dtype does not match last layer it will throw a warning
+        :param output_size: Output size of the layer
+        :param input_size: Input size of the layer
+        :param input_dtype: data type of the input
         """
-        # TODO: Is it worth to use output_dtype? the equation will give it automatically.
         self.logger = logging.getLogger(cvnn.__name__)
 
         if input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is None:
@@ -86,15 +87,21 @@ class ComplexLayer(layers.Layer, ABC):
         return self.input_dtype
 
     @abstractmethod
-    def get_real_equivalent(self, output_mult=2):
+    def get_real_equivalent(self):
+        """
+        :return: Gets a real-valued COPY of the Complex Layer.
+        """
         pass
 
     @abstractmethod
     def get_description(self):
+        """
+        :return: a string containing all the information of the layer
+        """
         pass
 
     @abstractmethod
-    def _save_tensorboard_checkpoint(self, summary, step=None):
+    def save_tensorboard_checkpoint(self, summary, step=None):
         pass
 
 
@@ -127,6 +134,9 @@ class ComplexDense(ComplexLayer):
             Default: tensorflow.keras.initializers.GlorotUniform
         :param bias_initializer: Initializer fot the bias.
             Default: tensorflow.keras.initializers.Zeros
+        :param dropout: Either None (default) and no dropout will be applied or a scalar
+            that will be the probability that each element is dropped.
+            Example: setting rate=0.1 would drop 10% of input elements.
         """
         super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
         self.activation = activation
@@ -142,7 +152,7 @@ class ComplexDense(ComplexLayer):
         self.bias_initializer = bias_initializer  # TODO: Not working yet
         self.w = None
         self.b = None
-        self.init_weights()
+        self._init_weights()
 
     def __deepcopy__(self, memodict=None):
         if memodict is None:
@@ -154,14 +164,18 @@ class ComplexDense(ComplexLayer):
                             bias_initializer=self.bias_initializer, dropout=self.dropout
                             )
 
-    def get_real_equivalent(self, output_mult=2):
-        return ComplexDense(output_size=self.output_size * output_mult, input_size=self.input_size * 2,
+    def get_real_equivalent(self, output_multiplier=2):
+        """
+        :param output_multiplier: Multiplier of output and input size (normally by 2)
+        :return: real-valued copy of self
+        """
+        return ComplexDense(output_size=self.output_size * output_multiplier, input_size=self.input_size * 2,
                             activation=self.activation, input_dtype=np.float32,
                             weight_initializer=self.weight_initializer,
                             bias_initializer=self.bias_initializer, dropout=self.dropout
                             )
 
-    def init_weights(self):
+    def _init_weights(self):
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
             self.w = tf.cast(
                 tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
@@ -194,6 +208,12 @@ class ComplexDense(ComplexLayer):
         return out_str
 
     def call(self, inputs, **kwargs):
+        """
+        Applies the layer to an input
+        :param inputs: input
+        :param kwargs:
+        :return: result of applying the layer to the inputs
+        """
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.name_scope("ComplexDense_" + str(self.layer_number)) as scope:
             if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
@@ -208,7 +228,7 @@ class ComplexDense(ComplexLayer):
                                            tf.nn.dropout(tf.math.imag(y_out), rate=self.dropout)), dtype=y_out.dtype)
             return y_out
 
-    def _save_tensorboard_checkpoint(self, summary, step=None):
+    def save_tensorboard_checkpoint(self, summary, step=None):
         with summary.as_default():
             if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:
                 tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_w_real",
@@ -244,7 +264,8 @@ class ComplexDropout(ComplexLayer):
         self.rate = rate
         self.noise_shape = noise_shape
         self.seed = seed
-        super().__init__(input_size=None, output_size=None, input_dtype=None, output_dtype=None)
+        # Win x2: giving None as input_size will also make sure Dropout is not the first layer
+        super().__init__(input_size=None, output_size=None, input_dtype=None)
 
     def call(self, inputs, **kwargs):
         return tf.cast(tf.complex(tf.nn.dropout(tf.math.real(inputs), rate=self.rate,
@@ -252,7 +273,7 @@ class ComplexDropout(ComplexLayer):
                                   tf.nn.dropout(tf.math.imag(inputs), rate=self.rate,
                                                 noise_shape=self.noise_shape, seed=self.seed)), dtype=inputs.dtype)
 
-    def _save_tensorboard_checkpoint(self, summary, step=None):
+    def save_tensorboard_checkpoint(self, summary, step=None):
         # No tensorboard things to save
         return None
 
@@ -264,7 +285,7 @@ class ComplexDropout(ComplexLayer):
             memodict = {}
         return ComplexDropout(rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
 
-    def get_real_equivalent(self, output_mult=2):
+    def get_real_equivalent(self):
         return self.__deepcopy__()      # Dropout layer is dtype agnostic
 
 

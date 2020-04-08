@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Utils" href="utils.html" />
-    <link rel="prev" title="Layers" href="layers.html" /> 
+    <link rel="prev" title="Complex Layers" href="layers.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -83,7 +83,7 @@
             
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
-<li class="toctree-l1"><a class="reference internal" href="layers.html">Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Activation Functions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#type-a-cartesian-form">TYPE A: Cartesian form</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#classification">Classification</a></li>
@@ -341,9 +341,8 @@ f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}
 <dt id="cart_leaky_relu">
 <code class="sig-name descname">cart_leaky_relu</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">alpha=0.2</em>, <em class="sig-param">name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_leaky_relu" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu">Leaky Rectified Linear Unit</a> to both the real and imag part of z.</p>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu">Leaky Rectified Linear Unit</a> <a class="reference internal" href="#cit2013-maas" id="id3"><span>[CIT2013-MAAS]</span></a> (<a class="reference external" href="http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf">source</a>) to both the real and imag part of z.</p>
 </div></blockquote>
-<p><a class="reference external" href="http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf">source</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -361,8 +360,7 @@ f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}
 <dl class="method">
 <dt id="cart_selu">
 <code class="sig-name descname">cart_selu</code><span class="sig-paren">(</span><em class="sig-param">z</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_selu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> to both the real and imag part of z.</p>
-<p><a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a></p>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id4"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to both the real and imag part of z.</p>
 <p>The scaled exponential unit activation:</p>
 <div class="math notranslate nohighlight">
 \[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
@@ -465,8 +463,7 @@ The softmax of x is calculated by:</p>
 <dl class="method">
 <dt>
 <code class="sig-name descname">pol_selu(z):</code></dt>
-<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> to the absolute value of z, keeping the phase unchanged.</p>
-<p><a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a></p>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id7"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to the absolute value of z, keeping the phase unchanged.</p>
 <p>The scaled exponential unit activation:</p>
 <div class="math notranslate nohighlight">
 \[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
@@ -484,6 +481,19 @@ The softmax of x is calculated by:</p>
 <dt class="label" id="cit2003-kuroe"><span class="brackets"><a class="fn-backref" href="#id2">CIT2003-KUROE</a></span></dt>
 <dd><p>Kuroe, Yasuaki, Mitsuo Yoshid, and Takehiro Mori. “On activation functions for complex-valued neural networks—existence of energy functions—.” Artificial Neural Networks and Neural Information Processing—ICANN/ICONIP 2003. Springer, Berlin, Heidelberg, 2003. 985-992.</p>
 </dd>
+<dt class="label" id="cit2013-maas"><span class="brackets"><a class="fn-backref" href="#id3">CIT2013-MAAS</a></span></dt>
+<dd><ol class="upperalpha simple">
+<li><ol class="upperalpha simple" start="12">
+<li><p>Maas, A. Y. Hannun, and A. Y. Ng, “Rectifier Nonlinearities Improve Neural Network Acoustic Models,” 2013.</p></li>
+</ol>
+</li>
+</ol>
+</dd>
+<dt class="label" id="cit2017-klambauer"><span class="brackets">CIT2017-KLAMBAUER</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id7">2</a>)</span></dt>
+<dd><ol class="upperalpha simple" start="7">
+<li><p>Klambauer, T. Unterthiner, A. Mayr, and S. Hochreiter, “Self-Normalizing Neural Networks,” ArXiv170602515 Cs Stat, Sep. 2017. Available: <a class="reference external" href="http://arxiv.org/abs/1706.02515">http://arxiv.org/abs/1706.02515</a>.</p></li>
+</ol>
+</dd>
 </dl>
 </div>
 </div>
@@ -499,7 +509,7 @@ The softmax of x is calculated by:</p>
         <a href="utils.html" class="btn btn-neutral float-right" title="Utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="layers.html" class="btn btn-neutral float-left" title="Layers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="layers.html" class="btn btn-neutral float-left" title="Complex Layers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
