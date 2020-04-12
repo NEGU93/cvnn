@@ -107,7 +107,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
                    shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=None):
     # Get parameters
     if shape_raw is None:
-        shape_raw = [100, 40]
+        shape_raw = [64, 32]
     if open_dataset:
         if param_list is not None:
             logger.error("If the parameter to open_dataset is passed, giving param_list makes no sense")
@@ -122,8 +122,8 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     else:
         if param_list is None:
             param_list = [
-                [0.5, 1, 2],
-                [-0.5, 1, 2]
+                [0.5, 1, 1],
+                [-0.5, 1, 1]
             ]
         dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
     if display_freq is None:
