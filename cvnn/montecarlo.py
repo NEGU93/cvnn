@@ -157,7 +157,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
-    return str(monte_carlo.monte_carlo_analyzer.path)
+    return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")
 
 
 if __name__ == "__main__":
@@ -165,4 +165,4 @@ if __name__ == "__main__":
     path2 = run_montecarlo(m=5000, shape_raw=[64], epochs=30, iterations=5)
 
     several = SeveralMonteCarloComparison('tests', x=['base', 'base2'], paths=[path1, path2])
-    set_trace()
+    # set_trace()
