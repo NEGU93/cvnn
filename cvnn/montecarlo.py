@@ -4,7 +4,7 @@ import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.dataset import Dataset
 from cvnn.cvnn_model import CvnnModel
-from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix
+from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix, SeveralMonteCarloComparison
 from cvnn.layers import ComplexDense
 from cvnn.utils import create_folder, transform_to_real, randomize
 import tensorflow as tf
@@ -155,8 +155,12 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
-    return monte_carlo.monte_carlo_analyzer.path
+    return str(monte_carlo.monte_carlo_analyzer.path)
 
 
 if __name__ == "__main__":
-    run_montecarlo(m=5000, shape_raw=[64], epochs=30, iterations=5, debug=True)
+    path1 = run_montecarlo(m=5000, shape_raw=[64], epochs=30, iterations=5)
+    path2 = run_montecarlo(m=5000, shape_raw=[64], epochs=30, iterations=5)
+
+    several = SeveralMonteCarloComparison('tests', x=['base', 'base2'], paths=[path1, path2])
+    set_trace()
