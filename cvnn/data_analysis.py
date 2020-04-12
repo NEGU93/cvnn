@@ -798,9 +798,9 @@ class MonteCarloAnalyzer:
                             filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
                             config={'scrollZoom': True, 'editable': True}, auto_open=False)
 
-    def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title=''):
+    def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title='', extension=".svg"):
         if library == 'matplotlib':
-            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
+            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
         elif library == 'plotly':
             self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
         elif library == 'seaborn':
@@ -889,6 +889,6 @@ class MonteCarloAnalyzer:
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.21'
+__version__ = '0.1.22'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
