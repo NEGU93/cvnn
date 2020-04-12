@@ -321,7 +321,7 @@ class OpenDataset(Dataset):
 
     def summary(self, res_str=None):
         res_str = "Opened data located in {}\n".format(str(self.path))
-        super().summary(res_str)
+        return super().summary(res_str)
 
 
 class GeneratorDataset(ABC, Dataset):
@@ -635,6 +635,6 @@ if __name__ == "__main__":
     dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.17'
+__version__ = '0.1.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
