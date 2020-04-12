@@ -306,8 +306,8 @@ class OpenDataset(Dataset):
     """
 
     def __init__(self, path, num_classes=None, ratio=0.8, savedata=False):
-        path = cast_to_path(path)
-        x, y = self.load_dataset(path)
+        self.path = cast_to_path(path)
+        x, y = self.load_dataset(self.path)
         super().__init__(x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
 
     @staticmethod
@@ -318,6 +318,10 @@ class OpenDataset(Dataset):
         except FileNotFoundError:
             sys.exit("OpenDataset::load_dataset: Files data.npy and labels.npy not found in " + path)
         return x, y
+
+    def summary(self, res_str=None):
+        res_str = "Opened data located in {}\n".format(str(self.path))
+        super().summary(res_str)
 
 
 class GeneratorDataset(ABC, Dataset):
@@ -631,6 +635,6 @@ if __name__ == "__main__":
     dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.16'
+__version__ = '0.1.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
