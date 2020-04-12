@@ -34,6 +34,9 @@ def run_once(f):
     return wrapper
 
 
+logger = logging.getLogger(cvnn.__name__)
+
+
 class CvnnModel:
     _fit_count = count(0)  # Used to count the number of layers
     # =====================
@@ -52,11 +55,11 @@ class CvnnModel:
                 - Graph
                 - Weights histogram
         """
-        self.logger = logging.getLogger(cvnn.__name__)
+        
         self.name = name
         # Check all the data is a Layer object
         if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
-            self.logger.error("All layers in shape must be a cvnn.layer.Layer", exc_info=True)
+            logger.error("All layers in shape must be a cvnn.layer.Layer", exc_info=True)
             sys.exit(-1)
         self.shape = shape
         self.loss_fun = loss_fun
@@ -105,7 +108,7 @@ class CvnnModel:
         # TODO: This can actually be static and give the parameter of loss_fun?
         if callable(self.loss_fun):
             if self.loss_fun.__module__ != 'tensorflow.python.keras.losses':
-                self.logger.error("Unknown loss function.\n\t "
+                logger.error("Unknown loss function.\n\t "
                                   "Can only use losses declared on tensorflow.python.keras.losses", exc_info=True)
                 sys.exit(-1)
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
@@ -142,7 +145,7 @@ class CvnnModel:
             if isinstance(layer, layers.ComplexLayer):
                 new_shape.append(copy.deepcopy(layer))
             else:
-                self.logger.error("Layer " + str(layer) + " not child of cvnn.layers.ComplexLayer")
+                logger.error("Layer " + str(layer) + " not child of cvnn.layers.ComplexLayer")
                 sys.exit(-1)
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
@@ -155,7 +158,7 @@ class CvnnModel:
         :return: CvnnModel() real equivalent model
         """
         if not self.is_complex():
-            self.logger.error("model {} was already real".format(self.name))
+            logger.error("model {} was already real".format(self.name))
             sys.exit(-1)
         real_shape = []
         output_mult = 2
@@ -252,13 +255,13 @@ class CvnnModel:
         # Check input
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         if not (isinstance(epochs, int) and epochs > 0):
-            self.logger.error("Epochs must be unsigned integer", exc_info=True)
+            logger.error("Epochs must be unsigned integer", exc_info=True)
             sys.exit(-1)
         if not (isinstance(batch_size, int) and batch_size > 0):
-            self.logger.error("Batch size must be unsigned integer", exc_info=True)
+            logger.error("Batch size must be unsigned integer", exc_info=True)
             sys.exit(-1)
         if not learning_rate > 0:
-            self.logger.error("Learning rate must be positive", exc_info=True)
+            logger.error("Learning rate must be positive", exc_info=True)
             sys.exit(-1)
         if display_freq is None:
             display_freq = int((x.shape[0] * ratio) / batch_size)  # Match the epoch number
@@ -513,7 +516,7 @@ class CvnnModel:
         :return: None
         """
         if verbose:
-            self.logger.info(string)
+            logger.info(string)
         if filename is not None:
             filename = self.root_dir / filename
             try:

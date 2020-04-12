@@ -633,8 +633,7 @@ class MonteCarloAnalyzer:
         elif path is not None and df is None:  # Load df from Path
             if not path.endswith('.csv'):
                 path += '.csv'
-            set_trace()
-            self.df = pd.read_csv(Path(path))
+            self.df = pd.read_csv(Path(__file__).parents[1].absolute() / Path(path))
             self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
         elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./log/montecarlo/")

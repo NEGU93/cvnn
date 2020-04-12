@@ -135,6 +135,8 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     if not len(shape_raw) > 0:
         logger.error("Shape raw was empty")
         sys.exit(-1)
+    layers.ComplexLayer.last_layer_output_dtype = None
+    layers.ComplexLayer.last_layer_output_size = None
     shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
                           input_dtype=np.complex64)]
     for i in range(1, len(shape_raw)):
