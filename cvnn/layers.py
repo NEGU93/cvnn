@@ -204,7 +204,7 @@ class ComplexDense(ComplexLayer):
                   ") -> output size = " + str(self.output_size) + \
                   ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
                   + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + \
-                  "\nDropout: " + str(self.dropout)
+                  "\n\tDropout: " + str(self.dropout) + "\n"
         return out_str
 
     def call(self, inputs, **kwargs):
