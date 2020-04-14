@@ -633,7 +633,7 @@ class MonteCarloAnalyzer:
         elif path is not None and df is None:  # Load df from Path
             if not path.endswith('.csv'):
                 path += '.csv'
-            self.df = pd.read_csv(Path(__file__).parents[1].absolute() / Path(path))
+            self.df = pd.read_csv(Path(path))   # Path(__file__).parents[1].absolute() /
             self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
         elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./log/montecarlo/")
@@ -889,6 +889,6 @@ class MonteCarloAnalyzer:
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.22'
+__version__ = '0.1.23'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
