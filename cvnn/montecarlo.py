@@ -161,7 +161,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
 
 
 if __name__ == "__main__":
-    path_1 = run_montecarlo(polar=True, do_all=True)
-    path_2 = run_montecarlo(param_list=[[0, 1, 2], [0, 2, 1]], polar=True, do_all=True)
+    path_1 = run_montecarlo(polar=True, do_all=True, iterations=5)
+    path_2 = run_montecarlo(param_list=[[0, 1, 2], [0, 2, 1]], polar=True, do_all=True, iterations=5)
 
     several = SeveralMonteCarloComparison("amplitude and phase", ["Type A", "Type B"], [path_1, path_2])
