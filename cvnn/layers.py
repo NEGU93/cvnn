@@ -145,6 +145,7 @@ class ComplexDense(ComplexLayer):
             apply_activation(self.activation,
                              tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
                              ).numpy().dtype
+
         self.dropout = dropout
         if dropout:
             tf.random.set_seed(0)

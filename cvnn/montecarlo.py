@@ -138,19 +138,18 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     layers.ComplexLayer.last_layer_output_dtype = None
     layers.ComplexLayer.last_layer_output_size = None
     shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
-                          input_dtype=np.complex64)]
+                          input_dtype=np.complex64, dropout=dropout)]
     for i in range(1, len(shape_raw)):
-        shape.append(ComplexDense(input_size=shape_raw[i - 1], output_size=shape_raw[i], activation=activation,
-                                  input_dtype=np.complex64, dropout=dropout))
-    shape.append(ComplexDense(input_size=shape_raw[-1], output_size=output_size, activation='softmax_real',
-                              input_dtype=np.complex64))
+        shape.append(ComplexDense(output_size=shape_raw[i], activation=activation,  dropout=dropout))
+    shape.append(ComplexDense(output_size=output_size, activation='softmax_real'))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
                                 verbose=False, tensorboard=False)
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network)
-    dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
+    if not open_dataset:
+        dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
@@ -161,7 +160,19 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
 
 
 if __name__ == "__main__":
-    path_1 = run_montecarlo(polar=True, do_all=True)
-    path_2 = run_montecarlo(param_list=[[0, 1, 2], [0, 2, 1]], polar=True, do_all=True)
+    # Base case with one hidden layer size 64 and dropout 0.5
+    run_montecarlo(dropout=0.5, do_all=True)
 
-    several = SeveralMonteCarloComparison("amplitude and phase", ["Type A", "Type B"], [path_1, path_2])
+    # Base case 4 classes and dropout
+    coef_correls_list = np.linspace(-0.9, 0.9, 4)
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 1])
+    run_montecarlo(param_list=param_list, dropout=0.5, do_all=True)
+
+    # Case 4 classes and dropout and 2 hidden layers
+    coef_correls_list = np.linspace(-0.9, 0.9, 4)
+    param_list = []
+    for coef in coef_correls_list:
+        param_list.append([coef, 1, 1])
+    run_montecarlo(param_list=param_list, dropout=0.5, shape_raw=[100, 40], do_all=True)
