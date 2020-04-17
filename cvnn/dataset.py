@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import cvnn
 from cvnn.utils import *
 import numpy as np
 import sys
@@ -14,6 +15,7 @@ from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
 
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
+logger = logging.getLogger(cvnn.__name__)
 
 # =======
 # Dataset

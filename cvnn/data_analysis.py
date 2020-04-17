@@ -697,6 +697,7 @@ class MonteCarloAnalyzer:
         if step == -1:
             step = max(self.df.step)
         networks_availables = self.df.network.unique()
+        # set_trace()
         for col, net in enumerate(networks_availables):
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]
@@ -886,6 +887,11 @@ class MonteCarloAnalyzer:
                    filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
                    showfig=showfig, savefig=savefig)
         return fig, ax
+
+
+if __name__ == "__main__":
+    monte_carlo_analyzer = MonteCarloAnalyzer(path="W:\HardDiskDrive\Documentos\GitHub\cvnn\\results\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
+    monte_carlo_analyzer.do_all()
 
 
 __author__ = 'J. Agustin BARRACHINA'
