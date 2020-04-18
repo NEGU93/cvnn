@@ -13,14 +13,13 @@ __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
 
-STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s — %(message)s"
-
-FORMATTER = logging.Formatter(STRING_FORMATTER)
-
 logging.getLogger('tensorflow').disabled = True
 
+STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s — %(message)s"
+
 file_handler = logging.FileHandler(create_folder("./log/logs/") / "logs.log")
-file_handler.setFormatter(FORMATTER)
+formatter = logging.Formatter(STRING_FORMATTER)
+file_handler.setFormatter(formatter)
 
 # https://github.com/borntyping/python-colorlog
 # https://stackoverflow.com/a/23964880/5931672

@@ -10,6 +10,8 @@ from scipy.io import loadmat
 import cvnn
 import logging
 
+logger = logging.getLogger(cvnn.__name__)
+
 
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
     """
@@ -139,7 +141,6 @@ def compute_accuracy(x, y):
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger(cvnn.__name__)
     logger.warning("Testing logger")
 
 

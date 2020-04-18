@@ -43,7 +43,7 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
+    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True, save_info=True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models

@@ -14,6 +14,7 @@ import sys
 import os
 import numpy as np
 from pdb import set_trace
+from time import sleep
 
 logger = logging.getLogger(cvnn.__name__)
 
@@ -150,6 +151,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     monte_carlo = RealVsComplex(complex_network)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
+    sleep(1)    # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
@@ -161,4 +163,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=10, open_dataset="./data/MLSP/")
+    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
+    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
+    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
+    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
