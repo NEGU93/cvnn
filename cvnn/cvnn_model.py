@@ -568,8 +568,8 @@ if __name__ == '__main__':
     for coef in coef_correls_list:
         param_list.append([coef, 1, 2])
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    x_fit = transform_to_real(dataset.x)
-    # x_fit = dataset.x
+    # x_fit = transform_to_real(dataset.x)
+    x_fit = dataset.x
 
     # Define shape
     cdtype = np.complex64
@@ -578,15 +578,15 @@ if __name__ == '__main__':
     else:
         rdtype = np.float64
     input_size = np.shape(x_fit)[1]
-    hidden_size = 100
+    hidden_size = 64
     output_size = np.shape(dataset.y_train)[1]
     shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
-                                 input_dtype=rdtype, dropout=0.5),
+                                 input_dtype=cdtype, dropout=None),
              layers.ComplexDense(output_size=output_size, activation='softmax_real')]
 
     # Train model
-    model = CvnnModel("Testing v2 class", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(x_fit, dataset.y, batch_size=100, epochs=150, verbose=True, save_csv_history=True)
+    model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy)
+    model.fit(x_fit, dataset.y, batch_size=100, epochs=150, verbose=True, save_csv_history=True, fast_mode=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()

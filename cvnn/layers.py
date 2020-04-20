@@ -225,8 +225,13 @@ class ComplexDense(ComplexLayer):
             y_out = apply_activation(self.activation, out)
 
             if self.dropout:
-                y_out = tf.cast(tf.complex(tf.nn.dropout(tf.math.real(y_out), rate=self.dropout),
-                                           tf.nn.dropout(tf.math.imag(y_out), rate=self.dropout)), dtype=y_out.dtype)
+                # $ tf.nn.dropout(tf.complex(x,x), rate=0.5)
+                # *** ValueError: x has to be a floating point tensor since it's going to be scaled.
+                # Got a <dtype: 'complex64'> tensor instead.
+                drop_filter = tf.nn.dropout(tf.ones(y_out.shape), rate=self.dropout)
+                y_out_real = tf.multiply(drop_filter, tf.math.real(y_out))
+                y_out_imag = tf.multiply(drop_filter, tf.math.imag(y_out))
+                y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=y_out.dtype)
             return y_out
 
     def save_tensorboard_checkpoint(self, summary, step=None):
@@ -269,10 +274,10 @@ class ComplexDropout(ComplexLayer):
         super().__init__(input_size=None, output_size=None, input_dtype=None)
 
     def call(self, inputs, **kwargs):
-        return tf.cast(tf.complex(tf.nn.dropout(tf.math.real(inputs), rate=self.rate,
-                                                noise_shape=self.noise_shape, seed=self.seed),
-                                  tf.nn.dropout(tf.math.imag(inputs), rate=self.rate,
-                                                noise_shape=self.noise_shape, seed=self.seed)), dtype=inputs.dtype)
+        drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
+        y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))
+        y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
+        return tf.cast(tf.complex(y_out_real, y_out_imag), dtype=inputs.dtype)
 
     def save_tensorboard_checkpoint(self, summary, step=None):
         # No tensorboard things to save
