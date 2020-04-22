@@ -6,7 +6,7 @@ requirements = [
     'numpy',
     'pandas', 'scipy',                      # Data
     'colorlog',                             # Logging
-    'matplotlib', 'seaborn', 'plotly'       # Plotting
+    'matplotlib', 'seaborn', 'plotly', 'tqdm'       # Plotting
 ]
 
 setup(

@@ -645,6 +645,7 @@ class MonteCarloAnalyzer:
             self.df = pd.DataFrame()
         self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']  # TODO: Consider delete
         self.monte_carlo_plotter = MonteCarloPlotter(self.path)
+        self.summary = []
 
     def set_df(self, df, conf_mat=None):
         self.df = df                                # DataFrame with all the data
@@ -659,6 +660,7 @@ class MonteCarloAnalyzer:
 
     def save_stat_results(self):
         # save csv file for each network with 4 columns
+        self.summary = []
         networks_availables = self.df.network.unique()
         for net in networks_availables:
             data = self.df[self.df.network == net]
@@ -670,6 +672,7 @@ class MonteCarloAnalyzer:
                 keys.append(step)
             data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
             data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
+            self.summary.append(data_to_save)
         # Save confusion matrix
         for i in range(len(self.confusion_matrix)):
             self.confusion_matrix[i]["matrix"].to_csv(self.path / (self.confusion_matrix[i]["name"]

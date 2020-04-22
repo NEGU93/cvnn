@@ -11,7 +11,10 @@ import tensorflow as tf
 import pandas as pd
 import copy
 import sys
+from openpyxl import load_workbook, Workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
 import os
+from tqdm import tqdm
 import numpy as np
 from pdb import set_trace
 from time import sleep
@@ -41,8 +44,13 @@ class MonteCarlo:
                 self.confusion_matrix.append({"name": "model_name", "matrix": pd.DataFrame()})
         self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
                                  data_summary)
+        if not debug:
+            pbar = tqdm(total=iterations)
         for it in range(iterations):
-            logger.info("Iteration {}/{}".format(it + 1, iterations))
+            if debug:
+                logger.info("Iteration {}/{}".format(it + 1, iterations))
+            else:
+                pbar.update()
             if shuffle:  # shuffle all data at each iteration
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
@@ -66,6 +74,8 @@ class MonteCarlo:
             if checkpoints:
                 # Save checkpoint in case Monte Carlo stops in the middle
                 self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
+        if not debug:
+            pbar.close()
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
         conf_mat = None
         if do_conf_mat:
@@ -158,12 +168,49 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
+    # TODO: Separate this part of code PLEASE!
+    filename = './log/mlp_monte_carlo_summary.xlsx'
+    fieldnames = ['path', 'HL', 'Shape', 'Dropout', '# Classes', "Polar Mode", "Learning Rate",
+                  "Activation Function", "Dataset Size", 'Feature Size', 'epochs', 'batch size',
+                  "Winner", "CVNN median", "RVNN median", 'CVNN IQR', 'RVNN IQR', "Comments"]
+    max_epoch = monte_carlo.pandas_full_data['epoch'].max()
+    epoch_filter = monte_carlo.pandas_full_data['epoch'] == max_epoch
+    complex_filter = monte_carlo.pandas_full_data['network'] == "complex network"
+    real_filter = monte_carlo.pandas_full_data['network'] == "real network"
+    complex_last_epochs = monte_carlo.pandas_full_data[epoch_filter & complex_filter]
+    real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
+    complex_median = complex_last_epochs['test accuracy'].median()
+    real_median = real_last_epochs['test accuracy'].median()
+    row_data = [str(monte_carlo.monte_carlo_analyzer.path), str(len(shape_raw)), str(shape_raw),
+                str(dropout), str(dataset.y.shape[1]),
+                'Yes' if polar == 'Apple' else 'No', learning_rate, activation, str(dataset.x.shape[0]),
+                str(dataset.x.shape[1]), epochs, batch_size,
+                'CVNN' if complex_median > real_median else 'RVNN',
+                complex_median, real_median,
+                complex_last_epochs['test accuracy'].quantile(.75)
+                - complex_last_epochs['test accuracy'].quantile(.25),
+                real_last_epochs['test accuracy'].quantile(.75)
+                - real_last_epochs['test accuracy'].quantile(.25),
+                ]
+    file_exists = os.path.isfile(filename)
+    if file_exists:
+        wb = load_workbook(filename)
+        ws = wb.worksheets[0]
+    else:
+        wb = Workbook()
+        ws = wb.worksheets[0]
+        ws.append(fieldnames)
+    ws.append(row_data)
+    tab = Table(displayName="Table1", ref="A1:R" + str(ws.max_row))
+    percentage_cols = ['N', 'O', 'P', 'Q']
+    for col in percentage_cols:
+        ws[col + str(ws.max_row)].number_format = '0.00%'
+    ws.add_table(tab)
+    wb.save(filename)
+
     return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")
 
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
-    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
-    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
-    run_montecarlo(dropout=0.5, shape_raw=[100, 40], do_all=True, iterations=2, open_dataset="./data/MLSP/")
+    run_montecarlo(iterations=1, epochs=10, do_all=False, open_dataset="./data/MLSP/")
