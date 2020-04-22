@@ -147,8 +147,6 @@ class ComplexDense(ComplexLayer):
                              ).numpy().dtype
 
         self.dropout = dropout
-        if dropout:
-            tf.random.set_seed(0)
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
         self.w = None
