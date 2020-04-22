@@ -400,22 +400,22 @@ class Plotter:
     #        Plot
     # ====================
 
-    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
+    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None, extension=".svg"):
         if reload:
             self._csv_to_pandas()
         if not len(self.pandas_list) != 0:
             logger.error("Empty pandas list to plot")
             return None
         for key in ["loss", "accuracy"]:
-            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
+            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc, extension=extension)
 
-    def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None):
+    def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None, extension=".svg"):
         if reload:
             self._csv_to_pandas()
         if library == 'matplotlib':
-            self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc)
+            self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc, extension=extension)
         elif library == 'plotly':
-            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc)
+            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc, extension=extension)
         else:
             logger.warning("Unrecognized library to plot " + library)
 
@@ -520,16 +520,18 @@ class MonteCarloPlotter(Plotter):
         file_suffix = "_statistical_result.csv"
         super().__init__(path, file_suffix=file_suffix)
 
-    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean'):
+    def plot_everything(self, reload=False, library='plotly', showfig=False,
+                        savefig=True, index_loc='mean', extension=".svg"):
         # Rename this function to change index_loc default value
         super().plot_key(reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
     def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True,
-                 index_loc='mean'):
+                 index_loc='mean', extension=".svg"):
         # Rename this function to change index_loc default value
-        super().plot_key(key, reload, library, showfig, savefig, index_loc)
+        super().plot_key(key, reload, library, showfig, savefig, index_loc, extension=extension)
 
-    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True, title='', full_border=True):
+    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True,
+                          title='', full_border=True, extension=".svg"):
         fig = go.Figure()
         for i, data in enumerate(self.pandas_list):
             x = data['step'].unique().tolist()
@@ -582,12 +584,11 @@ class MonteCarloPlotter(Plotter):
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".svg")
+            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + extension)
         elif showfig:
             fig.show(config={'editable': True})
 
-    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False):
-        # TODO: Change the extension as a variable like matplotlib
+    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, extension=".svg"):
         fig = go.Figure()
         # test plots
         label = 'mean'
@@ -617,7 +618,7 @@ class MonteCarloPlotter(Plotter):
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
                                          + "_" + label.replace("50%", "median") + ".html",
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + "_" + label.replace("50%", "median") + ".svg")
+            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + "_" + label.replace("50%", "median") + extension)
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -678,21 +679,21 @@ class MonteCarloAnalyzer:
     # Plot methods
     # ------------
 
-    def do_all(self):
-        self.monte_carlo_plotter.plot_train_vs_test(key='loss')
-        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy')
-        self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
-        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True)
+    def do_all(self, extension=".svg"):
+        self.monte_carlo_plotter.plot_train_vs_test(key='loss', extension=extension)
+        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', extension=extension)
+        self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True, extension=extension)
+        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True, extension=extension)
 
         for key in ['train loss', 'test loss', 'train accuracy', 'test accuracy']:
             self.plot_3d_hist(key=key)
-            self.monte_carlo_plotter.plot_distribution(key=key)
-            self.box_plot(key=key)
+            self.monte_carlo_plotter.plot_distribution(key=key, extension=extension)
+            self.box_plot(key=key, extension=extension)
 
             for lib in ['matplotlib', 'seaborn']:  # 'plotly',
-                self.plot_histogram(key=key, library=lib, showfig=False, savefig=True)
+                self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
 
-    def box_plot(self, step=-1, key='test accuracy', showfig=False, savefig=True):
+    def box_plot(self, step=-1, key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         fig = go.Figure()
         if step == -1:
             step = max(self.df.step)
@@ -713,7 +714,7 @@ class MonteCarloAnalyzer:
                 boxmean=True  # Interesting how sometimes it falls outside the box
             ))
         fig.update_layout(
-            title='Montecarlo Box Plot ' + key,
+            # title='Montecarlo Box Plot ' + key,
             xaxis=dict(
                 title="network",
             ),
@@ -733,7 +734,8 @@ class MonteCarloAnalyzer:
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.svg")))
+            fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_")
+                                             + "_box_plot" + extension)))
         elif showfig:
             fig.show(config={'editable': True})
 
@@ -803,9 +805,9 @@ class MonteCarloAnalyzer:
         if library == 'matplotlib':
             self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
         elif library == 'plotly':
-            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
+            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
         elif library == 'seaborn':
-            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
+            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
@@ -832,7 +834,7 @@ class MonteCarloAnalyzer:
                    filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension), showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
+    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title='', extension=".svg"):
         networks_availables = self.df.network.unique()
         if step == -1:
             step = max(self.df.step)
@@ -858,9 +860,11 @@ class MonteCarloAnalyzer:
         if savefig:
             os.makedirs(self.path / "plots/histogram/", exist_ok=True)
             plotly.offline.plot(fig,
-                                filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_histogram.html")),
+                                filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_")
+                                                          + "_histogram.html")),
                                 config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "plotly_histogram.svg")))
+            fig.write_image(str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_")
+                                             + "plotly_histogram" + extension)))
         elif showfig:
             fig.show(config={'editable': True})
         return fig
