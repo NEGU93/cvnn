@@ -312,7 +312,7 @@ class SeveralMonteCarloComparison:
 
         fig.update_layout(
             title=self.x_label + ' Box Plot',
-            # xaxis=dict(title=self.x_label),
+            xaxis=dict(title=self.x_label),
             yaxis=dict(
                 title=key,
                 autorange=True,
