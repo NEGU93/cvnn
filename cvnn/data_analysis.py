@@ -917,6 +917,8 @@ class MonteCarloAnalyzer:
         max_ax = 0.0
         ax = None
         networks_availables = self.df.network.unique()
+        # set_trace()
+        networks_availables = np.array(['complex network', 'real network', 'polar real network'])
         if step == -1:
             step = max(self.df.step)
         for net in networks_availables:
@@ -925,17 +927,18 @@ class MonteCarloAnalyzer:
             ax = sns.distplot(data[key], bins, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
-        title += " " + key
+        title += " " + key + " histogram"
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
-        add_params(fig, ax, x_label=key, title=title, loc='upper right',
+        fig.legend(loc='upper right', bbox_to_anchor=(0., 0.3, 0.5, 0.5))
+        add_params(fig, ax, x_label=key, y_label="occurrences",     # loc='upper left',
                    filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
                    showfig=showfig, savefig=savefig)
         return fig, ax
 
 
 if __name__ == "__main__":
-    monte_carlo_analyzer = MonteCarloAnalyzer(path="W:\HardDiskDrive\Documentos\GitHub\cvnn\\results\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
-    monte_carlo_analyzer.do_all()
+    monte_carlo_analyzer = MonteCarloAnalyzer(path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
+    monte_carlo_analyzer.plot_histogram(library='seaborn')
 
 
 __author__ = 'J. Agustin BARRACHINA'
