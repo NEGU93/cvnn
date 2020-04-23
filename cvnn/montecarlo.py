@@ -213,4 +213,4 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_montecarlo(iterations=1, epochs=10, do_all=False, open_dataset="./data/MLSP/")
+    run_montecarlo(iterations=1, epochs=10, do_all=True, open_dataset="./data/MLSP/")

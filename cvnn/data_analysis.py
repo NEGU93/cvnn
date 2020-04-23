@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import plotly
 import plotly.graph_objects as go
@@ -25,6 +26,42 @@ DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',   # Blue
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
 DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']   # [1:] # Uncomment to remove blue color
+
+
+@dataclass
+class Resolution:
+    width: int
+    height: int
+
+
+RESOLUTIONS_16_9 = {
+    'lowest': Resolution(1024, 576),
+    'low': Resolution(1152, 648),
+    'HD': Resolution(1280, 720),       # 720p
+    'FHD':  Resolution(1920, 1080),     # 1080p
+    'QHD':  Resolution(2560, 1440),     # 1440p
+    'UHD':  Resolution(2560, 1440)     # 4K or 2160p
+}
+"""RESOLUTIONS_4_3 = {
+    '640×480': {'width': 640, 'height': 480},
+    '800×600': {'width': 800, 'height': 600},
+    '960×720': {'width': 960, 'height': 720},
+    '1024×768': {'width': 1024, 'height': 768},
+    '1280×960': {'width': 1280, 'height': 960}
+    # https://www.comtech-networking.com/blog/item/4-what-is-the-screen-resolution-or-the-aspect-ratio-what-do-720p-1080i-1080p-mean/
+}"""
+
+PLOTLY_CONFIG = {
+    'scrollZoom': True,
+    'editable': True,
+    'toImageButtonOptions': {
+        'format': 'svg',    # one of png, svg, jpeg, webp
+        # 'filename': 'custom_image',
+        'height': RESOLUTIONS_16_9['lowest'].height,
+        'width': RESOLUTIONS_16_9['lowest'].width,
+        'scale': 1  # Multiply title/legend/axis/canvas sizes by this factor
+    }
+}
 
 
 def triangulate_histogram(x, y, z):
@@ -292,10 +329,10 @@ class SeveralMonteCarloComparison:
         if savefig:
             os.makedirs(os.path.split(savefile)[0], exist_ok=True)
             plotly.offline.plot(fig,
-                                filename=savefile, config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(savefile.replace('.html', extension))
+                                filename=savefile, config=PLOTLY_CONFIG, auto_open=showfig)
+            # fig.write_image(savefile.replace('.html', extension))
         elif showfig:
-            fig.show(config={'editable': True})
+            fig.show(config=PLOTLY_CONFIG)
 
     def save_pandas_csv_result(self, path, step=-1):
         # TODO: Check path
@@ -508,10 +545,10 @@ class Plotter:
                           yaxis_title=key)
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
-                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / key) + "_plotly" + extension)
+                                config=PLOTLY_CONFIG, auto_open=showfig)
+            # fig.write_image(str(self.path / key) + "_plotly" + extension)
         elif showfig:
-            fig.show(config={'editable': True})
+            fig.show(config=PLOTLY_CONFIG)
 
 
 class MonteCarloPlotter(Plotter):
@@ -583,10 +620,10 @@ class MonteCarloPlotter(Plotter):
             os.makedirs(str(self.path / "plots/lines/"), exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html",
-                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + extension)
+                                config=PLOTLY_CONFIG, auto_open=showfig)
+            # fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + extension)
         elif showfig:
-            fig.show(config={'editable': True})
+            fig.show(config=PLOTLY_CONFIG)
 
     def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, extension=".svg"):
         fig = go.Figure()
@@ -617,10 +654,10 @@ class MonteCarloPlotter(Plotter):
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
                                          + "_" + label.replace("50%", "median") + ".html",
-                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + "_" + label.replace("50%", "median") + extension)
+                                config=PLOTLY_CONFIG, auto_open=showfig)
+            # fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + "_" + label.replace("50%", "median") + extension)
         elif showfig:
-            fig.show(config={'editable': True})
+            fig.show(config=PLOTLY_CONFIG)
 
 
 class MonteCarloAnalyzer:
@@ -736,11 +773,11 @@ class MonteCarloAnalyzer:
             os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
-                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_")
-                                             + "_box_plot" + extension)))
+                                config=PLOTLY_CONFIG, auto_open=showfig)
+            # fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_")
+            #                                 + "_box_plot" + extension)))
         elif showfig:
-            fig.show(config={'editable': True})
+            fig.show(config=PLOTLY_CONFIG)
 
     def show_plotly_table(self):
         # TODO: Not yet debugged
@@ -753,7 +790,7 @@ class MonteCarloAnalyzer:
                        fill_color='lavender',
                        align='left'))
         ])
-        fig.show(config={'editable': True})
+        fig.show(config=PLOTLY_CONFIG)
 
     def plot_3d_hist(self, steps=None, key='test accuracy', title=''):
         # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
@@ -802,7 +839,7 @@ class MonteCarloAnalyzer:
         os.makedirs(self.path / "plots/histogram/", exist_ok=True)
         plotly.offline.plot(fig,
                             filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
-                            config={'scrollZoom': True, 'editable': True}, auto_open=False)
+                            config=PLOTLY_CONFIG, auto_open=False)
 
     def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title='', extension=".svg"):
         if library == 'matplotlib':
@@ -865,11 +902,11 @@ class MonteCarloAnalyzer:
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_")
                                                           + "_histogram.html")),
-                                config={'scrollZoom': True, 'editable': True}, auto_open=showfig)
-            fig.write_image(str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_")
-                                             + "plotly_histogram" + extension)))
+                                config=PLOTLY_CONFIG, auto_open=showfig)
+            # fig.write_image(str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_")
+            #                                  + "plotly_histogram" + extension)))
         elif showfig:
-            fig.show(config={'editable': True})
+            fig.show(config=PLOTLY_CONFIG)
         return fig
 
     def _plot_histogram_seaborn(self, key='test accuracy', step=-1,
