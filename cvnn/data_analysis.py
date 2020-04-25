@@ -357,7 +357,16 @@ class SeveralMonteCarloComparison:
 
         # Run figure
         fig = plt.figure()
-        ax = sns.boxplot(x=self.x_label, y=key, hue="network", data=result)
+        ax = sns.boxplot(x=self.x_label, y=key, hue="network", data=result, boxprops=dict(alpha=.3))
+        # Make black lines the color of the box
+        for i, artist in enumerate(ax.artists):
+            col = artist.get_facecolor()[:-1]   # the -1 removes the transparency
+            artist.set_edgecolor(col)
+            for j in range(i * 6, i * 6 + 6):
+                line = ax.lines[j]
+                line.set_color(col)
+                line.set_mfc(col)
+                line.set_mec(col)
 
         if savefile is not None:
             if not savefile.endswith(extension):
