@@ -14,18 +14,19 @@ from pdb import set_trace
 from cvnn.utils import create_folder
 import logging
 import cvnn
+import tikzplotlib
 
 logger = logging.getLogger(cvnn.__name__)
 
-DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',   # Blue
-                         'rgb(255, 127, 14)',   # Orange
-                         'rgb(44, 160, 44)',    # Green
+DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',  # Blue
+                         'rgb(255, 127, 14)',  # Orange
+                         'rgb(44, 160, 44)',  # Green
                          'rgb(214, 39, 40)',
                          'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
                          'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
-DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']   # [1:] # Uncomment to remove blue color
+DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']  # [1:] # Uncomment to remove blue color
 
 
 @dataclass
@@ -37,28 +38,28 @@ class Resolution:
 RESOLUTIONS_16_9 = {
     'lowest': Resolution(1024, 576),
     'low': Resolution(1152, 648),
-    'HD': Resolution(1280, 720),       # 720p
-    'FHD':  Resolution(1920, 1080),     # 1080p
-    'QHD':  Resolution(2560, 1440),     # 1440p
-    'UHD':  Resolution(2560, 1440)     # 4K or 2160p
+    'HD': Resolution(1280, 720),  # 720p
+    'FHD': Resolution(1920, 1080),  # 1080p
+    'QHD': Resolution(2560, 1440),  # 1440p
+    'UHD': Resolution(2560, 1440)  # 4K or 2160p
 }
-"""RESOLUTIONS_4_3 = {
-    '640×480': {'width': 640, 'height': 480},
-    '800×600': {'width': 800, 'height': 600},
-    '960×720': {'width': 960, 'height': 720},
-    '1024×768': {'width': 1024, 'height': 768},
-    '1280×960': {'width': 1280, 'height': 960}
+RESOLUTIONS_4_3 = {
+    '640×480': Resolution(640, 480),
+    '800×600': Resolution(800, 600),
+    '960×720': Resolution(960, 720),
+    '1024×768': Resolution(1024, 768),
+    '1280×960': Resolution(1280, 960),
     # https://www.comtech-networking.com/blog/item/4-what-is-the-screen-resolution-or-the-aspect-ratio-what-do-720p-1080i-1080p-mean/
-}"""
+}
 
 PLOTLY_CONFIG = {
     'scrollZoom': True,
     'editable': True,
     'toImageButtonOptions': {
-        'format': 'svg',    # one of png, svg, jpeg, webp
+        'format': 'svg',  # one of png, svg, jpeg, webp
         # 'filename': 'custom_image',
-        'height': RESOLUTIONS_16_9['lowest'].height,
-        'width': RESOLUTIONS_16_9['lowest'].width,
+        'height': RESOLUTIONS_4_3['800×600'].height,
+        'width': RESOLUTIONS_4_3['800×600'].width,
         'scale': 1  # Multiply title/legend/axis/canvas sizes by this factor
     }
 }
@@ -211,6 +212,7 @@ def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
     # plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
     return df
 
+
 # ----------------
 # Comparison
 # ----------------
@@ -265,11 +267,13 @@ class SeveralMonteCarloComparison:
         if library == 'plotly':
             self._box_plot_plotly(key=key, step=step, showfig=showfig, savefile=savefile)
         # TODO: https://seaborn.pydata.org/examples/grouped_boxplot.html
+        elif library == 'seaborn':
+            self._box_plot_seaborn(key=key, step=step, showfig=showfig, savefile=savefile)
         else:
             logger.warning("Unrecognized library to plot " + library)
         return None
 
-    def _box_plot_plotly(self, key='test accuracy', step=-1, showfig=False, savefile=None, extension=".svg"):
+    def _box_plot_plotly(self, key='test accuracy', step=-1, showfig=False, savefile=None):
         # https://en.wikipedia.org/wiki/Box_plot
         # https://plot.ly/python/box-plots/
         # https://towardsdatascience.com/understanding-boxplots-5e2df7bcbd51
@@ -303,11 +307,11 @@ class SeveralMonteCarloComparison:
                     # x=[self.x[i]] * len(data[key]),
                     name=net.replace('_', ' ') + " " + str(self.x[i]),
                     whiskerwidth=0.2,
-                    notched=True,       # confidence intervals for the median
+                    notched=True,  # confidence intervals for the median
                     fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[color_index], 0.5),
-                    boxpoints='suspectedoutliers',      # to mark the suspected outliers
+                    boxpoints='suspectedoutliers',  # to mark the suspected outliers
                     line=dict(color=DEFAULT_PLOTLY_COLORS[color_index]),
-                    boxmean=True        # Interesting how sometimes it falls outside the box
+                    boxmean=True  # Interesting how sometimes it falls outside the box
                 ))
 
         fig.update_layout(
@@ -334,10 +338,42 @@ class SeveralMonteCarloComparison:
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
+    def _box_plot_seaborn(self, key='test accuracy', step=-1, showfig=False, savefile=None, extension=".svg"):
+        steps = []
+        for i in range(len(self.monte_carlo_runs)):
+            if step == -1:
+                steps.append(max(self.monte_carlo_runs[i].df.step))
+            else:
+                steps.append(step)
+        # Prepare data
+        frames = []
+        for i, mc_run in enumerate(self.monte_carlo_runs):
+            df = mc_run.df
+            filter = df['step'] == steps[i]
+            data = df[filter]
+            data[self.x_label] = self.x[i]
+            frames.append(data)
+        result = pd.concat(frames)
+
+        # Run figure
+        fig = plt.figure()
+        ax = sns.boxplot(x=self.x_label, y=key, hue="network", data=result)
+
+        if savefile is not None:
+            if not savefile.endswith(extension):
+                savefile += extension
+            os.makedirs(os.path.split(savefile)[0], exist_ok=True)
+            fig.savefig(savefile, transparent=True)
+            # tikzplotlib.clean_figure()
+            tikzplotlib.save(Path(os.path.split(savefile)[0]) / ("tikz_box_plot_" + self.x_label + ".tex"))
+        if showfig:
+            fig.show()
+        return fig, ax
+
     def save_pandas_csv_result(self, path, step=-1):
         # TODO: Check path
         if step == -1:
-            step = max(self.monte_carlo_runs[0].df.step)    # TODO: Assert it's the same for all cases
+            step = max(self.monte_carlo_runs[0].df.step)  # TODO: Assert it's the same for all cases
         cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
         for i, run in enumerate(self.monte_carlo_runs):
             df = run.df
@@ -437,16 +473,19 @@ class Plotter:
     #        Plot
     # ====================
 
-    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None, extension=".svg"):
+    def plot_everything(self, reload=False, library='plotly', showfig=False, savefig=True, index_loc=None,
+                        extension=".svg"):
         if reload:
             self._csv_to_pandas()
         if not len(self.pandas_list) != 0:
             logger.error("Empty pandas list to plot")
             return None
         for key in ["loss", "accuracy"]:
-            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc, extension=extension)
+            self.plot_key(key, reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc,
+                          extension=extension)
 
-    def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None, extension=".svg"):
+    def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None,
+                 extension=".svg"):
         if reload:
             self._csv_to_pandas()
         if library == 'matplotlib':
@@ -495,7 +534,7 @@ class Plotter:
             j = 0
             for k in data:
                 if key in k:
-                    color = DEFAULT_PLOTLY_COLORS[j*len(self.pandas_list) + i]
+                    color = DEFAULT_PLOTLY_COLORS[j * len(self.pandas_list) + i]
                     j += 1
                     if index_loc is not None:
                         if 'stats' in data.keys():
@@ -568,10 +607,11 @@ class MonteCarloPlotter(Plotter):
         super().plot_key(key, reload, library, showfig, savefig, index_loc, extension=extension)
 
     def plot_distribution(self, key='test accuracy', showfig=False, savefig=True,
-                          title='', full_border=True, extension=".svg"):
+                          title='', full_border=True, x_axis='step'):
         fig = go.Figure()
         for i, data in enumerate(self.pandas_list):
-            x = data['step'].unique().tolist()
+            # set_trace()
+            x = data[x_axis].unique().tolist()
             x_rev = x[::-1]
             data_mean = data[data['stats'] == 'mean'][key].tolist()
             data_max = data[data['stats'] == 'max'][key].tolist()
@@ -614,7 +654,7 @@ class MonteCarloPlotter(Plotter):
         title = title[:-3] + key
 
         fig.update_traces(mode='lines')
-        fig.update_layout(title=title, xaxis_title='steps', yaxis_title=key)
+        fig.update_layout(title=title, xaxis_title=x_axis, yaxis_title=key)
 
         if savefig:
             os.makedirs(str(self.path / "plots/lines/"), exist_ok=True)
@@ -625,14 +665,14 @@ class MonteCarloPlotter(Plotter):
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
-    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, extension=".svg"):
+    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, x_axis='step'):
         fig = go.Figure()
         # test plots
         label = 'mean'
         if median:
             label = '50%'
         for i, data in enumerate(self.pandas_list):
-            x = data['step'].unique().tolist()
+            x = data[x_axis].unique().tolist()
             data_mean_test = data[data['stats'] == label]["test " + key].tolist()
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean_test,
@@ -647,7 +687,7 @@ class MonteCarloPlotter(Plotter):
             ))
         title = "train and test " + key + " " + label.replace("50%", "median")
         fig.update_traces(mode='lines')
-        fig.update_layout(title=title, xaxis_title='steps', yaxis_title=key)
+        fig.update_layout(title=title, xaxis_title=x_axis, yaxis_title=key)
 
         if savefig:
             os.makedirs(self.path / "plots/lines/", exist_ok=True)
@@ -655,7 +695,6 @@ class MonteCarloPlotter(Plotter):
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
                                          + "_" + label.replace("50%", "median") + ".html",
                                 config=PLOTLY_CONFIG, auto_open=showfig)
-            # fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + "_" + label.replace("50%", "median") + extension)
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
@@ -671,7 +710,7 @@ class MonteCarloAnalyzer:
         elif path is not None and df is None:  # Load df from Path
             if not path.endswith('.csv'):
                 path += '.csv'
-            self.df = pd.read_csv(Path(path))   # Path(__file__).parents[1].absolute() /
+            self.df = pd.read_csv(Path(path))  # Path(__file__).parents[1].absolute() /
             self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
         elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./log/montecarlo/")
@@ -685,7 +724,7 @@ class MonteCarloAnalyzer:
         self.summary = []
 
     def set_df(self, df, conf_mat=None):
-        self.df = df                                # DataFrame with all the data
+        self.df = df  # DataFrame with all the data
         self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
         if conf_mat is not None:
             for i in range(len(conf_mat)):
@@ -704,10 +743,14 @@ class MonteCarloAnalyzer:
             cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
             frames = []
             keys = []
+            epochs = []
             for step in data.step.unique():
-                frames.append(data[data.step == step][cols].describe())
+                desc_frame = data[data.step == step][cols].describe()
+                frames.append(desc_frame)
+                epochs += [data[data.step == step]['epoch'].iloc[0]]*len(desc_frame)
                 keys.append(step)
             data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
+            data_to_save['epoch'] = epochs
             data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
             self.summary.append(data_to_save)
         # Save confusion matrix
@@ -720,17 +763,18 @@ class MonteCarloAnalyzer:
     # ------------
 
     def do_all(self, extension=".svg"):
-        self.monte_carlo_plotter.plot_train_vs_test(key='loss', extension=extension)
-        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', extension=extension)
-        self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True, extension=extension)
-        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True, extension=extension)
+        """self.monte_carlo_plotter.plot_train_vs_test(key='loss')
+        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy')
+        self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
+        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True)"""
 
-        for key in ['train loss', 'test loss', 'train accuracy', 'test accuracy']:
-            self.plot_3d_hist(key=key)
-            self.monte_carlo_plotter.plot_distribution(key=key, extension=extension)
+        key_list = ['test accuracy', 'test loss']  # , 'train accuracy', 'train loss']
+        for key in key_list:
+            # self.plot_3d_hist(key=key)
+            self.monte_carlo_plotter.plot_distribution(key=key, x_axis='epoch')
             self.box_plot(key=key, extension=extension)
 
-            for lib in ['matplotlib', 'seaborn']:  # 'plotly',
+            for lib in ['seaborn']:  # 'plotly',
                 self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
 
     def box_plot(self, step=-1, key='test accuracy', showfig=False, savefig=True, extension='.svg'):
@@ -772,7 +816,8 @@ class MonteCarloAnalyzer:
         if savefig:
             os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
             plotly.offline.plot(fig,
-                                filename=str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
+                                filename=str(self.path / (
+                                            "plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
                                 config=PLOTLY_CONFIG, auto_open=showfig)
             # fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_")
             #                                 + "_box_plot" + extension)))
@@ -838,16 +883,21 @@ class MonteCarloAnalyzer:
                               xaxis_type="log"))
         os.makedirs(self.path / "plots/histogram/", exist_ok=True)
         plotly.offline.plot(fig,
-                            filename=str(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
+                            filename=str(self.path / (
+                                        "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
                             config=PLOTLY_CONFIG, auto_open=False)
 
-    def plot_histogram(self, key='test accuracy', step=-1, library='plotly', showfig=False, savefig=True, title='', extension=".svg"):
+    def plot_histogram(self, key='test accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
+                       extension=".svg"):
         if library == 'matplotlib':
-            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
+            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
+                                            extension=extension)
         elif library == 'plotly':
-            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
+            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
+                                        extension=extension)
         elif library == 'seaborn':
-            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title, extension=extension)
+            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
+                                         extension=extension)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
@@ -871,10 +921,12 @@ class MonteCarloAnalyzer:
         title += key + " histogram"
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
         add_params(fig, ax, x_label=key, y_label="occurances", title=title, loc='upper right',
-                   filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension), showfig=showfig, savefig=savefig)
+                   filename=self.path / (
+                               "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension),
+                   showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title='', extension=".svg"):
+    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
         networks_availables = self.df.network.unique()
         if step == -1:
             step = max(self.df.step)
@@ -917,8 +969,7 @@ class MonteCarloAnalyzer:
         max_ax = 0.0
         ax = None
         networks_availables = self.df.network.unique()
-        # set_trace()
-        networks_availables = np.array(['complex network', 'real network', 'polar real network'])
+        networks_availables = ['complex network', 'real network', 'polar real network']
         if step == -1:
             step = max(self.df.step)
         for net in networks_availables:
@@ -929,17 +980,29 @@ class MonteCarloAnalyzer:
             max_ax = max(max_ax, max(data[key]))
         title += " " + key + " histogram"
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
-        fig.legend(loc='upper right', bbox_to_anchor=(0., 0.3, 0.5, 0.5))
-        add_params(fig, ax, x_label=key, y_label="occurrences",     # loc='upper left',
-                   filename=self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
+        fig.legend(loc='upper left')    # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
+        add_params(fig, ax, x_label=key.capitalize(), y_label="Occurrences",  # loc='upper left',
+                   filename=self.path / (
+                               "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
                    showfig=showfig, savefig=savefig)
+        # tikzplotlib.clean_figure()
+        tikzplotlib.save(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + ".tex"))
         return fig, ax
 
 
 if __name__ == "__main__":
-    monte_carlo_analyzer = MonteCarloAnalyzer(path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
-    monte_carlo_analyzer.plot_histogram(library='seaborn')
-
+    """monte_carlo_analyzer = MonteCarloAnalyzer(
+        path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
+    # monte_carlo_analyzer = MonteCarloAnalyzer(
+    #    path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv")
+    # monte_carlo_analyzer.save_stat_results()
+    monte_carlo_analyzer.plot_histogram()"""
+    path_list = [
+        "W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv",
+        "W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv"
+    ]
+    several = SeveralMonteCarloComparison(label="testing", x=["1", "2"], paths=path_list)
+    several.box_plot(library='seaborn', savefile="./results/testing_box_plot", showfig=False)
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.23'
