@@ -978,7 +978,7 @@ class MonteCarloAnalyzer:
         max_ax = 0.0
         ax = None
         networks_availables = self.df.network.unique()
-        networks_availables = ['complex network', 'real network', 'polar real network']
+        # networks_availables = ['complex network', 'real network', 'polar real network']
         if step == -1:
             step = max(self.df.step)
         for net in networks_availables:
