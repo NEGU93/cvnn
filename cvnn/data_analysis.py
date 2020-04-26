@@ -786,7 +786,16 @@ class MonteCarloAnalyzer:
             for lib in ['seaborn']:  # 'plotly',
                 self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
 
-    def box_plot(self, step=-1, key='test accuracy', showfig=False, savefig=True, extension='.svg'):
+    def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
+        if library == 'plotly':
+            self._box_plot_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
+        elif library == 'seaborn':
+            self._box_plot_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, extension=extension)
+        else:
+            logger.warning("Warning: Unrecognized library to plot " + library)
+            return None
+
+    def _box_plot_plotly(self, step=-1, key='test accuracy', showfig=False, savefig=True):
         fig = go.Figure()
         if step == -1:
             step = max(self.df.step)
@@ -826,12 +835,42 @@ class MonteCarloAnalyzer:
             os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=str(self.path / (
-                                            "plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
+                                        "plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot.html")),
                                 config=PLOTLY_CONFIG, auto_open=showfig)
             # fig.write_image(str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_")
             #                                 + "_box_plot" + extension)))
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
+
+    def _box_plot_seaborn(self, step=-1, key='test accuracy', showfig=False, savefig=True, extension='.svg'):
+        if step == -1:
+            step = max(self.df.step)
+        # Prepare data
+        filter = self.df['step'] == step
+        data = self.df[filter]
+
+        # Run figure
+        fig = plt.figure()
+        ax = sns.boxplot(x="network", y=key, data=data, boxprops=dict(alpha=.3))
+        # Make black lines the color of the box
+        for i, artist in enumerate(ax.artists):
+            col = artist.get_facecolor()[:-1]  # the -1 removes the transparency
+            artist.set_edgecolor(col)
+            for j in range(i * 6, i * 6 + 6):
+                line = ax.lines[j]
+                line.set_color(col)
+                line.set_mfc(col)
+                line.set_mec(col)
+
+        if savefig is not None:
+            os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
+            filename = str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot"))
+            fig.savefig(filename + extension)
+            # tikzplotlib.clean_figure()
+            tikzplotlib.save(filename + ".tex")
+        if showfig:
+            fig.show()
+        return fig, ax
 
     def show_plotly_table(self):
         # TODO: Not yet debugged
@@ -971,14 +1010,14 @@ class MonteCarloAnalyzer:
         return fig
 
     def _plot_histogram_seaborn(self, key='test accuracy', step=-1,
-                                showfig=False, savefig=True, title='', extension=".svg"):
+                                showfig=True, savefig=True, title='', extension=".svg"):
         fig = plt.figure()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
         ax = None
         networks_availables = self.df.network.unique()
-        networks_availables = ['complex network', 'real network', 'polar real network']
+        # networks_availables = ['complex network', 'real network', 'polar real network']
         if step == -1:
             step = max(self.df.step)
         for net in networks_availables:
@@ -1000,18 +1039,18 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    """monte_carlo_analyzer = MonteCarloAnalyzer(
-        path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
     # monte_carlo_analyzer = MonteCarloAnalyzer(
-    #    path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv")
+    #     path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
+    monte_carlo_analyzer = MonteCarloAnalyzer(
+        path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv")
     # monte_carlo_analyzer.save_stat_results()
-    monte_carlo_analyzer.plot_histogram()"""
-    path_list = [
+    monte_carlo_analyzer.box_plot(library='seaborn', showfig=False)
+    """path_list = [
         "W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv",
         "W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv"
     ]
     several = SeveralMonteCarloComparison(label="testing", x=["1", "2"], paths=path_list)
-    several.box_plot(library='seaborn', savefile="./results/testing_box_plot", showfig=False)
+    several.box_plot(library='seaborn', savefile="./results/testing_box_plot", showfig=False)"""
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.23'
