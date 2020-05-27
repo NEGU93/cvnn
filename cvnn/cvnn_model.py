@@ -43,7 +43,7 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True, save_info=True):
+    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models
@@ -77,15 +77,19 @@ class CvnnModel:
         # Chekpoints
         self.tensorboard = tensorboard
         # The graph will be saved no matter what. It is only computed once so it won't impact much on the training
-        self.graph_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train_func"))
+        self.graph_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/graph"))
         self.graph_writer = tf.summary.create_file_writer(self.graph_writer_logdir)
         if self.tensorboard:
             train_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/train"))
             test_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/test"))
             weights_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/weights"))
+            activation_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/activation"))
+            gradients_writer_logdir = str(self.root_dir.joinpath("tensorboard_logs/gradients"))
             self.train_summary_writer = tf.summary.create_file_writer(train_writer_logdir)
             self.test_summary_writer = tf.summary.create_file_writer(test_writer_logdir)
             self.weights_summary_writer = tf.summary.create_file_writer(weights_writer_logdir)
+            self.activation_summary_writer = tf.summary.create_file_writer(activation_writer_logdir)
+            self.gradients_summary_writer = tf.summary.create_file_writer(gradients_writer_logdir)
 
         # print("Saving {}/{}_metadata.txt".format(self.root_dir, self.name))     # To debug the warning message
         self._manage_string(self.summary(), verbose, filename=self.name + "_metadata.txt", mode="x")
@@ -470,8 +474,41 @@ class CvnnModel:
                 tf.summary.scalar('loss', test_loss, step=self.epochs_done)
                 tf.summary.scalar('accuracy', test_accuracy * 100, step=self.epochs_done)
         # Save weights histogram
+        x = x_train
         for layer in self.shape:
-            layer.save_tensorboard_checkpoint(self.weights_summary_writer, self.epochs_done)
+            x = layer.save_tensorboard_checkpoint(x, self.weights_summary_writer,
+                                                  self.activation_summary_writer, self.epochs_done)
+        self._save_tensorboard_gradients(x_train, y_train)
+
+    def _save_tensorboard_gradients(self, x_train, y_train):
+        with tf.GradientTape() as tape:
+            x_called = self.call(x_train)  # Forward mode computation
+            current_loss = self._apply_loss(y_train, x_called)  # Compute loss
+        variables = []
+        for lay in self.shape:
+            variables.extend(lay.trainable_variables)
+        gradients = tape.gradient(current_loss, variables)  # Compute gradients
+        assert all(g is not None for g in gradients)
+        assert len(gradients) % 2 == 0, "No biases still not supported."  # TODO: what if you have no bias? This crashes
+        with self.gradients_summary_writer.as_default():
+            for i in range(int(len(gradients)/2)):
+                if gradients[2*i].dtype == tf.complex64 or gradients[2*i].dtype == tf.complex128:
+                    tf.summary.histogram(name="Gradients_w_" + str(i) + "_real",
+                                         data=tf.math.real(gradients[2 * i]), step=self.epochs_done)
+                    tf.summary.histogram(name="Gradients_w_" + str(i) + "_imag",
+                                         data=tf.math.imag(gradients[2 * i]), step=self.epochs_done)
+                    tf.summary.histogram(name="Gradients_b_" + str(i) + "_real",
+                                         data=tf.math.real(gradients[2 * i + 1]), step=self.epochs_done)
+                    tf.summary.histogram(name="Gradients_b_" + str(i) + "_imag",
+                                         data=tf.math.imag(gradients[2 * i + 1]), step=self.epochs_done)
+                elif gradients[2*i].dtype == tf.float32 or gradients[2*i].dtype == tf.float64:
+                    tf.summary.histogram(name="Gradients_w_" + str(i),
+                                         data=gradients[2 * i], step=self.epochs_done)
+                    tf.summary.histogram(name="Gradients_b_" + str(i),
+                                         data=gradients[2 * i + 1], step=self.epochs_done)
+                else:
+                    logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
+                    sys.exit(-1)
 
     def save(self, loss, acc):
         # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
@@ -568,25 +605,28 @@ if __name__ == '__main__':
     for coef in coef_correls_list:
         param_list.append([coef, 1, 2])
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    # x_fit = transform_to_real(dataset.x)
-    x_fit = dataset.x
+    # x_fit = transform_to_real(dataset.x)      # To run real case
+    x_fit = dataset.x                           # To run complex case
 
     # Define shape
-    cdtype = np.complex64
+    cdtype = x_fit.dtype
     if cdtype == np.complex64:
         rdtype = np.float32
     else:
         rdtype = np.float64
     input_size = np.shape(x_fit)[1]
-    hidden_size = 64
+    hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
     shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
                                  input_dtype=cdtype, dropout=None),
+             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
+             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
+             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
              layers.ComplexDense(output_size=output_size, activation='softmax_real')]
 
     # Train model
-    model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy)
-    model.fit(x_fit, dataset.y, batch_size=100, epochs=150, verbose=True, save_csv_history=True, fast_mode=True)
+    model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy, tensorboard=True)
+    model.fit(x_fit, dataset.y, batch_size=100, epochs=25, verbose=True, save_csv_history=True, fast_mode=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
@@ -594,7 +634,7 @@ if __name__ == '__main__':
 
     # Analyze data
     # model.plotter.plot_key(key='accuracy', showfig=False, savefig=True)
-    model.plotter.plot_key(key='loss', library='matplotlib', showfig=False, savefig=True)
+    # model.plotter.plot_key(key='loss', library='matplotlib', showfig=False, savefig=True)
     # model.get_confusion_matrix(dataset.x_test, dataset.y_test, save_result=True)
     # set_trace()
 

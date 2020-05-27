@@ -15,6 +15,7 @@ from cvnn.utils import create_folder
 import logging
 import cvnn
 import tikzplotlib
+from tensorflow.python.summary.summary_iterator import summary_iterator
 
 logger = logging.getLogger(cvnn.__name__)
 
@@ -1039,18 +1040,10 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    # monte_carlo_analyzer = MonteCarloAnalyzer(
-    #     path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv")
-    monte_carlo_analyzer = MonteCarloAnalyzer(
-        path="W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv")
-    # monte_carlo_analyzer.save_stat_results()
-    monte_carlo_analyzer.box_plot(library='seaborn', showfig=False)
-    """path_list = [
-        "W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\one hidden layer\\polar_mode_one_layer\\run-15h46m21\\run_data.csv",
-        "W:\\HardDiskDrive\\Documentos\\GitHub\\cvnn\\results\\two hidden layer\\Dropout\\run_data.csv"
-    ]
-    several = SeveralMonteCarloComparison(label="testing", x=["1", "2"], paths=path_list)
-    several.box_plot(library='seaborn', savefile="./results/testing_box_plot", showfig=False)"""
+    """for e in summary_iterator("log\\models\\2020\\05May\\27Wednesday\\run-08h52m10\\tensorboard_logs\\test"):
+        for v in e.summary.value:
+            if v.tag == 'loss' or v.tag == 'accuracy':
+                print(v.simple_value)"""
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.23'

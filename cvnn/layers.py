@@ -101,7 +101,7 @@ class ComplexLayer(layers.Layer, ABC):
         pass
 
     @abstractmethod
-    def save_tensorboard_checkpoint(self, summary, step=None):
+    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
         pass
 
 
@@ -232,7 +232,11 @@ class ComplexDense(ComplexLayer):
                 y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=y_out.dtype)
             return y_out
 
-    def save_tensorboard_checkpoint(self, summary, step=None):
+    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
+        self._save_tensorboard_weight(weight_summary, step)
+        return self._save_tensorboard_activations(x, activation_summary, step)
+
+    def _save_tensorboard_weight(self, summary, step):
         with summary.as_default():
             if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:
                 tf.summary.histogram(name="ComplexDense_" + str(self.layer_number) + "_w_real",
@@ -252,6 +256,22 @@ class ComplexDense(ComplexLayer):
                 # This case should never happen. The constructor should already have checked this
                 self.logger.error("Input_dtype not supported.", exc_info=True)
                 sys.exit(-1)
+
+    def _save_tensorboard_activations(self, x, summary, step):
+        x = self.call(x)
+        with summary.as_default():
+            if x.dtype == tf.complex64 or x.dtype == tf.complex128:
+                tf.summary.histogram(name="Activation_value_" + str(self.layer_number) + "_real",
+                                     data=tf.math.real(x), step=step)
+                tf.summary.histogram(name="Activation_value_" + str(self.layer_number) + "_imag",
+                                     data=tf.math.imag(x), step=step)
+            elif x.dtype == tf.float32 or x.dtype == tf.float64:
+                tf.summary.histogram(name="Activation_value_" + str(self.layer_number),
+                                     data=x, step=step)
+            else:
+                self.logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
+                sys.exit(-1)
+        return x
 
 
 class ComplexDropout(ComplexLayer):
@@ -277,7 +297,7 @@ class ComplexDropout(ComplexLayer):
         y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
         return tf.cast(tf.complex(y_out_real, y_out_imag), dtype=inputs.dtype)
 
-    def save_tensorboard_checkpoint(self, summary, step=None):
+    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
         # No tensorboard things to save
         return None
 
