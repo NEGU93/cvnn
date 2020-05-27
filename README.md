@@ -64,8 +64,11 @@ Furthermore, this library will be regularly updated with new Tensorflow releases
 
 
 ## About me & Motivation
+
+[My personal website](https://negu93.github.io/agustinbarrachina/)
+
 I am a PhD student from [Ecole CentraleSupelec](https://www.centralesupelec.fr/)
-with a scholarship from [ONERA](https://www.onera.fr/en)
+with a scholarship from [ONERA](https://www.onera.fr/en) and the [DGA](https://www.defense.gouv.fr/dga)
 
 I am basically working with Complex-Valued Neural Networks for my PhD topic.
 In the need of making my coding more dynamic I build a library not to have to repeat the same code over and over for little changes and accelerate therefore my coding.
