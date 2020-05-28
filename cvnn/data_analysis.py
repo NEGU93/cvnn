@@ -15,7 +15,6 @@ from cvnn.utils import create_folder
 import logging
 import cvnn
 import tikzplotlib
-from tensorflow.python.summary.summary_iterator import summary_iterator
 
 logger = logging.getLogger(cvnn.__name__)
 
@@ -1029,21 +1028,18 @@ class MonteCarloAnalyzer:
             max_ax = max(max_ax, max(data[key]))
         title += " " + key + " histogram"
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
-        fig.legend(loc='upper left')    # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
+        fig.legend(loc='upper left')  # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
         add_params(fig, ax, x_label=key.capitalize(), y_label="Occurrences",  # loc='upper left',
                    filename=self.path / (
-                               "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
+                           "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
                    showfig=showfig, savefig=savefig)
         # tikzplotlib.clean_figure()
         tikzplotlib.save(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + ".tex"))
         return fig, ax
 
 
-if __name__ == "__main__":
-    """for e in summary_iterator("log\\models\\2020\\05May\\27Wednesday\\run-08h52m10\\tensorboard_logs\\test"):
-        for v in e.summary.value:
-            if v.tag == 'loss' or v.tag == 'accuracy':
-                print(v.simple_value)"""
+# if __name__ == "__main__":
+
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.23'

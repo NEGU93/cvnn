@@ -626,7 +626,7 @@ if __name__ == '__main__':
 
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy, tensorboard=True)
-    model.fit(x_fit, dataset.y, batch_size=100, epochs=25, verbose=True, save_csv_history=True, fast_mode=True)
+    model.fit(x_fit, dataset.y, batch_size=100, epochs=10, verbose=True, save_csv_history=True, fast_mode=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
