@@ -4,6 +4,7 @@ import tensorflow as tf
 import sys
 import cvnn
 import logging
+from typing import Union, Optional          # https://docs.python.org/3/library/typing.html
 from cvnn.activation_functions import apply_activation
 from cvnn.utils import get_func_name
 import numpy as np
@@ -78,6 +79,9 @@ class ComplexLayer(layers.Layer, ABC):
         self.layer_number = next(layer_count)  # Know it's own number
 
         super().__init__()
+
+    def set_output_size(self):
+        self.__class__.__bases__[0].last_layer_output_size = self.output_size
 
     @abstractmethod
     def __deepcopy__(self, memodict=None):
@@ -311,6 +315,140 @@ class ComplexDropout(ComplexLayer):
 
     def get_real_equivalent(self):
         return self.__deepcopy__()      # Dropout layer is dtype agnostic
+
+
+class ComplexConvolutional(ComplexLayer):
+
+    def __init__(self, filters: int, kernel_shape: Union[int, tuple, list],
+                 input_shape: Optional[Union[int, tuple, list]] = None, padding: Union[int, tuple, list] = 0,
+                 stride: Union[int, tuple, list] = 1, input_dtype=None):
+        self.filters = filters
+        if isinstance(kernel_shape, int):
+            self.kernel_shape = (kernel_shape,)
+        elif isinstance(kernel_shape, (tuple, list)):
+            self.kernel_shape = tuple(kernel_shape)
+        else:
+            self.logger.error(
+                "Kernel shape: " + str(kernel_shape) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
+        if input_shape is None:
+            self.input_size = None
+        elif isinstance(input_shape, int):
+            self.input_size = (input_shape,)
+        elif isinstance(input_shape, (tuple, list)):
+            self.input_size = tuple(input_shape)
+        else:
+            self.logger.error(
+                "Input shape: " + str(input_shape) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
+        super(ComplexConvolutional, self).__init__(output_size=None, input_size=self.input_size,
+                                                   input_dtype=input_dtype)
+        # Padding
+        if isinstance(padding, int):
+            self.padding = (padding,) * len(self.input_size)   # I call super first in the case input_shape is none
+        elif isinstance(padding, (tuple, list)):
+            self.padding = tuple(padding)
+        else:
+            self.logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
+        # Stride
+        if isinstance(stride, int):
+            self.stride = (stride,) * len(self.input_size)   # I call super first in the case input_shape is none
+        elif isinstance(padding, (tuple, list)):
+            self.stride = tuple(stride)
+        else:
+            self.logger.error("stride: " + str(stride) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
+        out_list = []
+        for i in range(len(self.input_size)):
+            out_list.append(int(np.floor(
+                (self.input_size[i] + 2*self.padding[0] - self.kernel_shape[i]) / self.stride[i]
+            ) + 1))
+        self.output_size = tuple(out_list)
+        self.set_output_size()  # TODO: Not a nice fix
+        self._init_kernel()
+
+    def _init_kernel(self):
+        self.kernels = []
+        if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
+            for _ in range(self.filters):
+                self.kernels.append(tf.cast(
+                    tf.Variable(tf.complex(tf.keras.initializers.GlorotUniform()(shape=self.kernel_shape),
+                                           tf.keras.initializers.GlorotUniform()(shape=self.kernel_shape)),
+                                name="kernel" + str(self.layer_number)),
+                    dtype=self.input_dtype))
+        elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
+            for _ in range(self.filters):
+                self.kernels.append(tf.cast(tf.Variable(tf.keras.initializers.GlorotUniform()(shape=self.kernel_shape),
+                                                        name="kernel" + str(self.layer_number)),
+                                            dtype=self.input_dtype))
+        else:
+            # This case should never happen. The abstract constructor should already have checked this
+            self.logger.error("Input_dtype not supported.", exc_info=True)
+            sys.exit(-1)
+
+    def call(self, inputs, **kwargs):
+        # TODO: Check inputs shape
+        inputs = np.array(inputs)   # Cast to numpy array
+        inputs = self.apply_padding(inputs)
+        output = np.zeros((self.filters,) + self.output_size)
+        for filter, kernel in enumerate(self.kernels):
+            for i in range(int(np.prod(self.output_size))):  # for each element in the output
+                index = np.unravel_index(i, self.output_size)
+                start_index = tuple([a*b for a, b in zip(index, self.stride)])
+                end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
+                sector_slice = [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
+                sector = inputs[sector_slice]
+                output[filter][index] = np.sum(sector * self.kernels[filter])
+        return output
+
+    def apply_padding(self, inputs):
+        # TODO: Not yet done!
+        return inputs
+
+    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
+        return None # TODO
+
+    def get_description(self):
+        return "ComplexConv"    # TODO
+
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
+        return ComplexConvolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+                                    padding=self.padding, stride=self.stride, input_dtype=self.input_dtype)
+
+    def get_real_equivalent(self):
+        return self.__deepcopy__()
+
+
+if __name__ == "__main__":
+    conv = ComplexConvolutional(1, (3, 3), (6, 6), input_dtype=np.complex64)
+    # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
+    img1 = [
+        [3, 0, 1, 2, 7, 4],
+        [1, 5, 8, 9, 3, 1],
+        [2, 7, 2, 5, 1, 3],
+        [0, 1, 3, 1, 7, 8],
+        [4, 2, 1, 6, 2, 8],
+        [2, 4, 5, 2, 3, 9]
+    ]
+    img2 = [
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0]
+    ]
+    conv.kernels[0] = [
+        [1, 0, -1],
+        [1, 0, -1],
+        [1, 0, -1]
+    ]
+    out1 = conv(img1)
+    out2 = conv(img2)
+    import pdb; pdb.set_trace()
 
 
 __author__ = 'J. Agustin BARRACHINA'
