@@ -323,14 +323,6 @@ class ComplexConvolutional(ComplexLayer):
                  input_shape: Optional[Union[int, tuple, list]] = None, padding: Union[int, tuple, list] = 0,
                  stride: Union[int, tuple, list] = 1, input_dtype=None):
         self.filters = filters
-        if isinstance(kernel_shape, int):
-            self.kernel_shape = (kernel_shape,)
-        elif isinstance(kernel_shape, (tuple, list)):
-            self.kernel_shape = tuple(kernel_shape)
-        else:
-            self.logger.error(
-                "Kernel shape: " + str(kernel_shape) + " format not supported. It must be an int or a tuple")
-            sys.exit(-1)
         if input_shape is None:
             self.input_size = None
         elif isinstance(input_shape, int):
@@ -343,26 +335,35 @@ class ComplexConvolutional(ComplexLayer):
             sys.exit(-1)
         super(ComplexConvolutional, self).__init__(output_size=None, input_size=self.input_size,
                                                    input_dtype=input_dtype)
+        if isinstance(kernel_shape, int):
+            self.kernel_shape = (kernel_shape,) * len(self.input_size)
+        elif isinstance(kernel_shape, (tuple, list)):
+            self.kernel_shape = tuple(kernel_shape)
+        else:
+            self.logger.error(
+                "Kernel shape: " + str(kernel_shape) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
         # Padding
         if isinstance(padding, int):
-            self.padding = (padding,) * len(self.input_size)   # I call super first in the case input_shape is none
+            self.padding_shape = (padding,) * len(self.input_size)   # I call super first in the case input_shape is none
         elif isinstance(padding, (tuple, list)):
-            self.padding = tuple(padding)
+            self.padding_shape = tuple(padding)
         else:
             self.logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
         # Stride
         if isinstance(stride, int):
-            self.stride = (stride,) * len(self.input_size)   # I call super first in the case input_shape is none
+            self.stride_shape = (stride,) * len(self.input_size)   # I call super first in the case input_shape is none
         elif isinstance(padding, (tuple, list)):
-            self.stride = tuple(stride)
+            self.stride_shape = tuple(stride)
         else:
             self.logger.error("stride: " + str(stride) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
         out_list = []
         for i in range(len(self.input_size)):
+            # 2.4 on https://arxiv.org/abs/1603.07285
             out_list.append(int(np.floor(
-                (self.input_size[i] + 2*self.padding[0] - self.kernel_shape[i]) / self.stride[i]
+                (self.input_size[i] + 2 * self.padding_shape[i] - self.kernel_shape[i]) / self.stride_shape[i]
             ) + 1))
         self.output_size = tuple(out_list)
         self.set_output_size()  # TODO: Not a nice fix
@@ -395,7 +396,7 @@ class ComplexConvolutional(ComplexLayer):
         for filter, kernel in enumerate(self.kernels):
             for i in range(int(np.prod(self.output_size))):  # for each element in the output
                 index = np.unravel_index(i, self.output_size)
-                start_index = tuple([a*b for a, b in zip(index, self.stride)])
+                start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
                 end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
                 sector_slice = [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                 sector = inputs[sector_slice]
@@ -403,8 +404,12 @@ class ComplexConvolutional(ComplexLayer):
         return output
 
     def apply_padding(self, inputs):
-        # TODO: Not yet done!
-        return inputs
+        new_shape = tuple([i + 2 * p for i, p in zip(inputs.shape, self.padding_shape)])
+        result = np.zeros(new_shape)
+        place_of_inputs = [slice(p, p + i) for i, p in zip(inputs.shape, self.padding_shape)]
+        result[place_of_inputs] = inputs
+        set_trace()
+        return result
 
     def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
         return None # TODO
@@ -416,16 +421,16 @@ class ComplexConvolutional(ComplexLayer):
         if memodict is None:
             memodict = {}
         return ComplexConvolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
-                                    padding=self.padding, stride=self.stride, input_dtype=self.input_dtype)
+                                    padding=self.padding_shape, stride=self.stride_shape, input_dtype=self.input_dtype)
 
     def get_real_equivalent(self):
         return self.__deepcopy__()
 
 
 if __name__ == "__main__":
-    conv = ComplexConvolutional(1, (3, 3), (6, 6), input_dtype=np.complex64)
+    # conv = ComplexConvolutional(1, (3, 3), (6, 6), input_dtype=np.complex64)
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
-    img1 = [
+    """img1 = [
         [3, 0, 1, 2, 7, 4],
         [1, 5, 8, 9, 3, 1],
         [2, 7, 2, 5, 1, 3],
@@ -447,7 +452,21 @@ if __name__ == "__main__":
         [1, 0, -1]
     ]
     out1 = conv(img1)
-    out2 = conv(img2)
+    out2 = conv(img2)"""
+    img3 = [0, 0, 0, 1, 1, 0, 0, 0]
+    img_padd = [
+        [
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1]
+        ],[
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    ]
+    # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
+    conv = ComplexConvolutional(1, 3, (8, 2, 2), padding=2, input_dtype=np.complex64)
+    conv.kernels[0] = [0, 1, 0]
+    out3 = conv(img_padd)
     import pdb; pdb.set_trace()
 
 
