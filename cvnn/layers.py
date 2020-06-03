@@ -18,6 +18,9 @@ from pdb import set_trace
 SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)  # Used to count the number of layers
 
+t_Dtype = Union[tf.dtypes.DType, np.dtype]
+t_Shape = Union[int, tuple, list]
+
 
 class ComplexLayer(layers.Layer, ABC):
     # Being ComplexLayer an abstract class, then this can be called using:
@@ -26,7 +29,7 @@ class ComplexLayer(layers.Layer, ABC):
     last_layer_output_dtype = None      # TODO: Make it work both with np and tf dtypes
     last_layer_output_size = None
 
-    def __init__(self, output_size, input_size=None, input_dtype=None):
+    def __init__(self, output_size: t_Shape, input_size=Optional[t_Shape], input_dtype=t_Dtype):
         """
         Base constructor for a complex layer. The first layer will need a input_dtype and input_size.
         For the other classes is optional,
@@ -98,14 +101,17 @@ class ComplexLayer(layers.Layer, ABC):
         pass
 
     @abstractmethod
-    def get_description(self):
+    def get_description(self) -> str:
         """
         :return: a string containing all the information of the layer
         """
         pass
 
     @abstractmethod
-    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
+    def save_tensorboard_checkpoint(self, x,
+                                    weight_summary: tf.summary.SummaryWriter,
+                                    activation_summary: tf.summary.SummaryWriter,
+                                    step=Optional[int]):
         pass
 
 
@@ -319,9 +325,9 @@ class ComplexDropout(ComplexLayer):
 
 class ComplexConvolutional(ComplexLayer):
 
-    def __init__(self, filters: int, kernel_shape: Union[int, tuple, list],
-                 input_shape: Optional[Union[int, tuple, list]] = None, padding: Union[int, tuple, list] = 0,
-                 stride: Union[int, tuple, list] = 1, input_dtype=None):
+    def __init__(self, filters: int, kernel_shape: t_Shape,
+                 input_shape: Optional[t_Shape] = None, padding: t_Shape = 0,
+                 stride: t_Shape = 1, input_dtype=t_Dtype):
         self.filters = filters
         if input_shape is None:
             self.input_size = None
@@ -391,28 +397,35 @@ class ComplexConvolutional(ComplexLayer):
     def call(self, inputs, **kwargs):
         # TODO: Check inputs shape
         inputs = np.array(inputs)   # Cast to numpy array
-        inputs = self.apply_padding(inputs)
-        output = np.zeros((self.filters,) + self.output_size)
-        for filter, kernel in enumerate(self.kernels):
-            for i in range(int(np.prod(self.output_size))):  # for each element in the output
-                index = np.unravel_index(i, self.output_size)
-                start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
-                sector_slice = [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                sector = inputs[sector_slice]
-                output[filter][index] = np.sum(sector * self.kernels[filter])
+        output = np.zeros(
+            (inputs.shape[0],) +    # Per each image
+            (self.filters,) +       # New channels
+            self.output_size        # Image out size
+        )
+        for img_index, image in enumerate(inputs):
+            for img_channel in image:
+                img_channel = self.apply_padding(img_channel)
+                for filter, kernel in enumerate(self.kernels):
+                    for i in range(int(np.prod(self.output_size))):  # for each element in the output
+                        index = np.unravel_index(i, self.output_size)
+                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
+                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
+                        sector_slice = tuple(
+                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
+                        )
+                        sector = img_channel[sector_slice]
+                        output[img_index][filter][index] = np.sum(sector * self.kernels[filter])
         return output
 
     def apply_padding(self, inputs):
         new_shape = tuple([i + 2 * p for i, p in zip(inputs.shape, self.padding_shape)])
         result = np.zeros(new_shape)
-        place_of_inputs = [slice(p, p + i) for i, p in zip(inputs.shape, self.padding_shape)]
+        place_of_inputs = tuple([slice(p, p + i) for i, p in zip(inputs.shape, self.padding_shape)])
         result[place_of_inputs] = inputs
-        set_trace()
         return result
 
     def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
-        return None # TODO
+        return None     # TODO
 
     def get_description(self):
         return "ComplexConv"    # TODO
@@ -428,9 +441,9 @@ class ComplexConvolutional(ComplexLayer):
 
 
 if __name__ == "__main__":
-    # conv = ComplexConvolutional(1, (3, 3), (6, 6), input_dtype=np.complex64)
+    conv = ComplexConvolutional(1, (3, 3), (6, 6), input_dtype=np.complex64)
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
-    """img1 = [
+    img1 = [
         [3, 0, 1, 2, 7, 4],
         [1, 5, 8, 9, 3, 1],
         [2, 7, 2, 5, 1, 3],
@@ -446,27 +459,33 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
     ]
+    img = [
+        [img1],
+        [img2]
+    ]
     conv.kernels[0] = [
         [1, 0, -1],
         [1, 0, -1],
         [1, 0, -1]
     ]
-    out1 = conv(img1)
-    out2 = conv(img2)"""
+    out1 = conv(img)
+    """
+    # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
     img3 = [0, 0, 0, 1, 1, 0, 0, 0]
     img_padd = [
         [
             [1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1]
-        ],[
+        ], [
             [1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1]
         ]
     ]
-    # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
-    conv = ComplexConvolutional(1, 3, (8, 2, 2), padding=2, input_dtype=np.complex64)
+
+    conv = ComplexConvolutional(1, 3, (8, 2, 2), padding=1, input_dtype=np.complex64)
     conv.kernels[0] = [0, 1, 0]
     out3 = conv(img_padd)
+    """
     import pdb; pdb.set_trace()
 
 
