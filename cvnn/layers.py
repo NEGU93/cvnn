@@ -394,17 +394,43 @@ class ComplexConvolutional(ComplexLayer):
             self.logger.error("Input_dtype not supported.", exc_info=True)
             sys.exit(-1)
 
+    def _verify_inputs(self, inputs):
+        # Expected inputs shape: (images, image_shape, channel (optional))
+        inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
+        if len(inputs.shape) == len(self.input_size) + 1:
+            # case with no channel
+            inputs = tf.reshape(inputs, inputs.shape + (1,))    # Then I have only one channel, I add dimension
+        elif len(inputs.shape) != len(self.input_size) + 2:     # This is the other expected input.
+            self.logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
+                              "with the shape of (images, channels, vector size)")
+            sys.exit(-1)
+        if inputs.shape[1:-1] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
+            expected_shape = "(images, " + str(self.input_size[0])
+            for i in range(1, len(self.input_size)):
+                expected_shape += "x" + str(self.input_size[i])
+            expected_shape += ", channels (optional)) "
+
+            received_shape = "(images=" + str(inputs.shape[0]) + ", "
+            received_shape += str(inputs.shape[1])  # What if it has different sizes????
+            for i in range(2, len(inputs.shape)-1):
+                received_shape += "x" + str(inputs.shape[i])
+            received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
+            self.logger.error("Unexpected image shape. Expecting image of shape " +
+                              expected_shape + " but received " + received_shape)
+            sys.exit(-1)
+        return inputs
+
     def call(self, inputs, **kwargs):
-        # TODO: Check inputs shape
-        inputs = np.array(inputs)   # Cast to numpy array
+        inputs = self._verify_inputs(inputs)
+        inputs = self.apply_padding(inputs)
         output = np.zeros(
             (inputs.shape[0],) +    # Per each image
-            (self.filters,) +       # New channels
-            self.output_size        # Image out size
+            self.output_size +      # Image out size
+            (self.filters,)         # New channels
         )
         for img_index, image in enumerate(inputs):
-            for img_channel in image:
-                img_channel = self.apply_padding(img_channel)
+            for channel_index in range(image.shape[-1]):
+                img_channel = image[..., channel_index]     # Get each channel
                 for filter, kernel in enumerate(self.kernels):
                     for i in range(int(np.prod(self.output_size))):  # for each element in the output
                         index = np.unravel_index(i, self.output_size)
@@ -414,15 +440,15 @@ class ComplexConvolutional(ComplexLayer):
                             [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                         )
                         sector = img_channel[sector_slice]
-                        output[img_index][filter][index] = np.sum(sector * self.kernels[filter])
+                        output[img_index][index][filter] = np.sum(sector * self.kernels[filter])
         return output
 
     def apply_padding(self, inputs):
-        new_shape = tuple([i + 2 * p for i, p in zip(inputs.shape, self.padding_shape)])
-        result = np.zeros(new_shape)
-        place_of_inputs = tuple([slice(p, p + i) for i, p in zip(inputs.shape, self.padding_shape)])
-        result[place_of_inputs] = inputs
-        return result
+        pad = [[0, 0]]  # No padding to the images itself
+        for p in self.padding_shape:
+            pad.append([p, p])
+        pad.append([0, 0])  # No padding to the channel
+        return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0, name="Zero Padding")
 
     def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
         return None     # TODO
@@ -441,7 +467,7 @@ class ComplexConvolutional(ComplexLayer):
 
 
 if __name__ == "__main__":
-    conv = ComplexConvolutional(1, (3, 3), (6, 6), input_dtype=np.complex64)
+    conv = ComplexConvolutional(1, (3, 3), (6, 6), padding=0, input_dtype=np.complex64)
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
     img1 = [
         [3, 0, 1, 2, 7, 4],
@@ -459,10 +485,7 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
     ]
-    img = [
-        [img1],
-        [img2]
-    ]
+    img = [img1, img2]
     conv.kernels[0] = [
         [1, 0, -1],
         [1, 0, -1],
