@@ -334,7 +334,7 @@ class ComplexConvolutional(ComplexLayer):
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
             apply_activation(self.activation,
-                             tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
+                             tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), input_dtype)
                              ).numpy().dtype
         if input_shape is None:
             self.input_size = None
@@ -432,14 +432,14 @@ class ComplexConvolutional(ComplexLayer):
             inputs = self._verify_inputs(inputs)
             inputs = self.apply_padding(inputs)
             output = np.zeros(
-                (inputs.shape[0],) +    # Per each image
-                self.output_size +      # Image out size
-                (self.filters,)         # New channels
+                (inputs.shape[0],) +                        # Per each image
+                self.output_size +                          # Image out size
+                (self.filters*inputs.shape[-1],)            # New channels
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
                     img_channel = image[..., channel_index]     # Get each channel
-                    for filter, kernel in enumerate(self.kernels):
+                    for filter_index, kernel in enumerate(self.kernels):
                         for i in range(int(np.prod(self.output_size))):  # for each element in the output
                             index = np.unravel_index(i, self.output_size)
                             start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
@@ -448,7 +448,8 @@ class ComplexConvolutional(ComplexLayer):
                                 [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                             )
                             sector = img_channel[sector_slice]
-                            output[img_index][index][filter] = np.sum(sector * self.kernels[filter])
+                            output[img_index][index][self.filters*channel_index + filter_index] = \
+                                np.sum(sector * self.kernels[filter_index])
                             output = apply_activation(self.activation, output)
         return output
 
@@ -494,7 +495,11 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
     ]
-    img = [img1, img2]
+    img = np.zeros((2, 6, 6, 2))
+    img[0, ..., 0] = img1
+    img[0, ..., 1] = img2
+    img[1, ..., 0] = img1
+    img[1, ..., 1] = img2
     conv.kernels[0] = [
         [1, 0, -1],
         [1, 0, -1],
