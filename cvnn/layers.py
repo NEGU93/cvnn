@@ -155,7 +155,6 @@ class ComplexDense(ComplexLayer):
             apply_activation(self.activation,
                              tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
                              ).numpy().dtype
-
         self.dropout = dropout
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
@@ -327,8 +326,16 @@ class ComplexConvolutional(ComplexLayer):
 
     def __init__(self, filters: int, kernel_shape: t_Shape,
                  input_shape: Optional[t_Shape] = None, padding: t_Shape = 0,
-                 stride: t_Shape = 1, input_dtype=t_Dtype):
+                 stride: t_Shape = 1, input_dtype=t_Dtype,
+                 activation=None    # TODO: Check datatype
+                 ):
         self.filters = filters
+        self.activation = activation
+        # Test if the activation function changes datatype or not...
+        self.__class__.__bases__[0].last_layer_output_dtype = \
+            apply_activation(self.activation,
+                             tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
+                             ).numpy().dtype
         if input_shape is None:
             self.input_size = None
         elif isinstance(input_shape, int):
@@ -421,26 +428,28 @@ class ComplexConvolutional(ComplexLayer):
         return inputs
 
     def call(self, inputs, **kwargs):
-        inputs = self._verify_inputs(inputs)
-        inputs = self.apply_padding(inputs)
-        output = np.zeros(
-            (inputs.shape[0],) +    # Per each image
-            self.output_size +      # Image out size
-            (self.filters,)         # New channels
-        )
-        for img_index, image in enumerate(inputs):
-            for channel_index in range(image.shape[-1]):
-                img_channel = image[..., channel_index]     # Get each channel
-                for filter, kernel in enumerate(self.kernels):
-                    for i in range(int(np.prod(self.output_size))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size)
-                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
-                        sector_slice = tuple(
-                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                        )
-                        sector = img_channel[sector_slice]
-                        output[img_index][index][filter] = np.sum(sector * self.kernels[filter])
+        with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
+            inputs = self._verify_inputs(inputs)
+            inputs = self.apply_padding(inputs)
+            output = np.zeros(
+                (inputs.shape[0],) +    # Per each image
+                self.output_size +      # Image out size
+                (self.filters,)         # New channels
+            )
+            for img_index, image in enumerate(inputs):
+                for channel_index in range(image.shape[-1]):
+                    img_channel = image[..., channel_index]     # Get each channel
+                    for filter, kernel in enumerate(self.kernels):
+                        for i in range(int(np.prod(self.output_size))):  # for each element in the output
+                            index = np.unravel_index(i, self.output_size)
+                            start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
+                            end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
+                            sector_slice = tuple(
+                                [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
+                            )
+                            sector = img_channel[sector_slice]
+                            output[img_index][index][filter] = np.sum(sector * self.kernels[filter])
+                            output = apply_activation(self.activation, output)
         return output
 
     def apply_padding(self, inputs):
