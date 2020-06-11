@@ -132,7 +132,30 @@ class ComplexLayer(layers.Layer, ABC):
         pass
 
 
-class ComplexDense(ComplexLayer):
+class Flatten(ComplexLayer):
+
+    def __init__(self):
+        # Win x2: giving None as input_size will also make sure Flatten is not the first layer
+        super().__init__(input_size=None, output_size=None, input_dtype=None)
+        self.output_size = np.prod(self.input_size)
+
+    def __deepcopy__(self, memodict=None):
+        return Flatten()
+
+    def get_real_equivalent(self):
+        return self.__deepcopy__()
+
+    def get_description(self) -> str:
+        return "Complex Flatten"
+
+    def _save_tensorboard_weight(self, weight_summary, step):
+        return None
+
+    def call(self, inputs, **kwargs):
+        return tf.reshape(inputs, (inputs.shape[0], self.output_size))
+
+
+class Dense(ComplexLayer):
     """
     Fully connected complex-valued layer
     Implements the operation:
@@ -165,7 +188,7 @@ class ComplexDense(ComplexLayer):
             that will be the probability that each element is dropped.
             Example: setting rate=0.1 would drop 10% of input elements.
         """
-        super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
+        super(Dense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
         self.activation = activation
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
@@ -174,7 +197,7 @@ class ComplexDense(ComplexLayer):
                              ).numpy().dtype
         self.dropout = dropout
         self.weight_initializer = weight_initializer
-        self.bias_initializer = bias_initializer  # TODO: Not working yet
+        self.bias_initializer = bias_initializer
         self.w = None
         self.b = None
         self._init_weights()
@@ -182,25 +205,26 @@ class ComplexDense(ComplexLayer):
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return ComplexDense(output_size=self.output_size, input_size=self.input_size,
-                            activation=self.activation,
-                            input_dtype=self.input_dtype,
-                            weight_initializer=self.weight_initializer,
-                            bias_initializer=self.bias_initializer, dropout=self.dropout
-                            )
+        return Dense(output_size=self.output_size, input_size=self.input_size,
+                     activation=self.activation,
+                     input_dtype=self.input_dtype,
+                     weight_initializer=self.weight_initializer,
+                     bias_initializer=self.bias_initializer, dropout=self.dropout
+                     )
 
     def get_real_equivalent(self, output_multiplier=2):
         """
         :param output_multiplier: Multiplier of output and input size (normally by 2)
         :return: real-valued copy of self
         """
-        return ComplexDense(output_size=self.output_size * output_multiplier, input_size=self.input_size * 2,
-                            activation=self.activation, input_dtype=np.float32,
-                            weight_initializer=self.weight_initializer,
-                            bias_initializer=self.bias_initializer, dropout=self.dropout
-                            )
+        return Dense(output_size=self.output_size * output_multiplier, input_size=self.input_size * 2,
+                     activation=self.activation, input_dtype=np.float32,
+                     weight_initializer=self.weight_initializer,
+                     bias_initializer=self.bias_initializer, dropout=self.dropout
+                     )
 
     def _init_weights(self):
+        set_trace()
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
             self.w = tf.cast(
                 tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
@@ -280,7 +304,7 @@ class ComplexDense(ComplexLayer):
                 sys.exit(-1)
 
 
-class ComplexDropout(ComplexLayer):
+class Dropout(ComplexLayer):
 
     def __init__(self, rate, noise_shape=None, seed=None):
         """
@@ -313,18 +337,20 @@ class ComplexDropout(ComplexLayer):
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return ComplexDropout(rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
+        return Dropout(rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
 
     def get_real_equivalent(self):
         return self.__deepcopy__()      # Dropout layer is dtype agnostic
 
 
-class ComplexConvolutional(ComplexLayer):
+class Convolutional(ComplexLayer):
 
     def __init__(self, filters: int, kernel_shape: t_Shape,
                  input_shape: Optional[t_Shape] = None, padding: t_Shape = 0,
                  stride: t_Shape = 1, input_dtype: Optional[t_Dtype] = None,
-                 activation=None    # TODO: Check type
+                 activation=None,    # TODO: Check type
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros
+                 # dilatation_rate=(1, 1)   # TODO: Interesting to add
                  ):
         self.filters = filters
         self.activation = activation
@@ -338,8 +364,8 @@ class ComplexConvolutional(ComplexLayer):
             self.logger.error(
                 "Input shape: " + str(input_shape) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
-        super(ComplexConvolutional, self).__init__(output_size=None, input_size=self.input_size,
-                                                   input_dtype=input_dtype)
+        super(Convolutional, self).__init__(output_size=None, input_size=self.input_size,
+                                            input_dtype=input_dtype)
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
             apply_activation(self.activation,
@@ -355,7 +381,8 @@ class ComplexConvolutional(ComplexLayer):
             sys.exit(-1)
         # Padding
         if isinstance(padding, int):
-            self.padding_shape = (padding,) * len(self.input_size)   # I call super first in the case input_shape is none
+            self.padding_shape = (padding,) * len(self.input_size)
+            # I call super first in the case input_shape is none
         elif isinstance(padding, (tuple, list)):
             self.padding_shape = tuple(padding)
         else:
@@ -377,6 +404,8 @@ class ComplexConvolutional(ComplexLayer):
             ) + 1))
         self.output_size = tuple(out_list)
         self.set_output_size()  # TODO: Not a nice fix
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer  # TODO: Not working yet
         self._init_kernel()
 
     def _init_kernel(self):
@@ -384,13 +413,13 @@ class ComplexConvolutional(ComplexLayer):
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
             for _ in range(self.filters):
                 self.kernels.append(tf.cast(
-                    tf.Variable(tf.complex(tf.keras.initializers.GlorotUniform()(shape=self.kernel_shape),
-                                           tf.keras.initializers.GlorotUniform()(shape=self.kernel_shape)),
+                    tf.Variable(tf.complex(self.weight_initializer()(shape=self.kernel_shape),
+                                           self.weight_initializer()(shape=self.kernel_shape)),
                                 name="kernel" + str(self.layer_number)),
                     dtype=self.input_dtype))
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
             for _ in range(self.filters):
-                self.kernels.append(tf.cast(tf.Variable(tf.keras.initializers.GlorotUniform()(shape=self.kernel_shape),
+                self.kernels.append(tf.cast(tf.Variable(self.weight_initializer()(shape=self.kernel_shape),
                                                         name="kernel" + str(self.layer_number)),
                                             dtype=self.input_dtype))
         else:
@@ -401,6 +430,10 @@ class ComplexConvolutional(ComplexLayer):
     def _verify_inputs(self, inputs):
         # Expected inputs shape: (images, image_shape, channel (optional))
         inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
+        if inputs.dtype != self.input_dtype:
+            self.logger.warning("input dtype (" + str(inputs.dtype) + ") not what expected ("
+                                + str(self.input_dtype) + "). Attempting cast...")
+            inputs = tf.dtypes.cast(inputs, self.input_dtype)
         if len(inputs.shape) == len(self.input_size) + 1:
             # case with no channel
             inputs = tf.reshape(inputs, inputs.shape + (1,))    # Then I have only one channel, I add dimension
@@ -409,15 +442,12 @@ class ComplexConvolutional(ComplexLayer):
                               "with the shape of (images, channels, vector size)")
             sys.exit(-1)
         if inputs.shape[1:-1] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
-            expected_shape = "(images, " + str(self.input_size[0])
-            for i in range(1, len(self.input_size)):
-                expected_shape += "x" + str(self.input_size[i])
+            expected_shape = "(images, "
+            expected_shape += "x".join([str(x) for x in self.input_size])
             expected_shape += ", channels (optional)) "
 
             received_shape = "(images=" + str(inputs.shape[0]) + ", "
-            received_shape += str(inputs.shape[1])  # What if it has different sizes????
-            for i in range(2, len(inputs.shape)-1):
-                received_shape += "x" + str(inputs.shape[i])
+            received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
             received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
             self.logger.error("Unexpected image shape. Expecting image of shape " +
                               expected_shape + " but received " + received_shape)
@@ -463,19 +493,41 @@ class ComplexConvolutional(ComplexLayer):
         return None     # TODO
 
     def get_description(self):
-        return "ComplexConv"    # TODO
+        fun_name = get_func_name(self.activation)
+        out_str = "Complex Convolutional layer:\n\tinput size = " + self._get_expected_input_shape_description() + \
+                  "(" + str(self.input_dtype) + \
+                  ") -> output size = " + self._get_output_shape_description() + \
+                  "\n\tkernel shape = (" + "x".join([str(x) for x in self.kernel_shape]) + ")" + \
+                  "\n\tstride shape = (" + "x".join([str(x) for x in self.stride_shape]) + ")" + \
+                  "\n\tzero padding shape = (" + "x".join([str(x) for x in self.padding_shape]) + ")" + \
+                  ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
+                  + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + "\n"
+        return out_str
+
+    def _get_expected_input_shape_description(self) -> str:
+        expected_shape = "(images, "
+        expected_shape += "x".join([str(x) for x in self.input_size])
+        expected_shape += ", channels (optional))\n"
+        return expected_shape
+
+    def _get_output_shape_description(self) -> str:
+        expected_out_shape = "(images, "
+        expected_out_shape += "x".join([str(x) for x in self.input_size])
+        expected_out_shape += ", " + str(self.filters) + "*channels)\n"
+        return expected_out_shape
 
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return ComplexConvolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
-                                    padding=self.padding_shape, stride=self.stride_shape, input_dtype=self.input_dtype)
+        return Convolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+                             padding=self.padding_shape, stride=self.stride_shape, input_dtype=self.input_dtype)
 
     def get_real_equivalent(self):
-        return self.__deepcopy__()
+        return Convolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+                             padding=self.padding_shape, stride=self.stride_shape, input_dtype=np.float32)
 
 
-class ComplexPooling(ComplexLayer, ABC):
+class Pooling(ComplexLayer, ABC):
 
     def __init__(self, pool_size: t_Shape = (2, 2), strides: Optional[t_Shape] = None):
         """
@@ -489,7 +541,11 @@ class ComplexPooling(ComplexLayer, ABC):
             Specifies how far the pooling window moves for each pooling step.
             If None (default), it will default to pool_size.
         """
-        super().__init__(input_size=None, output_size=None, input_dtype=None)
+        input_dtype = None
+        """if self.__class__.mro()[2].last_layer_output_dtype is None:
+            input_dtype = np.complex64      # Randomly choose one"""
+        super().__init__(input_size=None, output_size=None, input_dtype=input_dtype)
+        # self.__class__.mro()[2].last_layer_output_dtype = None
         # Pooling size
         if isinstance(pool_size, int):
             self.pool_size = (pool_size,) * len(self.input_size)
@@ -499,13 +555,9 @@ class ComplexPooling(ComplexLayer, ABC):
         else:
             self.logger.error("Padding: " + str(pool_size) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
-        self.strides = strides
-        if self.strides is None:
-            self.strides = pool_size
-
-    @abstractmethod
-    def call(self, inputs, **kwargs):
-        pass
+        self.stride_shape = strides
+        if self.stride_shape is None:
+            self.stride_shape = pool_size
 
     def get_real_equivalent(self):
         return self.__deepcopy__()      # Pooling layer is dtype agnostic
@@ -513,18 +565,29 @@ class ComplexPooling(ComplexLayer, ABC):
     def _save_tensorboard_weight(self, weight_summary, step):
         return None
 
-
-class ComplexAvgPooling(ComplexPooling):
+    @abstractmethod
+    def _pooling_function(self, sector):
+        pass
 
     def call(self, inputs, **kwargs):
         with tf.name_scope("ComplexAvgPooling_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)
+            out_list = []
+            for i in range(len(inputs.shape) - 2):
+                # 2.4 on https://arxiv.org/abs/1603.07285
+                out_list.append(int(np.floor(
+                    (inputs.shape[i+1] - self.pool_size[i]) / self.stride_shape[i]
+                ) + 1))
+            self.output_size = tuple(out_list)
+            if not len(inputs.shape) > 2:
+                self.logger.error("Unexpected shape of inputs. Received shape " + str(inputs.shape) +
+                                  ". Expecting shape (images, ... input shape ..., channels)")
             # inputs = self.apply_padding(inputs) Pooling has no padding
+            # set_trace()
             output = np.zeros(
                 (inputs.shape[0],) +                        # Per each image
                 self.output_size +                          # Image out size
                 (inputs.shape[-1],),                        # New channels
-                dtype=inputs.dtype
+                dtype=inputs.numpy().dtype
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
@@ -532,67 +595,54 @@ class ComplexAvgPooling(ComplexPooling):
                     for i in range(int(np.prod(self.output_size))):  # for each element in the output
                         index = np.unravel_index(i, self.output_size)
                         start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
+                        end_index = tuple([a+b for a, b in zip(start_index, self.pool_size)])
                         sector_slice = tuple(
                             [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                         )
                         sector = img_channel[sector_slice]
-                        output[img_index][index][channel_index] = np.sum(sector)/np.prod(self.kernel_shape)
+                        output[img_index][index][channel_index] = self._pooling_function(sector)
         return output
+
+
+class AvgPooling(Pooling):
+
+    def _pooling_function(self, sector):
+        return np.sum(sector)/np.prod(self.pool_size)
 
     def __deepcopy__(self, memodict={}):
         if memodict is None:
             memodict = {}
-        return ComplexAvgPooling(pool_size=self.pool_size, strides=self.strides)
+        return AvgPooling(pool_size=self.pool_size, strides=self.stride_shape)
 
     def get_description(self):
-        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.strides)
+        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
         return out_str
 
 
-class ComplexMaxPooling(ComplexPooling):
+class MaxPooling(Pooling):
 
-    def call(self, inputs, **kwargs):
-        with tf.name_scope("ComplexMaxPooling_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)
-            # inputs = self.apply_padding(inputs) Pooling has no padding
-            output = np.zeros(
-                (inputs.shape[0],) +                        # Per each image
-                self.output_size +                          # Image out size
-                (inputs.shape[-1],),                        # New channels
-                dtype=inputs.dtype
-            )
-            for img_index, image in enumerate(inputs):
-                for channel_index in range(image.shape[-1]):
-                    img_channel = image[..., channel_index]     # Get each channel
-                    for i in range(int(np.prod(self.output_size))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size)
-                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
-                        sector_slice = tuple(
-                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                        )
-                        sector = img_channel[sector_slice]
-                        abs_sector = tf.math.abs(sector)
-                        max_index = np.unravel_index(np.argmax(abs_sector), abs_sector.shape)
-                        # set_trace()
-                        output[img_index][index][channel_index] = sector[max_index].numpy()
-            return output
+    def _pooling_function(self, sector):
+        abs_sector = tf.math.abs(sector)
+        max_index = np.unravel_index(np.argmax(abs_sector), abs_sector.shape)
+        # set_trace()
+        return sector[max_index].numpy()
 
     def __deepcopy__(self, memodict={}):
         if memodict is None:
             memodict = {}
-        return ComplexMaxPooling(pool_size=self.pool_size, strides=self.strides)
+        return MaxPooling(pool_size=self.pool_size, strides=self.stride_shape)
 
     def get_description(self):
-        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.strides)
+        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
         return out_str
 
 
 if __name__ == "__main__":
-    # conv = ComplexConvolutional(1, (3, 3), (6, 6), padding=0, input_dtype=np.complex64)
+    conv = Convolutional(1, (3, 3), (6, 6), padding=0, input_dtype=np.complex64)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
-    max_pool = ComplexMaxPooling()
+    # max_pool = MaxPooling()
+    flat = Flatten()
+    # dense = Dense(output_size=2)
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
     img1 = np.array([
         [3, 0, 1, 2, 7, 4],
@@ -623,7 +673,8 @@ if __name__ == "__main__":
         [1, 0, -1]
     ]
     out1 = conv(img)"""
-    out = max_pool(img)
+    out = conv(img)
+    out1 = flat(out)
     """
     # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
     img3 = [0, 0, 0, 1, 1, 0, 0, 0]

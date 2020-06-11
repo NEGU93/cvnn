@@ -1,6 +1,6 @@
 import cvnn.dataset as dp
 from utils import randomize
-from cvnn.layers import ComplexDense
+from cvnn.layers import Dense
 from cvnn.cvnn_model import CvnnModel
 import tensorflow as tf
 from utils import transform_to_real
@@ -29,12 +29,12 @@ if __name__ == "__main__":
     output_size = y.shape[1]  # Size of output
     h1_size = 100
     h2_size = 40
-    shape = [ComplexDense(input_size=input_size, output_size=h1_size, activation='cart_relu',
-                          input_dtype=np.complex64, output_dtype=np.complex64),
-             ComplexDense(input_size=h1_size, output_size=h2_size, activation='cart_relu',
-                          input_dtype=np.complex64, output_dtype=np.complex64),
-             ComplexDense(input_size=h2_size, output_size=output_size, activation='cart_softmax_real',
-                          input_dtype=np.complex64, output_dtype=np.float32)]
+    shape = [Dense(input_size=input_size, output_size=h1_size, activation='cart_relu',
+                   input_dtype=np.complex64, output_dtype=np.complex64),
+             Dense(input_size=h1_size, output_size=h2_size, activation='cart_relu',
+                   input_dtype=np.complex64, output_dtype=np.complex64),
+             Dense(input_size=h2_size, output_size=output_size, activation='cart_softmax_real',
+                   input_dtype=np.complex64, output_dtype=np.float32)]
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
                                 verbose=True, tensorboard=True, save_csv_checkpoints=True)
     complex_network.fit(x_train, y_train, x_test, y_test, learning_rate=learning_rate, epochs=epochs,
@@ -44,12 +44,12 @@ if __name__ == "__main__":
     input_size *= 2
     h1_size *= 2
     h2_size *= 2
-    shape = [ComplexDense(input_size=input_size, output_size=h1_size, activation='cart_relu',
-                          input_dtype=np.float32, output_dtype=np.float32),
-             ComplexDense(input_size=h1_size, output_size=h2_size, activation='cart_relu',
-                          input_dtype=np.float32, output_dtype=np.float32),
-             ComplexDense(input_size=h2_size, output_size=output_size, activation='cart_softmax_real',
-                          input_dtype=np.float32, output_dtype=np.float32)]
+    shape = [Dense(input_size=input_size, output_size=h1_size, activation='cart_relu',
+                   input_dtype=np.float32, output_dtype=np.float32),
+             Dense(input_size=h1_size, output_size=h2_size, activation='cart_relu',
+                   input_dtype=np.float32, output_dtype=np.float32),
+             Dense(input_size=h2_size, output_size=output_size, activation='cart_softmax_real',
+                   input_dtype=np.float32, output_dtype=np.float32)]
     real_network = CvnnModel(name="real_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
                              verbose=True, tensorboard=True, save_csv_checkpoints=True)
 

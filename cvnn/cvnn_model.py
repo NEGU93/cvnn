@@ -172,7 +172,7 @@ class CvnnModel:
             if classifier and i == len(self.shape) - 1:
                 output_mult = 1  # Do not multiply last layer
             if isinstance(layer, layers.ComplexLayer):
-                if isinstance(layer, layers.ComplexDense):  # TODO: Check if I can do this with kargs or sth
+                if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
                     real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult))
                 else:
                     real_shape.append(layer.get_real_equivalent())
@@ -617,12 +617,12 @@ if __name__ == '__main__':
     input_size = np.shape(x_fit)[1]
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
-    shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
-                                 input_dtype=cdtype, dropout=None),
-             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
-             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
-             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
-             layers.ComplexDense(output_size=output_size, activation='softmax_real')]
+    shape = [layers.Dense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
+                          input_dtype=cdtype, dropout=None),
+             layers.Dense(output_size=hidden_size, activation='cart_relu'),
+             layers.Dense(output_size=hidden_size, activation='cart_relu'),
+             layers.Dense(output_size=hidden_size, activation='cart_relu'),
+             layers.Dense(output_size=output_size, activation='softmax_real')]
 
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy, tensorboard=True)

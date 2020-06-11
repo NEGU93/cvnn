@@ -5,7 +5,7 @@ import cvnn.dataset as dp
 from cvnn.dataset import Dataset
 from cvnn.cvnn_model import CvnnModel
 from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix, SeveralMonteCarloComparison
-from cvnn.layers import ComplexDense
+from cvnn.layers import Dense
 from cvnn.utils import create_folder, transform_to_real, randomize
 import tensorflow as tf
 import pandas as pd
@@ -148,11 +148,11 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
         sys.exit(-1)
     layers.ComplexLayer.last_layer_output_dtype = None
     layers.ComplexLayer.last_layer_output_size = None
-    shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
-                          input_dtype=np.complex64, dropout=dropout)]
+    shape = [Dense(input_size=input_size, output_size=shape_raw[0], activation=activation,
+                   input_dtype=np.complex64, dropout=dropout)]
     for i in range(1, len(shape_raw)):
-        shape.append(ComplexDense(output_size=shape_raw[i], activation=activation,  dropout=None))
-    shape.append(ComplexDense(output_size=output_size, activation='softmax_real'))
+        shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=None))
+    shape.append(Dense(output_size=output_size, activation='softmax_real'))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
                                 verbose=False, tensorboard=False)
