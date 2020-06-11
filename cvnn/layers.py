@@ -107,11 +107,28 @@ class ComplexLayer(layers.Layer, ABC):
         """
         pass
 
+    def _save_tensorboard_output(self, x, summary, step):
+        x = self.call(x)
+        with summary.as_default():
+            if x.dtype == tf.complex64 or x.dtype == tf.complex128:
+                tf.summary.histogram(name="Activation_value_" + str(self.layer_number) + "_real",
+                                     data=tf.math.real(x), step=step)
+                tf.summary.histogram(name="Activation_value_" + str(self.layer_number) + "_imag",
+                                     data=tf.math.imag(x), step=step)
+            elif x.dtype == tf.float32 or x.dtype == tf.float64:
+                tf.summary.histogram(name="Activation_value_" + str(self.layer_number),
+                                     data=x, step=step)
+            else:
+                self.logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
+                sys.exit(-1)
+        return x
+
+    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
+        self._save_tensorboard_weight(weight_summary, step)
+        return self._save_tensorboard_output(x, activation_summary, step)
+
     @abstractmethod
-    def save_tensorboard_checkpoint(self, x,
-                                    weight_summary: tf.summary.SummaryWriter,
-                                    activation_summary: tf.summary.SummaryWriter,
-                                    step=Optional[int]):
+    def _save_tensorboard_weight(self, weight_summary, step):
         pass
 
 
@@ -241,10 +258,6 @@ class ComplexDense(ComplexLayer):
                 y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=y_out.dtype)
             return y_out
 
-    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
-        self._save_tensorboard_weight(weight_summary, step)
-        return self._save_tensorboard_activations(x, activation_summary, step)
-
     def _save_tensorboard_weight(self, summary, step):
         with summary.as_default():
             if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:
@@ -265,22 +278,6 @@ class ComplexDense(ComplexLayer):
                 # This case should never happen. The constructor should already have checked this
                 self.logger.error("Input_dtype not supported.", exc_info=True)
                 sys.exit(-1)
-
-    def _save_tensorboard_activations(self, x, summary, step):
-        x = self.call(x)
-        with summary.as_default():
-            if x.dtype == tf.complex64 or x.dtype == tf.complex128:
-                tf.summary.histogram(name="Activation_value_" + str(self.layer_number) + "_real",
-                                     data=tf.math.real(x), step=step)
-                tf.summary.histogram(name="Activation_value_" + str(self.layer_number) + "_imag",
-                                     data=tf.math.imag(x), step=step)
-            elif x.dtype == tf.float32 or x.dtype == tf.float64:
-                tf.summary.histogram(name="Activation_value_" + str(self.layer_number),
-                                     data=x, step=step)
-            else:
-                self.logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
-                sys.exit(-1)
-        return x
 
 
 class ComplexDropout(ComplexLayer):
@@ -306,7 +303,7 @@ class ComplexDropout(ComplexLayer):
         y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
         return tf.cast(tf.complex(y_out_real, y_out_imag), dtype=inputs.dtype)
 
-    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
+    def _save_tensorboard_weight(self, weight_summary, step):
         # No tensorboard things to save
         return None
 
@@ -462,7 +459,7 @@ class ComplexConvolutional(ComplexLayer):
         pad.append([0, 0])  # No padding to the channel
         return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0, name="Zero Padding")
 
-    def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
+    def _save_tensorboard_weight(self, weight_summary, step):
         return None     # TODO
 
     def get_description(self):
@@ -478,23 +475,43 @@ class ComplexConvolutional(ComplexLayer):
         return self.__deepcopy__()
 
 
-class ComplexPooling(ComplexConvolutional, ABC):
+class ComplexPooling(ComplexLayer, ABC):
 
-    def __init__(self, pool_size: t_Shape = (2, 2), strides=None,
-                 input_shape: Optional[t_Shape] = None, input_dtype: Optional[t_Dtype] = None):
-        if strides is None:
-            strides = pool_size
-        super(ComplexPooling, self).__init__(filters=1,
-                                             kernel_shape=pool_size,
-                                             padding=0,
-                                             stride=strides,
-                                             input_shape=input_shape,
-                                             input_dtype=input_dtype)
-        # TODO: Upper call will initialize kernel (unnecessary because I don't use it).
+    def __init__(self, pool_size: t_Shape = (2, 2), strides: Optional[t_Shape] = None):
+        """
+        Downsamples the input representation by taking the maximum value over the window defined by pool_size for each
+        dimension along the features axis. The window is shifted by strides in each dimension.
+        :param pool_size: Integer or tuple of integers with the size for each dimension.
+            If only one integer is specified, the same window length will be used for all dimensions and the N
+                dimension will be given by the output size of the last ComplexLayer instantiated.
+            Default: (2, 2) Meaning it's a 2D Max pool getting the max for sectors of 2x2.
+        :param strides: Integer, tuple of integers, or None. Strides values.
+            Specifies how far the pooling window moves for each pooling step.
+            If None (default), it will default to pool_size.
+        """
+        super().__init__(input_size=None, output_size=None, input_dtype=None)
+        # Pooling size
+        if isinstance(pool_size, int):
+            self.pool_size = (pool_size,) * len(self.input_size)
+            # I call super first in the case input_shape is none
+        elif isinstance(pool_size, (tuple, list)):
+            self.pool_size = tuple(pool_size)
+        else:
+            self.logger.error("Padding: " + str(pool_size) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
+        self.strides = strides
+        if self.strides is None:
+            self.strides = pool_size
 
     @abstractmethod
     def call(self, inputs, **kwargs):
         pass
+
+    def get_real_equivalent(self):
+        return self.__deepcopy__()      # Pooling layer is dtype agnostic
+
+    def _save_tensorboard_weight(self, weight_summary, step):
+        return None
 
 
 class ComplexAvgPooling(ComplexPooling):
@@ -507,7 +524,7 @@ class ComplexAvgPooling(ComplexPooling):
                 (inputs.shape[0],) +                        # Per each image
                 self.output_size +                          # Image out size
                 (inputs.shape[-1],),                        # New channels
-                dtype=self.input_dtype
+                dtype=inputs.dtype
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
@@ -523,6 +540,15 @@ class ComplexAvgPooling(ComplexPooling):
                         output[img_index][index][channel_index] = np.sum(sector)/np.prod(self.kernel_shape)
         return output
 
+    def __deepcopy__(self, memodict={}):
+        if memodict is None:
+            memodict = {}
+        return ComplexAvgPooling(pool_size=self.pool_size, strides=self.strides)
+
+    def get_description(self):
+        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.strides)
+        return out_str
+
 
 class ComplexMaxPooling(ComplexPooling):
 
@@ -534,7 +560,7 @@ class ComplexMaxPooling(ComplexPooling):
                 (inputs.shape[0],) +                        # Per each image
                 self.output_size +                          # Image out size
                 (inputs.shape[-1],),                        # New channels
-                dtype=self.input_dtype
+                dtype=inputs.dtype
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
@@ -553,11 +579,20 @@ class ComplexMaxPooling(ComplexPooling):
                         output[img_index][index][channel_index] = sector[max_index].numpy()
             return output
 
+    def __deepcopy__(self, memodict={}):
+        if memodict is None:
+            memodict = {}
+        return ComplexMaxPooling(pool_size=self.pool_size, strides=self.strides)
+
+    def get_description(self):
+        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.strides)
+        return out_str
+
 
 if __name__ == "__main__":
     # conv = ComplexConvolutional(1, (3, 3), (6, 6), padding=0, input_dtype=np.complex64)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
-    max_pool = ComplexMaxPooling(input_shape=(6, 6), input_dtype=np.complex64)
+    max_pool = ComplexMaxPooling()
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
     img1 = np.array([
         [3, 0, 1, 2, 7, 4],

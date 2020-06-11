@@ -221,7 +221,7 @@ class CvnnModel:
         with tf.name_scope("Gradient") as scope:
             variables = []
             for lay in self.shape:
-                variables.extend(lay.trainable_variables)
+                variables.extend(lay.trainable_variables)       # TODO: Debug this for all layers.
             gradients = tape.gradient(current_loss, variables)  # Compute gradients
             assert all(g is not None for g in gradients)
 
