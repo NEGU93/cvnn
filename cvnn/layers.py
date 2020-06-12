@@ -608,7 +608,7 @@ class Pooling(ComplexLayer, ABC):
     def _set_output_size(self, pool_size, strides):
         # Pooling size
         if isinstance(pool_size, int):
-            self.pool_size = (pool_size,) * len(self.input_size)
+            self.pool_size = (pool_size,) * len(self.input_size[:-1])
             # I call super first in the case input_shape is none
         elif isinstance(pool_size, (tuple, list)):
             self.pool_size = tuple(pool_size)
@@ -619,11 +619,12 @@ class Pooling(ComplexLayer, ABC):
         if self.stride_shape is None:
             self.stride_shape = pool_size
         out_list = []
-        for i in range(len(self.input_size)):
+        for i in range(len(self.input_size[:-1])):
             # 2.4 on https://arxiv.org/abs/1603.07285
             out_list.append(int(np.floor(
                 (self.input_size[i] - self.pool_size[i]) / self.stride_shape[i]
             ) + 1))
+        out_list.append(self.input_size[-1])
         self.output_size = tuple(out_list)
         return self.output_size
 
@@ -637,14 +638,48 @@ class Pooling(ComplexLayer, ABC):
     def _pooling_function(self, sector):
         pass
 
+    def _verify_inputs(self, inputs):
+        inputs = tf.convert_to_tensor(inputs)   # This checks all images are same size! Nice
+        if len(inputs.shape) == len(self.input_size):   # No channel was given
+            # case with no channel
+            if self.input_size[-1] != 1:
+                self.logger.warning("Channel not given and should not be 1")
+            inputs = tf.reshape(inputs, inputs.shape + (1,))  # Then I have only one channel, I add dimension
+        elif len(inputs.shape) != len(self.input_size) + 1:     # This is the other expected input.
+            self.logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
+                              "with the shape of (images, channels, vector size)")
+            sys.exit(-1)
+        if inputs.shape[1:] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
+            if inputs.shape[1:-1] != self.input_size[:-1]:
+                expected_shape = self._get_expected_input_shape_description()
+
+                received_shape = "(images=" + str(inputs.shape[0]) + ", "
+                received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
+                received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
+                self.logger.error("Unexpected image shape. Expecting image of shape " +
+                                  expected_shape + " but received " + received_shape)
+                sys.exit(-1)
+            else:
+                self.logger.warning("Received channels " + str(inputs.shape[-1]) +
+                                    " not coincident with the expected input (" + str(self.input_size[-1]) + ")")
+        return inputs
+
+    def _get_expected_input_shape_description(self) -> str:
+        expected_shape = "(images, "
+        expected_shape += "x".join([str(x) for x in self.input_size[:-1]])
+        expected_shape += ", channels=" + str(self.input_size[-1]) + ")\n"
+        return expected_shape
+
     def call(self, inputs):
         with tf.name_scope("ComplexAvgPooling_" + str(self.layer_number)) as scope:
+            inputs = self._verify_inputs(inputs)
             out_list = []
             for i in range(len(inputs.shape) - 2):
                 # 2.4 on https://arxiv.org/abs/1603.07285
                 out_list.append(int(np.floor(
                     (inputs.shape[i+1] - self.pool_size[i]) / self.stride_shape[i]
                 ) + 1))
+            out_list.append(inputs.shape[-1])
             self.output_size = tuple(out_list)
             if not len(inputs.shape) > 2:
                 self.logger.error("Unexpected shape of inputs. Received shape " + str(inputs.shape) +
@@ -653,15 +688,14 @@ class Pooling(ComplexLayer, ABC):
             # set_trace()
             output = np.zeros(
                 (inputs.shape[0],) +                        # Per each image
-                self.output_size +                          # Image out size
-                (inputs.shape[-1],),                        # New channels
+                self.output_size,                           # Image out size
                 dtype=inputs.numpy().dtype
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
                     img_channel = image[..., channel_index]     # Get each channel
-                    for i in range(int(np.prod(self.output_size))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size)
+                    for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
+                        index = np.unravel_index(i, self.output_size[:-1])
                         start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
                         end_index = tuple([a+b for a, b in zip(start_index, self.pool_size)])
                         sector_slice = tuple(
@@ -717,9 +751,9 @@ class MaxPooling(Pooling):
 if __name__ == "__main__":
     conv = Convolutional(1, (3, 3), (6, 6, 1), padding=0, input_dtype=np.float32)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
-    # max_pool = MaxPooling()
-    flat = Flatten()
-    dense = Dense(output_size=2)
+    max_pool = MaxPooling()
+    # flat = Flatten()
+    # dense = Dense(output_size=2)
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
     img1 = np.array([
         [3, 0, 1, 2, 7, 4],
@@ -752,7 +786,9 @@ if __name__ == "__main__":
     ]
     # out1 = conv(img)
     out = conv(img)
-    out1 = flat(out)
+    out1 = max_pool(out)
+    z = np.zeros((1, 4, 4, 3))
+    o = max_pool(z)
     """
     # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
     img3 = [0, 0, 0, 1, 1, 0, 0, 0]
