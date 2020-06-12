@@ -221,7 +221,7 @@ class CvnnModel:
         with tf.name_scope("Gradient") as scope:
             variables = []
             for lay in self.shape:
-                variables.extend(lay.trainable_variables)       # TODO: Debug this for all layers.
+                variables.extend(lay.trainable_variables())       # TODO: Debug this for all layers.
             gradients = tape.gradient(current_loss, variables)  # Compute gradients
             assert all(g is not None for g in gradients)
 
@@ -486,7 +486,7 @@ class CvnnModel:
             current_loss = self._apply_loss(y_train, x_called)  # Compute loss
         variables = []
         for lay in self.shape:
-            variables.extend(lay.trainable_variables)
+            variables.extend(lay.trainable_variables())
         gradients = tape.gradient(current_loss, variables)  # Compute gradients
         assert all(g is not None for g in gradients)
         assert len(gradients) % 2 == 0, "No biases still not supported."  # TODO: what if you have no bias? This crashes

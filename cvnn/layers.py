@@ -4,7 +4,7 @@ import tensorflow as tf
 import sys
 import cvnn
 import logging
-from typing import Union, Optional          # https://docs.python.org/3/library/typing.html
+from typing import Union, Optional, Callable          # https://docs.python.org/3/library/typing.html
 from cvnn.activation_functions import apply_activation
 from cvnn.utils import get_func_name
 import numpy as np
@@ -20,25 +20,30 @@ layer_count = count(0)  # Used to count the number of layers
 
 t_Dtype = Union[tf.dtypes.DType, np.dtype]
 t_Shape = Union[int, tuple, list]
+t_Callable_shape = Union[t_Shape, Callable]
 
 
-class ComplexLayer(layers.Layer, ABC):
+class ComplexLayer(ABC):
     # Being ComplexLayer an abstract class, then this can be called using:
     #   self.__class__.__bases__.<variable>
     # As all child's will have this class as base, mro gives a full list so won't work.
     last_layer_output_dtype = None      # TODO: Make it work both with np and tf dtypes
     last_layer_output_size = None
 
-    def __init__(self, output_size: t_Shape, input_size=Optional[t_Shape], input_dtype=t_Dtype):
+    def __init__(self, output_size: t_Callable_shape, input_size=Optional[t_Shape], input_dtype=t_Dtype, **args):
         """
         Base constructor for a complex layer. The first layer will need a input_dtype and input_size.
         For the other classes is optional,
             if input_size or input_dtype does not match last layer it will throw a warning
-        :param output_size: Output size of the layer
+        :param output_size: Output size of the layer.
+            If the output size depends on the input_size, a function must be passed as output_size.
         :param input_size: Input size of the layer
         :param input_dtype: data type of the input
         """
         self.logger = logging.getLogger(cvnn.__name__)
+        if output_size is None:
+            self.logger.error("Output size = None not supported")
+            sys.exit(-1)
 
         if input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is None:
             # None input dtype given but it's the first layer declared
@@ -77,11 +82,13 @@ class ComplexLayer(layers.Layer, ABC):
                                         str(self.__class__.__bases__[0].last_layer_output_size))
             self.input_size = input_size
 
-        self.output_size = output_size
+        if callable(output_size):
+            self.output_size = output_size()
+        else:
+            self.output_size = output_size
         self.__class__.__bases__[0].last_layer_output_size = self.output_size
         self.layer_number = next(layer_count)  # Know it's own number
-
-        super().__init__()
+        self.__class__.__call__ = self.call     # Make my object callable
 
     def set_output_size(self):
         self.__class__.__bases__[0].last_layer_output_size = self.output_size
@@ -131,16 +138,26 @@ class ComplexLayer(layers.Layer, ABC):
     def _save_tensorboard_weight(self, weight_summary, step):
         pass
 
+    @abstractmethod
+    def trainable_variables(self):
+        pass
+
+    @abstractmethod
+    def call(self, inputs):
+        pass
+
 
 class Flatten(ComplexLayer):
 
     def __init__(self):
         # Win x2: giving None as input_size will also make sure Flatten is not the first layer
-        super().__init__(input_size=None, output_size=None, input_dtype=None)
-        self.output_size = np.prod(self.input_size)
+        super().__init__(input_size=None, output_size=self._get_output_size, input_dtype=None)
 
     def __deepcopy__(self, memodict=None):
         return Flatten()
+
+    def _get_output_size(self):
+        return np.prod(self.input_size)
 
     def get_real_equivalent(self):
         return self.__deepcopy__()
@@ -151,8 +168,11 @@ class Flatten(ComplexLayer):
     def _save_tensorboard_weight(self, weight_summary, step):
         return None
 
-    def call(self, inputs, **kwargs):
+    def call(self, inputs):
         return tf.reshape(inputs, (inputs.shape[0], self.output_size))
+
+    def trainable_variables(self):
+        return []
 
 
 class Dense(ComplexLayer):
@@ -224,7 +244,6 @@ class Dense(ComplexLayer):
                      )
 
     def _init_weights(self):
-        set_trace()
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
             self.w = tf.cast(
                 tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
@@ -256,7 +275,7 @@ class Dense(ComplexLayer):
                   "\n\tDropout: " + str(self.dropout) + "\n"
         return out_str
 
-    def call(self, inputs, **kwargs):
+    def call(self, inputs):
         """
         Applies the layer to an input
         :param inputs: input
@@ -303,6 +322,9 @@ class Dense(ComplexLayer):
                 self.logger.error("Input_dtype not supported.", exc_info=True)
                 sys.exit(-1)
 
+    def trainable_variables(self):
+        return [self.w, self.b]
+
 
 class Dropout(ComplexLayer):
 
@@ -319,9 +341,12 @@ class Dropout(ComplexLayer):
         self.noise_shape = noise_shape
         self.seed = seed
         # Win x2: giving None as input_size will also make sure Dropout is not the first layer
-        super().__init__(input_size=None, output_size=None, input_dtype=None)
+        super().__init__(input_size=None, output_size=self.dummy, input_dtype=None)
 
-    def call(self, inputs, **kwargs):
+    def dummy(self):
+        return self.input_size
+
+    def call(self, inputs):
         drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
         y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))
         y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
@@ -341,6 +366,9 @@ class Dropout(ComplexLayer):
 
     def get_real_equivalent(self):
         return self.__deepcopy__()      # Dropout layer is dtype agnostic
+
+    def trainable_variables(self):
+        return []
 
 
 class Convolutional(ComplexLayer):
@@ -364,13 +392,19 @@ class Convolutional(ComplexLayer):
             self.logger.error(
                 "Input shape: " + str(input_shape) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
-        super(Convolutional, self).__init__(output_size=None, input_size=self.input_size,
-                                            input_dtype=input_dtype)
+        super(Convolutional, self).__init__(lambda: self._calculate_shapes(kernel_shape, padding, stride),
+                                            input_size=self.input_size, input_dtype=input_dtype)
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
             apply_activation(self.activation,
                              tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
                              ).numpy().dtype
+        # self.set_output_size()  # TODO: Not a nice fix
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer  # TODO: Not working yet
+        self._init_kernel()
+
+    def _calculate_shapes(self, kernel_shape, padding, stride):
         if isinstance(kernel_shape, int):
             self.kernel_shape = (kernel_shape,) * len(self.input_size)
         elif isinstance(kernel_shape, (tuple, list)):
@@ -403,10 +437,7 @@ class Convolutional(ComplexLayer):
                 (self.input_size[i] + 2 * self.padding_shape[i] - self.kernel_shape[i]) / self.stride_shape[i]
             ) + 1))
         self.output_size = tuple(out_list)
-        self.set_output_size()  # TODO: Not a nice fix
-        self.weight_initializer = weight_initializer
-        self.bias_initializer = bias_initializer  # TODO: Not working yet
-        self._init_kernel()
+        return self.output_size
 
     def _init_kernel(self):
         self.kernels = []
@@ -454,7 +485,7 @@ class Convolutional(ComplexLayer):
             sys.exit(-1)
         return inputs
 
-    def call(self, inputs, **kwargs):
+    def call(self, inputs):
         with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
             inputs = self._verify_inputs(inputs)
             inputs = self.apply_padding(inputs)
@@ -526,6 +557,9 @@ class Convolutional(ComplexLayer):
         return Convolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
                              padding=self.padding_shape, stride=self.stride_shape, input_dtype=np.float32)
 
+    def trainable_variables(self):
+        return self.kernels
+
 
 class Pooling(ComplexLayer, ABC):
 
@@ -569,7 +603,7 @@ class Pooling(ComplexLayer, ABC):
     def _pooling_function(self, sector):
         pass
 
-    def call(self, inputs, **kwargs):
+    def call(self, inputs):
         with tf.name_scope("ComplexAvgPooling_" + str(self.layer_number)) as scope:
             out_list = []
             for i in range(len(inputs.shape) - 2):
@@ -602,6 +636,9 @@ class Pooling(ComplexLayer, ABC):
                         sector = img_channel[sector_slice]
                         output[img_index][index][channel_index] = self._pooling_function(sector)
         return output
+
+    def trainable_variables(self):
+        return []
 
 
 class AvgPooling(Pooling):
@@ -642,7 +679,7 @@ if __name__ == "__main__":
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
     # max_pool = MaxPooling()
     flat = Flatten()
-    # dense = Dense(output_size=2)
+    dense = Dense(output_size=2)
     # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
     img1 = np.array([
         [3, 0, 1, 2, 7, 4],
