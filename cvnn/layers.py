@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from itertools import count
 import tensorflow as tf
+from collections.abc import Iterable
 import sys
 import cvnn
 import logging
@@ -143,6 +144,14 @@ class ComplexLayer(ABC):
     @abstractmethod
     def call(self, inputs):
         pass
+
+    def get_output_shape_description(self) -> str:
+        output_string = ""
+        if isinstance(self.output_size, Iterable):
+            output_string = "(None, " + ", ".join([str(x) for x in self.output_size]) + ")"
+        else:
+            output_string = "(None, " + str(self.output_size) + ")"
+        return output_string
 
 
 class Flatten(ComplexLayer):
@@ -406,7 +415,7 @@ class Convolutional(ComplexLayer):
 
     def _calculate_shapes(self, kernel_shape, padding, stride):
         if isinstance(kernel_shape, int):
-            self.kernel_shape = (kernel_shape,) * len(self.input_size)
+            self.kernel_shape = (kernel_shape,) * (len(self.input_size) - 1)    # -1 because the last is the channel
         elif isinstance(kernel_shape, (tuple, list)):
             self.kernel_shape = tuple(kernel_shape)
         else:
@@ -415,7 +424,7 @@ class Convolutional(ComplexLayer):
             sys.exit(-1)
         # Padding
         if isinstance(padding, int):
-            self.padding_shape = (padding,) * len(self.input_size)
+            self.padding_shape = (padding,) * (len(self.input_size) - 1)    # -1 because the last is the channel
             # I call super first in the case input_shape is none
         elif isinstance(padding, (tuple, list)):
             self.padding_shape = tuple(padding)
@@ -424,35 +433,45 @@ class Convolutional(ComplexLayer):
             sys.exit(-1)
         # Stride
         if isinstance(stride, int):
-            self.stride_shape = (stride,) * len(self.input_size)   # I call super first in the case input_shape is none
+            self.stride_shape = (stride,) * (len(self.input_size) - 1)
+            # I call super first in the case input_shape is none
         elif isinstance(stride, (tuple, list)):
             self.stride_shape = tuple(stride)
         else:
             self.logger.error("stride: " + str(stride) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
         out_list = []
-        for i in range(len(self.input_size)):
+        for i in range(len(self.input_size) - 1):
             # 2.4 on https://arxiv.org/abs/1603.07285
             out_list.append(int(np.floor(
                 (self.input_size[i] + 2 * self.padding_shape[i] - self.kernel_shape[i]) / self.stride_shape[i]
             ) + 1))
+        out_list.append(self.filters*self.input_size[-1])
         self.output_size = tuple(out_list)
         return self.output_size
 
     def _init_kernel(self):
         self.kernels = []
+        new = []
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
-            for _ in range(self.filters):
-                self.kernels.append(tf.cast(
-                    tf.Variable(tf.complex(self.weight_initializer()(shape=self.kernel_shape),
-                                           self.weight_initializer()(shape=self.kernel_shape)),
-                                name="kernel" + str(self.layer_number)),
-                    dtype=self.input_dtype))
+            for f in range(self.filters):               # Kernels should be features*channels.
+                for c in range(self.input_size[-1]):
+                    new.append(tf.cast(
+                        tf.Variable(tf.complex(self.weight_initializer()(shape=self.kernel_shape),
+                                               self.weight_initializer()(shape=self.kernel_shape)),
+                                    name="kernel" + str(self.layer_number) + "_f" + str(f) + "_c" + str(c)),
+                        dtype=self.input_dtype))
+                self.kernels.append(new)
+                new = []
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
-            for _ in range(self.filters):
-                self.kernels.append(tf.cast(tf.Variable(self.weight_initializer()(shape=self.kernel_shape),
-                                                        name="kernel" + str(self.layer_number)),
-                                            dtype=self.input_dtype))
+            for f in range(self.filters):
+                for c in range(self.input_size[-1]):
+                    new.append(tf.cast(tf.Variable(self.weight_initializer()(shape=self.kernel_shape),
+                                                   name="kernel" + str(self.layer_number) +
+                                                                  "_f" + str(f) + "_c" + str(c)),
+                                       dtype=self.input_dtype))
+                self.kernels.append(new)
+                new = []
         else:
             # This case should never happen. The abstract constructor should already have checked this
             self.logger.error("Input_dtype not supported.", exc_info=True)
@@ -465,17 +484,20 @@ class Convolutional(ComplexLayer):
             self.logger.warning("input dtype (" + str(inputs.dtype) + ") not what expected ("
                                 + str(self.input_dtype) + "). Attempting cast...")
             inputs = tf.dtypes.cast(inputs, self.input_dtype)
-        if len(inputs.shape) == len(self.input_size) + 1:
+        if len(inputs.shape) == len(self.input_size):   # No channel was given
             # case with no channel
-            inputs = tf.reshape(inputs, inputs.shape + (1,))    # Then I have only one channel, I add dimension
-        elif len(inputs.shape) != len(self.input_size) + 2:     # This is the other expected input.
+            if self.input_size[-1] == 1:
+                inputs = tf.reshape(inputs, inputs.shape + (1,))    # Then I have only one channel, I add dimension
+            else:
+                self.logger.error("Expected shape " + self._get_expected_input_shape_description())
+                # TODO: Add received shape
+                sys.exit(-1)
+        elif len(inputs.shape) != len(self.input_size) + 1:     # This is the other expected input.
             self.logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
                               "with the shape of (images, channels, vector size)")
             sys.exit(-1)
-        if inputs.shape[1:-1] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
-            expected_shape = "(images, "
-            expected_shape += "x".join([str(x) for x in self.input_size])
-            expected_shape += ", channels (optional)) "
+        if inputs.shape[1:] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
+            expected_shape = self._get_expected_input_shape_description()
 
             received_shape = "(images=" + str(inputs.shape[0]) + ", "
             received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
@@ -491,24 +513,25 @@ class Convolutional(ComplexLayer):
             inputs = self.apply_padding(inputs)
             output = np.zeros(                              # I use np because tf does not support the assigment I do
                 (inputs.shape[0],) +                        # Per each image
-                self.output_size +                          # Image out size
-                (self.filters*inputs.shape[-1],),           # New channels
+                self.output_size,                           # Image out size
+                # (self.filters*inputs.shape[-1],),         # New channels
                 dtype=self.input_dtype
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
                     img_channel = image[..., channel_index]     # Get each channel
-                    for filter_index, kernel in enumerate(self.kernels):
-                        for i in range(int(np.prod(self.output_size))):  # for each element in the output
-                            index = np.unravel_index(i, self.output_size)
+                    for filter_index in range(self.filters):
+                        for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
+                            index = np.unravel_index(i, self.output_size[:-1])
                             start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
                             end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
+                            # set_trace()
                             sector_slice = tuple(
                                 [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                             )
                             sector = img_channel[sector_slice]
                             output[img_index][index][self.filters*channel_index + filter_index] = \
-                                np.sum(sector * self.kernels[filter_index])
+                                np.sum(sector * self.kernels[filter_index][channel_index])
                             output = apply_activation(self.activation, output)
                             # TODO: Check it doesnt cast imag part to zero. I might have to use .numpy()
         return output
@@ -527,7 +550,7 @@ class Convolutional(ComplexLayer):
         fun_name = get_func_name(self.activation)
         out_str = "Complex Convolutional layer:\n\tinput size = " + self._get_expected_input_shape_description() + \
                   "(" + str(self.input_dtype) + \
-                  ") -> output size = " + self._get_output_shape_description() + \
+                  ") -> output size = " + self.get_output_shape_description() + \
                   "\n\tkernel shape = (" + "x".join([str(x) for x in self.kernel_shape]) + ")" + \
                   "\n\tstride shape = (" + "x".join([str(x) for x in self.stride_shape]) + ")" + \
                   "\n\tzero padding shape = (" + "x".join([str(x) for x in self.padding_shape]) + ")" + \
@@ -537,14 +560,14 @@ class Convolutional(ComplexLayer):
 
     def _get_expected_input_shape_description(self) -> str:
         expected_shape = "(images, "
-        expected_shape += "x".join([str(x) for x in self.input_size])
-        expected_shape += ", channels (optional))\n"
+        expected_shape += "x".join([str(x) for x in self.input_size[:-1]])
+        expected_shape += ", channels=" + str(self.input_size[-1]) + ")\n"
         return expected_shape
 
-    def _get_output_shape_description(self) -> str:
-        expected_out_shape = "(images, "
-        expected_out_shape += "x".join([str(x) for x in self.input_size])
-        expected_out_shape += ", " + str(self.filters) + "*channels)\n"
+    def get_output_shape_description(self) -> str:
+        expected_out_shape = "(None, "
+        expected_out_shape += "x".join([str(x) for x in self.output_size[:-1]])
+        expected_out_shape += ", " + "channels=" + str(self.output_size[-1]) + ")\n"
         return expected_out_shape
 
     def __deepcopy__(self, memodict=None):
@@ -651,6 +674,12 @@ class Pooling(ComplexLayer, ABC):
     def trainable_variables(self):
         return []
 
+    def get_output_shape_description(self) -> str:
+        expected_out_shape = "(images, "
+        expected_out_shape += "x".join([str(x) for x in self.output_size])
+        expected_out_shape += ", channels)\n"
+        return expected_out_shape
+
 
 class AvgPooling(Pooling):
 
@@ -686,7 +715,7 @@ class MaxPooling(Pooling):
 
 
 if __name__ == "__main__":
-    conv = Convolutional(1, (3, 3), (6, 6), padding=0, input_dtype=np.complex64)
+    conv = Convolutional(1, (3, 3), (6, 6, 1), padding=0, input_dtype=np.float32)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
     # max_pool = MaxPooling()
     flat = Flatten()
@@ -708,19 +737,20 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
     ])
-    img = img1 + img2 * 1j
-    img = np.reshape(img, (1, 6, 6, 1))
+    # img = img1 + img2 * 1j
+    img = [img1, img2]
+    img = np.reshape(img, (2, 6, 6, 1))
     """img = np.zeros((2, 6, 6, 2))
     img[0, ..., 0] = img1
     img[0, ..., 1] = img2
     img[1, ..., 0] = img1
     img[1, ..., 1] = img2"""
-    """conv.kernels[0] = [
+    conv.kernels[0] = [
         [1, 0, -1],
         [1, 0, -1],
         [1, 0, -1]
     ]
-    out1 = conv(img)"""
+    # out1 = conv(img)
     out = conv(img)
     out1 = flat(out)
     """

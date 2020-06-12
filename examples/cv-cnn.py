@@ -10,7 +10,7 @@ from tensorflow.keras import datasets
 train_images, test_images = train_images / 255.0, test_images / 255.0    # Normalize pixel values to be between 0 and 1
 
 model_layers = [
-    Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32), input_dtype=np.float32),
+    Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
     MaxPooling((2, 2)),
     Convolutional(64, (3, 3), activation='cart_relu'),
     MaxPooling((2, 2)),
@@ -21,4 +21,5 @@ model_layers = [
 ]
 
 model = CvnnModel("CV-CNN Testing", model_layers, tf.keras.losses.categorical_crossentropy, tensorboard=True)
-model.fit(train_images, train_labels, epochs=10, verbose=True, save_csv_history=True, fast_mode=True)
+print(model.training_param_summary())
+# model.fit(train_images, train_labels, epochs=10, verbose=True, save_csv_history=True, fast_mode=True)
