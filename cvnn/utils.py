@@ -61,7 +61,7 @@ def get_func_name(fun):
     elif isinstance(fun, str):
         return fun
     else:
-        logger.error("Function not recognizable")
+        logger.error("Function not recognizable", stack_info=True)
         sys.exit(-1)
 
 

@@ -83,15 +83,13 @@ class ComplexLayer(ABC):
             self.input_size = input_size
 
         if callable(output_size):
-            self.output_size = output_size()
+            output_size()
+            assert self.output_size is not None, "Error: output_size function must set self.output_size"
         else:
             self.output_size = output_size
         self.__class__.__bases__[0].last_layer_output_size = self.output_size
         self.layer_number = next(layer_count)  # Know it's own number
         self.__class__.__call__ = self.call     # Make my object callable
-
-    def set_output_size(self):
-        self.__class__.__bases__[0].last_layer_output_size = self.output_size
 
     @abstractmethod
     def __deepcopy__(self, memodict=None):
@@ -157,7 +155,7 @@ class Flatten(ComplexLayer):
         return Flatten()
 
     def _get_output_size(self):
-        return np.prod(self.input_size)
+        self.output_size = np.prod(self.input_size)
 
     def get_real_equivalent(self):
         return self.__deepcopy__()
@@ -209,6 +207,8 @@ class Dense(ComplexLayer):
             Example: setting rate=0.1 would drop 10% of input elements.
         """
         super(Dense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
+        if activation is None:
+            activation = 'linear'
         self.activation = activation
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
@@ -344,7 +344,7 @@ class Dropout(ComplexLayer):
         super().__init__(input_size=None, output_size=self.dummy, input_dtype=None)
 
     def dummy(self):
-        return self.input_size
+        self.output_size = self.input_size
 
     def call(self, inputs):
         drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
@@ -578,8 +578,11 @@ class Pooling(ComplexLayer, ABC):
         input_dtype = None
         """if self.__class__.mro()[2].last_layer_output_dtype is None:
             input_dtype = np.complex64      # Randomly choose one"""
-        super().__init__(input_size=None, output_size=None, input_dtype=input_dtype)
+        super().__init__(lambda: self._set_output_size(pool_size, strides),
+                         input_size=None, input_dtype=input_dtype)
         # self.__class__.mro()[2].last_layer_output_dtype = None
+
+    def _set_output_size(self, pool_size, strides):
         # Pooling size
         if isinstance(pool_size, int):
             self.pool_size = (pool_size,) * len(self.input_size)
@@ -592,6 +595,14 @@ class Pooling(ComplexLayer, ABC):
         self.stride_shape = strides
         if self.stride_shape is None:
             self.stride_shape = pool_size
+        out_list = []
+        for i in range(len(self.input_size)):
+            # 2.4 on https://arxiv.org/abs/1603.07285
+            out_list.append(int(np.floor(
+                (self.input_size[i] - self.pool_size[i]) / self.stride_shape[i]
+            ) + 1))
+        self.output_size = tuple(out_list)
+        return self.output_size
 
     def get_real_equivalent(self):
         return self.__deepcopy__()      # Pooling layer is dtype agnostic

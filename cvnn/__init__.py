@@ -15,7 +15,7 @@ __status__ = '{dev_status}'
 
 logging.getLogger('tensorflow').disabled = True
 
-STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s — %(message)s"
+STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s line %(lineno)s — %(message)s"
 
 file_handler = logging.FileHandler(create_folder("./log/logs/") / "logs.log")
 formatter = logging.Formatter(STRING_FORMATTER)
