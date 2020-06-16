@@ -55,7 +55,6 @@ class CvnnModel:
                 - Graph
                 - Weights histogram
         """
-        
         self.name = name
         # Check all the data is a Layer object
         if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
