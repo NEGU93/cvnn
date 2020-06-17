@@ -5,11 +5,11 @@ import re
 import logging
 import numpy as np
 import pandas as pd
-from itertools import count     # To count the number of times fit is called
+from itertools import count  # To count the number of times fit is called
 import tensorflow as tf
 from datetime import datetime
 from pdb import set_trace
-from time import strftime, time, gmtime
+from time import strftime, perf_counter, gmtime
 from prettytable import PrettyTable
 # My own module!
 import cvnn
@@ -39,6 +39,7 @@ logger = logging.getLogger(cvnn.__name__)
 
 class CvnnModel:
     _fit_count = count(0)  # Used to count the number of layers
+
     # =====================
     # Constructor and Stuff
     # =====================
@@ -65,13 +66,13 @@ class CvnnModel:
         self.epochs_done = 0
         self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
                                                 'train loss', 'train accuracy', 'test loss', 'test accuracy'])
-        if not tf.executing_eagerly():      # Make sure nobody disabled eager execution before running the model
+        if not tf.executing_eagerly():  # Make sure nobody disabled eager execution before running the model
             logging.error("CvnnModel::__init__: TF was not executing eagerly", exc_info=True)
             sys.exit(-1)
 
         # Folder management for logs
         self.now = datetime.today()
-        self.root_dir = create_folder("./log/models/", now=self.now)   # Create folder to store all the information
+        self.root_dir = create_folder("./log/models/", now=self.now)  # Create folder to store all the information
 
         # Chekpoints
         self.tensorboard = tensorboard
@@ -112,7 +113,7 @@ class CvnnModel:
         if callable(self.loss_fun):
             if self.loss_fun.__module__ != 'tensorflow.python.keras.losses':
                 logger.error("Unknown loss function.\n\t "
-                                  "Can only use losses declared on tensorflow.python.keras.losses", exc_info=True)
+                             "Can only use losses declared on tensorflow.python.keras.losses", exc_info=True)
                 sys.exit(-1)
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
 
@@ -220,7 +221,7 @@ class CvnnModel:
         with tf.name_scope("Gradient") as scope:
             variables = []
             for lay in self.shape:
-                variables.extend(lay.trainable_variables())       # TODO: Debug this for all layers.
+                variables.extend(lay.trainable_variables())  # TODO: Debug this for all layers.
             gradients = tape.gradient(current_loss, variables)  # Compute gradients
             assert all(g is not None for g in gradients)
 
@@ -229,7 +230,7 @@ class CvnnModel:
             for i, val in enumerate(variables):
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
-    def fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32,
+    def fit(self, x, y, validation_split=0, learning_rate=0.01, epochs: int = 10, batch_size: int = 32,
             verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
@@ -237,7 +238,7 @@ class CvnnModel:
 
         :param x: Input data.
         :param y: Labels
-        :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
+        :param validation_split: Percentage of the input data to be used as train set (the rest will be use as validation set)
             Default: 0.8 (80% as train set and 20% as validation set)
         :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
         :param epochs: (uint) Number of epochs to do.
@@ -267,55 +268,76 @@ class CvnnModel:
             logger.error("Learning rate must be positive", exc_info=True)
             sys.exit(-1)
         if display_freq is None:
-            display_freq = int((x.shape[0] * ratio) / batch_size)  # Match the epoch number
-        # Manage dataset
-        categorical = (len(np.shape(y)) > 1)
-        dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
+            display_freq = int((x.shape[0] * validation_split) / batch_size)  # Match the epoch number
+
+        # Prepare dataset
+        # categorical = (len(np.shape(y)) > 1)
+        # dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
+        assert 0 <= validation_split < 1, "Ratio should be between [0, 1)"
+        dataset_length = np.shape(x)[0]
+        x_train = x[int(dataset_length * validation_split):]
+        y_train = y[int(dataset_length * validation_split):]
+        x_test = x[:int(dataset_length * validation_split)]
+        y_test = y[:int(dataset_length * validation_split)]
+        train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size=batch_size)
+        if len(x_test) == 0:
+            x_test = None
+            y_test = None
+        """if validation_split != 1:
+            test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+        else:
+            test_dataset = None"""
+
         # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
         save_fit_filename = None
         if save_txt_fit_summary:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
         # Print start condition
+        start_status = self._get_str_evaluate(self.epochs_done, epochs, x_train, y_train, x_test, y_test,
+                                              fast_mode=False)
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
                             "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
-                            self._get_str_evaluate(epochs, dataset, fast_mode=False), verbose, save_fit_filename)
-        start_time = time()
+                            start_status, verbose, save_fit_filename)
         # -----------------------------------------------------
         # input processing ended
-        num_tr_iter = int(dataset.x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
+        num_tr_iter = int(x.shape[0] / batch_size)  # Number of training iterations in each epoch
         epochs_before_fit = self.epochs_done
+        start_time = perf_counter()
         for epoch in range(epochs):
             if verbose:
-                tf.print(self._get_str_evaluate(epochs, dataset, fast_mode=fast_mode))
+                tf.print("\nEpoch {0}/{1}".format(self.epochs_done, epochs))
+                iteration = 0
                 progbar = tf.keras.utils.Progbar(num_tr_iter)
             # Randomly shuffle the training data at the beginning of each epoch
             if shuffle:
-                dataset.shuffle()
-            for iteration in range(num_tr_iter):
+                train_dataset = train_dataset.shuffle(buffer_size=5000)
+            for x_batch, y_batch in train_dataset:
                 if verbose:
-                    progbar.update(iteration+1)
+                    progbar.update(iteration + 1)
+                    iteration += 1
                 # Save checkpoint if needed
-                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
+                """if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
                     self._run_checkpoint(dataset,
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
                                          num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
                                          fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
                                          save_model_checkpoints=save_model_checkpoints,
-                                         save_csv_checkpoints=save_csv_history)
+                                         save_csv_checkpoints=save_csv_history)"""
                 # Run optimization op (backpropagation)
-                x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
+                # x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()
                 self._train_step(x_batch, y_batch, learning_rate)
                 self._end_graph_tensorflow()
             self.epochs_done += 1
 
         # After epochs
-        end_time = time()
-        self._run_checkpoint(dataset, step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
-                             total_epochs=epochs_before_fit + epochs, fast_mode=False)
+        end_time = perf_counter()
+        """self._run_checkpoint(dataset, step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
+                             total_epochs=epochs_before_fit + epochs, fast_mode=False)"""
+        end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test, fast_mode=False)
         self._manage_string("Train finished...\n" +
-                            self._get_str_evaluate(epochs + epochs_before_fit, dataset, fast_mode=False) +
+                            end_status +
                             "\nTraining time: {}s".format(strftime("%H:%M:%S", gmtime(end_time - start_time))),
                             verbose, save_fit_filename)
         self.plotter.reload_data()
@@ -385,6 +407,14 @@ class CvnnModel:
         """
         return self.evaluate_loss(x, y), self.evaluate_accuracy(x, y)
 
+    def evaluate_train_and_test(self, train_x, train_y, test_x, test_y):
+        train_loss, train_acc = self.evaluate(train_x, train_y)
+        if test_x is None or test_y is None:
+            return train_loss, train_acc, None, None
+        else:
+            test_loss, test_acc = self.evaluate(test_x, test_y)
+            return train_loss, train_acc, test_loss, test_acc
+
     def get_confusion_matrix(self, x, y, save_result=False):
         """
         Generates a pandas data-frame with the confusion matrix of result of x and y (labels)
@@ -422,12 +452,14 @@ class CvnnModel:
         :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
         :return: None
         """
+        # First I check if at least one is needed. If not better don't compute the information.
         if save_csv_checkpoints or save_model_checkpoints or verbose or save_fit_filename is not None:
             train_loss, train_acc = self.evaluate(dataset.x_train, dataset.y_train)
             test_loss, test_acc = self.evaluate(dataset.x_test, dataset.y_test)
+
         if self.tensorboard:  # Save tensorboard data
             self._tensorboard_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test)
-        if save_csv_checkpoints:   # TODO: save_csv_checkpoint should be passed on fit and not constructor
+        if save_csv_checkpoints:  # TODO: save_csv_checkpoint should be passed on fit and not constructor
             # With fast mode I save the checkpoint in a csv.
             # It will take longer to run because I create a file each time
             # but if I don't do it and something happens I will loose all the information
@@ -490,8 +522,8 @@ class CvnnModel:
         assert all(g is not None for g in gradients)
         assert len(gradients) % 2 == 0, "No biases still not supported."  # TODO: what if you have no bias? This crashes
         with self.gradients_summary_writer.as_default():
-            for i in range(int(len(gradients)/2)):
-                if gradients[2*i].dtype == tf.complex64 or gradients[2*i].dtype == tf.complex128:
+            for i in range(int(len(gradients) / 2)):
+                if gradients[2 * i].dtype == tf.complex64 or gradients[2 * i].dtype == tf.complex128:
                     tf.summary.histogram(name="Gradients_w_" + str(i) + "_real",
                                          data=tf.math.real(gradients[2 * i]), step=self.epochs_done)
                     tf.summary.histogram(name="Gradients_w_" + str(i) + "_imag",
@@ -500,7 +532,7 @@ class CvnnModel:
                                          data=tf.math.real(gradients[2 * i + 1]), step=self.epochs_done)
                     tf.summary.histogram(name="Gradients_b_" + str(i) + "_imag",
                                          data=tf.math.imag(gradients[2 * i + 1]), step=self.epochs_done)
-                elif gradients[2*i].dtype == tf.float32 or gradients[2*i].dtype == tf.float64:
+                elif gradients[2 * i].dtype == tf.float32 or gradients[2 * i].dtype == tf.float64:
                     tf.summary.histogram(name="Gradients_w_" + str(i),
                                          data=gradients[2 * i], step=self.epochs_done)
                     tf.summary.histogram(name="Gradients_b_" + str(i),
@@ -565,18 +597,13 @@ class CvnnModel:
                 logging.error("No such file or directory: " + self.root_dir, exc_info=True)
                 sys.exit(-1)
 
-    def _get_str_evaluate(self, epochs, dataset, fast_mode=False):
-        ret_str = "Epoch {0}/{1}".format(self.epochs_done, epochs)
+    def _get_str_evaluate(self, epoch, epochs, train_x, train_y, test_x=None, test_y=None, fast_mode=False) -> str:
+        ret_str = "Epoch {0}/{1}".format(epoch, epochs)
         if not fast_mode:
-            ret_str += " - train loss: {0} - train accuracy: {1} " \
-                       "- test loss: {2} - test accuracy: {3}".format(self.evaluate_loss(dataset.x_train,
-                                                                                         dataset.y_train),
-                                                                      self.evaluate_accuracy(dataset.x_train,
-                                                                                             dataset.y_train),
-                                                                      self.evaluate_loss(dataset.x_test,
-                                                                                         dataset.y_test),
-                                                                      self.evaluate_accuracy(dataset.x_test,
-                                                                                             dataset.y_test))
+            train_loss, train_acc, test_loss, test_acc = self.evaluate_train_and_test(train_x, train_y, test_x, test_y)
+            ret_str += " - train loss: {0:.4f} - train accuracy: {1:.2f} %".format(train_loss, train_acc*100)
+            if test_loss is not None and test_acc is not None:
+                ret_str += "- test loss: {0:.4f} - test accuracy: {1:.2f} %".format(test_loss, test_acc*100)
         return ret_str
 
     def summary(self):
@@ -598,9 +625,9 @@ class CvnnModel:
         summary_str = ""
         summary_str += self.name + "\n"
         if self.is_complex():
-            summary_str += "Complex Network\n"
+            summary_str += "Complex Network"
         else:
-            summary_str += "Real Network\n"
+            summary_str += "Real Network"
         total_params = 0
         t = PrettyTable(['Layer (type)', 'Output Shape', 'Param #'])
         for lay in self.shape:
@@ -628,7 +655,7 @@ if __name__ == '__main__':
         param_list.append([coef, 1, 2])
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
     # x_fit = transform_to_real(dataset.x)      # To run real case
-    x_fit = dataset.x                           # To run complex case
+    x_fit = dataset.x  # To run complex case
 
     # Define shape
     cdtype = x_fit.dtype
@@ -647,7 +674,8 @@ if __name__ == '__main__':
              layers.Dense(output_size=output_size, activation='softmax_real')]
 
     # Train model
-    model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy, tensorboard=True)
+    model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
+                      tensorboard=True, verbose=False)
     model.fit(x_fit, dataset.y, batch_size=100, epochs=10, verbose=True, save_csv_history=True, fast_mode=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)

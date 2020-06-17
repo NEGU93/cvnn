@@ -59,7 +59,7 @@ class MonteCarlo:
                 else:
                     x_fit = transform_to_real(x, polar=polar)
                 test_model = copy.deepcopy(model)
-                test_model.fit(x_fit, y, ratio=ratio,
+                test_model.fit(x_fit, y, validation_split=ratio,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=True, save_txt_fit_summary=False, display_freq=display_freq,
                                save_csv_history=True)
