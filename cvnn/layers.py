@@ -466,11 +466,18 @@ class Convolutional(ComplexLayer):
                                            self.weight_initializer()(shape=this_shape)),
                                 name="kernel" + str(self.layer_number) + "_f" + str(f)),
                     dtype=self.input_dtype))
+            self.bias = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(shape=self.filters),
+                                                       self.bias_initializer()(shape=self.filters)),
+                                            name="bias" + str(self.layer_number)),
+                                dtype=self.input_dtype)
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
             for f in range(self.filters):
                 self.kernels.append(tf.cast(tf.Variable(self.weight_initializer()(shape=this_shape),
                                                         name="kernel" + str(self.layer_number) + "_f" + str(f)),
                                             dtype=self.input_dtype))
+            self.bias = tf.cast(tf.Variable(self.bias_initializer()(shape=self.filters),
+                                            name="bias" + str(self.layer_number)),
+                                dtype=self.input_dtype)
         else:
             # This case should never happen. The abstract constructor should already have checked this
             self.logger.error("Input_dtype not supported.", exc_info=True)
@@ -530,6 +537,8 @@ class Convolutional(ComplexLayer):
                         )
                         sector = image[sector_slice]
                         output[img_index][index][filter_index] = np.sum(sector * self.kernels[filter_index])
+                        # I use Tied Bias https://datascience.stackexchange.com/a/37748/75968
+                        output[img_index][index][filter_index] += self.bias[filter_index]
                         output = apply_activation(self.activation, output)
                         # TODO: Check it doesnt cast imag part to zero. I might have to use .numpy()
         return output   # + bias # TODO
@@ -579,7 +588,7 @@ class Convolutional(ComplexLayer):
                              padding=self.padding_shape, stride=self.stride_shape, input_dtype=np.float32)
 
     def trainable_variables(self):
-        return self.kernels
+        return self.kernels + [self.bias]
 
 
 class Pooling(ComplexLayer, ABC):
