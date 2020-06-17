@@ -10,7 +10,7 @@ import tensorflow as tf
 from datetime import datetime
 from pdb import set_trace
 from time import strftime, time, gmtime
-
+from prettytable import PrettyTable
 # My own module!
 import cvnn
 import cvnn.layers as layers
@@ -594,26 +594,28 @@ class CvnnModel:
             summary_str += lay.get_description()
         return summary_str
 
-    def training_param_summary(self) -> str:
+    def training_param_summary(self):
         summary_str = ""
         summary_str += self.name + "\n"
         if self.is_complex():
             summary_str += "Complex Network\n"
         else:
             summary_str += "Real Network\n"
-        summary_str += "_________________________________________________________________\n"
-        summary_str += "Layer (type)    \tOutput Shape           \tParam #   \n"
-        summary_str += "=================================================================\n"
+        total_params = 0
+        t = PrettyTable(['Layer (type)', 'Output Shape', 'Param #'])
         for lay in self.shape:
-            summary_str += lay.__class__.__name__
-            summary_str += "\t"
-            summary_str += lay.get_output_shape_description() + "\t"
             train_params = 0
             for param in lay.trainable_variables():
                 train_params += np.prod(param.shape)
-            summary_str += str(train_params) + "\n"
-            summary_str += "_________________________________________________________________\n"
-        return summary_str
+            t.add_row([
+                lay.__class__.__name__,
+                lay.get_output_shape_description(),
+                str(train_params)
+            ])
+            total_params += train_params
+        print(summary_str)
+        print(t)
+        print("Total Trainable params: " + str(total_params))
 
 
 if __name__ == '__main__':

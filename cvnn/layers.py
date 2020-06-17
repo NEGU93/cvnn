@@ -88,7 +88,10 @@ class ComplexLayer(ABC):
             assert self.output_size is not None, "Error: output_size function must set self.output_size"
         else:
             self.output_size = output_size
-        self.__class__.__bases__[0].last_layer_output_size = self.output_size
+        for x in self.__class__.mro():
+            if x == ComplexLayer:
+                x.last_layer_output_size = self.output_size
+        # self.__class__.__bases__[0].last_layer_output_size = self.output_size
         self.layer_number = next(layer_count)  # Know it's own number
         self.__class__.__call__ = self.call     # Make my object callable
 
@@ -146,7 +149,7 @@ class ComplexLayer(ABC):
         pass
 
     def get_output_shape_description(self) -> str:
-        output_string = ""
+        # output_string = ""
         if isinstance(self.output_size, Iterable):
             output_string = "(None, " + ", ".join([str(x) for x in self.output_size]) + ")"
         else:
@@ -381,6 +384,8 @@ class Dropout(ComplexLayer):
 
 
 class Convolutional(ComplexLayer):
+    # http://datahacker.rs/convolution-rgb-image/   For RGB images
+    # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
 
     def __init__(self, filters: int, kernel_shape: t_Shape,
                  input_shape: Optional[t_Shape] = None, padding: t_Shape = 0,
@@ -412,9 +417,7 @@ class Convolutional(ComplexLayer):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
 
-        start_time = time()
         self._init_kernel()
-        print("\tInit kernel took %s seconds" % (time() - start_time), flush=True)
 
     def _calculate_shapes(self, kernel_shape, padding, stride):
         if isinstance(kernel_shape, int):
@@ -562,7 +565,7 @@ class Convolutional(ComplexLayer):
     def get_output_shape_description(self) -> str:
         expected_out_shape = "(None, "
         expected_out_shape += "x".join([str(x) for x in self.output_size[:-1]])
-        expected_out_shape += ", " + "channels=" + str(self.output_size[-1]) + ")\n"
+        expected_out_shape += ", " + str(self.output_size[-1]) + ")"
         return expected_out_shape
 
     def __deepcopy__(self, memodict=None):
@@ -598,6 +601,7 @@ class Pooling(ComplexLayer, ABC):
             input_dtype = np.complex64      # Randomly choose one"""
         super().__init__(lambda: self._set_output_size(pool_size, strides),
                          input_size=None, input_dtype=input_dtype)
+        # set_trace()
         # self.__class__.mro()[2].last_layer_output_dtype = None
 
     def _set_output_size(self, pool_size, strides):
@@ -704,9 +708,9 @@ class Pooling(ComplexLayer, ABC):
         return []
 
     def get_output_shape_description(self) -> str:
-        expected_out_shape = "(images, "
+        expected_out_shape = "(None, "
         expected_out_shape += "x".join([str(x) for x in self.output_size])
-        expected_out_shape += ")\n"
+        expected_out_shape += ")"
         return expected_out_shape
 
 
