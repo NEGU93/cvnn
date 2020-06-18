@@ -21,4 +21,4 @@ model_layers = [Convolutional(32, (3, 3), activation='cart_relu', input_shape=(3
 
 model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=True, verbose=False)
 model.training_param_summary()
-model.fit(train_images, train_labels, epochs=10, verbose=True, save_csv_history=True, fast_mode=True)
+model.fit(train_images, train_labels, epochs=100, verbose=True, save_csv_history=False, fast_mode=True)

@@ -312,7 +312,7 @@ class CvnnModel:
             # Randomly shuffle the training data at the beginning of each epoch
             if shuffle:
                 train_dataset = train_dataset.shuffle(buffer_size=5000)
-            for x_batch, y_batch in train_dataset:
+            for x_batch, y_batch in train_dataset.prefetch(tf.data.experimental.AUTOTUNE).cache():
                 if verbose:
                     progbar.update(iteration + 1)
                 iteration += 1
@@ -678,7 +678,7 @@ if __name__ == '__main__':
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
-    model.fit(x_fit, dataset.y, validation_split=0.2, batch_size=100, epochs=10,
+    model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=100,
               verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
