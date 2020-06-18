@@ -679,7 +679,7 @@ if __name__ == '__main__':
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
     model.fit(x_fit, dataset.y, validation_split=0.2, batch_size=100, epochs=10,
-              verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=True)
+              verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
