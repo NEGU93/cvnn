@@ -230,7 +230,7 @@ class CvnnModel:
             for i, val in enumerate(variables):
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
-    def fit(self, x, y, validation_split=0, learning_rate=0.01, epochs: int = 10, batch_size: int = 32,
+    def fit(self, x, y, validation_split=0.0, learning_rate=0.01, epochs: int = 10, batch_size: int = 32,
             verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
@@ -268,7 +268,7 @@ class CvnnModel:
             logger.error("Learning rate must be positive", exc_info=True)
             sys.exit(-1)
         if display_freq is None:
-            display_freq = int((x.shape[0] * validation_split) / batch_size)  # Match the epoch number
+            display_freq = int((x.shape[0] * (1 - validation_split)) / batch_size)  # Match the epoch number
 
         # Prepare dataset
         # categorical = (len(np.shape(y)) > 1)
@@ -305,9 +305,9 @@ class CvnnModel:
         epochs_before_fit = self.epochs_done
         start_time = perf_counter()
         for epoch in range(epochs):
+            iteration = 0
             if verbose:
                 tf.print("\nEpoch {0}/{1}".format(self.epochs_done, epochs))
-                iteration = 0
                 progbar = tf.keras.utils.Progbar(num_tr_iter)
             # Randomly shuffle the training data at the beginning of each epoch
             if shuffle:
@@ -315,15 +315,15 @@ class CvnnModel:
             for x_batch, y_batch in train_dataset:
                 if verbose:
                     progbar.update(iteration + 1)
-                    iteration += 1
+                iteration += 1
                 # Save checkpoint if needed
-                """if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
-                    self._run_checkpoint(dataset,
+                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
+                    self._run_checkpoint(x_batch, y_batch, x_test, y_test,    # Shall I use batch to be more efficient?
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
                                          num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
                                          fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
                                          save_model_checkpoints=save_model_checkpoints,
-                                         save_csv_checkpoints=save_csv_history)"""
+                                         save_csv_checkpoints=save_csv_history)
                 # Run optimization op (backpropagation)
                 # x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()
@@ -432,7 +432,7 @@ class CvnnModel:
     # Checkpoints
     # ===========
 
-    def _run_checkpoint(self, dataset,
+    def _run_checkpoint(self, x_train, y_train, x_test, y_test,
                         step=0, num_tr_iter=0, total_epochs=0,
                         fast_mode=False, verbose=False, save_fit_filename=None,
                         save_model_checkpoints=False, save_csv_checkpoints=True):
@@ -454,12 +454,11 @@ class CvnnModel:
         """
         # First I check if at least one is needed. If not better don't compute the information.
         if save_csv_checkpoints or save_model_checkpoints or verbose or save_fit_filename is not None:
-            train_loss, train_acc = self.evaluate(dataset.x_train, dataset.y_train)
-            test_loss, test_acc = self.evaluate(dataset.x_test, dataset.y_test)
+            train_loss, train_acc, test_loss, test_acc = self.evaluate_train_and_test(x_train, y_train, x_test, y_test)
 
         if self.tensorboard:  # Save tensorboard data
-            self._tensorboard_checkpoint(dataset.x_train, dataset.y_train, dataset.x_test, dataset.y_test)
-        if save_csv_checkpoints:  # TODO: save_csv_checkpoint should be passed on fit and not constructor
+            self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
+        if save_csv_checkpoints:
             # With fast mode I save the checkpoint in a csv.
             # It will take longer to run because I create a file each time
             # but if I don't do it and something happens I will loose all the information
@@ -468,9 +467,11 @@ class CvnnModel:
         if save_model_checkpoints:  # Save model weights
             self.save(test_loss, test_acc)
         if save_fit_filename is not None or verbose:  # I first check if it makes sense to get the string
-            epoch_str = self._get_str_current_epoch(train_loss, train_acc, test_loss, test_acc,
-                                                    self.epochs_done, total_epochs,
-                                                    step % num_tr_iter, num_tr_iter)
+            epoch_str = self._get_loss_and_acc_string(epoch=self.epochs_done, epochs=total_epochs,
+                                                      train_loss=train_loss, train_acc=train_acc,
+                                                      test_loss=test_loss, test_acc=test_acc,
+                                                      batch=step % num_tr_iter, batches=num_tr_iter,
+                                                      fast_mode=fast_mode)
             self._manage_string(epoch_str, verbose, save_fit_filename)
 
     def _save_current_loss_and_acc(self, filename, train_loss, train_acc, test_loss, test_acc, step, fast_mode=False):
@@ -563,17 +564,6 @@ class CvnnModel:
     # Managing strings
     # ================
 
-    @staticmethod
-    def _get_str_current_epoch(train_loss, train_acc, test_loss, test_acc, epoch, epochs, iteration, num_tr_iter):
-        ret_str = "Epoch: {0}/{1}; batch {2}/{3}; train loss: " \
-                  "{4:.4f} train accuracy: {5:.2f} %".format(epoch, epochs,
-                                                             iteration,
-                                                             num_tr_iter,
-                                                             train_loss,
-                                                             train_acc * 100)
-        ret_str += "; validation loss: {0:.4f} validation accuracy: {1:.2f} %".format(test_loss, test_acc * 100)
-        return ret_str + "\n"
-
     def _manage_string(self, string, verbose=False, filename=None, mode="a"):
         """
         Prints a string to console and/or saves it to a file
@@ -589,7 +579,7 @@ class CvnnModel:
             filename = self.root_dir / filename
             try:
                 with open(filename, mode) as file:
-                    file.write(string)
+                    file.write(string + "\n")
             except FileExistsError:  # TODO: Check if this is the actual error
                 logging.error("Same file already exists. Aborting to not override results" + str(filename),
                               exc_info=True)
@@ -597,13 +587,25 @@ class CvnnModel:
                 logging.error("No such file or directory: " + self.root_dir, exc_info=True)
                 sys.exit(-1)
 
-    def _get_str_evaluate(self, epoch, epochs, train_x, train_y, test_x=None, test_y=None, fast_mode=False) -> str:
-        ret_str = "Epoch {0}/{1}".format(epoch, epochs)
+    def _get_str_evaluate(self, epoch, epochs, train_x, train_y, test_x=None, test_y=None, batch=None, batches=None, fast_mode=False) -> str:
+        train_loss = None
+        train_acc = None
+        test_loss = None
+        test_acc = None
         if not fast_mode:
             train_loss, train_acc, test_loss, test_acc = self.evaluate_train_and_test(train_x, train_y, test_x, test_y)
-            ret_str += " - train loss: {0:.4f} - train accuracy: {1:.2f} %".format(train_loss, train_acc*100)
+        return self._get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss, test_acc, batch, batches, fast_mode)
+
+    @staticmethod
+    def _get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss=None, test_acc=None, batch=None, batches=None, fast_mode=False) -> str:
+        ret_str = "Epoch {0}/{1}".format(epoch, epochs)
+        if batch is not None and batches is not None:
+            ret_str += "; batch {0}/{1}".format(batch, batches)
+        if not fast_mode:
+            assert train_acc is not None and train_loss is not None, "Train loss or acc was None with fast_mode False"
+            ret_str += " - train loss: {0:.4f} - train accuracy: {1:.2f} %".format(train_loss, train_acc * 100)
             if test_loss is not None and test_acc is not None:
-                ret_str += "- test loss: {0:.4f} - test accuracy: {1:.2f} %".format(test_loss, test_acc*100)
+                ret_str += "- test loss: {0:.4f} - test accuracy: {1:.2f} %".format(test_loss, test_acc * 100)
         return ret_str
 
     def summary(self):
@@ -675,8 +677,9 @@ if __name__ == '__main__':
 
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
-                      tensorboard=True, verbose=False)
-    model.fit(x_fit, dataset.y, batch_size=100, epochs=10, verbose=True, save_csv_history=True, fast_mode=True)
+                      tensorboard=False, verbose=False)
+    model.fit(x_fit, dataset.y, validation_split=0.2, batch_size=100, epochs=10,
+              verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
