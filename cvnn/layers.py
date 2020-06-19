@@ -159,9 +159,9 @@ class ComplexLayer(ABC):
 
 class Flatten(ComplexLayer):
 
-    def __init__(self):
+    def __init__(self, input_size=None, input_dtype=None):
         # Win x2: giving None as input_size will also make sure Flatten is not the first layer
-        super().__init__(input_size=None, output_size=self._get_output_size, input_dtype=None)
+        super().__init__(input_size=input_size, output_size=self._get_output_size, input_dtype=input_dtype)
 
     def __deepcopy__(self, memodict=None):
         return Flatten()
@@ -514,18 +514,75 @@ class Convolutional(ComplexLayer):
         return inputs
 
     def call(self, inputs):
+        """
+        Original version:
+        ```
+        indices = (img_index,) + index + (filter_index,)
+        output_np[indices] = new_value
+        ```
+        Options:
+        1. All in tensorflow. Issue:
+            *** TypeError: 'tensorflow.python.framework.ops.EagerTensor' object does not support item assignment
+            References:
+                Item alone (My case):
+                    https://github.com/tensorflow/tensorflow/issues/14132
+                1.1. Solution using tf.tensor_scatter_nd_update. It recreates matrix from scratch.
+                    https://stackoverflow.com/questions/55652981/tensorflow-2-0-how-to-update-tensors
+                    ```
+                    tf_new_value = tf.constant([new_value.numpy()], dtype=self.input_dtype)
+                    indices = tf.constant([list((img_index,) + index + (filter_index,))])
+                    output_np = tf.tensor_scatter_nd_update(output_np, indices, tf_new_value)
+                    ```
+                1.2. Solution using assign (surrently in place):
+                    https://stackoverflow.com/a/45184132/5931672
+                    ```
+                    indices = (img_index,) + index + (filter_index,)
+                    output_np = output_np[indices].assign(new_value)
+                    ```
+                1.3. Using tf.stack https://www.tensorflow.org/api_docs/python/tf/stack
+                    TODO: Next week.
+                    https://stackoverflow.com/a/37706972/5931672
+                b. Slices:
+                The github issue:
+                    https://github.com/tensorflow/tensorflow/issues/33131
+                    https://github.com/tensorflow/tensorflow/issues/40605
+                A workaround (Highly inefficient): Create new matrix using a mask (Memory inefficient isn't it?)
+                    https://github.com/tensorflow/tensorflow/issues/14132#issuecomment-483002522
+                    https://towardsdatascience.com/how-to-replace-values-by-index-in-a-tensor-with-tensorflow-2-0-510994fe6c5f
+                Misc:
+                    https://stackoverflow.com/questions/37697747/typeerror-tensor-object-does-not-support-item-assignment-in-tensorflow
+                    https://stackoverflow.com/questions/62092147/how-to-efficiently-assign-to-a-slice-of-a-tensor-in-tensorflow
+        1.1.1. Issue: Cannot use tf.function decorator
+            AttributeError: 'Tensor' object has no attribute 'numpy'
+            References:
+                Github issue:
+                    https://github.com/cvxgrp/cvxpylayers/issues/56
+                Why I need it:
+                    https://www.tensorflow.org/guide/function
+                Misc:
+                    https://stackoverflow.com/questions/52357542/attributeerror-tensor-object-has-no-attribute-numpy
+        1.1.2. Removing .numpy() method:
+            ValueError: Sliced assignment is only supported for variables
+        2. Using numpy.zeros: Issue:
+            NotImplementedError: Cannot convert a symbolic Tensor (placeholder_1:0) to a numpy array.
+            Github Issue:
+                https://github.com/tensorflow/tensorflow/issues/36792
+        0. Best option:
+            Do it without loops :O (Don't know how possible is this but it will be optimal)
+        :param inputs:
+        :return:
+        """
         with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)
-            inputs = self.apply_padding(inputs)
-            output = np.zeros(                              # I use np because tf does not support the assigment I do
+            inputs = self._verify_inputs(inputs)            # Check inputs are of expected shape and format
+            inputs = self.apply_padding(inputs)             # Add zeros if needed
+            output_np = tf.Variable(tf.zeros(
                 (inputs.shape[0],) +                        # Per each image
                 self.output_size,                           # Image out size
                 # (self.filters*inputs.shape[-1],),         # New channels
                 dtype=self.input_dtype
-            )
-            for img_index, image in enumerate(inputs):
-                # for channel_index in range(image.shape[-1]):
-                #     img_channel = image[..., channel_index]     # Get each channel
+            ))
+            img_index = 0       # I do this ugly thing because https://stackoverflow.com/a/62467248/5931672
+            for image in inputs:    # Cannot use enumerate because https://github.com/tensorflow/tensorflow/issues/32546
                 for filter_index in range(self.filters):
                     for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
                         index = np.unravel_index(i, self.output_size[:-1])
@@ -536,19 +593,20 @@ class Convolutional(ComplexLayer):
                             [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                         )
                         sector = image[sector_slice]
-                        output[img_index][index][filter_index] = np.sum(sector * self.kernels[filter_index])
                         # I use Tied Bias https://datascience.stackexchange.com/a/37748/75968
-                        output[img_index][index][filter_index] += self.bias[filter_index]
-                        output = apply_activation(self.activation, output)
-                        # TODO: Check it doesnt cast imag part to zero. I might have to use .numpy()
-        return output   # + bias # TODO
+                        new_value = tf.reduce_sum(sector * self.kernels[filter_index]) + self.bias[filter_index]
+                        indices = (img_index,) + index + (filter_index,)
+                        output_np = output_np[indices].assign(new_value)
+                img_index += 1
+            output = apply_activation(self.activation, output_np)
+        return output
 
     def apply_padding(self, inputs):
         pad = [[0, 0]]  # No padding to the images itself
         for p in self.padding_shape:
             pad.append([p, p])
         pad.append([0, 0])  # No padding to the channel
-        return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0, name="Zero Padding")
+        return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
 
     def _save_tensorboard_weight(self, weight_summary, step):
         return None     # TODO
@@ -757,7 +815,7 @@ class MaxPooling(Pooling):
 
 
 if __name__ == "__main__":
-    conv = Convolutional(1, (3, 3), (6, 6, 2), padding=0, input_dtype=np.float32)
+    conv = Convolutional(1, (3, 3), (6, 6, 1), padding=0, input_dtype=np.complex64)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
     # max_pool = MaxPooling()
     # flat = Flatten()
@@ -779,9 +837,9 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
     ])
-    # img = img1 + img2 * 1j
-    img = [img1, img2]
-    img = np.reshape(img, (2, 6, 6, 1))
+    img = img1 + img2 * 1j
+    # img = [img1, img2]
+    img = np.reshape(img, (1, 6, 6, 1))
     """img = np.zeros((2, 6, 6, 2))
     img[0, ..., 0] = img1
     img[0, ..., 1] = img2

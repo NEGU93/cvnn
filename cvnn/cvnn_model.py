@@ -36,6 +36,18 @@ def run_once(f):
 
 logger = logging.getLogger(cvnn.__name__)
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
+
 
 class CvnnModel:
     _fit_count = count(0)  # Used to count the number of layers
@@ -295,7 +307,7 @@ class CvnnModel:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
         # Print start condition
         start_status = self._get_str_evaluate(self.epochs_done, epochs, x_train, y_train, x_test, y_test,
-                                              fast_mode=False)
+                                              fast_mode=fast_mode)
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
                             "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
                             start_status, verbose, save_fit_filename)
@@ -314,7 +326,7 @@ class CvnnModel:
                 train_dataset = train_dataset.shuffle(buffer_size=5000)
             for x_batch, y_batch in train_dataset.prefetch(tf.data.experimental.AUTOTUNE).cache():
                 if verbose:
-                    progbar.update(iteration + 1)
+                    progbar.update(iteration)
                 iteration += 1
                 # Save checkpoint if needed
                 if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
@@ -335,7 +347,7 @@ class CvnnModel:
         end_time = perf_counter()
         """self._run_checkpoint(dataset, step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
                              total_epochs=epochs_before_fit + epochs, fast_mode=False)"""
-        end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test, fast_mode=False)
+        end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test, fast_mode=fast_mode)
         self._manage_string("Train finished...\n" +
                             end_status +
                             "\nTraining time: {}s".format(strftime("%H:%M:%S", gmtime(end_time - start_time))),
@@ -678,7 +690,7 @@ if __name__ == '__main__':
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
-    model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=100,
+    model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=10,
               verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)

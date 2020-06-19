@@ -9,16 +9,27 @@ from tensorflow.keras import datasets
 
 (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
 train_images, test_images = train_images / 255.0, test_images / 255.0    # Normalize pixel values to be between 0 and 1
-
-model_layers = [Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
-                AvgPooling((2, 2)),
-                Convolutional(64, (3, 3), activation='cart_relu'),
-                AvgPooling((2, 2)),
-                Convolutional(64, (3, 3), activation='cart_relu'),
-                Flatten(), 
-                Dense(64, activation='cart_relu'),
-                Dense(10, activation='softmax_real')]
+"""
+    Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
+    AvgPooling((2, 2)),
+    Convolutional(64, (3, 3), activation='cart_relu'),
+    AvgPooling((2, 2)),
+    Convolutional(64, (3, 3), activation='cart_relu'),
+    Flatten(),
+    """
+# train_images = np.reshape(train_images, (train_images.shape[0], np.prod(train_images.shape[1:])))
+# train_labels = np.reshape(train_labels, (train_labels.shape[0], np.prod(train_labels.shape[1:])))
+model_layers = [
+    Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
+    Flatten(),
+    # Flatten(input_dtype=np.float32, input_size=train_images.shape[1:]),
+    # Dense(64, activation='cart_relu', input_dtype=np.float32, input_size=train_images.shape[1]),
+    Dense(64, activation='cart_relu'),
+    Dense(10, activation='softmax_real')
+]
 
 model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=True, verbose=False)
-model.training_param_summary()
-model.fit(train_images, train_labels, epochs=100, verbose=True, save_csv_history=False, fast_mode=True)
+# model.training_param_summary()
+# set_trace()
+model.fit(train_images.astype(np.float32), train_labels.astype(np.float32), epochs=1, batch_size=32,
+          verbose=True, save_csv_history=False, fast_mode=True)
