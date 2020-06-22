@@ -28,8 +28,9 @@ model_layers = [
     Dense(10, activation='softmax_real')
 ]
 
-model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=True, verbose=False)
+model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=False, verbose=False)
 # model.training_param_summary()
-# set_trace()
-model.fit(train_images.astype(np.float32), train_labels.astype(np.float32), epochs=1, batch_size=32,
-          verbose=True, save_csv_history=False, fast_mode=True)
+set_trace()
+model.fit(train_images[:1000].astype(np.float32), train_labels[:1000].astype(np.float32), validation_split=0.2,
+          epochs=5, batch_size=32,
+          verbose=True, save_csv_history=False, fast_mode=False)

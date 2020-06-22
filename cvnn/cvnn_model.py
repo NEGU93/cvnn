@@ -329,13 +329,13 @@ class CvnnModel:
                     progbar.update(iteration)
                 iteration += 1
                 # Save checkpoint if needed
-                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
+                """if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
                     self._run_checkpoint(x_batch, y_batch, x_test, y_test,    # Shall I use batch to be more efficient?
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
                                          num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
                                          fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
                                          save_model_checkpoints=save_model_checkpoints,
-                                         save_csv_checkpoints=save_csv_history)
+                                         save_csv_checkpoints=save_csv_history)"""
                 # Run optimization op (backpropagation)
                 # x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()

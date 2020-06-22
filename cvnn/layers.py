@@ -515,6 +515,40 @@ class Convolutional(ComplexLayer):
 
     def call(self, inputs):
         """
+        :param inputs:
+        :return:
+        """
+        with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
+            inputs = self._verify_inputs(inputs)            # Check inputs are of expected shape and format
+            inputs = self.apply_padding(inputs)             # Add zeros if needed
+            output_np = tf.Variable(tf.zeros(
+                (inputs.shape[0],) +                        # Per each image
+                self.output_size,                           # Image out size
+                dtype=self.input_dtype
+            ))
+            img_index = 0       # I do this ugly thing because https://stackoverflow.com/a/62467248/5931672
+            for image in inputs:    # Cannot use enumerate because https://github.com/tensorflow/tensorflow/issues/32546
+                for filter_index in range(self.filters):
+                    for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
+                        index = np.unravel_index(i, self.output_size[:-1])
+                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
+                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
+                        sector_slice = tuple(
+                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
+                        )
+                        sector = image[sector_slice]
+                        # I use Tied Bias https://datascience.stackexchange.com/a/37748/75968
+                        new_value = tf.reduce_sum(sector * self.kernels[filter_index]) + self.bias[filter_index]
+                        indices = (img_index,) + index + (filter_index,)
+                        output_np = self._assign_value(output_np, indices, new_value)
+                img_index += 1
+            output = apply_activation(self.activation, output_np)
+        return output
+
+    def _assign_value(self, array, indices, value):
+        """
+        I did this function because of the difficutly on this simple step. I save all references.
+        Assigns value on a tensor as array[index] = value
         Original version:
         ```
         indices = (img_index,) + index + (filter_index,)
@@ -533,20 +567,27 @@ class Convolutional(ComplexLayer):
                     indices = tf.constant([list((img_index,) + index + (filter_index,))])
                     output_np = tf.tensor_scatter_nd_update(output_np, indices, tf_new_value)
                     ```
-                1.2. Solution using assign (surrently in place):
+                1.2. Solution using assign:
                     https://stackoverflow.com/a/45184132/5931672
                     ```
                     indices = (img_index,) + index + (filter_index,)
                     output_np = output_np[indices].assign(new_value)
                     ```
                 1.3. Using tf.stack https://www.tensorflow.org/api_docs/python/tf/stack
-                    TODO: Next week.
+                    Not yet tested. Unsure on how to do it
                     https://stackoverflow.com/a/37706972/5931672
                 b. Slices:
                 The github issue:
                     https://github.com/tensorflow/tensorflow/issues/33131
                     https://github.com/tensorflow/tensorflow/issues/40605
                 A workaround (Highly inefficient): Create new matrix using a mask (Memory inefficient isn't it?)
+                    THIS IS MY CURRENT SOLUTION!
+                    ```
+                    mask = tf.Variable(tf.fill(array.shape, 1))
+                    mask = mask[indices].assign(0)
+                    mask = tf.cast(mask, dtype=self.input_dtype)
+                    return array * mask + (1 - mask) * value
+                    ```
                     https://github.com/tensorflow/tensorflow/issues/14132#issuecomment-483002522
                     https://towardsdatascience.com/how-to-replace-values-by-index-in-a-tensor-with-tensorflow-2-0-510994fe6c5f
                 Misc:
@@ -569,37 +610,11 @@ class Convolutional(ComplexLayer):
                 https://github.com/tensorflow/tensorflow/issues/36792
         0. Best option:
             Do it without loops :O (Don't know how possible is this but it will be optimal)
-        :param inputs:
-        :return:
         """
-        with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)            # Check inputs are of expected shape and format
-            inputs = self.apply_padding(inputs)             # Add zeros if needed
-            output_np = tf.Variable(tf.zeros(
-                (inputs.shape[0],) +                        # Per each image
-                self.output_size,                           # Image out size
-                # (self.filters*inputs.shape[-1],),         # New channels
-                dtype=self.input_dtype
-            ))
-            img_index = 0       # I do this ugly thing because https://stackoverflow.com/a/62467248/5931672
-            for image in inputs:    # Cannot use enumerate because https://github.com/tensorflow/tensorflow/issues/32546
-                for filter_index in range(self.filters):
-                    for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size[:-1])
-                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
-                        # set_trace()
-                        sector_slice = tuple(
-                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                        )
-                        sector = image[sector_slice]
-                        # I use Tied Bias https://datascience.stackexchange.com/a/37748/75968
-                        new_value = tf.reduce_sum(sector * self.kernels[filter_index]) + self.bias[filter_index]
-                        indices = (img_index,) + index + (filter_index,)
-                        output_np = output_np[indices].assign(new_value)
-                img_index += 1
-            output = apply_activation(self.activation, output_np)
-        return output
+        mask = tf.Variable(tf.fill(array.shape, 1))
+        mask = mask[indices].assign(0)
+        mask = tf.cast(mask, dtype=self.input_dtype)
+        return array * mask + (1 - mask) * value
 
     def apply_padding(self, inputs):
         pad = [[0, 0]]  # No padding to the images itself
