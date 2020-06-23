@@ -313,7 +313,7 @@ class CvnnModel:
                             start_status, verbose, save_fit_filename)
         # -----------------------------------------------------
         # input processing ended
-        num_tr_iter = int(x.shape[0] / batch_size)  # Number of training iterations in each epoch
+        num_tr_iter = int(x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
         epochs_before_fit = self.epochs_done
         start_time = perf_counter()
         for epoch in range(epochs):
@@ -680,16 +680,18 @@ if __name__ == '__main__':
     input_size = np.shape(x_fit)[1]
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
+    set_trace()
     shape = [layers.Dense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
                           input_dtype=cdtype, dropout=None),
              layers.Dense(output_size=hidden_size, activation='cart_relu'),
              layers.Dense(output_size=hidden_size, activation='cart_relu'),
              layers.Dense(output_size=hidden_size, activation='cart_relu'),
              layers.Dense(output_size=output_size, activation='softmax_real')]
-
+    set_trace()
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
+    set_trace()
     model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=10,
               verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
     # start = time.time()

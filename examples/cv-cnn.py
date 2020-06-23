@@ -29,7 +29,7 @@ model_layers = [
 ]
 
 model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=False, verbose=False)
-# model.training_param_summary()
+model.training_param_summary()
 set_trace()
 model.fit(train_images[:1000].astype(np.float32), train_labels[:1000].astype(np.float32), validation_split=0.2,
           epochs=5, batch_size=32,
