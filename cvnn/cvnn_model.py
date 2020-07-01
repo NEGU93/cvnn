@@ -242,7 +242,9 @@ class CvnnModel:
             for i, val in enumerate(variables):
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
-    def fit(self, x, y, validation_split=0.0, learning_rate=0.01, epochs: int = 10, batch_size: int = 32,
+    def fit(self, x, y,
+            validation_split=0.0, x_test=None, y_test=None,
+            learning_rate=0.01, epochs: int = 10, batch_size: int = 32,
             verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
@@ -285,16 +287,20 @@ class CvnnModel:
         # Prepare dataset
         # categorical = (len(np.shape(y)) > 1)
         # dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
-        assert 0 <= validation_split < 1, "Ratio should be between [0, 1)"
-        dataset_length = np.shape(x)[0]
-        x_train = x[int(dataset_length * validation_split):]
-        y_train = y[int(dataset_length * validation_split):]
-        x_test = x[:int(dataset_length * validation_split)]
-        y_test = y[:int(dataset_length * validation_split)]
+        if x_test is None or y_test is None:
+            assert 0 <= validation_split < 1, "Ratio should be between [0, 1)"
+            dataset_length = np.shape(x)[0]
+            x_train = x[int(dataset_length * validation_split):]
+            y_train = y[int(dataset_length * validation_split):]
+            x_test = x[:int(dataset_length * validation_split)]
+            y_test = y[:int(dataset_length * validation_split)]
+            if len(x_test) == 0:
+                x_test = None
+                y_test = None
+        else:
+            x_train = x
+            y_train = y
         train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size=batch_size)
-        if len(x_test) == 0:
-            x_test = None
-            y_test = None
         """if validation_split != 1:
             test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
         else:
