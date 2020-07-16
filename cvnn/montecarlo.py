@@ -7,7 +7,7 @@ from cvnn.cvnn_model import CvnnModel
 from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix, SeveralMonteCarloComparison
 from cvnn.layers import Dense
 from cvnn.utils import create_folder, transform_to_real, randomize
-import tensorflow as tf
+from tensorflow.keras.losses import categorical_crossentropy
 import pandas as pd
 import copy
 import sys
@@ -35,7 +35,7 @@ class MonteCarlo:
 
     def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, ratio=0.8,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
-            shuffle=False, debug=False, display_freq=160, checkpoints=False):
+            shuffle=False, debug=False, display_freq=None, checkpoints=False):
         x, y = randomize(x, y)
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
@@ -113,33 +113,27 @@ class RealVsComplex(MonteCarlo):
         self.add_model(complex_model.get_real_equivalent(name="real_network"))
 
 
-def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
+def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
                    shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=None):
     # Get parameters
+    if param_list is None:
+        param_list = [
+            [0.5, 1, 1],
+            [-0.5, 1, 1]
+        ]
+    dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
+    mlp_run_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq, learning_rate, shape_raw, activation,
+                       debug, polar, do_all, dropout)
+
+
+def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
+                       epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
+                       shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=0.5):
     if shape_raw is None:
         shape_raw = [64]
     if open_dataset:
-        if param_list is not None:
-            logger.error("If the parameter to open_dataset is passed, giving param_list makes no sense")
-            sys.exit(-1)
-        if not m == 10000:
-            logger.error("If the parameter to open_dataset is passed, giving m makes no sense")
-            sys.exit(-1)
-        if not n == 128:
-            logger.error("If the parameter to open_dataset is passed, giving n makes no sense")
-            sys.exit(-1)
-        dataset = dp.OpenDataset(open_dataset)
-    else:
-        if param_list is None:
-            param_list = [
-                [0.5, 1, 1],
-                [-0.5, 1, 1]
-            ]
-        dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    if display_freq is None:
-        display_freq = int(m * dataset.num_classes * 0.8 / batch_size)
-
+        dataset = dp.OpenDataset(open_dataset)      # Warning, open_dataset overwrites dataset
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
@@ -154,7 +148,7 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
         shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=None))
     shape.append(Dense(output_size=output_size, activation='softmax_real'))
 
-    complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=tf.keras.losses.categorical_crossentropy,
+    complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,
                                 verbose=False, tensorboard=False)
 
     # Monte Carlo
@@ -213,4 +207,4 @@ def run_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_datase
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_montecarlo(iterations=1, epochs=10, do_all=True, open_dataset="./data/MLSP/")
+    mlp_run_montecarlo(iterations=1, epochs=10, do_all=True, open_dataset="./data/MLSP/")

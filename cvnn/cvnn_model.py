@@ -34,9 +34,10 @@ def run_once(f):
     return wrapper
 
 
+tf.get_logger().setLevel('INFO')    # TODO: Not sure if I should do this on the __init__.py or here.
 logger = logging.getLogger(cvnn.__name__)
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
+"""gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
         # Currently, memory growth needs to be the same across GPUs
@@ -46,7 +47,7 @@ if gpus:
         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
     except RuntimeError as e:
         # Memory growth must be set before GPUs have been initialized
-        print(e)
+        print(e)"""
 
 
 class CvnnModel:
@@ -335,13 +336,13 @@ class CvnnModel:
                     progbar.update(iteration)
                 iteration += 1
                 # Save checkpoint if needed
-                """if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
+                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
                     self._run_checkpoint(x_batch, y_batch, x_test, y_test,    # Shall I use batch to be more efficient?
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
                                          num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
                                          fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
                                          save_model_checkpoints=save_model_checkpoints,
-                                         save_csv_checkpoints=save_csv_history)"""
+                                         save_csv_checkpoints=save_csv_history)
                 # Run optimization op (backpropagation)
                 # x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()
@@ -351,8 +352,9 @@ class CvnnModel:
 
         # After epochs
         end_time = perf_counter()
-        """self._run_checkpoint(dataset, step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
-                             total_epochs=epochs_before_fit + epochs, fast_mode=False)"""
+        self._run_checkpoint(x_train, y_train, x_test, y_test,
+                             step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
+                             total_epochs=epochs_before_fit + epochs, fast_mode=False)
         end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test, fast_mode=fast_mode)
         self._manage_string("Train finished...\n" +
                             end_status +
@@ -477,7 +479,7 @@ class CvnnModel:
         if self.tensorboard:  # Save tensorboard data
             self._tensorboard_checkpoint(x_train, y_train, x_test, y_test)
         if save_csv_checkpoints:
-            # With fast mode I save the checkpoint in a csv.
+            # With fast mode False I save the checkpoint in a csv.
             # It will take longer to run because I create a file each time
             # but if I don't do it and something happens I will loose all the information
             self._save_current_loss_and_acc(self.name + '_results_fit',
@@ -717,7 +719,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.24'
+__version__ = '0.2.25'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

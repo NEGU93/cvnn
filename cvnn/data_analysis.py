@@ -453,6 +453,9 @@ class Plotter:
         """
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
         self._csv_to_pandas()
+        if len(self.pandas_list) == 0:        # TODO: Should I cach this here or in _csv_to_pandas function?
+            logger.error("Error: There was no csv logs to open")
+            sys.exit(-1)
         length = len(self.pandas_list[0])
         for data_frame in self.pandas_list:  # TODO: Check if.
             if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?
@@ -1042,6 +1045,6 @@ class MonteCarloAnalyzer:
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.23'
+__version__ = '0.1.24'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

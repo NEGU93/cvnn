@@ -28,7 +28,7 @@ class Dataset:
     """
 
     def __init__(self, x, y, num_classes=None, ratio=0.8, savedata=False, batch_size=None,
-                 categorical=True, debug=False, shuffle=False):
+                 categorical=True, debug=False, shuffle=False, dataset_name=""):
         """
         :param x: Data
         :param y: Labels/outputs
@@ -38,6 +38,7 @@ class Dataset:
         :param savedata: (boolean) If true it will save the generated data into "./data/current/date/path/".
             Default: False
         """
+        self.dataset_name = dataset_name
         self.random_shuffle = shuffle
         x = np.array(x)
         y = np.array(y)
@@ -130,10 +131,12 @@ class Dataset:
         else:
             logger.error("Path {} does not exist".format(save_path))
 
-    def summary(self, res_str):
+    def summary(self, res_str=None):
         """
         :return: String with the information of the dataset.
         """
+        if res_str is None:
+            res_str = self.dataset_name
         res_str += "\tNum classes: {}\n".format(self.num_classes)
         res_str += "\tTotal Samples: {}\n".format(self.x.shape[0])
         res_str += "\tVector size: {}\n".format(self.x.shape[1])
@@ -637,6 +640,6 @@ if __name__ == "__main__":
     dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.18'
+__version__ = '0.1.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
