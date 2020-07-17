@@ -164,7 +164,7 @@ def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
 
     # TODO: Separate this part of code PLEASE!
     filename = './log/mlp_monte_carlo_summary.xlsx'
-    fieldnames = ['path', 'HL', 'Shape', 'Dropout', '# Classes', "Polar Mode", "Learning Rate",
+    fieldnames = ['path', 'dataset', 'HL', 'Shape', 'Dropout', '# Classes', "Polar Mode", "Learning Rate",
                   "Activation Function", "Dataset Size", 'Feature Size', 'epochs', 'batch size',
                   "Winner", "CVNN median", "RVNN median", 'CVNN IQR', 'RVNN IQR', "Comments"]
     max_epoch = monte_carlo.pandas_full_data['epoch'].max()
@@ -175,7 +175,9 @@ def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
     real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
     complex_median = complex_last_epochs['test accuracy'].median()
     real_median = real_last_epochs['test accuracy'].median()
-    row_data = [str(monte_carlo.monte_carlo_analyzer.path), str(len(shape_raw)), str(shape_raw),
+    row_data = [str(monte_carlo.monte_carlo_analyzer.path),
+                dataset.dataset_name,
+                str(len(shape_raw)), str(shape_raw),
                 str(dropout), str(dataset.y.shape[1]),
                 'Yes' if polar == 'Apple' else 'No', learning_rate, activation, str(dataset.x.shape[0]),
                 str(dataset.x.shape[1]), epochs, batch_size,

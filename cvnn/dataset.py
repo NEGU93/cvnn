@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import cvnn
 from cvnn.utils import *
 import numpy as np
 import sys
@@ -9,7 +8,6 @@ from pdb import set_trace
 from abc import ABC, abstractmethod
 import plotly.graph_objects as go
 import plotly
-from pylab import plot, show, axis, subplot, xlabel, ylabel, grid
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
@@ -313,7 +311,8 @@ class OpenDataset(Dataset):
     def __init__(self, path, num_classes=None, ratio=0.8, savedata=False):
         self.path = cast_to_path(path)
         x, y = self.load_dataset(self.path)
-        super().__init__(x, y, num_classes=num_classes, ratio=ratio, savedata=savedata)
+        super().__init__(x, y, num_classes=num_classes, ratio=ratio, savedata=savedata,
+                         dataset_name="opened dataset " + str(self.path))
 
     @staticmethod
     def load_dataset(path):
@@ -339,13 +338,16 @@ class GeneratorDataset(ABC, Dataset):
         it is recommended to define it's own summary method to know how the dataset was generated.
     """
 
-    def __init__(self, m, n, num_classes=2, ratio=0.8, savedata=False, debug=False):
+    def __init__(self, m, n, num_classes=2, ratio=0.8, savedata=False, debug=False, dataset_name=None):
         """
         This class will first generate x and y with it's own defined method and then initialize a conventional dataset
         """
         x, y = self._generate_data(m, n, num_classes)
         x, y = randomize(x, y)
-        Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
+        if dataset_name is None:
+            dataset_name = "Generated dataset"
+        Dataset.__init__(self, x, y, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug,
+                         dataset_name=dataset_name)
 
     @abstractmethod
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
@@ -376,7 +378,8 @@ class CorrelatedGaussianNormal(GeneratorDataset):
                 logger.error("corelation coefficient module must be lower than one")
                 sys.exit(-1)
         self.cov_matrix_list = cov_matrix_list
-        super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug)
+        super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug,
+                         dataset_name="Correlated Gaussian Normal")
 
     @staticmethod
     def _create_correlated_gaussian_point(num_samples, r=None):
@@ -534,7 +537,7 @@ class GaussianNoise(GeneratorDataset):
             self.function = noise_gen_dispatcher[function]
         except KeyError:
             sys.exit("GaussianNoise: Unknown type of noise" + str(function))
-        super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata)
+        super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata, dataset_name="Gaussian Noise")
 
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
         x = np.empty((num_classes * num_samples_per_class, num_samples)) \
