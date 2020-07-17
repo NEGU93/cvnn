@@ -541,7 +541,9 @@ class Convolutional(ComplexLayer):
                         new_value = tf.reduce_sum(sector * self.kernels[filter_index]) + self.bias[filter_index]
                         indices = (img_index,) + index + (filter_index,)
                         output_np = self._assign_value(output_np, indices, new_value)
+                        # set_trace()
                 img_index += 1
+
             output = apply_activation(self.activation, output_np)
         return output
 

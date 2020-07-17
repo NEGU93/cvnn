@@ -209,4 +209,5 @@ def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    mlp_run_montecarlo(iterations=1, epochs=10, do_all=True, open_dataset="./data/MLSP/")
+    run_gaussian_dataset_montecarlo(iterations=1, epochs=10, do_all=True, open_dataset="./data/MLSP/")
+
