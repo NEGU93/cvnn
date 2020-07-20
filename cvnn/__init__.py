@@ -15,6 +15,7 @@ __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupele
 __status__ = '{dev_status}'
 
 # tf.get_logger().setLevel('INFO')
+logging.getLogger('tensorflow').disabled = True     # Removes https://github.com/tensorflow/tensorflow/issues/41557
 
 STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s line %(lineno)s — %(message)s"
 
