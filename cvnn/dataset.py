@@ -665,7 +665,7 @@ if __name__ == "__main__":
     # dataset = OpenDataset("./data/MLSP/")
     # dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
     # set_trace()
-    print("0:.2%".format(parametric_predictor(dataset)*100))
+    print("{:.2%}".format(parametric_predictor(dataset)))
 
 
 __author__ = 'J. Agustin BARRACHINA'
