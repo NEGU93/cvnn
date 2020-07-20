@@ -626,6 +626,29 @@ def create_subplots_of_graph():
     # create_correlated_gaussian_noise(n, debug=True)
     # set_trace()
 
+def sup(a, b):
+    return a > b
+
+def inf(a, b):
+    return a > b
+
+def parametric_predictor(dataset, coef_1=0.5, coef_2=-0.5):
+    rho = []
+    x = np.real(dataset.x)
+    y = np.imag(dataset.x)
+    for re, im in zip(x, y):
+        cov = np.cov([re, im])
+        rho.append(cov[0][1] / (cov[0][0]*cov[1][1]))
+
+    rho = np.array(rho)
+    thresh = np.full(rho.shape, (coef_1 + coef_2)/2)
+    if coef_1 > coef_2:
+        result = np.less(rho, thresh).astype(int)
+    else:
+        result = np.greater(rho, thresh).astype(int)
+
+    acc = np.sum(np.equal(Dataset.categorical_to_sparse(dataset.y), result)) / len(result)
+    return acc
 
 if __name__ == "__main__":
     # create_subplots_of_graph()
@@ -636,11 +659,14 @@ if __name__ == "__main__":
         [[1, -0.75], [-0.75, 1]]
     ]
     dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)"""
-    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.5, 1, 1], [-0.5, 1, 1]])
-    dataset.save_data("./data/MLSP/")
+    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.1, 1, 1], [-0.1, 1, 1]])
+    # dataset.save_data("./data/MLSP/")
 
-    dataset = OpenDataset("./data/MLSP/")
-    dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
+    # dataset = OpenDataset("./data/MLSP/")
+    # dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
+    # set_trace()
+    print("0:.2%".format(parametric_predictor(dataset)*100))
+
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.1.19'
