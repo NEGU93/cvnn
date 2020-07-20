@@ -113,7 +113,7 @@ class RealVsComplex(MonteCarlo):
         self.add_model(complex_model.get_real_equivalent(name="real_network"))
 
 
-def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None, open_dataset=None,
+def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
                    shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=None):
     # Get parameters
@@ -123,8 +123,8 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
             [-0.5, 1, 1]
         ]
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    mlp_run_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq, learning_rate, shape_raw, activation,
-                       debug, polar, do_all, dropout)
+    mlp_run_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq, learning_rate,
+                       shape_raw, activation, debug, polar, do_all, dropout)
 
 
 def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,

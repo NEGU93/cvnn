@@ -14,8 +14,6 @@ __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
 
-# tf.get_logger().setLevel('INFO')
-
 STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s line %(lineno)s — %(message)s"
 
 file_handler = logging.FileHandler(create_folder("./log/logs/") / "logs.log")

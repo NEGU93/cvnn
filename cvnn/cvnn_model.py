@@ -34,7 +34,7 @@ def run_once(f):
     return wrapper
 
 
-tf.get_logger().setLevel('INFO')    # TODO: Not sure if I should do this on the __init__.py or here.
+
 logger = logging.getLogger(cvnn.__name__)
 
 """gpus = tf.config.experimental.list_physical_devices('GPU')
