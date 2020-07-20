@@ -688,18 +688,18 @@ if __name__ == '__main__':
     input_size = np.shape(x_fit)[1]
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
-    set_trace()
+    # set_trace()
     shape = [layers.Dense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
                           input_dtype=cdtype, dropout=None),
              layers.Dense(output_size=hidden_size, activation='cart_relu'),
              layers.Dense(output_size=hidden_size, activation='cart_relu'),
              layers.Dense(output_size=hidden_size, activation='cart_relu'),
              layers.Dense(output_size=output_size, activation='softmax_real')]
-    set_trace()
+    # set_trace()
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
-    set_trace()
+    # set_trace()
     model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=10,
               verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
     # start = time.time()

@@ -4,8 +4,8 @@ from cvnn.layers import Convolutional
 from pdb import set_trace
 
 COMPARE_TF_AND_NP = False
-TWO_DIM_TEST = False
-ONE_DIM_TEST = True
+TWO_DIM_TEST = True
+ONE_DIM_TEST = False
 
 if COMPARE_TF_AND_NP:
     # Results are not exactly the same (but fair enough)
@@ -61,15 +61,25 @@ if TWO_DIM_TEST:
     conv.kernels.append(tf.reshape(tf.cast(tf.Variable(k, name="kernel" + str(0) + "_f" + str(0)), dtype=np.float32),
                                    (3, 3, 1)))
     std_out = conv([img2])[..., 0]
-    img_pading = tf.constant([[0, 2], [0, 2]])
-    img2 = tf.pad(img2, img_pading)
+
+    img2 = tf.pad(img2, tf.constant([[0, 2], [0, 2]]))
     I = tf.signal.fft2d(tf.cast(img2, tf.complex64))
-    k_paddings = tf.constant([[0, 5], [0, 5]])
-    k_pad = tf.cast(tf.pad(k, k_paddings), tf.complex64)
+    k_pad = tf.cast(tf.pad(k, tf.constant([[0, 5], [0, 5]])), tf.complex64)
     K = tf.signal.fft2d(k_pad)
     F = tf.math.multiply(I, K)
     f = tf.signal.ifft2d(F)
     f_real = tf.cast(f, tf.int32)
     print("std_out: " + str(std_out))
     print("f_real: " + str(f_real))
+
+
+    """
+    # Check numpy implementation
+    I = np.fft.fft2(img2)
+    K = np.fft.fft2(tf.pad(k, tf.constant([[0, 5], [0, 5]])))
+    F = np.multiply(I, K)
+    f = np.fft.ifft2(F)
+    print("f_np_real: " + str(np.round(f.astype(np.float32))))
+    """
+
     set_trace()
