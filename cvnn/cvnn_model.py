@@ -165,6 +165,36 @@ class CvnnModel:
                 sys.exit(-1)
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
+    def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True):
+        if capacity_equivalent and not classifier:  # TODO: Support it, it should not be so difficult
+            logger.error("The current code does not support capacity equivalence for logistic regression tasks")
+            sys.exit(-1)    # TODO: Make one to be prevalence over the otherone and just show a warning
+        if capacity_equivalent:
+            if len(self.shape) == 1:        # Case with no hidden layers
+                output_mult = np.ones(1).astype(int)
+            elif len(self.shape) == 2:      # Case only one hidden layer
+                n = self.shape[0].input_size
+                c = self.shape[-1].output_size
+                hidden_1_size = np.ceil(((2 * n + c) / (2 * (n + c)))).astype(int)
+                output_mult = np.array([hidden_1_size, 1])
+            elif len(self.shape) == 4:      # Case with 3 hidden layers
+                m_0 = self.shape[0].output_size
+                m_2 = 2*self.shape[2].output_size
+                m_1 = np.ceil(2*(m_0 + m_2)/(m_0 + 2*m_2)).astype(int)
+                output_mult = np.array([1, m_1, 2, 1])
+            elif len(self.shape) % 2 == 1:      # Case with even hidden layers (odd with the output layer)
+                mask = np.ones(len(self.shape)).astype(int)
+                mask[::2].fill(0)
+                output_mult = np.ones(len(self.shape)).astype(int) + mask
+            else:                               # Case with odd hidden layers
+                logger.error("Real valued capacity-equivalent model not defined for {} hidden layers".format(len(self.shape)-1))
+                sys.exit(-1)
+        else:
+            output_mult = 2*np.ones(len(self.shape)).astype(int)
+            if classifier:
+                output_mult[-1] = 1
+        return output_mult
+
     def get_real_equivalent(self, classifier=True, capacity_equivalent=True, name=None):
         """
         Creates a new model equivalent of current model. If model is already real throws and error.
@@ -178,21 +208,15 @@ class CvnnModel:
         if not self.is_complex():
             logger.error("model {} was already real".format(self.name))
             sys.exit(-1)
+        # assert len(self.shape) != 0
         real_shape = []
-        output_mult = 2
         layers.ComplexLayer.last_layer_output_dtype = None
         layers.ComplexLayer.last_layer_output_size = None
-        total = 1 + 2
-        if capacity_equivalent and len(self.shape) % 2 == 0:
-            logger.warning("Real valued capacity-equivalent model is defined for odd number of hidden layers")
+        output_mult = self._get_real_equivalent_multiplier(classifier, capacity_equivalent)
         for i, layer in enumerate(self.shape):
-            if classifier and i == len(self.shape) - 1:
-                output_mult = 1  # Do not multiply last layer
             if isinstance(layer, layers.ComplexLayer):
                 if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
-                    real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult))
-                    if capacity_equivalent:
-                        output_mult = total - output_mult       # Toggle between 1 and 2
+                    real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult[i]))
                 else:
                     real_shape.append(layer.get_real_equivalent())
             else:
@@ -725,7 +749,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.25'
+__version__ = '0.2.26'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

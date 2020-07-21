@@ -173,7 +173,7 @@ def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
     layers.ComplexLayer.last_layer_output_size = None
     shape = [Dense(input_size=input_size, output_size=shape_raw[0], activation=activation,
                    input_dtype=np.complex64, dropout=dropout)]
-    for i in range(1, len(shape_raw)):
+    for i in range(1, len(shape_raw)):  # TODO: Support empty shape_raw (no hidden layers)
         shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=None))
     shape.append(Dense(output_size=output_size, activation='softmax_real'))
 
