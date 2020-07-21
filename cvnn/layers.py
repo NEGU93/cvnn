@@ -244,12 +244,12 @@ class Dense(ComplexLayer):
                      bias_initializer=self.bias_initializer, dropout=self.dropout
                      )
 
-    def get_real_equivalent(self, output_multiplier=2):
+    def get_real_equivalent(self, output_multiplier=2, input_multiplier = 2):
         """
         :param output_multiplier: Multiplier of output and input size (normally by 2)
         :return: real-valued copy of self
         """
-        return Dense(output_size=self.output_size * output_multiplier, input_size=self.input_size * 2,
+        return Dense(output_size=self.output_size * output_multiplier, input_size=self.input_size * input_multiplier,
                      activation=self.activation, input_dtype=np.float32,
                      weight_initializer=self.weight_initializer,
                      bias_initializer=self.bias_initializer, dropout=self.dropout
@@ -898,7 +898,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.20'
+__version__ = '0.0.21'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

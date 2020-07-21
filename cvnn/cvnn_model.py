@@ -216,13 +216,15 @@ class CvnnModel:
         for i, layer in enumerate(self.shape):
             if isinstance(layer, layers.ComplexLayer):
                 if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
-                    real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult[i]))
+                    real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult[i],
+                                                                input_multiplier=output_mult[i-1] if i > 0 else 2))
                 else:
                     real_shape.append(layer.get_real_equivalent())
             else:
                 sys.exit("Layer " + str(layer) + " unknown")
         if name is None:
             name = self.name + "_real_equiv"
+        # set_trace()
         return CvnnModel(name=name, shape=real_shape, loss_fun=self.loss_fun,
                          tensorboard=self.tensorboard, verbose=False)
 
@@ -749,7 +751,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.26'
+__version__ = '0.2.27'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
