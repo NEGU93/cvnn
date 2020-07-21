@@ -2,17 +2,16 @@ import logging
 import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
-from cvnn.dataset import Dataset
 from cvnn.cvnn_model import CvnnModel
-from cvnn.data_analysis import MonteCarloAnalyzer, confusion_matrix, SeveralMonteCarloComparison
+from cvnn.data_analysis import MonteCarloAnalyzer
 from cvnn.layers import Dense
-from cvnn.utils import create_folder, transform_to_real, randomize
+from cvnn.utils import transform_to_real, randomize
 from tensorflow.keras.losses import categorical_crossentropy
 import pandas as pd
 import copy
 import sys
 from openpyxl import load_workbook, Workbook
-from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.worksheet.table import Table
 import os
 from tqdm import tqdm
 import numpy as np
@@ -114,8 +113,9 @@ class RealVsComplex(MonteCarlo):
 
 
 def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
-                   epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
-                   shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=None):
+                                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
+                                    shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
+                                    dropout=None):
     # Get parameters
     if param_list is None:
         param_list = [
@@ -127,13 +127,42 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
                        shape_raw, activation, debug, polar, do_all, dropout)
 
 
+def _save_montecarlo_log(path, dataset_name, hl, shape, dropout, num_classes, polar_mode, learning_rate, activation,
+                         dataset_size, feature_size, epochs, batch_size, winner,
+                         complex_median, real_median, complex_iqr, real_iqr, comments='', filename=None):
+    if filename is None:
+        filename = './log/mlp_monte_carlo_summary.xlsx'
+    fieldnames = ['path', 'dataset', 'HL', 'Shape', 'Dropout', '# Classes', "Polar Mode", "Learning Rate",
+                  "Activation Function", "Dataset Size", 'Feature Size', 'epochs', 'batch size',
+                  "Winner", "CVNN median", "RVNN median", 'CVNN IQR', 'RVNN IQR', "Comments"]
+    row_data = [path, dataset_name, hl, shape,
+                dropout, num_classes, polar_mode, learning_rate, activation, dataset_size, feature_size,
+                epochs, batch_size, winner, complex_median, real_median, complex_iqr, real_iqr, comments
+                ]
+    file_exists = os.path.isfile(filename)
+    if file_exists:
+        wb = load_workbook(filename)
+        ws = wb.worksheets[0]
+    else:
+        wb = Workbook()
+        ws = wb.worksheets[0]
+        ws.append(fieldnames)
+    ws.append(row_data)
+    tab = Table(displayName="Table1", ref="A1:R" + str(ws.max_row))
+    percentage_cols = ['N', 'O', 'P', 'Q']
+    for col in percentage_cols:
+        ws[col + str(ws.max_row)].number_format = '0.00%'
+    ws.add_table(tab)
+    wb.save(filename)
+
+
 def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
                        epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
                        shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True, dropout=0.5):
     if shape_raw is None:
         shape_raw = [64]
     if open_dataset:
-        dataset = dp.OpenDataset(open_dataset)      # Warning, open_dataset overwrites dataset
+        dataset = dp.OpenDataset(open_dataset)  # Warning, open_dataset overwrites dataset
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
@@ -155,18 +184,14 @@ def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
     monte_carlo = RealVsComplex(complex_network)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
-    sleep(1)    # I have error if not because not enough time passed since creation of models to be in diff folders
+    sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
-    # TODO: Separate this part of code PLEASE!
-    filename = './log/mlp_monte_carlo_summary.xlsx'
-    fieldnames = ['path', 'dataset', 'HL', 'Shape', 'Dropout', '# Classes', "Polar Mode", "Learning Rate",
-                  "Activation Function", "Dataset Size", 'Feature Size', 'epochs', 'batch size',
-                  "Winner", "CVNN median", "RVNN median", 'CVNN IQR', 'RVNN IQR', "Comments"]
+    # Save data to remember later what I did.
     max_epoch = monte_carlo.pandas_full_data['epoch'].max()
     epoch_filter = monte_carlo.pandas_full_data['epoch'] == max_epoch
     complex_filter = monte_carlo.pandas_full_data['network'] == "complex network"
@@ -175,39 +200,23 @@ def mlp_run_montecarlo(dataset, open_dataset=None, iterations=1000,
     real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
     complex_median = complex_last_epochs['test accuracy'].median()
     real_median = real_last_epochs['test accuracy'].median()
-    row_data = [str(monte_carlo.monte_carlo_analyzer.path),
-                dataset.dataset_name,
-                str(len(shape_raw)), str(shape_raw),
-                str(dropout), str(dataset.y.shape[1]),
-                'Yes' if polar == 'Apple' else 'No', learning_rate, activation, str(dataset.x.shape[0]),
-                str(dataset.x.shape[1]), epochs, batch_size,
-                'CVNN' if complex_median > real_median else 'RVNN',
-                complex_median, real_median,
-                complex_last_epochs['test accuracy'].quantile(.75)
-                - complex_last_epochs['test accuracy'].quantile(.25),
-                real_last_epochs['test accuracy'].quantile(.75)
-                - real_last_epochs['test accuracy'].quantile(.25),
-                ]
-    file_exists = os.path.isfile(filename)
-    if file_exists:
-        wb = load_workbook(filename)
-        ws = wb.worksheets[0]
-    else:
-        wb = Workbook()
-        ws = wb.worksheets[0]
-        ws.append(fieldnames)
-    ws.append(row_data)
-    tab = Table(displayName="Table1", ref="A1:R" + str(ws.max_row))
-    percentage_cols = ['N', 'O', 'P', 'Q']
-    for col in percentage_cols:
-        ws[col + str(ws.max_row)].number_format = '0.00%'
-    ws.add_table(tab)
-    wb.save(filename)
-
+    _save_montecarlo_log(path=str(monte_carlo.monte_carlo_analyzer.path),
+                         dataset_name=dataset.dataset_name,
+                         hl=str(len(shape_raw)), shape=str(shape_raw),
+                         dropout=str(dropout), num_classes=str(dataset.y.shape[1]),
+                         polar_mode='Yes' if polar == 'Apple' else 'No',
+                         learning_rate=learning_rate, activation=activation, dataset_size=str(dataset.x.shape[0]),
+                         feature_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size,
+                         winner='CVNN' if complex_median > real_median else 'RVNN',
+                         complex_median=complex_median, real_median=real_median,
+                         complex_iqr=complex_last_epochs['test accuracy'].quantile(.75)
+                                    - complex_last_epochs['test accuracy'].quantile(.25),
+                         real_iqr=real_last_epochs['test accuracy'].quantile(.75)
+                                 - real_last_epochs['test accuracy'].quantile(.25)
+                         )
     return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")
 
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
     run_gaussian_dataset_montecarlo(iterations=5, epochs=10, do_all=True, open_dataset="./data/MLSP/")
-
