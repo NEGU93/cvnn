@@ -257,13 +257,14 @@ class Dense(ComplexLayer):
 
     def _init_weights(self):
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
+            div = tf.sqrt(tf.constant([2.]))    # To keep the variance as it should.
             self.w = tf.cast(
-                tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                                       self.weight_initializer()(shape=(self.input_size, self.output_size))),
+                tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size))/div,
+                                       self.weight_initializer()(shape=(self.input_size, self.output_size))/div),
                             name="weights" + str(self.layer_number)),
                 dtype=self.input_dtype)
-            self.b = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(self.output_size),
-                                                    self.bias_initializer()(self.output_size)),
+            self.b = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(self.output_size)/div,
+                                                    self.bias_initializer()(self.output_size)/div),
                                          name="bias" + str(self.layer_number))
                              , dtype=self.input_dtype)
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
@@ -460,14 +461,15 @@ class Convolutional(ComplexLayer):
         self.kernels = []
         this_shape = self.kernel_shape + (self.input_size[-1],)
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
+            div = tf.sqrt(tf.constant([2.]))  # To keep the variance as it should.
             for f in range(self.filters):               # Kernels should be features*channels.
                 self.kernels.append(tf.cast(
-                    tf.Variable(tf.complex(self.weight_initializer()(shape=this_shape),
-                                           self.weight_initializer()(shape=this_shape)),
+                    tf.Variable(tf.complex(self.weight_initializer()(shape=this_shape)/div,
+                                           self.weight_initializer()(shape=this_shape)/div),
                                 name="kernel" + str(self.layer_number) + "_f" + str(f)),
                     dtype=self.input_dtype))
-            self.bias = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(shape=self.filters),
-                                                       self.bias_initializer()(shape=self.filters)),
+            self.bias = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(shape=self.filters)/div,
+                                                       self.bias_initializer()(shape=self.filters)/div),
                                             name="bias" + str(self.layer_number)),
                                 dtype=self.input_dtype)
         elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
