@@ -1,6 +1,8 @@
 import tensorflow as tf
 import numpy as np
 from cvnn.layers import Convolutional
+from scipy import signal
+from scipy import linalg
 from pdb import set_trace
 
 COMPARE_TF_AND_NP = False
@@ -72,6 +74,11 @@ if TWO_DIM_TEST:
     print("std_out: " + str(std_out))
     print("f_real: " + str(f_real))
 
+    np_fft_conv_full = np.array(signal.fftconvolve(img2, k, mode='full') , np.int32)
+    print("np_fft_conv_full:\n" + str(np_fft_conv_full))
+    
+    np_conv = np.array(signal.convolve2d(img2 , k, 'full'), np.int32)
+    print("np_conv:\n" + str(np_conv))
 
     """
     # Check numpy implementation
