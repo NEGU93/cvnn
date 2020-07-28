@@ -11,10 +11,7 @@ from cvnn.utils import get_func_name
 import numpy as np
 from time import time
 from pdb import set_trace
-
-# Initializers:
-# https://www.tensorflow.org/api_docs/python/tf/keras/initializers
-# https://keras.io/initializers/
+import cvnn.initializers as initializers
 
 SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)  # Used to count the number of layers
@@ -197,7 +194,7 @@ class Dense(ComplexLayer):
     """
 
     def __init__(self, output_size, input_size=None, activation=None, input_dtype=None,
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
+                 weight_initializer=initializers.GlorotUniform, bias_initializer=initializers.Zeros,
                  dropout=None):
         """
         Initializer of the Dense layer
@@ -256,28 +253,10 @@ class Dense(ComplexLayer):
                      )
 
     def _init_weights(self):
-        if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
-            div = tf.sqrt(tf.constant([2.]))    # To keep the variance as it should.
-            self.w = tf.cast(
-                tf.Variable(tf.complex(self.weight_initializer()(shape=(self.input_size, self.output_size))/div,
-                                       self.weight_initializer()(shape=(self.input_size, self.output_size))/div),
-                            name="weights" + str(self.layer_number)),
-                dtype=self.input_dtype)
-            self.b = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(self.output_size)/div,
-                                                    self.bias_initializer()(self.output_size)/div),
-                                         name="bias" + str(self.layer_number))
-                             , dtype=self.input_dtype)
-        elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
-            self.w = tf.cast(tf.Variable(self.weight_initializer()(shape=(self.input_size, self.output_size)),
-                                         name="weights" + str(self.layer_number)),
-                             dtype=self.input_dtype)
-            self.b = tf.cast(tf.Variable(self.bias_initializer()(self.output_size),
-                                         name="bias" + str(self.layer_number)),
-                             dtype=self.input_dtype)
-        else:
-            # This case should never happen. The abstract constructor should already have checked this
-            self.logger.error("Input_dtype not supported.", exc_info=True)
-            sys.exit(-1)
+        self.w = tf.Variable(self.weight_initializer(shape=(self.input_size, self.output_size), dtype=self.input_dtype),
+                             name="weights" + str(self.layer_number))
+        self.b = tf.Variable(self.bias_initializer(shape=self.output_size, dtype=self.input_dtype),
+                             name="bias" + str(self.layer_number))
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
@@ -940,7 +919,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.22'
+__version__ = '0.0.23'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
