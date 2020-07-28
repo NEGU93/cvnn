@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-# from cvnn.layers import Convolutional
+from cvnn.layers import Convolutional
 from pdb import set_trace
 import sys
 from scipy import signal
@@ -55,18 +55,27 @@ if TWO_DIM_TEST:
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
-    ])
-    k = [
+    ]).astype(np.float32)
+    k = np.array([
             [1., 0., -1.],
             [1., 0., -1.],
             [1., 0., -1.]
-        ]
+        ]).astype(np.float32)
     mode = 'full'
-    # conv = Convolutional(1, (3, 3), (6, 6, 1), padding=2, input_dtype=np.float32)
-    # conv.kernels = []
-    # conv.kernels.append(tf.reshape(tf.cast(tf.Variable(k, name="kernel" + str(0) + "_f" + str(0)), dtype=np.float32),
-    #                                (3, 3, 1)))
-    # std_out = conv([img2])[..., 0]
+
+    conv = Convolutional(1, (3, 3), (6, 6, 1), padding=2, input_dtype=np.float32)
+    conv.kernels = []
+    conv.kernels.append(tf.reshape(tf.cast(tf.Variable(k, name="kernel" + str(0) + "_f" + str(0)), dtype=np.float32),
+                                   (3, 3, 1)))
+    std_out = conv([img2])[..., 0]
+    print("std_out: " + str(std_out))
+
+    img_tf = tf.constant(tf.reshape(img2, (1, 6, 6, 1)), dtype=tf.float32)
+    k_tf = tf.constant(tf.reshape(k, (3, 3, 1, 1)), dtype=tf.float32)
+    conv_tf = tf.nn.conv2d(img_tf, k_tf, strides=[1, 1], padding="SAME")[0, ..., 0]
+    print("conv_tf: " + str(conv_tf))
+    # set_trace()
+
     img2_pad = tf.pad(img2, tf.constant([[0, 2], [0, 2]]))
     k_pad = tf.cast(tf.pad(k, tf.constant([[0, 5], [0, 5]])), tf.complex64)
     I = tf.signal.fft2d(tf.cast(img2_pad, tf.complex64))
@@ -74,19 +83,14 @@ if TWO_DIM_TEST:
     F = tf.math.multiply(I, K)
     f = tf.signal.ifft2d(F)
     f_real = tf.cast(f, tf.int32)
-    # print("std_out: " + str(std_out))
     print("f_real: " + str(f_real))
-    
-    
-    
+
     np_fft_conv = np.array(signal.fftconvolve(img2, k, mode=mode) , np.int32)
     print("sp_fft_conv_" + mode + ":\n" + str(np_fft_conv))
-    
 
     np_conv = np.array(signal.convolve2d(img2 , k, mode), np.int32)
     print("sp_fft_conv_" + mode + ":\n" + str(np_conv))
     # set_trace()
-
 
     """
     # Check numpy implementation
@@ -99,31 +103,24 @@ if TWO_DIM_TEST:
 if STACKOVERFLOW_EXAMPLE:
     # https://stackoverflow.com/questions/40703751/using-fourier-transforms-to-do-convolution
 
-    x = [[1 , 0 , 0 , 0] , [0 , -1 , 0 , 0] , [0 , 0 , 3 , 0] , [0 , 0 , 0 , 1]]
+    x = [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 3, 0], [0, 0, 0, 1]]
     x = np.array(x)
-    y = [[4 , 5] , [3 , 4]]
+    y = [[4, 5], [3, 4]]
     y = np.array(y)
     
-    print("conv:\n" ,  signal.convolve2d(x , y , 'full'))
+    print("conv:\n",  signal.convolve2d(x, y, 'full'))
     
     s1 = np.array(x.shape)
     s2 = np.array(y.shape)
-    
     size = s1 + s2 - 1
-    
-    
     fsize = 2 ** np.ceil(np.log2(size)).astype(int)
     fslice = tuple([slice(0, int(sz)) for sz in size])
-    
-    
-    new_x = np.fft.fft2(x , fsize)
-    
-    
-    new_y = np.fft.fft2(y , fsize)
+
+    new_x = np.fft.fft2(x, fsize)
+    new_y = np.fft.fft2(y, fsize)
     result = np.fft.ifft2(new_x*new_y)[fslice].copy()
     
-    print("fft for my method:\n" , np.array(result.real , np.int32))
+    print("fft for my method:\n", np.array(result.real, np.int32))
     
-    print("fft:\n" , np.array(signal.fftconvolve(x ,y) , np.int32))
+    print("fft:\n" , np.array(signal.fftconvolve(x, y), np.int32))
 
-    

@@ -396,8 +396,18 @@ class Convolutional(ComplexLayer):
                  data_format='channels_last'    # TODO: Only supported format for the moment.
                  # dilatation_rate=(1, 1)   # TODO: Interesting to add
                  ):
+        """
+        :param data_format: A string, one of channels_last (default) or channels_first.
+            The ordering of the dimensions in the inputs.
+            channels_last corresponds to inputs with shape (batch_size, ..., channels) while channels_first corresponds
+            to inputs with shape (batch_size, channels, ...)
+        """
         self.filters = filters
         self.activation = activation
+        data_format = data_format.lower()
+        assert data_format == 'channels_last' or data_format == 'channels_first', \
+            "data_format not supported, should be either 'channels_last' (default) or 'channels_first', got " + \
+            str(data_format)
         if input_shape is None:
             self.input_size = None
         elif isinstance(input_shape, int):
@@ -418,7 +428,7 @@ class Convolutional(ComplexLayer):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer  # TODO: Not working yet
 
-        self._init_kernel()
+        self._init_kernel(data_format)
 
     def _calculate_shapes(self, kernel_shape, padding, stride):
         if isinstance(kernel_shape, int):
@@ -457,9 +467,16 @@ class Convolutional(ComplexLayer):
         self.output_size = tuple(out_list)
         return self.output_size
 
-    def _init_kernel(self):
+    def _init_kernel(self, data_format):
         self.kernels = []
-        this_shape = self.kernel_shape + (self.input_size[-1],)
+        if data_format == 'channels_last':
+            this_shape = self.kernel_shape + (self.input_size[-1],)
+        elif data_format == 'channels_first':
+            this_shape = (self.input_size[-1],) + self.kernel_shape
+        else:
+            self.logger.error("data_format not supported, should be either 'channels_last' (default) "
+                              "or 'channels_first', got " + str(data_format))
+            sys.exit(-1)
         if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
             div = tf.sqrt(tf.constant([2.]))  # To keep the variance as it should.
             for f in range(self.filters):               # Kernels should be features*channels.
@@ -486,6 +503,7 @@ class Convolutional(ComplexLayer):
             sys.exit(-1)
 
     def _verify_inputs(self, inputs):
+        # TODO: DATA FORMAT!
         # Expected inputs shape: (images, image_shape, channel (optional))
         inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
         if inputs.dtype != self.input_dtype:
@@ -520,6 +538,7 @@ class Convolutional(ComplexLayer):
         :param inputs:
         :return:
         """
+        # TODO: DATA FORMAT!
         with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
             inputs = self._verify_inputs(inputs)            # Check inputs are of expected shape and format
             inputs = self.apply_padding(inputs)             # Add zeros if needed
@@ -666,6 +685,29 @@ class Convolutional(ComplexLayer):
 
     def trainable_variables(self):
         return self.kernels + [self.bias]
+
+
+class FFTConvolutional2D(Convolutional):
+    def __init__(self, filters: int, kernel_shape: t_Shape,
+                 input_shape: Optional[t_Shape] = None, padding: t_Shape = 0,
+                 stride: t_Shape = 1, input_dtype: Optional[t_Dtype] = None,
+                 activation=None,  # TODO: Check type
+                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
+                 # dilatation_rate=(1, 1)   # TODO: Interesting to add
+                 ):
+        # TODO: Assert input_size is for 2D cases
+        super(FFTConvolutional2D, self).__init__(filters, kernel_shape, input_shape, padding, stride, input_dtype,
+                                                 activation, weight_initializer, bias_initializer,
+                                                 data_format='channels_first')    # Force this mode because of fft
+        self.full_size = [x[0] + x[1] - x[2] for x in zip(self.kernel_shape, self.input_size[:-1],
+                                                          tf.ones(len(kernel_shape)).numpy())]
+        k_pads = tf.constant([[0, x[0] - x[1]] for x in zip(self.full_size, self.kernel_shape)])
+        self.inputs_pads = [[0, x[0] - x[1]] for x in zip(self.full_size, self.input_size[:-1])]
+        self.freq_kernels = []
+        for k in self.kernels:
+            k_pad = tf.pad(k, tf.constant(k_pads))
+            self.freq_kernels.append(tf.signal.fft2d(k_pad))
+        set_trace()
 
 
 class Pooling(ComplexLayer, ABC):
@@ -834,7 +876,7 @@ class MaxPooling(Pooling):
 
 
 if __name__ == "__main__":
-    conv = Convolutional(1, (3, 3), (6, 6, 1), padding=0, input_dtype=np.complex64)
+    conv = FFTConvolutional2D(1, (3, 3), (6, 6, 2), padding=0, input_dtype=np.complex64)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
     # max_pool = MaxPooling()
     # flat = Flatten()
@@ -898,7 +940,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.21'
+__version__ = '0.0.22'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
