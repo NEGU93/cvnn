@@ -194,7 +194,7 @@ class Dense(ComplexLayer):
     """
 
     def __init__(self, output_size, input_size=None, activation=None, input_dtype=None,
-                 weight_initializer=initializers.GlorotUniform, bias_initializer=initializers.Zeros,
+                 weight_initializer=None, bias_initializer=None,
                  dropout=None):
         """
         Initializer of the Dense layer
@@ -225,7 +225,11 @@ class Dense(ComplexLayer):
                              tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
                              ).numpy().dtype
         self.dropout = dropout
+        if weight_initializer is None:
+            weight_initializer = initializers.GlorotUniform()
         self.weight_initializer = weight_initializer
+        if bias_initializer is None:
+            bias_initializer = initializers.Zeros()
         self.bias_initializer = bias_initializer
         self.w = None
         self.b = None
@@ -919,7 +923,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.23'
+__version__ = '0.0.24'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

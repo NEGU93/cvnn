@@ -200,7 +200,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
     shape = [Dense(input_size=input_size, output_size=shape_raw[0], activation=activation,
                    input_dtype=np.complex64, dropout=dropout)]
     for i in range(1, len(shape_raw)):  # TODO: Support empty shape_raw (no hidden layers)
-        shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=None))
+        shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=0.5))
     shape.append(Dense(output_size=output_size, activation='softmax_real'))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,

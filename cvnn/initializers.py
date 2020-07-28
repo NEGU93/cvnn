@@ -60,7 +60,10 @@ class RandomInitializer:
 
     @staticmethod
     def dtype_cast(c_dtype):
-        assert c_dtype == tf.complex64 or c_dtype == tf.complex128
+        c_dtype = tf.as_dtype(c_dtype)
+        if not c_dtype.is_complex:
+            logger.error("Expecting a complex dtype, got " + str(c_dtype))
+            sys.exit(-1)
         return tf.float32 if c_dtype == tf.complex64 else tf.float64
 
     @staticmethod
@@ -122,7 +125,15 @@ class RandomInitializer:
 
 class GlorotUniform(RandomInitializer):
 
-    def __init__(self, seed):
+    __name__ = "Glorot Uniform"
+
+    def __init__(self, seed=None, scale=1.):
+        if isinstance(scale, float):
+            assert scale > 0, "scale must be more than 0. Got " + str(scale)
+        else:
+            logger.error("scale must be a float. Got " + str(scale))
+            sys.exit(-1)
+        self.scale = scale
         super(GlorotUniform, self).__init__(distribution="uniform", seed=seed)
 
     def __call__(self, shape, dtype=tf.dtypes.complex64):
@@ -133,8 +144,9 @@ class GlorotUniform(RandomInitializer):
 
 
 class GlorotUniformCompromise(RandomInitializer):
+    __name__ = "Glorot Uniform Compromise"
 
-    def __init__(self, seed):
+    def __init__(self, seed=None):
         super(GlorotUniformCompromise, self).__init__(distribution="uniform", seed=seed)
 
     def __call__(self, shape, dtype=tf.dtypes.complex64):
@@ -145,8 +157,9 @@ class GlorotUniformCompromise(RandomInitializer):
 
 
 class GlorotNormal(RandomInitializer):
+    __name__ = "Glorot Normal"
 
-    def __init__(self, seed):
+    def __init__(self, seed=None):
         super(GlorotNormal, self).__init__(distribution="normal", seed=seed)
 
     def __call__(self, shape, dtype=tf.dtypes.complex64):
@@ -157,8 +170,9 @@ class GlorotNormal(RandomInitializer):
 
 
 class HeNormal(RandomInitializer):
+    __name__ = "He Normal"
 
-    def __init__(self, seed):
+    def __init__(self, seed=None):
         super(HeNormal, self).__init__(distribution="normal", seed=seed)
 
     def __call__(self, shape, dtype=tf.dtypes.complex64):
@@ -169,6 +183,7 @@ class HeNormal(RandomInitializer):
 
 
 class HeUniform(RandomInitializer):
+    __name__ = "He Uniform"
 
     def __init__(self, seed):
         super(HeUniform, self).__init__(distribution="uniform", seed=seed)
@@ -181,6 +196,8 @@ class HeUniform(RandomInitializer):
 
 
 class Zeros:
+    __name__ = "Zeros"
+
     def __call__(self, shape, dtype=tf.dtypes.complex64):
         return tf.zeros(shape, dtype=dtype)
 
@@ -190,6 +207,6 @@ if __name__ == '__main__':
     print("Cuack")
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
