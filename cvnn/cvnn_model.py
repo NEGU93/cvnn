@@ -175,7 +175,7 @@ class CvnnModel:
             elif len(self.shape) == 2:      # Case only one hidden layer
                 n = self.shape[0].input_size
                 c = self.shape[-1].output_size
-                hidden_1_size = np.ceil(((2 * n + c) / (2 * (n + c)))).astype(int)
+                hidden_1_size = np.ceil(((2 * n + 2 * c) / (2 * n + c))).astype(int)
                 output_mult = np.array([hidden_1_size, 1])
             elif len(self.shape) == 4:      # Case with 3 hidden layers
                 m_0 = self.shape[0].output_size
