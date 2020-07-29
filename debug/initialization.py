@@ -39,3 +39,4 @@ tests = {
 
 for key, value in tests.items():
     compare(key, value[0], value[1])
+    set_trace()
