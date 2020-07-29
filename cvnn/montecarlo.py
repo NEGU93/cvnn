@@ -234,7 +234,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
 # ====================================
 #     Excel logging
 # ====================================
-def _create_excel_file(fieldnames, row_data, filename=None):
+def _create_excel_file(fieldnames, row_data, filename=None, percentage_cols=None):
     if filename is None:
         filename = './log/montecarlo_summary.xlsx'
     file_exists = os.path.isfile(filename)
@@ -246,10 +246,11 @@ def _create_excel_file(fieldnames, row_data, filename=None):
         ws = wb.worksheets[0]
         ws.append(fieldnames)
     ws.append(row_data)
-    tab = Table(displayName="Table1", ref="A1:R" + str(ws.max_row))
-    percentage_cols = ['N', 'O', 'P', 'Q']
-    for col in percentage_cols:
-        ws[col + str(ws.max_row)].number_format = '0.00%'
+    # TODO: What if len(row_data) is longer than the dictionary? It corresponds with excel's column names?
+    tab = Table(displayName="Table1", ref="A1:" + str(chr(64 + len(row_data))) + str(ws.max_row))
+    if percentage_cols is not None:
+        for col in percentage_cols:
+            ws[col + str(ws.max_row)].number_format = '0.00%'
     ws.add_table(tab)
     wb.save(filename)
 
@@ -268,7 +269,8 @@ def _save_rvnn_vs_cvnn_montecarlo_log(path, dataset_name, hl, shape, dropout, nu
                 winner, complex_median, real_median, complex_iqr, real_iqr,  # Preliminary results
                 path, cvnn.__version__, comments  # Library information
                 ]
-    _create_excel_file(fieldnames, row_data, filename)
+    percentage_cols = ['N', 'O', 'P', 'Q']
+    _create_excel_file(fieldnames, row_data, filename, percentage_cols=percentage_cols)
 
 
 def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mode, learning_rate, dataset_size,
