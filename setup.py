@@ -5,7 +5,7 @@ requirements = [
     'tensorflow>=2.0',
     'numpy',
     'pandas', 'scipy', 'prettytable',                   # Data
-    'colorlog',                                         # Logging
+    'colorlog', 'openpyxl',                             # Logging
     'matplotlib', 'seaborn', 'plotly', 'tikzplotlib',   # Plotting
     'tqdm'
 ]
