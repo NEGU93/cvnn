@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/home/barrachina/anaconda3/envs/tf-2-gpu/bin/python",
+    "restructuredtext.confPath": "${workspaceFolder}/docs"
+}

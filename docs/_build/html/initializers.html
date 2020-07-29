@@ -1,0 +1,449 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Initializers &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Utils" href="utils.html" />
+    <link rel="prev" title="Activation Functions" href="act_fun.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Initializers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/initializers.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="initializers">
+<h1>Initializers<a class="headerlink" href="#initializers" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="RandomInitializer">
+<em class="property">class </em><code class="sig-name descname">RandomInitializer</code><a class="headerlink" href="#RandomInitializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Random initializer helps generate a random tensor of</p>
+<ul class="simple">
+<li><p>Either complex or real (floating) data type</p></li>
+<li><p>Either Uniform or Normal distribution</p></li>
+<li><p>Zero mean</p></li>
+</ul>
+<p>How to use it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># creates a complex tensor of shape (3, 3) distribution with Re{random_tensor} ~ U[-2, 2] and Im{random_tensor} ~ U[-3, 3]</span>
+<span class="n">random_tensor</span> <span class="o">=</span> <span class="n">RandomInitializer</span><span class="p">(</span><span class="n">distribution</span><span class="o">=</span><span class="s2">&quot;uniform&quot;</span><span class="p">)(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">c_limit</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">complex</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">distribution=&quot;uniform&quot;</em>, <em class="sig-param">seed=None</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distribution</strong> – It can be either a uniform or a normal distribution.</p></li>
+<li><p><strong>seed</strong> – Integer. Used to create a random seed for the distribution. See <code class="code docutils literal notranslate"><span class="pre">tf.random.set_seed</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="get_random_tensor">
+<code class="sig-name descname">get_random_tensor</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em>, <em class="sig-param">c_arg=None</em>, <em class="sig-param">r_arg=None</em>, <em class="sig-param">dtype=tf.dtypes.complex64</em><span class="sig-paren">)</span><a class="headerlink" href="#get_random_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outputs random values either uniform or normal according to initialization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> – The shape of the output tensor.</p></li>
+<li><p><strong>r_arg</strong> – Argument.
+If uniform, the output will be a distribution between [-arg, arg].
+If Normal, the output will be a zero-mean gaussian distribution with arg stddev</p></li>
+<li><p><strong>c_arg</strong> – Tuple of the argument for the real and imaginary part respectively.</p></li>
+<li><p><strong>dtype</strong> – The type of the output. Default <code class="code docutils literal notranslate"><span class="pre">tf.complex</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Either <code class="code docutils literal notranslate"><span class="pre">c_arg</span></code> or <code class="code docutils literal notranslate"><span class="pre">r_arg</span></code> will be used according to <code class="code docutils literal notranslate"><span class="pre">dtype</span></code> parameter, the one not being used will be ignored and can be set to <code class="code docutils literal notranslate"><span class="pre">None</span></code> (default).</p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="GlorotUniform">
+<em class="property">class </em><code class="sig-name descname">GlorotUniform</code><span class="sig-paren">(</span><em class="sig-param">RandomInitializer</em><span class="sig-paren">)</span><a class="headerlink" href="#GlorotUniform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Glorot uniform initializer, also called Xavier uniform initializer.</p>
+<p>Reference: <a class="reference internal" href="#glorot-2010" id="id1"><span>[GLOROT-2010]</span></a></p>
+<p>Draws samples from a uniform distribution:</p>
+<ul class="simple">
+<li><p>Real case: <code class="code docutils literal notranslate"><span class="pre">x</span> <span class="pre">~</span> <span class="pre">U[-limit,</span> <span class="pre">limit]</span></code> where <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">sqrt(6</span> <span class="pre">/</span> <span class="pre">(fan_in</span> <span class="pre">+</span> <span class="pre">fan_out))</span></code></p></li>
+<li><p>Complex case: <code class="code docutils literal notranslate"><span class="pre">z</span> <span class="pre">/</span> <span class="pre">Re{z}</span> <span class="pre">=</span> <span class="pre">Im{z}</span> <span class="pre">~</span> <span class="pre">U[-limit,</span> <span class="pre">limit]</span></code> where <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">sqrt(3</span> <span class="pre">/</span> <span class="pre">(fan_in</span> <span class="pre">+</span> <span class="pre">fan_out))</span></code></p></li>
+</ul>
+<p>where <code class="code docutils literal notranslate"><span class="pre">fan_in</span></code> is the number of input units in the weight tensor and <code class="code docutils literal notranslate"><span class="pre">fan_out</span></code> is the number of output units.</p>
+<p>Standalone usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">GlorotUniform</span><span class="p">()</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">initializer</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>                  <span class="c1"># Returns a complex Glorot Uniform tensor of shape (2, 2)</span>
+</pre></div>
+</div>
+<p>Usage in a cvnn layer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">GlorotUniform</span><span class="p">()</span>
+<span class="n">layer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">23</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">weight_initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">seed=None</em>, <em class="sig-param">scale=1.</em><span class="sig-paren">)</span></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> – Integer. An initializer created with a given seed will always produce the same random tensor for a given shape and dtype.</p></li>
+<li><p><strong>scale</strong> – Default 1. Scales the limit as <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">scale</span> <span class="pre">*</span> <span class="pre">limit</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="__call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em>, <em class="sig-param">dtype=tf.dtypes.complex64</em><span class="sig-paren">)</span><a class="headerlink" href="#__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tensor object initialized as specified by the initializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> – Shape of the tensor.</p></li>
+<li><p><strong>dtype</strong> – Optional dtype of the tensor. Either floating or complex. ex: <code class="code docutils literal notranslate"><span class="pre">tf.complex64</span></code> or <code class="code docutils literal notranslate"><span class="pre">tf.float32</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="GlorotNormal">
+<em class="property">class </em><code class="sig-name descname">GlorotNormal</code><span class="sig-paren">(</span><em class="sig-param">RandomInitializer</em><span class="sig-paren">)</span><a class="headerlink" href="#GlorotNormal" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Glorot normal initializer, also called Xavier normal initializer.</p>
+<p>Reference: <a class="reference internal" href="#glorot-2010" id="id2"><span>[GLOROT-2010]</span></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reference actually refers to the uniform case but it’s analysis was adapted for a normal distribution</p>
+</div>
+<p>Draws samples from a truncated normal distribution centered on 0 with</p>
+<ul class="simple">
+<li><p>Real case: <code class="code docutils literal notranslate"><span class="pre">stddev</span> <span class="pre">=</span> <span class="pre">sqrt(2</span> <span class="pre">/</span> <span class="pre">(fan_in</span> <span class="pre">+</span> <span class="pre">fan_out))</span></code></p></li>
+<li><p>Complex case: real part stddev = complex part stddev = <code class="code docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">sqrt(fan_in</span> <span class="pre">+</span> <span class="pre">fan_out)</span></code></p></li>
+</ul>
+<p>where <code class="code docutils literal notranslate"><span class="pre">fan_in</span></code> is the number of input units in the weight tensor and <code class="code docutils literal notranslate"><span class="pre">fan_out</span></code> is the number of output units.</p>
+<p>Standalone usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">GlorotNormal</span><span class="p">()</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">initializer</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>                  <span class="c1"># Returns a complex Glorot Normal tensor of shape (2, 2)</span>
+</pre></div>
+</div>
+<p>Usage in a cvnn layer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">GlorotNormal</span><span class="p">()</span>
+<span class="n">layer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">23</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">weight_initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em>, <em class="sig-param">dtype=tf.dtypes.complex64</em><span class="sig-paren">)</span></dt>
+<dd><p>Returns a tensor object initialized as specified by the initializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> – Shape of the tensor.</p></li>
+<li><p><strong>dtype</strong> – Optinal dtype of the tensor. Either floating or complex. ex: <code class="code docutils literal notranslate"><span class="pre">tf.complex64</span></code> or <code class="code docutils literal notranslate"><span class="pre">tf.float32</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="HeNormal">
+<em class="property">class </em><code class="sig-name descname">HeNormal</code><span class="sig-paren">(</span><em class="sig-param">RandomInitializer</em><span class="sig-paren">)</span><a class="headerlink" href="#HeNormal" title="Permalink to this definition">¶</a></dt>
+<dd><p>He normal initializer.</p>
+<p>Reference: <a class="reference internal" href="#he-2015" id="id3"><span>[HE-2015]</span></a></p>
+<p>It draws samples from a truncated normal distribution centered on 0 with</p>
+<ul class="simple">
+<li><p>Real case: <code class="code docutils literal notranslate"><span class="pre">stddev</span> <span class="pre">=</span> <span class="pre">sqrt(2</span> <span class="pre">/</span> <span class="pre">fan_in)</span></code></p></li>
+<li><p>Complex case: real part stddev = complex part stddev = <code class="code docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">sqrt(fan_in)</span></code></p></li>
+</ul>
+<p>where <code class="code docutils literal notranslate"><span class="pre">fan_in</span></code> is the number of input units in the weight tensor.</p>
+<p>Standalone usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">HeNormal</span><span class="p">()</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">initializer</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>                  <span class="c1"># Returns a complex He Normal tensor of shape (2, 2)</span>
+</pre></div>
+</div>
+<p>Usage in a cvnn layer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">HeNormal</span><span class="p">()</span>
+<span class="n">layer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">23</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">weight_initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em>, <em class="sig-param">dtype=tf.dtypes.complex64</em><span class="sig-paren">)</span></dt>
+<dd><p>Returns a tensor object initialized as specified by the initializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> – Shape of the tensor.</p></li>
+<li><p><strong>dtype</strong> – Optinal dtype of the tensor. Either floating or complex. ex: <code class="code docutils literal notranslate"><span class="pre">tf.complex64</span></code> or <code class="code docutils literal notranslate"><span class="pre">tf.float32</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="HeUniform">
+<em class="property">class </em><code class="sig-name descname">HeUniform</code><span class="sig-paren">(</span><em class="sig-param">RandomInitializer</em><span class="sig-paren">)</span><a class="headerlink" href="#HeUniform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The He Uniform initializer.</p>
+<p>Reference: <a class="reference internal" href="#he-2015" id="id4"><span>[HE-2015]</span></a></p>
+<p>Draws samples from a uniform distribution</p>
+<ul class="simple">
+<li><p>Real case: <code class="code docutils literal notranslate"><span class="pre">x</span> <span class="pre">~</span> <span class="pre">U[-limit,</span> <span class="pre">limit]</span></code> where <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">sqrt(6</span> <span class="pre">/</span> <span class="pre">fan_in)</span></code></p></li>
+<li><p>Complex case: <code class="code docutils literal notranslate"><span class="pre">z</span> <span class="pre">/</span> <span class="pre">Re{z}</span> <span class="pre">=</span> <span class="pre">Im{z}</span> <span class="pre">~</span> <span class="pre">U[-limit,</span> <span class="pre">limit]</span></code> where <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">sqrt(3</span> <span class="pre">/</span> <span class="pre">fan_in)</span></code></p></li>
+</ul>
+<p>where <code class="code docutils literal notranslate"><span class="pre">fan_in</span></code> is the number of input units in the weight tensor.</p>
+<p>Standalone usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">HeUniform</span><span class="p">()</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">initializer</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>                  <span class="c1"># Returns a complex He Uniform tensor of shape (2, 2)</span>
+</pre></div>
+</div>
+<p>Usage in a cvnn layer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">HeUniform</span><span class="p">()</span>
+<span class="n">layer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">23</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">weight_initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">shape</em>, <em class="sig-param">dtype=tf.dtypes.complex64</em><span class="sig-paren">)</span></dt>
+<dd><p>Returns a tensor object initialized as specified by the initializer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> – Shape of the tensor.</p></li>
+<li><p><strong>dtype</strong> – Optinal dtype of the tensor. Either floating or complex. ex: <code class="code docutils literal notranslate"><span class="pre">tf.complex64</span></code> or <code class="code docutils literal notranslate"><span class="pre">tf.float32</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="citation">
+<dt class="label" id="glorot-2010"><span class="brackets">GLOROT-2010</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>)</span></dt>
+<dd><p>Glorot, Xavier, and Yoshua Bengio. “Understanding the difficulty of training deep feedforward neural networks.” Proceedings of the thirteenth international conference on artificial intelligence and statistics. 2010.</p>
+</dd>
+<dt class="label" id="he-2015"><span class="brackets">HE-2015</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id4">2</a>)</span></dt>
+<dd><p>He, Kaiming, et al. “Delving deep into rectifiers: Surpassing human-level performance on imagenet classification.” Proceedings of the IEEE international conference on computer vision. 2015.</p>
+</dd>
+</dl>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.html" class="btn btn-neutral float-right" title="Utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="act_fun.html" class="btn btn-neutral float-left" title="Activation Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -15,4 +15,5 @@ Content
 	cvnn
 	layers
 	act_fun
+	initializers
 	utils

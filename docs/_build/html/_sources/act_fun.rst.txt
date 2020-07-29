@@ -1,5 +1,6 @@
 ﻿Activation Functions
 ====================
+
 .. _activation_functions:
 
 It is recommended to only use the activation functions using::
@@ -204,7 +205,7 @@ Classification
 TYPE B: Polar form
 ------------------
 
-.. py:method:: pol_selu(z):
+.. py:method:: pol_selu(z)
 
     Applies `Scaled Exponential Linear Unit (SELU) <https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu>`_ [CIT2017-KLAMBAUER]_ (`source <https://arxiv.org/abs/1706.02515>`_) to the absolute value of z, keeping the phase unchanged.
 

@@ -61,7 +61,7 @@ class RandomInitializer:
         ```
         # creates a complex tensor of shape (3, 3) distribution with
         #   Re{random_tensor} ~ U[-2, 2] and Im{random_tensor} ~ U[-3, 3]
-        random_tensor = my_init(distribution="uniform")(shape=(3, 3), c_limit=[2, 3], dtype=tf.complex)
+        random_tensor = RandomInitializer(distribution="uniform")(shape=(3, 3), c_limit=[2, 3], dtype=tf.complex)
         ```
     """
     def __init__(self, distribution="uniform", seed=None):
@@ -209,7 +209,7 @@ class GlorotUniform(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
+        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [self.scale * tf.math.sqrt(3. / (fan_in + fan_out)),
@@ -251,7 +251,7 @@ class GlorotNormal(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
+        :param dtype: Optinal dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(1. / (fan_in + fan_out)), tf.math.sqrt(1. / (fan_in + fan_out))]
@@ -332,7 +332,7 @@ class HeNormal(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
+        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(1. / fan_in), tf.math.sqrt(1. / fan_in)]
@@ -342,7 +342,7 @@ class HeNormal(RandomInitializer):
 
 class HeUniform(RandomInitializer):
     """
-    The Glorot uniform initializer, also called Xavier uniform initializer.
+    The He Uniform initializer.
     Reference: http://proceedings.mlr.press/v9/glorot10a.html
     Draws samples from a uniform distribution:
         - Real case: `x ~ U[-limit, limit]` where `limit = sqrt(6 / fan_in)`
@@ -404,6 +404,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

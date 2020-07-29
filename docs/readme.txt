@@ -5,4 +5,4 @@ How to do sections:
 https://devguide.python.org/documenting/#sections
 
 How to compile:
-make html (?
+make html
