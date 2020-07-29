@@ -168,7 +168,7 @@ class CvnnModel:
     def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True):
         if capacity_equivalent and not classifier:  # TODO: Support it, it should not be so difficult
             logger.error("The current code does not support capacity equivalence for logistic regression tasks")
-            sys.exit(-1)    # TODO: Make one to be prevalence over the otherone and just show a warning
+            sys.exit(-1)    # TODO: Make one to be prevalent over the other one and just show a warning
         if capacity_equivalent:
             if len(self.shape) == 1:        # Case with no hidden layers
                 output_mult = np.ones(1).astype(int)
@@ -177,18 +177,19 @@ class CvnnModel:
                 c = self.shape[-1].output_size
                 hidden_1_size = np.ceil(((2 * n + 2 * c) / (2 * n + c))).astype(int)
                 output_mult = np.array([hidden_1_size, 1])
-            elif len(self.shape) == 4:      # Case with 3 hidden layers
-                m_0 = self.shape[0].output_size
-                m_2 = 2*self.shape[2].output_size
-                m_1 = np.ceil(2*(m_0 + m_2)/(m_0 + 2*m_2)).astype(int)
-                output_mult = np.array([1, m_1, 2, 1])
             elif len(self.shape) % 2 == 1:      # Case with even hidden layers (odd with the output layer)
                 mask = np.ones(len(self.shape)).astype(int)
                 mask[::2].fill(0)
                 output_mult = np.ones(len(self.shape)).astype(int) + mask
             else:                               # Case with odd hidden layers
-                logger.error("Real valued capacity-equivalent model not defined for {} hidden layers".format(len(self.shape)-1))
-                sys.exit(-1)
+                mask = np.ones(len(self.shape)).astype(int)
+                mask[::2].fill(0)
+                output_mult = np.ones(len(self.shape)).astype(int) + mask
+                middle_index = int(len(output_mult)/2 - 1)
+                m_inf = self.shape[middle_index-1].output_size
+                m_sup = self.shape[middle_index+1].output_size
+                value = np.ceil(2*(m_inf + m_sup)/(m_inf + 2*m_sup)).astype(int)
+                output_mult = np.insert(output_mult[:-1], middle_index, value)
         else:
             output_mult = 2*np.ones(len(self.shape)).astype(int)
             if classifier:
@@ -751,7 +752,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.27'
+__version__ = '0.2.28'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

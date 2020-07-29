@@ -32,12 +32,14 @@ if __name__ == '__main__':
     test_shape(100, 2, [100, 30, 64])
     sleep(2)
     test_shape(100, 2, [100, 30, 40, 50])
-    # sleep(2)
-    # test_shape(100, 2, [100, 30, 40, 60, 30])
+    sleep(2)
+    test_shape(100, 2, [100, 30, 40, 60, 30])
     sleep(2)
     test_shape(100, 2, [100, 30, 40, 60, 50, 30])
-    # sleep(2)
-    # test_shape(100, 2, [100, 30, 40, 60, 50, 30, 60])
+    sleep(2)
+    test_shape(100, 2, [100, 30, 40, 60, 50, 30, 60])
+
+    # Not capacity equivalent
     sleep(2)
     test_shape(100, 2, [], capacity_equivalent=False)
     sleep(2)
@@ -54,3 +56,21 @@ if __name__ == '__main__':
     test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False, capacity_equivalent=False)
     # sleep(2)
     # test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False)
+
+    """
+    [1]
+    [2 1]
+    [1 2 1]
+    [1 2 2 1]
+    [1 2 1 2 1]
+    [1 2 2 1 2 1]
+    [1 2 1 2 1 2 1]
+    [1 2 1 2 2 1 2 1]
+    [1]
+    [2 1]
+    [2 2 1]
+    [2 2 2 1]
+    [2 2 2 2 1]
+    [2 2 2 2 2 2 1]
+    [2 2 2 2 2 2 2]
+    """
