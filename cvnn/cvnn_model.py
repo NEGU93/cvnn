@@ -165,35 +165,59 @@ class CvnnModel:
                 sys.exit(-1)
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
-    def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True):
+    def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True, alternate=False):
         if capacity_equivalent and not classifier:  # TODO: Support it, it should not be so difficult
             logger.error("The current code does not support capacity equivalence for logistic regression tasks")
-            sys.exit(-1)    # TODO: Make one to be prevalent over the other one and just show a warning
+            sys.exit(-1)  # TODO: Make one to be prevalent over the other one and just show a warning
         if capacity_equivalent:
-            if len(self.shape) == 1:        # Case with no hidden layers
-                output_mult = np.ones(1).astype(int)
-            elif len(self.shape) == 2:      # Case only one hidden layer
-                n = self.shape[0].input_size
-                c = self.shape[-1].output_size
-                hidden_1_size = np.ceil(((2 * n + 2 * c) / (2 * n + c))).astype(int)
-                output_mult = np.array([hidden_1_size, 1])
-            elif len(self.shape) % 2 == 1:      # Case with even hidden layers (odd with the output layer)
-                mask = np.ones(len(self.shape)).astype(int)
-                mask[::2].fill(0)
-                output_mult = np.ones(len(self.shape)).astype(int) + mask
-            else:                               # Case with odd hidden layers
-                mask = np.ones(len(self.shape)).astype(int)
-                mask[::2].fill(0)
-                output_mult = np.ones(len(self.shape)).astype(int) + mask
-                middle_index = int(len(output_mult)/2 - 1)
-                m_inf = self.shape[middle_index-1].output_size
-                m_sup = self.shape[middle_index+1].output_size
-                value = np.ceil(2*(m_inf + m_sup)/(m_inf + 2*m_sup)).astype(int)
-                output_mult = np.insert(output_mult[:-1], middle_index, value)
+            if alternate:
+                output_mult = self._get_alternate_capacity_equivalent()
+            else:
+                output_mult = self._get_ratio_capacity_equivalent()
         else:
-            output_mult = 2*np.ones(len(self.shape)).astype(int)
+            output_mult = 2 * np.ones(len(self.shape)).astype(int)
             if classifier:
                 output_mult[-1] = 1
+        return output_mult
+
+    def _get_ratio_capacity_equivalent(self, classification=True):
+        model_in_c = self.shape[0].input_size
+        model_out_c = self.shape[-1].output_size
+        x_c = [self.shape[i].output_size for i in range(len(self.shape[:-1]))]
+        p_c = np.sum([2 * x.input_size * x.output_size for x in self.shape])  # real valued complex trainable params
+        model_in_r = 2*model_in_c
+        model_out_r = model_out_c if classification else 2*model_out_c
+        # Quadratic equation
+        C = -p_c
+        B = model_in_r * x_c[0] + model_out_r
+        A = np.sum([x_c[i] * x_c[i+1] for i in range(len(x_c) - 1)])
+
+        ratio = (-B + np.sqrt(B**2 - 4*C*A)) / (2*A)
+        if not 1 <= ratio <= 2:
+            logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
+        return [ratio]*len(x_c) + [1 if classification else 2]
+
+    def _get_alternate_capacity_equivalent(self):
+        if len(self.shape) == 1:  # Case with no hidden layers
+            output_mult = np.ones(1)
+        elif len(self.shape) == 2:  # Case only one hidden layer
+            n = self.shape[0].input_size
+            c = self.shape[-1].output_size
+            hidden_1_size = (2 * n + 2 * c) / (2 * n + c)
+            output_mult = np.array([hidden_1_size, 1])
+        elif len(self.shape) % 2 == 1:  # Case with even hidden layers (odd with the output layer)
+            mask = np.ones(len(self.shape))
+            mask[::2].fill(0)
+            output_mult = np.ones(len(self.shape)) + mask
+        else:  # Case with odd hidden layers
+            mask = np.ones(len(self.shape))
+            mask[::2].fill(0)
+            output_mult = np.ones(len(self.shape)) + mask
+            middle_index = int(len(output_mult) / 2 - 1)
+            m_inf = self.shape[middle_index - 1].output_size
+            m_sup = self.shape[middle_index + 1].output_size
+            value = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
+            output_mult = np.insert(output_mult[:-1], middle_index, value)
         return output_mult
 
     def get_real_equivalent(self, classifier=True, capacity_equivalent=True, name=None):
@@ -218,7 +242,7 @@ class CvnnModel:
             if isinstance(layer, layers.ComplexLayer):
                 if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
                     real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult[i],
-                                                                input_multiplier=output_mult[i-1] if i > 0 else 2))
+                                                                input_multiplier=output_mult[i - 1] if i > 0 else 2))
                 else:
                     real_shape.append(layer.get_real_equivalent())
             else:
@@ -370,7 +394,7 @@ class CvnnModel:
                 iteration += 1
                 # Save checkpoint if needed
                 if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
-                    self._run_checkpoint(x_batch, y_batch, x_test, y_test,    # Shall I use batch to be more efficient?
+                    self._run_checkpoint(x_batch, y_batch, x_test, y_test,  # Shall I use batch to be more efficient?
                                          step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
                                          num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
                                          fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
@@ -640,17 +664,20 @@ class CvnnModel:
                 logging.error("No such file or directory: " + self.root_dir, exc_info=True)
                 sys.exit(-1)
 
-    def _get_str_evaluate(self, epoch, epochs, train_x, train_y, test_x=None, test_y=None, batch=None, batches=None, fast_mode=False) -> str:
+    def _get_str_evaluate(self, epoch, epochs, train_x, train_y, test_x=None, test_y=None, batch=None, batches=None,
+                          fast_mode=False) -> str:
         train_loss = None
         train_acc = None
         test_loss = None
         test_acc = None
         if not fast_mode:
             train_loss, train_acc, test_loss, test_acc = self.evaluate_train_and_test(train_x, train_y, test_x, test_y)
-        return self._get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss, test_acc, batch, batches, fast_mode)
+        return self._get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss, test_acc, batch, batches,
+                                             fast_mode)
 
     @staticmethod
-    def _get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss=None, test_acc=None, batch=None, batches=None, fast_mode=False) -> str:
+    def _get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss=None, test_acc=None, batch=None,
+                                 batches=None, fast_mode=False) -> str:
         ret_str = "Epoch {0}/{1}".format(epoch, epochs)
         if batch is not None and batches is not None:
             ret_str += "; batch {0}/{1}".format(batch, batches)
@@ -752,7 +779,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.28'
+__version__ = '0.2.29'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -19,10 +19,17 @@ def test_shape(input_size, output_size, shape_raw, classifier=True, capacity_equ
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,
                                 verbose=False, tensorboard=False)
     result = complex_network._get_real_equivalent_multiplier(classifier, capacity_equivalent)
+    rvnn = complex_network.get_real_equivalent(classifier, capacity_equivalent)
+    complex_network.training_param_summary()
+    rvnn.training_param_summary()
     print(result)
 
 
 if __name__ == '__main__':
+    test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30])
+    # sleep(2)
+    # test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], capacity_equivalent=False)
+    """
     test_shape(100, 2, [])
     sleep(2)
     test_shape(100, 2, [64])
@@ -56,7 +63,7 @@ if __name__ == '__main__':
     test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False, capacity_equivalent=False)
     # sleep(2)
     # test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False)
-
+    """
     """
     [1]
     [2 1]

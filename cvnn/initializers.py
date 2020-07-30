@@ -138,12 +138,14 @@ class RandomInitializer:
         c_arg, r_arg = self._verify_limits(c_arg, r_arg, dtype)
         if dtype.is_complex:  # Complex layer
             r_dtype = self.dtype_cast(dtype)
+            c_arg = tf.cast(c_arg, r_dtype)
             # TODO: I do not yet understand the random_generator thing. I could use tf.random.uniform once I do
             ret = tf.complex(
                 self._call_random_generator(shape=shape, arg=c_arg[0], dtype=r_dtype),
                 self._call_random_generator(shape=shape, arg=c_arg[1], dtype=r_dtype))
         elif dtype.is_floating:     # Real Layer
             # ret = tf.random.uniform(shape=shape, minval=-limit, maxval=limit, dtype=dtype, seed=seed, name=name)
+            r_arg = tf.cast(r_arg, dtype)
             ret = self._call_random_generator(shape=shape, arg=r_arg, dtype=dtype)
         else:
             logger.error("Input_dtype not supported.", exc_info=True)
@@ -209,11 +211,7 @@ class GlorotUniform(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-<<<<<<< HEAD
         :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-=======
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
->>>>>>> 2a18681b0f0ec5e3a1787b8dd7287f1f3f0de985
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [self.scale * tf.math.sqrt(3. / (fan_in + fan_out)),
@@ -420,6 +418,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
