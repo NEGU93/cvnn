@@ -165,79 +165,86 @@ class CvnnModel:
                 sys.exit(-1)
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
-    def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True, alternate=False):
-        if capacity_equivalent and not classifier:  # TODO: Support it, it should not be so difficult
-            logger.error("The current code does not support capacity equivalence for logistic regression tasks")
-            sys.exit(-1)  # TODO: Make one to be prevalent over the other one and just show a warning
+    def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True, equiv_technique='ratio'):
         if capacity_equivalent:
-            if alternate:
-                output_mult = self._get_alternate_capacity_equivalent()
+            if equiv_technique == 'alternate':
+                output_mult = self._get_alternate_capacity_equivalent(classifier)
+            elif equiv_technique == 'ratio':
+                output_mult = self._get_ratio_capacity_equivalent(classifier)
             else:
-                output_mult = self._get_ratio_capacity_equivalent()
+                logger.error("Unknown equiv_technique " + equiv_technique)
+                sys.exit(-1)
         else:
             output_mult = 2 * np.ones(len(self.shape)).astype(int)
             if classifier:
                 output_mult[-1] = 1
         return output_mult
 
-    def _get_ratio_capacity_equivalent(self, classification=True):
+    def _get_ratio_capacity_equivalent(self, classification=True, bias_adjust=True):
         model_in_c = self.shape[0].input_size
         model_out_c = self.shape[-1].output_size
         x_c = [self.shape[i].output_size for i in range(len(self.shape[:-1]))]
         p_c = np.sum([2 * x.input_size * x.output_size for x in self.shape])  # real valued complex trainable params
+        if bias_adjust:
+            p_c = p_c + 2*np.sum(x_c) + 2*model_out_c
         model_in_r = 2*model_in_c
         model_out_r = model_out_c if classification else 2*model_out_c
         # Quadratic equation
         C = -p_c
         B = model_in_r * x_c[0] + model_out_r
+        if bias_adjust:
+            B = B + np.sum(x_c) + model_out_c
         A = np.sum([x_c[i] * x_c[i+1] for i in range(len(x_c) - 1)])
 
-        ratio = (-B + np.sqrt(B**2 - 4*C*A)) / (2*A)
+        ratio = (-B + np.sqrt(B**2 - 4*C*A)) / (2*A)        # The result MUST be positive so I use the '+' solution
+        # set_trace()
         if not 1 <= ratio <= 2:
             logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
+        # set_trace()
         return [ratio]*len(x_c) + [1 if classification else 2]
 
-    def _get_alternate_capacity_equivalent(self):
-        if len(self.shape) == 1:  # Case with no hidden layers
-            output_mult = np.ones(1)
-        elif len(self.shape) == 2:  # Case only one hidden layer
-            n = self.shape[0].input_size
-            c = self.shape[-1].output_size
-            hidden_1_size = (2 * n + 2 * c) / (2 * n + c)
-            output_mult = np.array([hidden_1_size, 1])
-        elif len(self.shape) % 2 == 1:  # Case with even hidden layers (odd with the output layer)
-            mask = np.ones(len(self.shape))
-            mask[::2].fill(0)
-            output_mult = np.ones(len(self.shape)) + mask
-        else:  # Case with odd hidden layers
-            mask = np.ones(len(self.shape))
-            mask[::2].fill(0)
-            output_mult = np.ones(len(self.shape)) + mask
-            middle_index = int(len(output_mult) / 2 - 1)
-            m_inf = self.shape[middle_index - 1].output_size
-            m_sup = self.shape[middle_index + 1].output_size
-            value = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
-            output_mult = np.insert(output_mult[:-1], middle_index, value)
-        return output_mult
+    def _get_alternate_capacity_equivalent(self, classification=True):
+        output_mult = np.zeros(len(self.shape)+1)
+        output_mult[0] = 2
+        output_mult[-1] = 1 if classification else 2
+        i = 1
+        while i <= len(self.shape)-i:
+            if i == len(self.shape)-i:
+                m_inf = self.shape[i - 1].output_size
+                m_sup = self.shape[i + 1].output_size
+                output_mult[i] = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
+            else:
+                output_mult[i] = 2 if output_mult[i-1] == 1 else 1
+                output_mult[-1-i] = 2 if output_mult[-i] == 1 else 1
+            i += 1
+        return output_mult[1:]
 
-    def get_real_equivalent(self, classifier=True, capacity_equivalent=True, name=None):
+    def get_real_equivalent(self, classifier=True, capacity_equivalent=True, equiv_technique='ratio', name=None):
         """
         Creates a new model equivalent of current model. If model is already real throws and error.
         :param classifier: True (default) if the model is a classification model. False otherwise.
+        :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
+                        trainable parameters (capacity equivalent according to (https://arxiv.org/abs/1811.12351)
+            - True, it creates a capacity-equivalent model in terms of trainable parameters
+            - False, it will double all layer size (except the last one if classifier=True)
+        :param equiv_technique: Used to define the strategy of the capacity equivalent model.
+            This parameter is ignored if capacity_equivalent=False
         :param name: name of the new network to be created.
             If None (Default) it will use same name as current model with "_real_equiv" suffix
-        :param capacity_equivalent: If true, it creates a capacity-equivalent model (https://arxiv.org/abs/1811.12351)
-            If false, it will double all layers except from the last one.
         :return: CvnnModel() real equivalent model
         """
         if not self.is_complex():
             logger.error("model {} was already real".format(self.name))
             sys.exit(-1)
+        equiv_technique = equiv_technique.lower()
+        if equiv_technique not in {"ratio", "alternate"}:
+            logger.error("Invalid `equivalent_technique` argument: " + equiv_technique)
+            sys.exit(-1)
         # assert len(self.shape) != 0
         real_shape = []
         layers.ComplexLayer.last_layer_output_dtype = None
         layers.ComplexLayer.last_layer_output_size = None
-        output_mult = self._get_real_equivalent_multiplier(classifier, capacity_equivalent)
+        output_mult = self._get_real_equivalent_multiplier(classifier, capacity_equivalent, equiv_technique)
         for i, layer in enumerate(self.shape):
             if isinstance(layer, layers.ComplexLayer):
                 if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
@@ -779,7 +786,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.29'
+__version__ = '0.2.30'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

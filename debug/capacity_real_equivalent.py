@@ -18,7 +18,7 @@ def test_shape(input_size, output_size, shape_raw, classifier=True, capacity_equ
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,
                                 verbose=False, tensorboard=False)
-    result = complex_network._get_real_equivalent_multiplier(classifier, capacity_equivalent)
+    result = complex_network._get_real_equivalent_multiplier(classifier, capacity_equivalent, equiv_technique='ratio')
     rvnn = complex_network.get_real_equivalent(classifier, capacity_equivalent)
     complex_network.training_param_summary()
     rvnn.training_param_summary()
