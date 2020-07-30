@@ -16,7 +16,7 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
-from cvnn.utils import randomize, create_folder, transform_to_real
+from cvnn.utils import create_folder
 
 try:
     import cPickle as pickle
@@ -165,13 +165,15 @@ class CvnnModel:
                 sys.exit(-1)
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
-    def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True, equiv_technique='ratio'):
+    def _get_real_equivalent_multiplier(self, classifier: bool = True, capacity_equivalent: bool = True,
+                                        equiv_technique: str = 'ratio'):
         """
-        Returns an array (output_mult) of size self.shape (number of hidden layers + output layer)
+        Returns an array (output_multiplier) of size self.shape (number of hidden layers + output layer)
             one must multiply the real valued equivalent layer
         In other words, the real valued equivalent layer 'i' will have:
-            neurons_real_valued_layer[i] = output_mult[i] * neurons_complex_valued_layer[i]
-        :param classifier: Boolean (default = True) weather the model's task is a to classify (True) or a regression task (False)
+            neurons_real_valued_layer[i] = output_multiplier[i] * neurons_complex_valued_layer[i]
+        :param classifier: Boolean (default = True) weather the model's task is a to classify (True) or
+                                                                                            a regression task (False)
         :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
                         trainable parameters (capacity equivalent according to (https://arxiv.org/abs/1811.12351)
             - True, it creates a capacity-equivalent model in terms of trainable parameters
@@ -181,25 +183,26 @@ class CvnnModel:
             - 'ratio': neurons_real_valued_layer[i] = r * neurons_complex_valued_layer[i], 'r' constant for all 'i'
             - 'alternate': Method described in https://arxiv.org/abs/1811.12351 where one alternates between
                     multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.
-        :return: output_mult
+        :return: output_multiplier
         """
         if capacity_equivalent:
-            if equiv_technique == 'alternate':
-                output_mult = self._get_alternate_capacity_equivalent(classifier)
-            elif equiv_technique == 'ratio':
-                output_mult = self._get_ratio_capacity_equivalent(classifier)
+            if equiv_technique == "alternate":
+                output_multiplier = self._get_alternate_capacity_equivalent(classifier)
+            elif equiv_technique == "ratio":
+                output_multiplier = self._get_ratio_capacity_equivalent(classifier)
             else:
                 logger.error("Unknown equiv_technique " + equiv_technique)
                 sys.exit(-1)
         else:
-            output_mult = 2 * np.ones(len(self.shape)).astype(int)
+            output_multiplier = 2 * np.ones(len(self.shape)).astype(int)
             if classifier:
-                output_mult[-1] = 1
-        return output_mult
+                output_multiplier[-1] = 1
+        return output_multiplier
 
-    def _get_ratio_capacity_equivalent(self, classification=True, bias_adjust=True):
+    def _get_ratio_capacity_equivalent(self, classification: bool = True, bias_adjust: bool = True):
         """
-        Generates output_mult keeping not only the same capacity but keeping a constant ratio between the model's layers
+        Generates output_multiplier keeping not only the same capacity but keeping a constant ratio between the
+                                                                                                        model's layers
         This helps keeps the 'aspect' or shape of the model my making:
             neurons_real_layer_i = ratio * neurons_complex_layer_i
         :param classification: True (default) if the model is a classification model. False otherwise.
@@ -211,49 +214,51 @@ class CvnnModel:
         x_c = [self.shape[i].output_size for i in range(len(self.shape[:-1]))]
         p_c = np.sum([2 * x.input_size * x.output_size for x in self.shape])  # real valued complex trainable params
         if bias_adjust:
-            p_c = p_c + 2*np.sum(x_c) + 2*model_out_c
-        model_in_r = 2*model_in_c
-        model_out_r = model_out_c if classification else 2*model_out_c
+            p_c = p_c + 2 * np.sum(x_c) + 2 * model_out_c
+        model_in_r = 2 * model_in_c
+        model_out_r = model_out_c if classification else 2 * model_out_c
         # Quadratic equation
-        C = -p_c
-        B = model_in_r * x_c[0] + model_out_r
+        quadratic_c = -p_c
+        quadratic_b = model_in_r * x_c[0] + model_out_r
         if bias_adjust:
-            B = B + np.sum(x_c) + model_out_c
-        A = np.sum([x_c[i] * x_c[i+1] for i in range(len(x_c) - 1)])
+            quadratic_b = quadratic_b + np.sum(x_c) + model_out_c
+        quadratic_a = np.sum([x_c[i] * x_c[i + 1] for i in range(len(x_c) - 1)])
 
-        ratio = (-B + np.sqrt(B**2 - 4*C*A)) / (2*A)        # The result MUST be positive so I use the '+' solution
+        ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
+        # The result MUST be positive so I use the '+' solution
         # set_trace()
         if not 1 <= ratio <= 2:
             logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
         # set_trace()
-        return [ratio]*len(x_c) + [1 if classification else 2]
+        return [ratio] * len(x_c) + [1 if classification else 2]
 
-    def _get_alternate_capacity_equivalent(self, classification=True):
+    def _get_alternate_capacity_equivalent(self, classification: bool = True):
         """
-        Generates output_mult using the alternate method described in https://arxiv.org/abs/1811.12351 which doubles
-            or not the layer if it's neighbor was doubled or not (making the opposite).
-        The code fills output_mult from both senses:
-            output_mult = [ ... , .... ]
+        Generates output_multiplier using the alternate method described in https://arxiv.org/abs/1811.12351 which
+            doubles or not the layer if it's neighbor was doubled or not (making the opposite).
+        The code fills output_multiplier from both senses:
+            output_multiplier = [ ... , .... ]
                           --->     <---
         If when both ends meet there's not a coincidence (example: [..., 1, 1, ...]) then
             the code will find a compromise between the two to keep the same real valued trainable parameters.
         """
-        output_mult = np.zeros(len(self.shape)+1)
-        output_mult[0] = 2
-        output_mult[-1] = 1 if classification else 2
+        output_multiplier = np.zeros(len(self.shape) + 1)
+        output_multiplier[0] = 2
+        output_multiplier[-1] = 1 if classification else 2
         i: int = 1
         while i <= len(self.shape) - i:
-            output_mult[i] = 2 if output_mult[i-1] == 1 else 1      # From beginning
-            output_mult[-1-i] = 2 if output_mult[-i] == 1 else 1    # From the end
-            if i == len(self.shape) - i and output_mult[i - 1] != output_mult[i + 1] or \
-                    i + 1 == len(self.shape) - i and output_mult[i] == output_mult[i + 1]:
+            output_multiplier[i] = 2 if output_multiplier[i - 1] == 1 else 1  # From beginning
+            output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1  # From the end
+            if i == len(self.shape) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
+                    i + 1 == len(self.shape) - i and output_multiplier[i] == output_multiplier[i + 1]:
                 m_inf = self.shape[i - 1].output_size
                 m_sup = self.shape[i + 1].output_size
-                output_mult[i] = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
+                output_multiplier[i] = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
             i += 1
-        return output_mult[1:]
+        return output_multiplier[1:]
 
-    def get_real_equivalent(self, classifier=True, capacity_equivalent=True, equiv_technique='ratio', name=None):
+    def get_real_equivalent(self, classifier: bool = True, capacity_equivalent: bool = True,
+                            equiv_technique: str = 'ratio', name: str = None):
         """
         Creates a new model equivalent of current model. If model is already real throws and error.
         :param classifier: True (default) if the model is a classification model. False otherwise.
@@ -281,12 +286,13 @@ class CvnnModel:
         real_shape = []
         layers.ComplexLayer.last_layer_output_dtype = None
         layers.ComplexLayer.last_layer_output_size = None
-        output_mult = self._get_real_equivalent_multiplier(classifier, capacity_equivalent, equiv_technique)
+        output_multiplier = self._get_real_equivalent_multiplier(classifier, capacity_equivalent, equiv_technique)
         for i, layer in enumerate(self.shape):
             if isinstance(layer, layers.ComplexLayer):
                 if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
-                    real_shape.append(layer.get_real_equivalent(output_multiplier=output_mult[i],
-                                                                input_multiplier=output_mult[i - 1] if i > 0 else 2))
+                    real_shape.append(layer.get_real_equivalent(
+                        output_multiplier=output_multiplier[i],
+                        input_multiplier=output_multiplier[i - 1] if i > 0 else 2))
                 else:
                     real_shape.append(layer.get_real_equivalent())
             else:
@@ -325,14 +331,14 @@ class CvnnModel:
         :return: None
         """
         with tf.GradientTape() as tape:
-            with tf.name_scope("Forward_Phase") as scope:
+            with tf.name_scope("Forward_Phase"):
                 x_called = self.call(x_train_batch)  # Forward mode computation
             # Loss function computation
-            with tf.name_scope("Loss") as scope:
+            with tf.name_scope("Loss"):
                 current_loss = self._apply_loss(y_train_batch, x_called)  # Compute loss
 
         # Calculating gradient
-        with tf.name_scope("Gradient") as scope:
+        with tf.name_scope("Gradient"):
             variables = []
             for lay in self.shape:
                 variables.extend(lay.trainable_variables())  # TODO: Debug this for all layers.
@@ -340,13 +346,13 @@ class CvnnModel:
             assert all(g is not None for g in gradients)
 
         # Backpropagation
-        with tf.name_scope("Optimizer") as scope:
+        with tf.name_scope("Optimizer"):
             for i, val in enumerate(variables):
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
     def fit(self, x, y,
             validation_split=0.0, x_test=None, y_test=None,
-            learning_rate=0.01, epochs: int = 10, batch_size: int = 32,
+            learning_rate: float = 0.01, epochs: int = 10, batch_size: int = 32,
             verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
@@ -354,8 +360,12 @@ class CvnnModel:
 
         :param x: Input data.
         :param y: Labels
-        :param validation_split: Percentage of the input data to be used as train set (the rest will be use as validation set)
-            Default: 0.8 (80% as train set and 20% as validation set)
+        :param validation_split: Percentage of the input data to be used as train set (the rest will be use
+                                                                                                    as validation set)
+            Default: 0.8 (80% as train set and 20% as validation set).
+            This input is ignored if x_test and y_test is given.
+        :param x_test: Input test set (default None)
+        :param y_test: Labels test set (default None)
         :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
@@ -823,7 +833,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.31'
+__version__ = '0.2.32'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
