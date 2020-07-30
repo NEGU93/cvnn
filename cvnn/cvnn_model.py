@@ -166,6 +166,23 @@ class CvnnModel:
         return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
 
     def _get_real_equivalent_multiplier(self, classifier=True, capacity_equivalent=True, equiv_technique='ratio'):
+        """
+        Returns an array (output_mult) of size self.shape (number of hidden layers + output layer)
+            one must multiply the real valued equivalent layer
+        In other words, the real valued equivalent layer 'i' will have:
+            neurons_real_valued_layer[i] = output_mult[i] * neurons_complex_valued_layer[i]
+        :param classifier: Boolean (default = True) weather the model's task is a to classify (True) or a regression task (False)
+        :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
+                        trainable parameters (capacity equivalent according to (https://arxiv.org/abs/1811.12351)
+            - True, it creates a capacity-equivalent model in terms of trainable parameters
+            - False, it will double all layer size (except the last one if classifier=True)
+        :param equiv_technique: Used to define the strategy of the capacity equivalent model.
+            This parameter is ignored if capacity_equivalent=False
+            - 'ratio': neurons_real_valued_layer[i] = r * neurons_complex_valued_layer[i], 'r' constant for all 'i'
+            - 'alternate': Method described in https://arxiv.org/abs/1811.12351 where one alternates between
+                    multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.
+        :return: output_mult
+        """
         if capacity_equivalent:
             if equiv_technique == 'alternate':
                 output_mult = self._get_alternate_capacity_equivalent(classifier)
@@ -181,6 +198,14 @@ class CvnnModel:
         return output_mult
 
     def _get_ratio_capacity_equivalent(self, classification=True, bias_adjust=True):
+        """
+        Generates output_mult keeping not only the same capacity but keeping a constant ratio between the model's layers
+        This helps keeps the 'aspect' or shape of the model my making:
+            neurons_real_layer_i = ratio * neurons_complex_layer_i
+        :param classification: True (default) if the model is a classification model. False otherwise.
+        :param bias_adjust: True (default) if taking into account the bias as a trainable parameter. If not it will
+            only match the real valued parameters of the weights
+        """
         model_in_c = self.shape[0].input_size
         model_out_c = self.shape[-1].output_size
         x_c = [self.shape[i].output_size for i in range(len(self.shape[:-1]))]
@@ -204,18 +229,27 @@ class CvnnModel:
         return [ratio]*len(x_c) + [1 if classification else 2]
 
     def _get_alternate_capacity_equivalent(self, classification=True):
+        """
+        Generates output_mult using the alternate method described in https://arxiv.org/abs/1811.12351 which doubles
+            or not the layer if it's neighbor was doubled or not (making the opposite).
+        The code fills output_mult from both senses:
+            output_mult = [ ... , .... ]
+                          --->     <---
+        If when both ends meet there's not a coincidence (example: [..., 1, 1, ...]) then
+            the code will find a compromise between the two to keep the same real valued trainable parameters.
+        """
         output_mult = np.zeros(len(self.shape)+1)
         output_mult[0] = 2
         output_mult[-1] = 1 if classification else 2
-        i = 1
-        while i <= len(self.shape)-i:
-            if i == len(self.shape)-i:
+        i: int = 1
+        while i <= len(self.shape) - i:
+            output_mult[i] = 2 if output_mult[i-1] == 1 else 1      # From beginning
+            output_mult[-1-i] = 2 if output_mult[-i] == 1 else 1    # From the end
+            if i == len(self.shape) - i and output_mult[i - 1] != output_mult[i + 1] or \
+                    i + 1 == len(self.shape) - i and output_mult[i] == output_mult[i + 1]:
                 m_inf = self.shape[i - 1].output_size
                 m_sup = self.shape[i + 1].output_size
                 output_mult[i] = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
-            else:
-                output_mult[i] = 2 if output_mult[i-1] == 1 else 1
-                output_mult[-1-i] = 2 if output_mult[-i] == 1 else 1
             i += 1
         return output_mult[1:]
 
@@ -229,6 +263,9 @@ class CvnnModel:
             - False, it will double all layer size (except the last one if classifier=True)
         :param equiv_technique: Used to define the strategy of the capacity equivalent model.
             This parameter is ignored if capacity_equivalent=False
+            - 'ratio': neurons_real_valued_layer[i] = r * neurons_complex_valued_layer[i], 'r' constant for all 'i'
+            - 'alternate': Method described in https://arxiv.org/abs/1811.12351 where one alternates between
+                    multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.
         :param name: name of the new network to be created.
             If None (Default) it will use same name as current model with "_real_equiv" suffix
         :return: CvnnModel() real equivalent model
@@ -786,7 +823,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.30'
+__version__ = '0.2.31'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
