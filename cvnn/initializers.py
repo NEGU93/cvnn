@@ -379,7 +379,7 @@ class HeUniform(RandomInitializer):
     """
     __name__ = "He Uniform"
 
-    def __init__(self, seed):
+    def __init__(self, seed=None):
         super(HeUniform, self).__init__(distribution="uniform", seed=seed)
 
     def __call__(self, shape, dtype=tf.dtypes.complex64):
