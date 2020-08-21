@@ -1041,7 +1041,12 @@ class MonteCarloAnalyzer:
         return fig, ax
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
+    path = "W:\HardDiskDrive\Documentos\GitHub\cvnn\\results\one hidden layer\Dropout\\1HL_dropout\\run_data.csv"
+    monte = MonteCarloAnalyzer(path=path)
+    # monte.plot_histogram(key='test accuracy', library='seaborn')
+    monte.box_plot(library='seaborn')
+
 
 
 __author__ = 'J. Agustin BARRACHINA'
