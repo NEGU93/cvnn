@@ -218,18 +218,20 @@ class CvnnModel:
         model_in_r = 2 * model_in_c
         model_out_r = model_out_c if classification else 2 * model_out_c
         # Quadratic equation
-        quadratic_c = -p_c
-        quadratic_b = model_in_r * x_c[0] + model_out_r
-        if bias_adjust:
-            quadratic_b = quadratic_b + np.sum(x_c) + model_out_c
-        quadratic_a = np.sum([x_c[i] * x_c[i + 1] for i in range(len(x_c) - 1)])
+        if len(x_c) > 1:
+            quadratic_c = -p_c
+            quadratic_b = model_in_r * x_c[0] + model_out_r
+            if bias_adjust:
+                quadratic_b = quadratic_b + np.sum(x_c) + model_out_c
+            quadratic_a = np.sum([x_c[i] * x_c[i + 1] for i in range(len(x_c) - 1)])
 
-        ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
-        # The result MUST be positive so I use the '+' solution
-        # set_trace()
-        if not 1 <= ratio <= 2:
-            logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
-        # set_trace()
+            ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
+            # The result MUST be positive so I use the '+' solution
+            set_trace()
+            if not 1 <= ratio <= 2:
+                logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
+        else:
+            ratio = 2 * (model_in_c + model_out_c) / (model_in_r + model_out_r)     # TODO: Verify
         return [ratio] * len(x_c) + [1 if classification else 2]
 
     def _get_alternate_capacity_equivalent(self, classification: bool = True):
@@ -263,7 +265,7 @@ class CvnnModel:
         Creates a new model equivalent of current model. If model is already real throws and error.
         :param classifier: True (default) if the model is a classification model. False otherwise.
         :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
-                        trainable parameters (capacity equivalent according to (https://arxiv.org/abs/1811.12351)
+                        trainable parameters (capacity equivalent according to: https://arxiv.org/abs/1811.12351)
             - True, it creates a capacity-equivalent model in terms of trainable parameters
             - False, it will double all layer size (except the last one if classifier=True)
         :param equiv_technique: Used to define the strategy of the capacity equivalent model.

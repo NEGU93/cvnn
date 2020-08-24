@@ -105,11 +105,12 @@ class MonteCarlo:
 
 class RealVsComplex(MonteCarlo):
 
-    def __init__(self, complex_model):
+    def __init__(self, complex_model, capacity_equivalent=True, equiv_technique='ratio'):
         super().__init__()
         # add models
         self.add_model(complex_model)
-        self.add_model(complex_model.get_real_equivalent(name="real_network"))
+        self.add_model(complex_model.get_real_equivalent(capacity_equivalent=capacity_equivalent,
+                                                         equiv_technique=equiv_technique, name="real_network"))
 
 
 # ====================================
@@ -158,7 +159,7 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
         ]
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
     mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq, learning_rate,
-                                       shape_raw, activation, debug, polar, do_all, dropout)
+                                       shape_raw, activation, debug, polar, do_all, dropout=dropout)
 
 
 def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=1000,
@@ -188,13 +189,13 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
                        input_dtype=np.complex64, dropout=dropout)]
         for i in range(1, len(shape_raw)):
             shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=dropout))
-        shape.append(Dense(output_size=output_size, activation='softmax_real'))
+        shape.append(Dense(output_size=output_size, activation='softmax_real', dropout=None))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,
                                 verbose=False, tensorboard=False)
 
     # Monte Carlo
-    monte_carlo = RealVsComplex(complex_network)
+    monte_carlo = RealVsComplex(complex_network, capacity_equivalent=False)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
@@ -217,7 +218,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
                                       dataset_name=dataset.dataset_name,
                                       hl=str(len(shape_raw)), shape=str(shape_raw),
                                       dropout=str(dropout), num_classes=str(dataset.y.shape[1]),
-                                      polar_mode='Yes' if polar == 'Apple' else 'No',
+                                      polar_mode='Yes' if polar else 'No',
                                       learning_rate=learning_rate, activation=activation,
                                       dataset_size=str(dataset.x.shape[0]),
                                       feature_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size,
