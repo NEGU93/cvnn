@@ -453,9 +453,10 @@ class Plotter:
         """
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
         self._csv_to_pandas()
-        if len(self.pandas_list) == 0:        # TODO: Should I cach this here or in _csv_to_pandas function?
+        if len(self.pandas_list) == 0:
             logger.error("Error: There was no csv logs to open")
             sys.exit(-1)
+        set_trace()
         length = len(self.pandas_list[0])
         for data_frame in self.pandas_list:  # TODO: Check if.
             if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?
