@@ -66,6 +66,9 @@ if OWN_MODEL:
     X_test = normalize(X_test)
     y_test = Dataset.sparse_into_categorical(y_test, 10)
     y_train = Dataset.sparse_into_categorical(y_train, 10)
+    print(len(y_test))
+    train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(buffer_size=100)
+    test_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
     shape = [
         layers.Flatten(input_size=(28, 28, 1), input_dtype=np.float32),
         layers.Dense(output_size=128, activation='cart_relu', input_dtype=np.float32, dropout=None),
@@ -73,6 +76,6 @@ if OWN_MODEL:
     ]
     model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
-    model.fit(X_train, y_train, x_test=X_test, y_test=y_test, batch_size=128, epochs=6,
+    model.fit(x=train_dataset, y=None, validation_data=test_dataset, batch_size=128, epochs=6,
               verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
 

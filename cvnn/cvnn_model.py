@@ -353,9 +353,9 @@ class CvnnModel:
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
     def fit(self, x, y,
-            validation_split=0.0, x_test=None, y_test=None,
+            validation_split=0.0, validation_data=None,
             learning_rate: float = 0.01, epochs: int = 10, batch_size: int = 32,
-            verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,
+            verbose=True, display_freq=1, fast_mode=True, save_txt_fit_summary=False,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
@@ -395,24 +395,12 @@ class CvnnModel:
         if not learning_rate > 0:
             logger.error("Learning rate must be positive", exc_info=True)
             sys.exit(-1)
-        if display_freq is None:
-            display_freq = int((x.shape[0] * (1 - validation_split)) / batch_size)  # Match the epoch number
 
         # Prepare dataset
-        if x_test is None or y_test is None:
-            assert 0 <= validation_split < 1, "Ratio should be between [0, 1)"
-            dataset_length = np.shape(x)[0]
-            x_train = x[int(dataset_length * validation_split):]
-            y_train = y[int(dataset_length * validation_split):]
-            x_test = x[:int(dataset_length * validation_split)]
-            y_test = y[:int(dataset_length * validation_split)]
-            if len(x_test) == 0:
-                x_test = None
-                y_test = None
-        else:
-            x_train = x
-            y_train = y
-        train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size=batch_size)
+        train_dataset, test_dataset = self._get_dataset(x, y, validation_split, validation_data)
+        train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
+        x_test = np.array(test_dataset[0])
+        y_test = np.array(test_dataset[1])
 
         # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
@@ -420,53 +408,60 @@ class CvnnModel:
         if save_txt_fit_summary:
             save_fit_filename = "fit_" + str(fit_count) + ".txt"
         # Print start condition
-        start_status = self._get_str_evaluate(self.epochs_done, epochs, x_train, y_train, x_test, y_test,
-                                              fast_mode=fast_mode)
-        self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
+        """start_status = self._get_str_evaluate(self.epochs_done, epochs, x_train, y_train, x_test, y_test,
+                                              fast_mode=fast_mode)"""
+        """self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
                             "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
-                            start_status, verbose, save_fit_filename)
+                            start_status, verbose, save_fit_filename)"""
         # -----------------------------------------------------
         # input processing ended
-        num_tr_iter = int(x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
+        # num_tr_iter = int(x_train.shape[0] / batch_size)  # Number of training iterations in each epoch
         epochs_before_fit = self.epochs_done
         start_time = perf_counter()
+        total_iteration = None
         for epoch in range(epochs):
-            iteration = 0
             if verbose:
+                iteration = 0
                 tf.print("\nEpoch {0}/{1}".format(self.epochs_done, epochs))
-                progbar = tf.keras.utils.Progbar(num_tr_iter)
+                progbar = tf.keras.utils.Progbar(total_iteration,
+                                                 stateful_metrics=[('loss', 0), ('accuracy', 0),
+                                                                   ('val_loss', 0), ('val_accuracy', 0)])
             # Randomly shuffle the training data at the beginning of each epoch
             if shuffle:
-                train_dataset = train_dataset.shuffle(buffer_size=5000)
+                train_dataset = train_dataset.shuffle(buffer_size=50000)
             for x_batch, y_batch in train_dataset.prefetch(tf.data.experimental.AUTOTUNE).cache():
                 if verbose:
-                    progbar.update(iteration)
-                iteration += 1
-                # Save checkpoint if needed
-                if ((epochs_before_fit + epoch) * num_tr_iter + iteration) % display_freq == 0:
-                    self._run_checkpoint(x_batch, y_batch, x_test, y_test,  # Shall I use batch to be more efficient?
-                                         step=(epochs_before_fit + epoch) * num_tr_iter + iteration,
-                                         num_tr_iter=num_tr_iter, total_epochs=epochs_before_fit + epochs,
-                                         fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
-                                         save_model_checkpoints=save_model_checkpoints,
-                                         save_csv_checkpoints=save_csv_history)
+                    progbar.update(iteration, values=self.evaluate_train_and_test(x_batch, y_batch, None, None)[:2])
+                    iteration += 1
                 # Run optimization op (backpropagation)
-                # x_batch, y_batch = dataset.get_next_batch()  # Get the next batch
                 self._start_graph_tensorflow()
                 self._train_step(x_batch, y_batch, learning_rate)
                 self._end_graph_tensorflow()
+            if total_iteration is None:
+                total_iteration = iteration
+            progbar.update(iteration,
+                           values=self.evaluate_train_and_test(x_batch, y_batch, x_test, y_test),
+                           finalize=True)
+            # Save checkpoint if needed
+            if (epochs_before_fit + epoch) % display_freq == 0:
+                """self._run_checkpoint(x_batch, y_batch, x_test, y_test,  # Shall I use batch to be more efficient?
+                                     epoch=(epochs_before_fit + epoch),
+                                     total_epochs=epochs_before_fit + epochs,
+                                     fast_mode=fast_mode, verbose=False, save_fit_filename=save_fit_filename,
+                                     save_model_checkpoints=save_model_checkpoints,
+                                     save_csv_checkpoints=save_csv_history)"""
             self.epochs_done += 1
 
         # After epochs
         end_time = perf_counter()
-        self._run_checkpoint(x_train, y_train, x_test, y_test,
+        """self._run_checkpoint(x_train, y_train, x_test, y_test,
                              step=epochs * num_tr_iter + num_tr_iter, num_tr_iter=num_tr_iter,
-                             total_epochs=epochs_before_fit + epochs, fast_mode=False)
-        end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test, fast_mode=fast_mode)
-        self._manage_string("Train finished...\n" +
+                             total_epochs=epochs_before_fit + epochs, fast_mode=False)"""
+        """end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test, fast_mode=fast_mode)"""
+        """self._manage_string("Train finished...\n" +
                             end_status +
                             "\nTraining time: {}s".format(strftime("%H:%M:%S", gmtime(end_time - start_time))),
-                            verbose, save_fit_filename)
+                            verbose, save_fit_filename)"""
         self.plotter.reload_data()
 
     """
@@ -486,6 +481,49 @@ class CvnnModel:
             if '_thread_local' in dir(attr):
                 cls._loadtolocal(attr)
     """
+
+    @staticmethod
+    def _get_dataset(x, y, validation_split=0.0, validation_data=None):
+        test_dataset = None
+        if isinstance(x, (list, tuple, np.ndarray)):
+            if validation_data is None:
+                assert 0 <= validation_split < 1, "Ratio should be between [0, 1)"
+                dataset_length = np.shape(x)[0]
+                x_train = x[int(dataset_length * validation_split):]
+                y_train = y[int(dataset_length * validation_split):]
+                x_test = x[:int(dataset_length * validation_split)]
+                y_test = y[:int(dataset_length * validation_split)]
+                if len(x_test) != 0:
+                    validation_data = (x_test, y_test)
+                train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+            else:
+                if validation_split != 0:
+                    logger.warning("validation_split was given but will be ignored because "
+                                   "validation_data was not None")
+                train_dataset = tf.data.Dataset.from_tensor_slices((x, y))
+        elif isinstance(x, tf.data.Dataset):
+            if y is not None:
+                logger.warning("y is ignored because x was a Dataset (and should contain the labels), "
+                               "however, y was not None")
+            train_dataset = x
+        else:
+            logger.error("dataset type ({}) not supported".format(type(x)))
+            sys.exit(-1)
+        if validation_data is not None:
+            if isinstance(validation_data, (list, tuple, np.ndarray)):
+                test_dataset = validation_data
+            elif isinstance(validation_data, tf.data.Dataset):
+                x_test = []
+                y_test = []
+                for element in validation_data:
+                    x_test.append(element[0])
+                    y_test.append(element[1])
+                test_dataset = [x_test, y_test]
+            else:
+                logger.error("validation_data type ({}) not supported ".format(type(validation_data)))
+                sys.exit(-1)
+        assert isinstance(test_dataset, (list, tuple, np.ndarray)) or test_dataset is None
+        return train_dataset, test_dataset
 
     @classmethod  # https://stackoverflow.com/a/2709848/5931672
     def loader(cls, f):
@@ -536,11 +574,10 @@ class CvnnModel:
 
     def evaluate_train_and_test(self, train_x, train_y, test_x, test_y):
         train_loss, train_acc = self.evaluate(train_x, train_y)
-        if test_x is None or test_y is None:
-            return train_loss, train_acc, None, None
-        else:
+        test_loss, test_acc = None, None
+        if test_x is not None and test_y is not None:
             test_loss, test_acc = self.evaluate(test_x, test_y)
-            return train_loss, train_acc, test_loss, test_acc
+        return [('loss', train_loss), ('accuracy', train_acc), ('val_loss', test_loss), ('val_accuracy', test_acc)]
 
     def get_confusion_matrix(self, x, y, save_result=False):
         """
@@ -829,7 +866,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.32'
+__version__ = '0.2.33'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
