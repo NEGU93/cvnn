@@ -7,7 +7,8 @@ from keras.datasets import mnist
 from pdb import set_trace
 from cvnn.dataset import Dataset
 
-KERAS_DEBUG = True
+KERAS_DEBUG = False
+OWN_MODEL = True
 
 tfds.disable_progress_bar()
 tf.enable_v2_behavior()
@@ -23,6 +24,7 @@ def normalize(image):
 
 
 if KERAS_DEBUG:
+    # https://www.tensorflow.org/datasets/keras_example
     (ds_train, ds_test), ds_info = tfds.load(
         'mnist',
         split=['train', 'test'],
@@ -49,7 +51,7 @@ if KERAS_DEBUG:
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
-        optimizer=tf.keras.optimizers.SGD(learning_rate=0.01),
+        optimizer=tf.keras.optimizers.SGD(learning_rate=0.01),  # ATTENTION: The only difference with the link.
         metrics=['accuracy'],
     )
     model.fit(
@@ -58,7 +60,7 @@ if KERAS_DEBUG:
         validation_data=ds_test,
     )
 
-else:
+if OWN_MODEL:
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
     X_train = normalize(X_train)
     X_test = normalize(X_test)
@@ -69,7 +71,7 @@ else:
         layers.Dense(output_size=128, activation='cart_relu', input_dtype=np.float32, dropout=None),
         layers.Dense(output_size=10, activation='softmax_real')
     ]
-    model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
+    model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
     model.fit(X_train, y_train, x_test=X_test, y_test=y_test, batch_size=128, epochs=6,
               verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
