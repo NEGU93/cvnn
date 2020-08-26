@@ -399,8 +399,6 @@ class CvnnModel:
             display_freq = int((x.shape[0] * (1 - validation_split)) / batch_size)  # Match the epoch number
 
         # Prepare dataset
-        # categorical = (len(np.shape(y)) > 1)
-        # dataset = dp.Dataset(x, y, ratio=ratio, batch_size=batch_size, savedata=False, categorical=categorical)
         if x_test is None or y_test is None:
             assert 0 <= validation_split < 1, "Ratio should be between [0, 1)"
             dataset_length = np.shape(x)[0]
@@ -415,10 +413,6 @@ class CvnnModel:
             x_train = x
             y_train = y
         train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size=batch_size)
-        """if validation_split != 1:
-            test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-        else:
-            test_dataset = None"""
 
         # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt

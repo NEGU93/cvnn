@@ -456,7 +456,6 @@ class Plotter:
         if len(self.pandas_list) == 0:
             logger.error("Error: There was no csv logs to open")
             sys.exit(-1)
-        set_trace()
         length = len(self.pandas_list[0])
         for data_frame in self.pandas_list:  # TODO: Check if.
             if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?

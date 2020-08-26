@@ -32,7 +32,7 @@ class MonteCarlo:
     def add_model(self, model):
         self.models.append(model)
 
-    def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, ratio=0.8,
+    def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, validation_split=0.2,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
             shuffle=False, debug=False, display_freq=None, checkpoints=False):
         x, y = randomize(x, y)
@@ -58,14 +58,14 @@ class MonteCarlo:
                 else:
                     x_fit = transform_to_real(x, polar=polar)
                 test_model = copy.deepcopy(model)
-                test_model.fit(x_fit, y, validation_split=ratio,
+                test_model.fit(x_fit, y, validation_split=validation_split,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, fast_mode=True, save_txt_fit_summary=False, display_freq=display_freq,
                                save_csv_history=True)
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
-                    dataset = dp.Dataset(x_fit, y, ratio=ratio)
+                    dataset = dp.Dataset(x_fit, y, ratio=1-validation_split)
                     self.confusion_matrix[i]["name"] = test_model.name
                     self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
                                                                     test_model.get_confusion_matrix(dataset.x_test,
@@ -291,4 +291,4 @@ def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mo
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    set_trace()
+    run_gaussian_dataset_montecarlo(iterations=10, dropout=None)
