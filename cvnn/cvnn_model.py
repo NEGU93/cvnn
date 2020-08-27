@@ -785,7 +785,7 @@ class CvnnModel:
         """
         Prints a string to console and/or saves it to a file
         :param string: String to be printed/saved
-        :param verbose: TODO
+        :param verbose: String (Default 'SILENT'). If "DEBUG" it will print the message into the logger as info.
         :param filename: Filename where to save the string. If None it will not save it (default: None)
         :param mode: Mode to open the filename
         :return: None
@@ -911,7 +911,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.39'
+__version__ = '0.2.40'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

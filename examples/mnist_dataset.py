@@ -7,7 +7,7 @@ from keras.datasets import mnist
 from pdb import set_trace
 from cvnn.dataset import Dataset
 
-KERAS_DEBUG = False
+KERAS_DEBUG = True
 OWN_MODEL = True
 
 tfds.disable_progress_bar()
@@ -57,7 +57,7 @@ if KERAS_DEBUG:
         ds_train,
         epochs=6,
         validation_data=ds_test,
-        verbose=2
+        verbose=1
     )
 
 if OWN_MODEL:
@@ -69,5 +69,5 @@ if OWN_MODEL:
     model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
                       tensorboard=False, verbose=False)
     model.fit(x=ds_train, y=None, validation_data=ds_test, batch_size=128, epochs=6,
-              verbose=4, save_csv_history=True)
+              verbose=1, save_csv_history=True)
 
