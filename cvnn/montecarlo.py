@@ -34,7 +34,7 @@ class MonteCarlo:
 
     def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, validation_split=0.2,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
-            shuffle=False, debug=False, display_freq=None, checkpoints=False):
+            shuffle=False, debug=False, display_freq=1, checkpoints=False):
         x, y = randomize(x, y)
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
@@ -117,7 +117,7 @@ class RealVsComplex(MonteCarlo):
 #     Excel logging
 # ====================================
 def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
-                   epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
+                   epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
                    debug=False, polar=False, do_all=True):
     if open_dataset:
         dataset = dp.OpenDataset(open_dataset)  # Warning, open_dataset overwrites dataset
@@ -148,7 +148,7 @@ def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
 
 
 def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
-                                    epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
+                                    epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
                                     shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                     dropout=None):
     # Get parameters
@@ -163,7 +163,7 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
 
 
 def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=1000,
-                                       epochs=150, batch_size=100, display_freq=None, learning_rate=0.01,
+                                       epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
                                        shape_raw=None, activation='cart_relu',
                                        debug=False, polar=False, do_all=True, dropout=0.5):
     if shape_raw is None:
