@@ -60,8 +60,8 @@ class MonteCarlo:
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y, validation_split=validation_split,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
-                               verbose=debug, fast_mode=True, save_txt_fit_summary=False, display_freq=display_freq,
-                               save_csv_history=True)
+                               verbose=debug, display_freq=display_freq,
+                               save_csv_history=True)   # Must have save_csv_history to do the montecarlo results latter
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
@@ -292,4 +292,4 @@ def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mo
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_gaussian_dataset_montecarlo(iterations=10, dropout=None)
+    run_gaussian_dataset_montecarlo(iterations=10, dropout=0.5)

@@ -69,5 +69,5 @@ if OWN_MODEL:
     model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
                       tensorboard=False, verbose=False)
     model.fit(x=ds_train, y=None, validation_data=ds_test, batch_size=128, epochs=6,
-              verbose=1, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
+              verbose=4, save_csv_history=True)
 
