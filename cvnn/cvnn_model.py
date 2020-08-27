@@ -429,10 +429,11 @@ class CvnnModel:
             # Save checkpoint if needed
             if (epochs_before_fit + epoch) % display_freq == 0:
                 self._run_checkpoint(x_batch, y_batch, x_test, y_test,  # Shall I use batch to be more efficient?
-                                     step=epochs * total_iteration + total_iteration, num_tr_iter=total_iteration,
-                                     total_epochs=epochs_before_fit + epochs, verbose="SILENT",
-                                     save_model_checkpoints=save_model_checkpoints,
-                                     save_csv_checkpoints=save_csv_history)
+                                     step=(epochs_before_fit + epoch) * total_iteration + total_iteration,
+                                     num_tr_iter=total_iteration, total_epochs=epochs_before_fit + epochs,
+                                     verbose="SILENT", save_model_checkpoints=save_model_checkpoints,
+                                     save_csv_checkpoints=save_csv_history,
+                                     fast_mode=True if verbose in ("SILENT", "FAST") else False)
             self.epochs_done += 1
 
         # After epochs
@@ -441,7 +442,8 @@ class CvnnModel:
         y_train = y_batch
         self._run_checkpoint(x_train, y_train, x_test, y_test,
                              step=epochs * total_iteration + total_iteration, num_tr_iter=total_iteration,
-                             total_epochs=epochs_before_fit + epochs)
+                             total_epochs=epochs_before_fit + epochs,
+                             fast_mode=False)       # I use false to save the csv file this time
         end_status = self._get_str_evaluate(epochs, epochs, x_train, y_train, x_test, y_test)
         self._manage_string("Train finished...\n" +
                             end_status +
@@ -625,7 +627,7 @@ class CvnnModel:
 
     def _run_checkpoint(self, x_train, y_train, x_test, y_test,
                         step=0, num_tr_iter=0, total_epochs=0, verbose="SILENT",
-                        save_model_checkpoints=False, save_csv_checkpoints=True):
+                        save_model_checkpoints=False, save_csv_checkpoints=True, fast_mode=False):
         """
         Saves whatever needs to be saved (tensorboard, csv of train and test acc and loss, model weigths, etc.
 
@@ -652,8 +654,7 @@ class CvnnModel:
             # It will take longer to run because I create a file each time
             # but if I don't do it and something happens I will loose all the information
             self._save_current_loss_and_acc(self.name + '_results_fit',
-                                            train_loss, train_acc, test_loss, test_acc, step,
-                                            fast_mode=True if verbose in ("SILENT", "FAST") else False)
+                                            train_loss, train_acc, test_loss, test_acc, step, fast_mode=fast_mode)
         if save_model_checkpoints:  # Save model weights
             self.save(test_loss, test_acc)
         if verbose != "SILENT":  # I first check if it makes sense to get the str
@@ -883,7 +884,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.37'
+__version__ = '0.2.38'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

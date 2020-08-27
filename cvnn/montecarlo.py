@@ -292,4 +292,4 @@ def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mo
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_gaussian_dataset_montecarlo(iterations=10, dropout=0.5)
+    run_gaussian_dataset_montecarlo(iterations=10, dropout=None)
