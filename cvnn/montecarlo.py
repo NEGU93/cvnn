@@ -242,6 +242,7 @@ def _create_excel_file(fieldnames, row_data, filename=None, percentage_cols=None
     if file_exists:
         wb = load_workbook(filename)
         ws = wb.worksheets[0]
+        del ws.tables["Table1"]
     else:
         wb = Workbook()
         ws = wb.worksheets[0]
@@ -291,4 +292,4 @@ def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mo
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_gaussian_dataset_montecarlo(iterations=10, dropout=None)
+    run_gaussian_dataset_montecarlo(iterations=2, epochs=20, dropout=None)

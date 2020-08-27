@@ -395,8 +395,8 @@ class CvnnModel:
         # Prepare dataset
         train_dataset, test_dataset = self._get_dataset(x, y, validation_split, validation_data)
         train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
-        x_test = tf.convert_to_tensor(test_dataset[0])
-        y_test = tf.convert_to_tensor(test_dataset[1])
+        x_test = test_dataset[0]
+        y_test = test_dataset[1]
         # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
         save_fit_filename = None
@@ -513,7 +513,7 @@ class CvnnModel:
                 x_test = x[:int(dataset_length * validation_split)]
                 y_test = y[:int(dataset_length * validation_split)]
                 if len(x_test) != 0:
-                    validation_data = (x_test, y_test)
+                    validation_data = (np.array(x_test), np.array(y_test))
                 train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
             else:
                 if validation_split != 0:
@@ -530,14 +530,16 @@ class CvnnModel:
             sys.exit(-1)
         if validation_data is not None:
             if isinstance(validation_data, (list, tuple, np.ndarray)):
-                test_dataset = validation_data
+                assert len(validation_data) == 2, \
+                    "validation_data must have size 2. Size was {}".format(len(validation_data))
+                test_dataset = np.array(validation_data[0]), np.array(validation_data[1])
             elif isinstance(validation_data, tf.data.Dataset):
                 x_test = []
                 y_test = []
                 for element in validation_data.unbatch():
-                    x_test.append(element[0])
-                    y_test.append(element[1])
-                test_dataset = [x_test, y_test]
+                    x_test.append(element[0].numpy())
+                    y_test.append(element[1].numpy())
+                test_dataset = [np.array(x_test), np.array(y_test)]
             else:
                 logger.error("validation_data type ({}) not supported ".format(type(validation_data)))
                 sys.exit(-1)
@@ -887,7 +889,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.34'
+__version__ = '0.2.35'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
