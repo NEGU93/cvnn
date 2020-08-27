@@ -344,7 +344,7 @@ class CvnnModel:
             for i, val in enumerate(variables):
                 val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
 
-    def fit(self, x, y,
+    def fit(self, x, y=None,
             validation_split=0.0, validation_data=None,
             learning_rate: float = 0.01, epochs: int = 10, batch_size: int = 32,
             verbose=True, display_freq: int = 1,
@@ -352,25 +352,41 @@ class CvnnModel:
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
 
-        :param x: Input data.
-        :param y: Labels
-        :param validation_split: Percentage of the input data to be used as train set (the rest will be use
-                                                                                                    as validation set)
-            Default: 0.8 (80% as train set and 20% as validation set).
-            This input is ignored if x_test and y_test is given.
-        :param x_test: Input test set (default None)
-        :param y_test: Labels test set (default None)
+        :param x: Input data. It could be:
+            - A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
+            - A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
+            - A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).
+        :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
+            If f x is a dataset then y will be ignored (default None)
+        :param validation_split: Float between 0 and 1.
+            Percentage of the input data to be used as test set (the rest will be use as train set)
+            Default: 0.0 (No validation set).
+            This input is ignored if validation_data is given.
+        :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
+            The model will not be trained on this data. This parameter takes precedence over validation_split.
+            It can be:
+                - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
+                - A tf.data dataset.
         :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
-        :param verbose: (Boolean) Print results of the training while training
-        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
-            If None (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
-        :param fast_mode: (Boolean) Does 2 things if False:
-                    1. Saves csv files with each checkpoint
-                    2. Prints loss and accuracy if verbose = True
-        :param save_txt_fit_summary: (Boolean) save a txt with the information of the fit
-                    (same as what will be printed if "verbose")
+        :param verbose: Verbosity Mode
+            It can be:
+                - Bool: False defaults to 0 and True to 1.
+                - Int
+                - String: Matching the modes string
+            Verbosity Modes:
+                - "SILENT" or 0:  No prints of any kind
+                - "FAST" or 2:    Does not show the progress bar of each epoch.
+                    Verbosity modes "FAST" and "SILENT" saves the csv file (if save_csv_history) less often.
+                    Making it faster riskier of data loss
+                - "PROBAR" or 4:  Shows progress bar but does not show accuracy or loss (helps on speed)
+                - "INFO" or 1:    Shows a progress bar with current accuracy and loss
+                - "DEBUG" or 3:   Shows start and end messages and also the progress bar with current accuracy and loss
+            Verbosity modes 0, 1 and 2 are coincident with tensorflow's fit verbose parameter:
+                https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit
+        :param display_freq: Integer (Default 1)
+            Frequency on terms of epochs before saving information and running a checkpoint.
         :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
         :param save_csv_history: Save information of the train and test loss and accuracy on csv files.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch. Default: True
@@ -625,13 +641,15 @@ class CvnnModel:
     # Checkpoints
     # ===========
 
-    def _run_checkpoint(self, x_train, y_train, x_test, y_test,
+    def _run_checkpoint(self, x_train, y_train, x_test=None, y_test=None,
                         step=0, num_tr_iter=0, total_epochs=0, verbose="SILENT",
                         save_model_checkpoints=False, save_csv_checkpoints=True, fast_mode=False):
         """
         Saves whatever needs to be saved (tensorboard, csv of train and test acc and loss, model weigths, etc.
-
-        :param dataset: dataset object of cvnn.dataset
+        :param x_train: Train data
+        :param y_train: Tran labels
+        :param x_test: Test data (optional)
+        :param y_test: Test labels (optional)
         :param step: step of the training.
         :param num_tr_iter: Total number of iterations per epoch.
         :param total_epochs: Total epochs to be done on the training.
@@ -639,7 +657,6 @@ class CvnnModel:
                 This will prevent the loss of data but will make the training longer.
                 Default: False.
         :param verbose: Print the results on console to visualize the training step.
-        :param save_fit_filename: Filename to save the training messages. If None, no information will be saved.
         :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
         :param save_csv_checkpoints: Save information of the train and test loss and accuracy on csv files.
         :return: None
@@ -665,6 +682,16 @@ class CvnnModel:
             self._manage_string(epoch_str, verbose, None)
 
     def _save_current_loss_and_acc(self, filename, train_loss, train_acc, test_loss, test_acc, step, fast_mode=False):
+        """
+        Adds the accuracy and loss result of current step to the pandas backup history and saves it (optional) into csv
+        :param filename: File name where the data should be saved.
+        :param train_loss:
+        :param train_acc:
+        :param test_loss:
+        :param test_acc:
+        :param step:
+        :param fast_mode: Bool (Default False). If True, the file will not be saved.
+        """
         a_series = pd.Series([step, self.epochs_done, train_loss, train_acc, test_loss, test_acc],
                              index=self.run_pandas.columns)
         self.run_pandas = self.run_pandas.append(a_series, ignore_index=True)
@@ -884,7 +911,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.38'
+__version__ = '0.2.39'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
