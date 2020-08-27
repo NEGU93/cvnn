@@ -346,7 +346,7 @@ class CvnnModel:
     def fit(self, x, y,
             validation_split=0.0, validation_data=None,
             learning_rate: float = 0.01, epochs: int = 10, batch_size: int = 32,
-            verbose=True, display_freq=1, fast_mode=True, save_txt_fit_summary=False,
+            verbose=True, display_freq: int = 1, fast_mode=True, save_txt_fit_summary=False,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
@@ -376,27 +376,10 @@ class CvnnModel:
         :return: None
         """
         # Check input
-        assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
-        if not (isinstance(epochs, int) and epochs > 0):
-            logger.error("Epochs must be unsigned integer", exc_info=True)
-            sys.exit(-1)
-        if not (isinstance(batch_size, int) and batch_size > 0):
-            logger.error("Batch size must be unsigned integer", exc_info=True)
-            sys.exit(-1)
-        if not learning_rate > 0:
-            logger.error("Learning rate must be positive", exc_info=True)
-            sys.exit(-1)
-        if isinstance(display_freq, int):
-            assert display_freq > 0, "display_freq must be positive"
-        else:
-            logger.error("display_freq must be a unsigned integer. Got" + str(display_freq))
-            sys.exit(-1)
-        verbose = self._get_verbose(verbose)
+        verbose = self.verify_fit_input(save_model_checkpoints, epochs, batch_size, learning_rate, display_freq, verbose)
         # Prepare dataset
-        train_dataset, test_dataset = self._get_dataset(x, y, validation_split, validation_data)
+        train_dataset, (x_test, y_test) = self._process_dataset(x, y, validation_split, validation_data)
         train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
-        x_test = test_dataset[0]
-        y_test = test_dataset[1]
         # Create fit txt if needed
         fit_count = next(self._fit_count)  # Know it's own number. Used to save several fit_<fit_count>.txt
         save_fit_filename = None
@@ -465,6 +448,25 @@ class CvnnModel:
                             verbose, save_fit_filename)
         self.plotter.reload_data()
 
+    def verify_fit_input(self, save_model_checkpoints, epochs: int, batch_size: int,
+                         learning_rate: float, display_freq: int, verbose):
+        assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
+        if not (isinstance(epochs, int) and epochs > 0):
+            logger.error("Epochs must be unsigned integer", exc_info=True)
+            sys.exit(-1)
+        if not (isinstance(batch_size, int) and batch_size > 0):
+            logger.error("Batch size must be unsigned integer", exc_info=True)
+            sys.exit(-1)
+        if not learning_rate > 0:
+            logger.error("Learning rate must be positive", exc_info=True)
+            sys.exit(-1)
+        if isinstance(display_freq, int):
+            assert display_freq > 0, "display_freq must be positive"
+        else:
+            logger.error("display_freq must be a unsigned integer. Got" + str(display_freq))
+            sys.exit(-1)
+        return self._get_verbose(verbose)
+
     """
     @classmethod
     def _extractfromlocal(cls, model):  # extracts attributes from the local thrading container
@@ -502,7 +504,7 @@ class CvnnModel:
             logger.error("verbose datatype (" + str(type(verbose)) + ") not supported")
 
     @staticmethod
-    def _get_dataset(x, y, validation_split=0.0, validation_data=None):
+    def _process_dataset(x, y, validation_split=0.0, validation_data=None):
         test_dataset = None
         if isinstance(x, (list, tuple, np.ndarray)):
             if validation_data is None:
@@ -889,7 +891,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.35'
+__version__ = '0.2.36'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
