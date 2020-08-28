@@ -2,7 +2,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -12,18 +13,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -36,6 +31,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
 </head>
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cvnn
+            <a href="index.html" class="icon icon-home"> cvnn
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -83,17 +81,17 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
-<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="initializers.html">Initializers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">1. CVNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">2. Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">3. Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="initializers.html">4. Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">5. Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code_examples.html">Code Examples</a></li>
 </ul>
 
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -132,7 +130,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Index</li>
     
@@ -177,7 +175,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#__init__">__init__()</a>, <a href="initializers.html#__init__">[1]</a>, <a href="initializers.html#__init__">[2]</a>
+      <li><a href="cvnn.html#__init__">__init__()</a>, <a href="initializers.html#__init__">[1]</a>, <a href="initializers.html#__init__">[2]</a>, <a href="layers.html#__init__">[3]</a>, <a href="layers.html#__init__">[4]</a>, <a href="layers.html#__init__">[5]</a>
 </li>
   </ul></td>
 </tr></table>
@@ -193,7 +191,7 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#call">call()</a>
+      <li><a href="cvnn.html#call">call()</a>, <a href="layers.html#call">[1]</a>
 </li>
       <li><a href="act_fun.html#cart_elu">cart_elu()</a>
 </li>
@@ -218,6 +216,8 @@
       <li><a href="layers.html#ComplexDense">ComplexDense (built-in class)</a>
 </li>
       <li><a href="layers.html#ComplexDropout">ComplexDropout (built-in class)</a>
+</li>
+      <li><a href="layers.html#ComplexLayer">ComplexLayer (built-in class)</a>
 </li>
       <li><a href="utils.html#create_folder">create_folder() (built-in function)</a>
 </li>
@@ -251,12 +251,16 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="layers.html#get_description">get_description()</a>
+</li>
       <li><a href="utils.html#get_func_name">get_func_name() (built-in function)</a>
 </li>
       <li><a href="initializers.html#get_random_tensor">get_random_tensor()</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="layers.html#get_real_equivalent">get_real_equivalent()</a>, <a href="layers.html#get_real_equivalent">[1]</a>
+</li>
       <li><a href="initializers.html#GlorotNormal">GlorotNormal (built-in class)</a>
 </li>
       <li><a href="initializers.html#GlorotUniform">GlorotUniform (built-in class)</a>
@@ -344,19 +348,11 @@
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, J Agustin BARRACHINA
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -367,6 +363,7 @@
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

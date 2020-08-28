@@ -15,7 +15,7 @@ Short example::
 .. py:class:: CvnnModel
 
 
-.. py:method:: __init__(self, learning_rate=0.001, tensorboard=True, verbose=True, automatic_restore=True)
+.. py:method:: __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True)
 
         Constructor
 

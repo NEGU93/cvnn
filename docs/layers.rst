@@ -1,11 +1,11 @@
 Complex Layers
 ==============
 
-.. py:class:: ComplexLayer(layers.Layer, ABC):
+.. py:class:: ComplexLayer(layers.Layer, ABC)
 
     All the complex layers defined here inherit from :code:`ComplexLayer`
 
-.. py:method:: __init__(self, output_size, input_size=None, input_dtype=None):
+.. py:method:: __init__(self, output_size, input_size=None, input_dtype=None)
 
     Base constructor for a complex layer. The first layer will need a input_dtype and input_size.
     
@@ -20,18 +20,18 @@ Complex Layers
                     * :code:`np.complex64`
                     * :code:`np.float32`
     
-.. py:method:: call(self, inputs):
+.. py:method:: call(self, inputs)
 
         Applies the layer to an input
 
         :param inputs: input
         :return: result of applying the layer to the inputs
 
-.. py:method:: get_real_equivalent(self):
+.. py:method:: get_real_equivalent(self)
 
     :return: Gets a real-valued COPY of the Complex Layer.
 
-.. py:method:: get_description(self):
+.. py:method:: get_description(self)
         
     :return: A string containing all the information of the layer
 
@@ -56,7 +56,7 @@ Complex Dense
     * bias is a bias vector created by the layer
     * dropout can be applied as well after the activation function if specified
 
-.. py:method:: __init__(self, output_size, input_size=None, activation=None, input_dtype=None, weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros, dropout=None):
+.. py:method:: __init__(self, output_size, input_size=None, activation=None, input_dtype=None, weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros, dropout=None)
 
         Initializer of the Dense layer
 
@@ -74,7 +74,7 @@ Complex Dense
 
             Example: setting rate=0.1 would drop 10% of input elements.
 
-.. py:method:: get_real_equivalent(self, output_multiplier=2):
+.. py:method:: get_real_equivalent(self, output_multiplier=2)
         
         :param output_multiplier: Multiplier of output and input size (normally by 2). Can be used 1 for the output layer of a classifier.
         :return: real-valued copy of self
@@ -86,7 +86,7 @@ Complex Dense
 
     Dropout [CIT2014-SRIVASTAVA]_ consists in randomly setting a fraction :code:`rate` of input units to 0 at each update during training time, which helps prevent overfitting.
 
-.. py:method:: __init__(self, rate, noise_shape=None, seed=None):
+.. py:method:: __init__(self, rate, noise_shape=None, seed=None)
         
         :param rate: A scalar Tensor with the same type as x.
             The probability that each element is dropped.

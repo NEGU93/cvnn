@@ -9,7 +9,6 @@ Content
 =======
 
 .. toctree::
-
 	:maxdepth: 2
 
 	cvnn
@@ -17,3 +16,4 @@ Content
 	act_fun
 	initializers
 	utils
+	code_examples
