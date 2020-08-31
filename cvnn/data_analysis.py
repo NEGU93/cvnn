@@ -265,8 +265,8 @@ class SeveralMonteCarloComparison:
         frames = [self.monte_carlo_runs[0].df]
         frames[0]['network'] = frames[0]['network'] + " " + x[0]
         for i, monte_carlo_run in enumerate(self.monte_carlo_runs[1:]):
-            frames.append(self.monte_carlo_runs[i+1].df)
-            frames[i+1]['network'] = frames[i+1]['network'] + " " + x[i+1]
+            frames.append(self.monte_carlo_runs[i + 1].df)
+            frames[i + 1]['network'] = frames[i + 1]['network'] + " " + x[i + 1]
         self.df = pd.concat(frames)
         self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df)
 
@@ -367,7 +367,7 @@ class SeveralMonteCarloComparison:
         ax = sns.boxplot(x=self.x_label, y=key, hue="network", data=result, boxprops=dict(alpha=.3))
         # Make black lines the color of the box
         for i, artist in enumerate(ax.artists):
-            col = artist.get_facecolor()[:-1]   # the -1 removes the transparency
+            col = artist.get_facecolor()[:-1]  # the -1 removes the transparency
             artist.set_edgecolor(col)
             for j in range(i * 6, i * 6 + 6):
                 line = ax.lines[j]
@@ -630,8 +630,59 @@ class MonteCarloPlotter(Plotter):
         # Rename this function to change index_loc default value
         super().plot_key(key, reload, library, showfig, savefig, index_loc, extension=extension)
 
-    def plot_distribution(self, key='test accuracy', showfig=False, savefig=True,
-                          title='', full_border=True, x_axis='step'):
+    def plot_line_confidence_interval(self, key='test accuracy', showfig=False, savefig=True, library='matplotlib',
+                                      title='', full_border=True, x_axis='step', extension=".svg"):
+        if library == 'plotly':
+            self._plot_line_confidance_interval_plotly(key=key, showfig=showfig, savefig=savefig,
+                                                       title=title, full_border=full_border, x_axis=x_axis)
+        elif library == 'matplotlib':
+            self._plot_line_confidence_interval_matplotlib(key=key, showfig=showfig, savefig=savefig,
+                                                           title=title, x_axis=x_axis, extension=extension)
+        else:
+            logger.warning("Warning: Unrecognized library to plot " + library)
+            return None
+
+    def _plot_line_confidence_interval_matplotlib(self, key='test accuracy', showfig=False, savefig=True,
+                                                  title='', x_axis='step', extension=".svg"):
+        fig, ax = plt.subplots()
+        for i, data in enumerate(self.pandas_list):
+            set_trace()
+            x = data[x_axis].unique().tolist()
+            data_mean = data[data['stats'] == 'mean'][key].tolist()
+            data_max = data[data['stats'] == 'max'][key].tolist()
+            data_min = data[data['stats'] == 'min'][key].tolist()
+            data_50 = data[data['stats'] == '50%'][key].tolist()
+            data_25 = data[data['stats'] == '25%'][key].tolist()
+            data_75 = data[data['stats'] == '75%'][key].tolist()
+            ax.plot(x, data_mean, color=DEFAULT_MATPLOTLIB_COLORS[i],
+                    label=self.labels[i].replace('_', ' ') + ' mean')
+            ax.plot(x, data_50, '--', color=DEFAULT_MATPLOTLIB_COLORS[i],
+                    label=self.labels[i].replace('_', ' ') + ' median')
+            ax.fill_between(x, data_25, data_75, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.4,
+                            label=self.labels[i].replace('_', ' ') + ' interquartile')
+            ax.fill_between(x, data_min, data_max, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.15,
+                            label=self.labels[i].replace('_', ' ') + ' border')
+        for label in self.labels:
+            title += label.replace('_', ' ') + ' vs '
+        title = title[:-3] + key
+
+        ax.set_title(title)
+        ax.set_xlabel(x_axis)
+        ax.set_ylabel(key)
+        ax.grid()
+        ax.legend()
+        if showfig:
+            fig.show()
+        if savefig:
+            os.makedirs(str(self.path / "plots/lines_confidence/"), exist_ok=True)
+            fig.savefig(self.path / ("plots/lines_confidence/montecarlo_" +
+                                     key.replace(" ", "_") + "_matplotlib" + extension), transparent=True)
+            tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
+                                          key.replace(" ", "_") + "_matplotlib" + ".tex"))
+        # set_trace()
+
+    def _plot_line_confidance_interval_plotly(self, key='test accuracy', showfig=False, savefig=True,
+                                              title='', full_border=True, x_axis='step'):
         fig = go.Figure()
         for i, data in enumerate(self.pandas_list):
             # set_trace()
@@ -681,9 +732,10 @@ class MonteCarloPlotter(Plotter):
         fig.update_layout(title=title, xaxis_title=x_axis, yaxis_title=key)
 
         if savefig:
-            os.makedirs(str(self.path / "plots/lines/"), exist_ok=True)
+            os.makedirs(str(self.path / "plots/lines_confidence/"), exist_ok=True)
             plotly.offline.plot(fig,
-                                filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + ".html",
+                                filename=str(self.path / ("plots/lines_confidence/montecarlo_" +
+                                                          key.replace(" ", "_"))) + ".html",
                                 config=PLOTLY_CONFIG, auto_open=showfig)
             # fig.write_image(str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_"))) + extension)
         elif showfig:
@@ -771,7 +823,7 @@ class MonteCarloAnalyzer:
             for step in data.step.unique():
                 desc_frame = data[data.step == step][cols].describe()
                 frames.append(desc_frame)
-                epochs += [data[data.step == step]['epoch'].iloc[0]]*len(desc_frame)
+                epochs += [data[data.step == step]['epoch'].iloc[0]] * len(desc_frame)
                 keys.append(step)
             data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
             data_to_save['epoch'] = epochs
@@ -795,7 +847,7 @@ class MonteCarloAnalyzer:
         key_list = ['test accuracy', 'test loss']  # , 'train accuracy', 'train loss']
         for key in key_list:
             # self.plot_3d_hist(key=key)
-            self.monte_carlo_plotter.plot_distribution(key=key, x_axis='epoch')
+            self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch')
             self.box_plot(key=key, extension=extension)
 
             for lib in ['seaborn']:  # 'plotly',
@@ -947,7 +999,7 @@ class MonteCarloAnalyzer:
         os.makedirs(self.path / "plots/histogram/", exist_ok=True)
         plotly.offline.plot(fig,
                             filename=str(self.path / (
-                                        "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
+                                    "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
                             config=PLOTLY_CONFIG, auto_open=False)
 
     def plot_histogram(self, key='test accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
@@ -984,7 +1036,7 @@ class MonteCarloAnalyzer:
         ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
         add_params(fig, ax, x_label=key, y_label="occurances", title=title, loc='upper right',
                    filename=self.path / (
-                               "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension),
+                           "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension),
                    showfig=showfig, savefig=savefig)
         return fig, ax
 
@@ -1053,14 +1105,12 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    path = "W:\HardDiskDrive\Documentos\GitHub\cvnn\\results\one hidden layer\Dropout\\1HL_dropout\\run_data.csv"
+    path = "//media/barrachina/data/results/MLSP/results/two hidden layer/TwoLayerTypeA/run_data.csv"
     monte = MonteCarloAnalyzer(path=path)
     # monte.plot_histogram(key='test accuracy', library='seaborn')
-    monte.box_plot(library='seaborn')
-
-
+    monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.24'
+__version__ = '0.1.25'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
