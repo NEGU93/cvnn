@@ -262,6 +262,13 @@ class SeveralMonteCarloComparison:
         if not len(self.x) == len(self.monte_carlo_runs):
             logger.error("x ({0}) and paths ({1}) must be the same size".format(len(self.x),
                                                                                 len(self.monte_carlo_runs)))
+        frames = [self.monte_carlo_runs[0].df]
+        frames[0]['network'] = frames[0]['network'] + " " + x[0]
+        for i, monte_carlo_run in enumerate(self.monte_carlo_runs[1:]):
+            frames.append(self.monte_carlo_runs[i+1].df)
+            frames[i+1]['network'] = frames[i+1]['network'] + " " + x[i+1]
+        self.df = pd.concat(frames)
+        self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df)
 
     def box_plot(self, key='test accuracy', library='plotly', step=-1, showfig=False, savefile=None):
         if library == 'plotly':
@@ -328,9 +335,9 @@ class SeveralMonteCarloComparison:
             # boxgap=0,
             showlegend=True
         )
-        if not savefile.endswith('.html'):
-            savefile += '.html'
         if savefig:
+            if not savefile.endswith('.html'):
+                savefile += '.html'
             os.makedirs(os.path.split(savefile)[0], exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=savefile, config=PLOTLY_CONFIG, auto_open=showfig)
@@ -392,6 +399,11 @@ class SeveralMonteCarloComparison:
                 data = df[filter].describe()
                 data = data[cols]
                 data.to_csv(path + net + "_" + self.x[i] + "_stats.csv")
+
+    def plot_histogram(self, key='test accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
+                       extension=".svg"):
+        self.monte_carlo_analyzer.plot_histogram(key=key, step=step, library=library, showfig=showfig, savefig=savefig,
+                                                 title=title, extension=extension)
 
 
 class Plotter:
@@ -944,8 +956,7 @@ class MonteCarloAnalyzer:
             self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
                                             extension=extension)
         elif library == 'plotly':
-            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
-                                        extension=extension)
+            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
         elif library == 'seaborn':
             self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
                                          extension=extension)
@@ -991,7 +1002,7 @@ class MonteCarloAnalyzer:
             group_labels.append(net.replace("_", " "))
             # fig.add_trace(px.histogram(np.array(data[key]), marginal="box"))
             # fig.add_trace(go.Histogram(x=np.array(data[key]), name=net))
-        fig = ff.create_distplot(hist_data, group_labels, bin_size=0.01)  # https://plot.ly/python/distplot/
+        fig = ff.create_distplot(hist_data, group_labels, bin_size=0.0005)  # https://plot.ly/python/distplot/
         title += key + " comparison"
 
         # Overlay both histograms
