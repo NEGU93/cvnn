@@ -11,6 +11,7 @@ import plotly
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
+import tikzplotlib
 
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
 logger = logging.getLogger(cvnn.__name__)
@@ -142,7 +143,7 @@ class Dataset:
         res_str += "\tTrain percentage: {}%\n".format(int(self.ratio * 100))
         return res_str
 
-    def plot_data(self, overlapped=False, showfig=True, save_path=None, library='plotly'):
+    def plot_data(self, overlapped=False, showfig=True, save_path=None, library='matplotlib'):
         """
         Generates a figure with an example of the data
         :param overlapped: (boolean) If True it will plot all the examples in the same figure changing the color.
@@ -219,7 +220,8 @@ class Dataset:
             prefix = ""
             if overlapped:
                 prefix = "overlapped_"
-            fig.savefig(save_path + prefix + "data_example" + extension, transparent=True)
+            fig.savefig(save_path / Path(prefix + "data_example" + extension), transparent=True)
+            tikzplotlib.save(save_path / (prefix + "data_example.tikz"))
         return fig, ax
 
     # =======
@@ -665,15 +667,15 @@ if __name__ == "__main__":
         [[1, -0.75], [-0.75, 1]]
     ]
     dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)"""
-    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.3, 1, 1], [-0.3, 1, 1]])
-    # dataset.save_data("./data/MLSP/")
+    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.5, 1, 1], [-0.5, 1, 1]])
+    dataset.save_data("./data/MLSP/")
 
     # dataset = OpenDataset("./data/MLSP/")
     # dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
     # set_trace()
-    print("{:.2%}".format(parametric_predictor(dataset)))
+    # print("{:.2%}".format(parametric_predictor(dataset)))
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.19'
+__version__ = '0.1.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -165,7 +165,7 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
 def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=1000,
                                        epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
                                        shape_raw=None, activation='cart_relu',
-                                       debug=False, polar=False, do_all=True, dropout=0.5):
+                                       debug=False, polar=False, do_all=True, dropout=0.5, validation_split=0.2):
     if shape_raw is None:
         shape_raw = [64]
     if open_dataset:
@@ -195,13 +195,14 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
                                 verbose=False, tensorboard=False)
 
     # Monte Carlo
-    monte_carlo = RealVsComplex(complex_network, capacity_equivalent=False)
+    monte_carlo = RealVsComplex(complex_network, capacity_equivalent=True, equiv_technique='ratio')
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
+                    shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar,
+                    validation_split=validation_split)
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
