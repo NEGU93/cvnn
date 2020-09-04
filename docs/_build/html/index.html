@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,12 +11,18 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -30,13 +35,9 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="1. CVNN" href="cvnn.html" /> 
+    <link rel="next" title="CVNN" href="cvnn.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -50,7 +51,7 @@
           
 
           
-            <a href="#" class="icon icon-home"> cvnn
+            <a href="#" class="icon icon-home" alt="Documentation Home"> cvnn
           
 
           
@@ -73,6 +74,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -81,17 +83,18 @@
             
             
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="cvnn.html">1. CVNN</a></li>
-<li class="toctree-l1"><a class="reference internal" href="layers.html">2. Complex Layers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="act_fun.html">3. Activation Functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="initializers.html">4. Initializers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">5. Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code_examples.html">Code Examples</a></li>
 </ul>
 
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -130,7 +133,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="#">Docs</a> &raquo;</li>
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
         
       <li>Complex-Valued Neural Network (CVNN)</li>
     
@@ -167,23 +170,23 @@
 <h2>Content<a class="headerlink" href="#content" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="cvnn.html">1. CVNN</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="cvnn.html#train">1.1. Train</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cvnn.html#results">1.2. Results</a></li>
-<li class="toctree-l2"><a class="reference internal" href="cvnn.html#others">1.3. Others</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cvnn.html#train">Train</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cvnn.html#results">Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cvnn.html#others">Others</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="layers.html">2. Complex Layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="layers.html#complex-dense">2.1. Complex Dense</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="layers.html#complex-dense">Complex Dense</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="act_fun.html">3. Activation Functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="act_fun.html#type-a-cartesian-form">3.1. TYPE A: Cartesian form</a></li>
-<li class="toctree-l2"><a class="reference internal" href="act_fun.html#type-b-polar-form">3.2. TYPE B: Polar form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="act_fun.html#type-a-cartesian-form">TYPE A: Cartesian form</a></li>
+<li class="toctree-l2"><a class="reference internal" href="act_fun.html#type-b-polar-form">TYPE B: Polar form</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="initializers.html">4. Initializers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utils.html">5. Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code_examples.html">Code Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="code_examples/mnist_example.html">MNIST Example</a></li>
 </ul>
@@ -201,7 +204,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="cvnn.html" class="btn btn-neutral float-right" title="1. CVNN" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="cvnn.html" class="btn btn-neutral float-right" title="CVNN" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
@@ -211,11 +214,19 @@
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, J Agustin BARRACHINA
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -226,7 +237,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
