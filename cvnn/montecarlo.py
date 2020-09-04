@@ -196,8 +196,6 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network, capacity_equivalent=True, equiv_technique='ratio')
-    if not open_dataset:
-        dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,

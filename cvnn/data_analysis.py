@@ -646,7 +646,6 @@ class MonteCarloPlotter(Plotter):
                                                   title='', x_axis='step', extension=".svg"):
         fig, ax = plt.subplots()
         for i, data in enumerate(self.pandas_list):
-            set_trace()
             x = data[x_axis].unique().tolist()
             data_mean = data[data['stats'] == 'mean'][key].tolist()
             data_max = data[data['stats'] == 'max'][key].tolist()
@@ -847,11 +846,10 @@ class MonteCarloAnalyzer:
         key_list = ['test accuracy', 'test loss']  # , 'train accuracy', 'train loss']
         for key in key_list:
             # self.plot_3d_hist(key=key)
-            self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch')
-            self.box_plot(key=key, extension=extension)
-
-            for lib in ['seaborn']:  # 'plotly',
+            for lib in ['seaborn', 'plotly']:
+                self.box_plot(key=key, extension=extension, library=lib)
                 self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
+                self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib)
 
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
@@ -1111,6 +1109,6 @@ if __name__ == "__main__":
     monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.25'
+__version__ = '0.1.26'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
