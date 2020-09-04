@@ -219,7 +219,6 @@ class CvnnModel:
 
             ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
             # The result MUST be positive so I use the '+' solution
-            set_trace()
             if not 1 <= ratio <= 2:
                 logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
         else:
