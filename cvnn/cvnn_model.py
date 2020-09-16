@@ -397,7 +397,9 @@ class CvnnModel:
         train_dataset, (x_test, y_test) = self._process_dataset(x, y, validation_split, validation_data)
         train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
         # Print start condition
-        start_status = self._get_str_evaluate(self.epochs_done, epochs, x_test, y_test)
+        start_status = ''
+        if x_test is not None and y_test is not None:
+            start_status = self._get_str_evaluate(self.epochs_done, epochs, x_test, y_test)
         self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
                             "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
                             start_status, verbose)
@@ -436,8 +438,9 @@ class CvnnModel:
                 if verbose != "PROBAR":
                     train_loss, train_acc, test_loss, test_acc = self.evaluate_train_and_test(x_batch, y_batch,
                                                                                               x_test,  y_test)
-                    values = [('loss', train_loss), ('accuracy', train_acc),
-                              ('val_loss', test_loss), ('val_accuracy', test_acc)]
+                    values = [('loss', train_loss), ('accuracy', train_acc)]
+                    if test_loss is not None:
+                        values += [('val_loss', test_loss), ('val_accuracy', test_acc)]
                 progbar.update(iteration,
                                values=values,
                                finalize=True)
@@ -564,6 +567,8 @@ class CvnnModel:
                 logger.error("validation_data type ({}) not supported ".format(type(validation_data)))
                 sys.exit(-1)
         assert isinstance(test_dataset, (list, tuple, np.ndarray)) or test_dataset is None
+        if test_dataset is None:
+            test_dataset = (None, None)
         return train_dataset, test_dataset
 
     @classmethod  # https://stackoverflow.com/a/2709848/5931672
@@ -890,9 +895,8 @@ if __name__ == '__main__':
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
-    # set_trace()
     model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=10,
-              verbose=True, save_csv_history=True, fast_mode=False, save_txt_fit_summary=False)
+              verbose=True, save_csv_history=True)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
