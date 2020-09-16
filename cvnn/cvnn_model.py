@@ -366,7 +366,7 @@ class CvnnModel:
             It can be:
                 - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
                 - A tf.data dataset.
-        :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
+        :param learning_rate: Learning rate for the gradient descent. For the moment only SGD is supported.
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
         :param verbose: Verbosity Mode
