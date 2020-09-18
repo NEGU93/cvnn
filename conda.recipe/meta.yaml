@@ -18,7 +18,7 @@ build:
   noarch: python
   
   entry_points:
-    {% for entry in setup_py['entry_points']['console_scripts'] %}
+    {% for entry in data['entry_points']['console_scripts'] %}
       - {{ entry.split('=')[0].strip() }} = {{ entry.split('=')[1].strip() }}
     {% endfor %}
   
@@ -51,5 +51,5 @@ test:
 about:
   home: https://github.com/NEGU93/cvnn
   summary: Library to help implement a complex-valued neural network (cvnn) using tensorflow as back-end
-  license: {{ setup_py.get('license') }}
+  license: {{ data['license'] }}
   license_file: LICENSE
