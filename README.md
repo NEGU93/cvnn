@@ -19,6 +19,7 @@ In the need of making my coding more dynamic I build a library not to have to re
 
 ## Cite Me
 
+Code:
 ```
 @MISC {NEGU93-CVNN,
     author       = {J. Agustin Barrachina},
@@ -26,5 +27,16 @@ In the need of making my coding more dynamic I build a library not to have to re
     howpublished = {\url{https://github.com/NEGU93/cvnn}},
     journal      = {GitHub repository},
     year         = {2019}
+}
+```
+Paper:
+```
+@misc{barrachina2020complexvalued,
+    title={Complex-Valued vs. Real-Valued Neural Networks for Classification Perspectives: An Example on Non-Circular Data},
+    author={Jose Agustin Barrachina and Chenfang Ren and Christele Morisseau and Gilles Vieillard and Jean-Philippe Ovarlez},
+    year={2020},
+    eprint={2009.08340},
+    archivePrefix={arXiv},
+    primaryClass={stat.ML}
 }
 ```
