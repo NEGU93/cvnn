@@ -5,6 +5,7 @@ out/
 data/
 results/
 montecarlo/
+cvnn.egg-info/
 
 # python cache
 __pycache__/

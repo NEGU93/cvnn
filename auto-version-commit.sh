@@ -22,7 +22,7 @@ do
 		fi
 	fi
 done
-file="cvnn/__init__.py"
+file="cvnn/_version.py"
 echo "Increasing version of file $file"
 oldver=`grep "__version__ = " $file`	# oldver=__version__ = 'z.y.x'
 verf1=`echo $oldver | cut -d '.' -f1`	# __version__ = 'z
