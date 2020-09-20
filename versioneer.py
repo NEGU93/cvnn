@@ -1211,6 +1211,9 @@ def versions_from_file(filename):
         mo = re.search(r"version_json = '''\r\n(.*)'''  # END VERSION_JSON",
                        contents, re.M | re.S)
     if not mo:
+       mo = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", contents, re.M) 
+       return {"version": mo.group(1)}
+    if not mo:
         raise NotThisMethod("no version_json in _version.py")
     return json.loads(mo.group(1))
 

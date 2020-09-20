@@ -1,0 +1,3 @@
+[console_scripts]
+cvnn = cvnn.cli:cli
+

@@ -1,0 +1,12 @@
+tensorflow>=2.0
+numpy
+pandas
+scipy
+prettytable
+colorlog
+openpyxl
+matplotlib
+seaborn
+plotly
+tikzplotlib
+tqdm
