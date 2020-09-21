@@ -5,7 +5,6 @@ https://docs.anaconda.com/anaconda-cloud/user-guide/getting-started/#building-an
 https://github.com/conda/cookiecutter-conda-python
 https://docs.conda.io/projects/conda-build/en/latest/user-guide/index.html
 
-
 Do a setup.py file to upload code to CONDA and PIP:
 	https://setuptools.readthedocs.io/en/latest/setuptools.html#installing-setuptools
 	https://pythonhosted.org/an_example_pypi_project/setuptools.html
