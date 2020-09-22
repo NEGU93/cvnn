@@ -10,7 +10,7 @@ Please [Read the Docs](https://complex-valued-neural-networks.readthedocs.io/en/
 
 ## Instalation Guide:
 
-Using PIP
+Using [PIP](https://pypi.org/project/cvnn/)
 ```
 pip install cvnn
 ```
