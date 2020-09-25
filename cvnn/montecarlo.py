@@ -221,6 +221,8 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
     real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
     complex_median = complex_last_epochs['test accuracy'].median()
     real_median = real_last_epochs['test accuracy'].median()
+    complex_median_train = complex_last_epochs['train accuracy'].median()
+    real_median_train = real_last_epochs['train accuracy'].median()
     _save_rvnn_vs_cvnn_montecarlo_log(path=str(monte_carlo.monte_carlo_analyzer.path),
                                       dataset_name=dataset.dataset_name,
                                       hl=str(len(shape_raw)), shape=str(shape_raw),
@@ -231,6 +233,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
                                       feature_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size,
                                       winner='CVNN' if complex_median > real_median else 'RVNN',
                                       complex_median=complex_median, real_median=real_median,
+                                      complex_median_train=complex_median_train, real_median_train=real_median_train,
                                       complex_iqr=complex_last_epochs['test accuracy'].quantile(.75)
                                                   - complex_last_epochs['test accuracy'].quantile(.25),
                                       real_iqr=real_last_epochs['test accuracy'].quantile(.75)
@@ -267,15 +270,19 @@ def _create_excel_file(fieldnames, row_data, filename=None, percentage_cols=None
 def _save_rvnn_vs_cvnn_montecarlo_log(path, dataset_name, hl, shape, dropout, num_classes, polar_mode, learning_rate,
                                       activation,
                                       dataset_size, feature_size, epochs, batch_size, winner,
-                                      complex_median, real_median, complex_iqr, real_iqr, comments='', filename=None):
+                                      complex_median, real_median, complex_iqr, real_iqr,
+                                      complex_median_train, real_median_train,
+                                      comments='', filename=None):
     fieldnames = ['dataset', '# Classes', "Dataset Size", 'Feature Size', "Polar Mode",
                   'HL', 'Shape', 'Dropout', "Learning Rate", "Activation Function", 'epochs', 'batch size',
                   "Winner", "CVNN median", "RVNN median", 'CVNN IQR', 'RVNN IQR',
+                  "CVNN train median", "RVNN train median",
                   'path', "cvnn version", "Comments"
                   ]
     row_data = [dataset_name, num_classes, dataset_size, feature_size, polar_mode,  # Dataset information
                 hl, shape, dropout, learning_rate, activation, epochs, batch_size,  # Model information
                 winner, complex_median, real_median, complex_iqr, real_iqr,  # Preliminary results
+                complex_median_train, real_median_train,
                 path, cvnn.__version__, comments  # Library information
                 ]
     percentage_cols = ['N', 'O', 'P', 'Q']

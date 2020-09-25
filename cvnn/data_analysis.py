@@ -858,7 +858,7 @@ class MonteCarloAnalyzer:
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
             self._box_plot_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
-        elif library == 'seaborn':
+        elif library == 'seaborn': nada
             self._box_plot_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, extension=extension)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
@@ -1113,6 +1113,6 @@ if __name__ == "__main__":
     monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.26'
+__version__ = '0.1.27'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
