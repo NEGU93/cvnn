@@ -1,17 +1,20 @@
 import logging
 import colorlog
 import re
+import os
 from cvnn.utils import create_folder
 
+
 def get_version() -> str:
-    VERSIONFILE="_version.py"
-    verstrline = open(VERSIONFILE, "rt").read()
+    versionfile = os.path.split(os.path.realpath(__file__))[0] + "/_version.py"
+    verstrline = open(versionfile, "rt").read()
     VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
     mo = re.search(VSRE, verstrline, re.M)
     if mo:
         return mo.group(1)
     else:
-        raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
+        raise RuntimeError("Unable to find version string in %s." % (versionfile,))
+
 
 # How to comment script header
 # https://medium.com/@rukavina.andrei/how-to-write-a-python-script-header-51d3cec13731
