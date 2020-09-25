@@ -206,6 +206,7 @@ def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
         y_label_np = np.argmax(y_label_np, axis=1)
     y_pred_pd = pd.Series(y_pred_np, name='Predicted')
     y_label_pd = pd.Series(y_label_np, name='Actual')
+    set_trace()
     df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
     if filename is not None:
         df.to_csv(filename)
@@ -843,12 +844,15 @@ class MonteCarloAnalyzer:
         self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
         self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True)"""
 
-        key_list = ['test accuracy', 'test loss']  # , 'train accuracy', 'train loss']
+        key_list = ['test accuracy', 'test loss', 'train accuracy', 'train loss']
         for key in key_list:
             # self.plot_3d_hist(key=key)
             for lib in ['seaborn', 'plotly']:
                 self.box_plot(key=key, extension=extension, library=lib)
-                self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
+                try:
+                    self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
+                except np.linalg.LinAlgError:
+                    logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular")
                 self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib)
 
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):

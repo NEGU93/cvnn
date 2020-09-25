@@ -32,7 +32,7 @@ class MonteCarlo:
     def add_model(self, model):
         self.models.append(model)
 
-    def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, validation_split=0.2,
+    def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, validation_split=0.2, validation_data=None,
             iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
             shuffle=False, debug=False, display_freq=1, checkpoints=False):
         x, y = randomize(x, y)
@@ -53,20 +53,26 @@ class MonteCarlo:
             if shuffle:  # shuffle all data at each iteration
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
+                val_data_fit = None
                 if model.is_complex():
                     x_fit = x
+                    if validation_data is not None:
+                        val_data_fit = validation_data
                 else:
                     x_fit = transform_to_real(x, polar=polar)
+                    if validation_data is not None:
+                        val_data_fit = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
                 test_model = copy.deepcopy(model)
-                test_model.fit(x_fit, y, validation_split=validation_split,
+                test_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
                                verbose=debug, display_freq=display_freq,
-                               save_csv_history=True)   # Must have save_csv_history to do the montecarlo results latter
+                               save_csv_history=True)  # Must have save_csv_history to do the montecarlo results latter
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
-                    dataset = dp.Dataset(x_fit, y, ratio=1-validation_split)
+                    dataset = dp.Dataset(x_fit, y, ratio=1 - validation_split)
                     self.confusion_matrix[i]["name"] = test_model.name
+                    set_trace()
                     self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
                                                                     test_model.get_confusion_matrix(dataset.x_test,
                                                                                                     dataset.y_test)))
@@ -164,9 +170,9 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
 
 def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=1000,
                                        epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
-                                       shape_raw=None, activation='cart_relu',
-                                       debug=False, polar=False, do_all=True, dropout=0.5, validation_split=0.2,
-                                       capacity_equivalent=True, equiv_technique='ratio'):
+                                       shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
+                                       dropout=0.5, validation_split=0.2, validation_data=None,
+                                       capacity_equivalent=True, equiv_technique='ratio', do_conf_mat=True):
     if shape_raw is None:
         shape_raw = [64]
     if open_dataset:
@@ -185,7 +191,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
             Dense(input_size=input_size, output_size=output_size, activation='softmax_real',
                   input_dtype=np.complex64, dropout=None)
         ]
-    else:   # len(shape_raw) > 0:
+    else:  # len(shape_raw) > 0:
         shape = [Dense(input_size=input_size, output_size=shape_raw[0], activation=activation,
                        input_dtype=np.complex64, dropout=dropout)]
         for i in range(1, len(shape_raw)):
@@ -202,7 +208,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar,
-                    validation_split=validation_split)
+                    validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat)
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
