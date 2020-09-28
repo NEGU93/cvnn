@@ -70,6 +70,8 @@ class CvnnModel:
         if not isinstance(optimizer, cvnn.optimizers.Optimizer):
             logger.error("The optimizer must be a cvnn.optimizers.Optimizer", exc_info=True)
             sys.exit(-1)
+        layers.ComplexLayer.last_layer_output_dtype = None
+        layers.ComplexLayer.last_layer_output_size = None
         self.shape = shape
         self.loss_fun = loss_fun
         self.optimizer = optimizer
@@ -349,8 +351,7 @@ class CvnnModel:
             tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
 
     def fit(self, x, y=None,
-            validation_split=0.0, validation_data=None,
-            learning_rate: float = 0.01, epochs: int = 10, batch_size: int = 32,
+            validation_split=0.0, validation_data=None, epochs: int = 10, batch_size: int = 32,
             verbose=True, display_freq: int = 1,
             save_model_checkpoints=False, save_csv_history=True, shuffle=True):
         """
@@ -371,7 +372,6 @@ class CvnnModel:
             It can be:
                 - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
                 - A tf.data dataset.
-        :param learning_rate: Learning rate for the gradient descent. For the moment only SGD is supported.
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
         :param verbose: Verbosity Mode
@@ -397,7 +397,7 @@ class CvnnModel:
         :return: None
         """
         # Check input
-        verbose = self.verify_fit_input(save_model_checkpoints, epochs, batch_size, learning_rate, display_freq, verbose)
+        verbose = self.verify_fit_input(save_model_checkpoints, epochs, batch_size, display_freq, verbose)
         # Prepare dataset
         train_dataset, (x_test, y_test) = self._process_dataset(x, y, validation_split, validation_data)
         train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
@@ -405,7 +405,7 @@ class CvnnModel:
         start_status = ''
         if x_test is not None and y_test is not None:
             start_status = self._get_str_evaluate(self.epochs_done, epochs, x_test, y_test)
-        self._manage_string("Starting training...\nLearning rate = " + str(learning_rate) + "\n" +
+        self._manage_string("Starting training...\n" +
                             "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
                             start_status, verbose)
         # -----------------------------------------------------
@@ -474,17 +474,13 @@ class CvnnModel:
                             verbose)
         self.plotter.reload_data()
 
-    def verify_fit_input(self, save_model_checkpoints, epochs: int, batch_size: int,
-                         learning_rate: float, display_freq: int, verbose):
+    def verify_fit_input(self, save_model_checkpoints, epochs: int, batch_size: int, display_freq: int, verbose):
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         if not (isinstance(epochs, int) and epochs > 0):
             logger.error("Epochs must be unsigned integer", exc_info=True)
             sys.exit(-1)
         if not (isinstance(batch_size, int) and batch_size > 0):
             logger.error("Batch size must be unsigned integer", exc_info=True)
-            sys.exit(-1)
-        if not learning_rate > 0:
-            logger.error("Learning rate must be positive", exc_info=True)
             sys.exit(-1)
         if isinstance(display_freq, int):
             assert display_freq > 0, "display_freq must be positive"
@@ -576,6 +572,21 @@ class CvnnModel:
             test_dataset = (None, None)
         return train_dataset, test_dataset
 
+    @staticmethod
+    def _dataset_to_array(x, y=None):
+        if isinstance(y, (list, tuple, np.ndarray, tf.Tensor)):
+            return x, y
+        elif isinstance(x, tf.data.Dataset):
+            x_test = []
+            y_test = []
+            for element in x.unbatch():
+                x_test.append(element[0].numpy())
+                y_test.append(element[1].numpy())
+            return np.array(x_test), np.array(y_test)
+        else:
+            logger.error("dataset type ({}) not supported ".format(type(x)))
+            sys.exit(-1)
+
     @classmethod  # https://stackoverflow.com/a/2709848/5931672
     def loader(cls, f):
         return pickle.load(f)  # TODO: not yet tested
@@ -594,22 +605,24 @@ class CvnnModel:
         y_out = self.call(x)
         return tf.math.argmax(y_out, 1)
 
-    def evaluate_loss(self, x, y):
+    def evaluate_loss(self, x, y=None):
         """
         Computes the output of x and computes the loss using y
         :param x: Input of the netwotk
         :param y: Labels
         :return: loss value
         """
+        x, y = self._dataset_to_array(x, y)
         return self._apply_loss(y, self.call(x)).numpy()
 
-    def evaluate_accuracy(self, x, y):
+    def evaluate_accuracy(self, x, y=None):
         """
         Computes the output of x and returns the accuracy using y as labels
         :param x: Input of the netwotk
         :param y: Labels
         :return: accuracy
         """
+        x, y = self._dataset_to_array(x, y)
         y_pred = self.predict(x)
         if y_pred.shape == y.shape:
             y_labels = y
@@ -617,13 +630,14 @@ class CvnnModel:
             y_labels = tf.math.argmax(y, 1)
         return tf.math.reduce_mean(tf.dtypes.cast(tf.math.equal(y_pred, y_labels), tf.float64)).numpy()
 
-    def evaluate(self, x, y):
+    def evaluate(self, x, y=None):
         """
-        Compues both the loss and accuracy using "evaluate_loss" and "evaluate_accuracy"
-        :param x: Input of the netwotk
+        Computes both the loss and accuracy using "evaluate_loss" and "evaluate_accuracy"
+        :param x: Input of the network
         :param y: Labels
         :return: tuple (loss, accuracy)
         """
+        x, y = self._dataset_to_array(x, y)
         return self.evaluate_loss(x, y), self.evaluate_accuracy(x, y)
 
     def evaluate_train_and_test(self, train_x, train_y, test_x=None, test_y=None):
@@ -919,7 +933,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.42'
+__version__ = '0.2.43'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
