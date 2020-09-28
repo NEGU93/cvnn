@@ -1,13 +1,12 @@
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
+from cvnn.optimizers import SGD
 from cvnn.cvnn_model import CvnnModel
 from cvnn import layers
 import numpy as np
-from keras.datasets import mnist
 from pdb import set_trace
-from cvnn.dataset import Dataset
 
-KERAS_DEBUG = True
+KERAS_DEBUG = False
 OWN_MODEL = True
 
 tfds.disable_progress_bar()
@@ -66,7 +65,7 @@ if OWN_MODEL:
         layers.Dense(output_size=128, activation='cart_relu', input_dtype=np.float32, dropout=None),
         layers.Dense(output_size=10, activation='softmax_real')
     ]
-    model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
+    model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy, optimizer=SGD(),
                       tensorboard=False, verbose=False)
     model.fit(x=ds_train, y=None, validation_data=ds_test, batch_size=128, epochs=6,
               verbose=1, save_csv_history=True)

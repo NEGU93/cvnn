@@ -13,10 +13,12 @@ from time import strftime, perf_counter, gmtime
 from prettytable import PrettyTable
 # My own module!
 import cvnn.layers as layers
+import cvnn.optimizers
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
 from cvnn.utils import create_folder
 from cvnn import logger
+
 
 try:
     import cPickle as pickle
@@ -48,7 +50,7 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True):
+    def __init__(self, name, shape, loss_fun, optimizer, verbose=True, tensorboard=True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models
@@ -65,8 +67,12 @@ class CvnnModel:
         if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
             logger.error("All layers in shape must be a cvnn.layer.Layer", exc_info=True)
             sys.exit(-1)
+        if not isinstance(optimizer, cvnn.optimizers.Optimizer):
+            logger.error("The optimizer must be a cvnn.optimizers.Optimizer", exc_info=True)
+            sys.exit(-1)
         self.shape = shape
         self.loss_fun = loss_fun
+        self.optimizer = optimizer
         self.epochs_done = 0
         self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
                                                 'train loss', 'train accuracy', 'test loss', 'test accuracy'])
@@ -308,19 +314,13 @@ class CvnnModel:
         # https://stackoverflow.com/questions/4103773/efficient-way-of-having-a-function-only-execute-once-in-a-loop
         tf.summary.trace_on(graph=True, profiler=True)  # https://www.tensorflow.org/tensorboard/graphs
 
-    @run_once
-    def _end_graph_tensorflow(self):
-        with self.graph_writer.as_default():
-            tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
-
     # Add '@tf.function' to accelerate the code by a lot!
     @tf.function
-    def _train_step(self, x_train_batch, y_train_batch, learning_rate):
+    def _train_step(self, x_train_batch, y_train_batch):
         """
         Performs one step of the training
         :param x_train_batch: input
         :param y_train_batch: labels
-        :param learning_rate: learning rate fot the gradient descent
         :return: None
         """
         with tf.GradientTape() as tape:
@@ -340,8 +340,12 @@ class CvnnModel:
 
         # Backpropagation
         with tf.name_scope("Optimizer"):
-            for i, val in enumerate(variables):
-                val.assign(val - learning_rate * gradients[i])  # TODO: For the moment the optimization is only GD
+            self.optimizer.optimize(variables=variables, gradients=gradients)
+
+    @run_once
+    def _end_graph_tensorflow(self):
+        with self.graph_writer.as_default():
+            tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
 
     def fit(self, x, y=None,
             validation_split=0.0, validation_data=None,
@@ -429,7 +433,7 @@ class CvnnModel:
                 iteration += 1
                 # Run optimization op (backpropagation)
                 self._start_graph_tensorflow()
-                self._train_step(x_batch, y_batch, learning_rate)
+                self._train_step(x_batch, y_batch)
                 self._end_graph_tensorflow()
             if total_iteration is None:
                 total_iteration = iteration
@@ -914,7 +918,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.40'
+__version__ = '0.2.41'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
