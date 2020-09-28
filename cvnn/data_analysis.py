@@ -858,7 +858,7 @@ class MonteCarloAnalyzer:
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
             self._box_plot_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
-        elif library == 'seaborn': nada
+        elif library == 'seaborn':
             self._box_plot_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, extension=extension)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
