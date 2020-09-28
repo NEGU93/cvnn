@@ -56,7 +56,7 @@ class CvnnModel:
         :param name: Name of the model. It will be used to distinguish models
         :param shape: List of cvnn.layers.ComplexLayer objects
         :param loss_fun: tensorflow.python.keras.losses to be used.
-        :param verbose: if True it will print information of the model just created
+        :param verbose: if True it will print information of np.prod(w_vals.shape)the model just created
         :param tensorboard: If true it will save tensorboard information inside log/.../tensorboard_logs/
                 - Loss and accuracy
                 - Graph
@@ -73,6 +73,7 @@ class CvnnModel:
         self.shape = shape
         self.loss_fun = loss_fun
         self.optimizer = optimizer
+        # self.optimizer.init_velocity(shape=shape)
         self.epochs_done = 0
         self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
                                                 'train loss', 'train accuracy', 'test loss', 'test accuracy'])
@@ -918,7 +919,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.41'
+__version__ = '0.2.42'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
