@@ -75,7 +75,7 @@ class CvnnModel:
         self.shape = shape
         self.loss_fun = loss_fun
         self.optimizer = get_optimizer(optimizer)       # This checks input already
-        # self.optimizer.init_velocity(shape=shape)
+        self.optimizer.compile(shape=shape)
         self.epochs_done = 0
         self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
                                                 'train loss', 'train accuracy', 'test loss', 'test accuracy'])
@@ -934,7 +934,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.46'
+__version__ = '0.2.47'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
