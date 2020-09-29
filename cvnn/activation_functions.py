@@ -30,7 +30,7 @@ def apply_activation(act_fun, out):
             sys.exit(-1)
     elif isinstance(act_fun, str):
         try:
-            return act_dispatcher[act_fun](out)
+            return act_dispatcher[act_fun.lower()](out)
         except KeyError:
             logger.warning(str(act_fun) + " is not callable, ignoring it")
         return out
@@ -257,6 +257,6 @@ act_dispatcher = {
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

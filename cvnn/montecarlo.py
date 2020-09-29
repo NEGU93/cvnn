@@ -33,7 +33,7 @@ class MonteCarlo:
         self.models.append(model)
 
     def run(self, x, y, data_summary='', polar=False, do_conf_mat=True, validation_split=0.2, validation_data=None,
-            iterations=100, learning_rate=0.01, epochs=10, batch_size=100,
+            iterations=100, epochs=10, batch_size=100,
             shuffle=False, debug=False, display_freq=1, checkpoints=False):
         x, y = randomize(x, y)
         # Reset data frame
@@ -41,7 +41,7 @@ class MonteCarlo:
         if do_conf_mat:
             for i in range(len(self.models)):
                 self.confusion_matrix.append({"name": "model_name", "matrix": pd.DataFrame()})
-        self.save_summary_of_run(self._run_summary(iterations, learning_rate, epochs, batch_size, shuffle),
+        self.save_summary_of_run(self._run_summary(iterations, epochs, batch_size, shuffle),
                                  data_summary)
         if not debug:
             pbar = tqdm(total=iterations)
@@ -64,7 +64,7 @@ class MonteCarlo:
                         val_data_fit = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
                 test_model = copy.deepcopy(model)
                 test_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
-                               learning_rate=learning_rate, epochs=epochs, batch_size=batch_size,
+                               epochs=epochs, batch_size=batch_size,
                                verbose=debug, display_freq=display_freq,
                                save_csv_history=True)  # Must have save_csv_history to do the montecarlo results latter
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
@@ -88,12 +88,11 @@ class MonteCarlo:
         self.monte_carlo_analyzer.set_df(self.pandas_full_data, conf_mat)
 
     @staticmethod
-    def _run_summary(iterations, learning_rate, epochs, batch_size, shuffle):
+    def _run_summary(iterations, epochs, batch_size, shuffle):
         ret_str = "Monte Carlo run\n"
         ret_str += "\tIterations: {}\n".format(iterations)
         ret_str += "\tepochs: {}\n".format(epochs)
         ret_str += "\tbatch_size: {}\n".format(batch_size)
-        ret_str += "\tLearning Rate: {}\n".format(learning_rate)
         if shuffle:
             ret_str += "\tShuffle data at each iteration\n"
         else:
@@ -123,7 +122,7 @@ class RealVsComplex(MonteCarlo):
 #     Excel logging
 # ====================================
 def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
-                   epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
+                   epochs=150, batch_size=100, display_freq=1,
                    debug=False, polar=False, do_all=True):
     if open_dataset:
         dataset = dp.OpenDataset(open_dataset)  # Warning, open_dataset overwrites dataset
@@ -134,7 +133,7 @@ def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
         monte_carlo.add_model(model)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
-    monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
+    monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
     if do_all:
@@ -146,7 +145,6 @@ def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
                          dataset_name=dataset.dataset_name,
                          num_classes=str(dataset.y.shape[1]),
                          polar_mode='Yes' if polar == 'Apple' else 'No',
-                         learning_rate=learning_rate,
                          dataset_size=str(dataset.x.shape[0]),
                          features_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size
                          )
@@ -154,7 +152,7 @@ def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
 
 
 def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
-                                    epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
+                                    epochs=150, batch_size=100, display_freq=1,
                                     shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                     dropout=None):
     # Get parameters
@@ -164,12 +162,12 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
             [-0.5, 1, 1]
         ]
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq, learning_rate,
+    mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq,
                                        shape_raw, activation, debug, polar, do_all, dropout=dropout)
 
 
 def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=1000,
-                                       epochs=150, batch_size=100, display_freq=1, learning_rate=0.01,
+                                       epochs=150, batch_size=100, display_freq=1, optimizer='Adam',
                                        shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                        dropout=0.5, validation_split=0.2, validation_data=None,
                                        capacity_equivalent=True, equiv_technique='ratio', do_conf_mat=True):
@@ -205,7 +203,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
     monte_carlo = RealVsComplex(complex_network,
                                 capacity_equivalent=capacity_equivalent, equiv_technique=equiv_technique)
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
-    monte_carlo.run(dataset.x, dataset.y, iterations=iterations, learning_rate=learning_rate,
+    monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar,
                     validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat)
@@ -228,7 +226,7 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
                                       hl=str(len(shape_raw)), shape=str(shape_raw),
                                       dropout=str(dropout), num_classes=str(dataset.y.shape[1]),
                                       polar_mode='Yes' if polar else 'No',
-                                      learning_rate=learning_rate, activation=activation,
+                                      activation=activation,
                                       dataset_size=str(dataset.x.shape[0]),
                                       feature_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size,
                                       winner='CVNN' if complex_median > real_median else 'RVNN',
@@ -267,20 +265,20 @@ def _create_excel_file(fieldnames, row_data, filename=None, percentage_cols=None
     wb.save(filename)
 
 
-def _save_rvnn_vs_cvnn_montecarlo_log(path, dataset_name, hl, shape, dropout, num_classes, polar_mode, learning_rate,
+def _save_rvnn_vs_cvnn_montecarlo_log(path, dataset_name, hl, shape, dropout, num_classes, polar_mode,
                                       activation,
                                       dataset_size, feature_size, epochs, batch_size, winner,
                                       complex_median, real_median, complex_iqr, real_iqr,
                                       complex_median_train, real_median_train,
                                       comments='', filename=None):
     fieldnames = ['dataset', '# Classes', "Dataset Size", 'Feature Size', "Polar Mode",
-                  'HL', 'Shape', 'Dropout', "Learning Rate", "Activation Function", 'epochs', 'batch size',
+                  'HL', 'Shape', 'Dropout', "Activation Function", 'epochs', 'batch size',
                   "Winner", "CVNN median", "RVNN median", 'CVNN IQR', 'RVNN IQR',
                   "CVNN train median", "RVNN train median",
                   'path', "cvnn version", "Comments"
                   ]
     row_data = [dataset_name, num_classes, dataset_size, feature_size, polar_mode,  # Dataset information
-                hl, shape, dropout, learning_rate, activation, epochs, batch_size,  # Model information
+                hl, shape, dropout, activation, epochs, batch_size,  # Model information
                 winner, complex_median, real_median, complex_iqr, real_iqr,  # Preliminary results
                 complex_median_train, real_median_train,
                 path, cvnn.__version__, comments  # Library information
@@ -289,16 +287,16 @@ def _save_rvnn_vs_cvnn_montecarlo_log(path, dataset_name, hl, shape, dropout, nu
     _create_excel_file(fieldnames, row_data, filename, percentage_cols=percentage_cols)
 
 
-def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mode, learning_rate, dataset_size,
+def _save_montecarlo_log(path, dataset_name, models_names, num_classes, polar_mode, dataset_size,
                          features_size, epochs, batch_size, filename=None):
     fieldnames = [
         'dataset', '# Classes', "Dataset Size", 'Feature Size',  # Dataset information
-        'models', 'epochs', 'batch size', "Polar Mode", "Learning Rate",  # Models information
+        'models', 'epochs', 'batch size', "Polar Mode",  # Models information
         'path', "cvnn version"  # Library information
     ]
     row_data = [
         dataset_name, num_classes, dataset_size, features_size,
-        '-'.join(models_names), epochs, batch_size, polar_mode, learning_rate,
+        '-'.join(models_names), epochs, batch_size, polar_mode,
         path, cvnn.__version__
     ]
     _create_excel_file(fieldnames, row_data, filename)

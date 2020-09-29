@@ -13,7 +13,7 @@ from time import strftime, perf_counter, gmtime
 from prettytable import PrettyTable
 # My own module!
 import cvnn.layers as layers
-import cvnn.optimizers
+from cvnn.optimizers import get_optimizer
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
 from cvnn.utils import create_folder
@@ -50,12 +50,14 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name, shape, loss_fun, optimizer, verbose=True, tensorboard=True):
+    def __init__(self, name, shape, loss_fun, optimizer='Adam',
+                 verbose: bool = True, tensorboard: bool = True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models
         :param shape: List of cvnn.layers.ComplexLayer objects
         :param loss_fun: tensorflow.python.keras.losses to be used.
+        :param optimizer: Optimizer to be used. Keras optimizers are not allowed. Only cvnn.optimizers modules.
         :param verbose: if True it will print information of np.prod(w_vals.shape)the model just created
         :param tensorboard: If true it will save tensorboard information inside log/.../tensorboard_logs/
                 - Loss and accuracy
@@ -67,14 +69,11 @@ class CvnnModel:
         if not all([isinstance(layer, layers.ComplexLayer) for layer in shape]):
             logger.error("All layers in shape must be a cvnn.layer.Layer", exc_info=True)
             sys.exit(-1)
-        if not isinstance(optimizer, cvnn.optimizers.Optimizer):
-            logger.error("The optimizer must be a cvnn.optimizers.Optimizer", exc_info=True)
-            sys.exit(-1)
         layers.ComplexLayer.last_layer_output_dtype = None
         layers.ComplexLayer.last_layer_output_size = None
         self.shape = shape
         self.loss_fun = loss_fun
-        self.optimizer = optimizer
+        self.optimizer = get_optimizer(optimizer)       # This checks input already
         # self.optimizer.init_velocity(shape=shape)
         self.epochs_done = 0
         self.run_pandas = pd.DataFrame(columns=['step', 'epoch',
@@ -391,8 +390,9 @@ class CvnnModel:
                 https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit
         :param display_freq: Integer (Default 1)
             Frequency on terms of epochs before saving information and running a checkpoint.
-        :param save_model_checkpoints: Save the model to be able to load and continue training later (Not yet working)
-        :param save_csv_history: Save information of the train and test loss and accuracy on csv files.
+        :param save_model_checkpoints: (Boolean)
+                    Save the model to be able to load and continue training later TODO: Not yet working
+        :param save_csv_history: (Boolean) Save information of the train and test loss and accuracy on csv files.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch. Default: True
         :return: None
         """
@@ -933,7 +933,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.44'
+__version__ = '0.2.45'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

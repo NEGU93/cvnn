@@ -6,12 +6,25 @@ import sys
 from pdb import set_trace
 
 
+def get_optimizer(optimizer):
+    if isinstance(optimizer, Optimizer):
+        return optimizer
+    elif isinstance(optimizer, str):
+        try:
+            # TODO: For the moment is not possible to give parameters to constructors
+            return opt_dispatcher[optimizer.lower()]
+        except KeyError:
+            logger.warning(str(optimizer) + " is not a known optimizer. Known optimizers:" +
+                           s for s in opt_dispatcher.keys())
+            sys.exit(-1)
+
+
 class Optimizer(ABC):
     def __init__(self):
         pass
 
-    # def init_velocity(self, shape):
-    #    pass
+    def compile(self, shape):
+        pass
 
     def optimize(self, variables, gradients):
         pass
@@ -29,11 +42,10 @@ class SGD(Optimizer):
         self.first_time = True
         super().__init__()
 
-    """
-    def init_velocity(self, shape):
+    def compile(self, shape):
         for layer in shape:
             for elem in layer.trainable_variables():
-                self.velocity.append(tf.zeros(elem.shape, dtype=layer.get_input_dtype()))"""
+                self.velocity.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
 
     def optimize(self, variables, gradients):
         with tf.name_scope(self.name):
@@ -61,20 +73,20 @@ class RMSprop(Optimizer):
         self.epsilon = epsilon
         self.vdw = []
         self.sdw = []
-        self.first_time = True
         super().__init__()
+
+    def compile(self, shape):
+        for layer in shape:
+            for elem in layer.trainable_variables():
+                self.vdw.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
+                self.sdw.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
 
     def optimize(self, variables, gradients):
         with tf.name_scope(self.name):
             for i, val in enumerate(variables):
-                if self.first_time:
-                    self.vdw.append(tf.Variable((1 - self.momentum) * gradients[i]))
-                    self.sdw.append(tf.Variable((1 - self.rho) * tf.math.square(gradients[i])))
-                else:
-                    self.vdw[i].assign(self.momentum * self.vdw[i] + (1 - self.momentum) * gradients[i])
-                    self.sdw[i].assign(self.rho * self.sdw[i] + (1 - self.rho) * tf.math.square(gradients[i]))
+                self.vdw[i].assign(self.momentum * self.vdw[i] + (1 - self.momentum) * gradients[i])
+                self.sdw[i].assign(self.rho * self.sdw[i] + (1 - self.rho) * tf.math.square(gradients[i]))
                 val.assign(val - self.learning_rate * self.vdw[i] / tf.math.sqrt(self.sdw[i] + self.epsilon))
-            self.first_time = False
 
 
 class Adam(Optimizer):
@@ -95,16 +107,25 @@ class Adam(Optimizer):
         self.iter = 1
         super().__init__()
 
+    def compile(self, shape):
+        for layer in shape:
+            for elem in layer.trainable_variables():
+                self.vdw.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
+                self.sdw.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
+
     def optimize(self, variables, gradients):
         with tf.name_scope(self.name):
             for i, val in enumerate(variables):
-                if self.iter == 1:
-                    self.vdw.append(tf.Variable((1 - self.beta_1) * gradients[i]))
-                    self.sdw.append(tf.Variable((1 - self.beta_2) * tf.math.square(gradients[i])))
-                else:
-                    self.vdw[i].assign(self.beta_1 * self.vdw[i] + (1 - self.beta_1) * gradients[i])
-                    self.sdw[i].assign(self.beta_2 * self.sdw[i] + (1 - self.beta_2) * tf.math.square(gradients[i]))
+                self.vdw[i].assign(self.beta_1 * self.vdw[i] + (1 - self.beta_1) * gradients[i])
+                self.sdw[i].assign(self.beta_2 * self.sdw[i] + (1 - self.beta_2) * tf.math.square(gradients[i]))
                 vdw_corr = self.vdw[i] / (1 - self.beta_1**self.iter)
                 sdw_corr = self.sdw[i] / (1 - self.beta_2**self.iter)
                 val.assign(val - self.learning_rate * vdw_corr / (tf.math.sqrt(sdw_corr) + self.epsilon))
             self.iter += 1
+
+
+opt_dispatcher = {
+    'sgd': SGD(),
+    'rmsprop': RMSprop(),
+    'adam': Adam(),
+}
