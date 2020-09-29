@@ -853,7 +853,7 @@ class MonteCarloAnalyzer:
                     self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
                 except np.linalg.LinAlgError:
                     logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular")
-                self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib)
+                self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib)
 
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
@@ -1113,6 +1113,6 @@ if __name__ == "__main__":
     monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.27'
+__version__ = '0.1.28'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

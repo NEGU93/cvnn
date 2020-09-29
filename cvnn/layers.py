@@ -224,7 +224,7 @@ class Dense(ComplexLayer):
             apply_activation(self.activation,
                              tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
                              ).numpy().dtype
-        self.dropout = dropout
+        self.dropout = dropout      # TODO: I don't find the verification that it is between 0 and 1. I think I omitted
         if weight_initializer is None:
             weight_initializer = initializers.GlorotUniform()
         self.weight_initializer = weight_initializer
@@ -376,7 +376,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.26'
+__version__ = '0.0.27'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

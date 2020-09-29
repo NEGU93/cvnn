@@ -57,7 +57,8 @@ class CvnnModel:
         :param name: Name of the model. It will be used to distinguish models
         :param shape: List of cvnn.layers.ComplexLayer objects
         :param loss_fun: tensorflow.python.keras.losses to be used.
-        :param optimizer: Optimizer to be used. Keras optimizers are not allowed. Only cvnn.optimizers modules.
+        :param optimizer: Optimizer to be used. Keras optimizers are not allowed.
+            Can be either cvnn.optimizers.Optimizer or a string listed in opt_dispatcher.
         :param verbose: if True it will print information of np.prod(w_vals.shape)the model just created
         :param tensorboard: If true it will save tensorboard information inside log/.../tensorboard_logs/
                 - Loss and accuracy
@@ -301,7 +302,7 @@ class CvnnModel:
         if name is None:
             name = self.name + "_real_equiv"
         # set_trace()
-        return CvnnModel(name=name, shape=real_shape, loss_fun=self.loss_fun,
+        return CvnnModel(name=name, shape=real_shape, loss_fun=self.loss_fun, optimizer=self.optimizer.__deepcopy__(),
                          tensorboard=self.tensorboard, verbose=False)
 
     # ====================
@@ -933,7 +934,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.45'
+__version__ = '0.2.46'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -105,7 +105,7 @@ Results
         :param y: Labels
         :return: tuple (loss, accuracy)
 
-.. py:method:: get_confusion_matrix(self, x, y, save_result=False):
+.. py:method:: get_confusion_matrix(self, x, y, save_result=False)
 
         Generates a pandas data-frame with the confusion matrix of result of x and y (labels)
 
@@ -134,7 +134,7 @@ Others
                 if not model.is_complex():
                         x = cvnn.utils.transform_to_real(x)
 
-.. py:method:: get_real_equivalent(self, classifier=True, name=None):
+.. py:method:: get_real_equivalent(self, classifier=True, name=None)
         
         Creates a new model equivalent of current model. If model is already real throws and error.
 

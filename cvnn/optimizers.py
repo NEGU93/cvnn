@@ -29,9 +29,18 @@ class Optimizer(ABC):
     def optimize(self, variables, gradients):
         pass
 
+    def __deepcopy__(self, memodict=None):
+        pass
+
 
 class SGD(Optimizer):
     def __init__(self, learning_rate: float = 0.01, momentum: float = 0.0, name: str = 'SGD'):
+        """
+        :param learning_rate: The learning rate. Defaults to 0.001.
+        :param momentum: float hyperparameter between [0, 1) that accelerates gradient descent in the relevant
+                        direction and dampens oscillations. Defaults to 0, i.e., vanilla gradient descent.
+        :param name: Optional name for the operations created when applying gradients. Defaults to "Adam".
+        """
         self.name = name
         self.learning_rate = learning_rate
         if momentum > 1 or momentum < 0:
@@ -41,6 +50,11 @@ class SGD(Optimizer):
         self.velocity = []
         self.first_time = True
         super().__init__()
+
+    def __deepcopy__(self, memodict={}):
+        if memodict is None:
+            memodict = {}
+        return SGD(learning_rate=self.learning_rate, momentum=self.momentum, name=self.name)
 
     def compile(self, shape):
         for layer in shape:
@@ -59,7 +73,14 @@ class SGD(Optimizer):
 
 
 class RMSprop(Optimizer):
-    def __init__(self, learning_rate=0.001, rho=0.9, momentum=0.0, epsilon=1e-07, name="Adam"):
+    def __init__(self, learning_rate=0.001, rho=0.9, momentum=0.0, epsilon=1e-07, name="RMSprop"):
+        """
+        :param learning_rate: The learning rate. Defaults to 0.001.
+        :param rho: Discounting factor for the history/coming gradient. Defaults to 0.9.
+        :param momentum: The exponential decay rate for the 1st moment estimates. Defaults to 0.9.
+        :param epsilon: A small constant for numerical stability. Default 1e-07.
+        :param name: Optional name for the operations created when applying gradients. Defaults to "Adam".
+        """
         self.name = name
         self.learning_rate = learning_rate
         if rho > 1 or rho < 0:
@@ -74,6 +95,12 @@ class RMSprop(Optimizer):
         self.vdw = []
         self.sdw = []
         super().__init__()
+
+    def __deepcopy__(self, memodict={}):
+        if memodict is None:
+            memodict = {}
+        return RMSprop(learning_rate=self.learning_rate, rho=self.rho, momentum=self.momentum, epsilon=self.epsilon,
+                       name=self.name)
 
     def compile(self, shape):
         for layer in shape:
@@ -90,7 +117,15 @@ class RMSprop(Optimizer):
 
 
 class Adam(Optimizer):
-    def __init__(self, learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, name="Adam"):
+    def __init__(self, learning_rate: float = 0.001, beta_1: float = 0.9, beta_2: float = 0.999,
+                 epsilon: float = 1e-07, name="Adam"):
+        """
+        :param learning_rate: The learning rate. Defaults to 0.001.
+        :param beta_1: The exponential decay rate for the 1st moment estimates. Defaults to 0.9.
+        :param beta_2: The exponential decay rate for the 2nd moment estimates. Defaults to 0.999.
+        :param epsilon: A small constant for numerical stability. Default 1e-07.
+        :param name: Optional name for the operations created when applying gradients. Defaults to "Adam".
+        """
         self.name = name
         self.learning_rate = learning_rate
         if beta_1 >= 1 or beta_1 < 0:
@@ -106,6 +141,12 @@ class Adam(Optimizer):
         self.sdw = []
         self.iter = 1
         super().__init__()
+
+    def __deepcopy__(self, memodict={}):
+        if memodict is None:
+            memodict = {}
+        return Adam(learning_rate=self.learning_rate, beta_1=self.beta_1, beta_2=self.beta_2, epsilon=self.epsilon,
+                    name=self.name)
 
     def compile(self, shape):
         for layer in shape:
