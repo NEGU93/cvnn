@@ -399,8 +399,8 @@ class CvnnModel:
         # Check input
         verbose = self.verify_fit_input(save_model_checkpoints, epochs, batch_size, display_freq, verbose)
         # Prepare dataset
-        train_dataset, (x_test, y_test) = self._process_dataset(x, y, validation_split, validation_data)
-        train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
+        train_dataset, (x_test, y_test) = self._process_dataset(x, y, validation_split, validation_data, batch_size)
+        # train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
         # Print start condition
         start_status = ''
         if x_test is not None and y_test is not None:
@@ -526,7 +526,7 @@ class CvnnModel:
             logger.error("verbose datatype (" + str(type(verbose)) + ") not supported")
 
     @staticmethod
-    def _process_dataset(x, y, validation_split=0.0, validation_data=None):
+    def _process_dataset(x, y, validation_split=0.0, validation_data=None, batch_size: int = 32):
         test_dataset = None
         if isinstance(x, (list, tuple, np.ndarray)):
             if validation_data is None:
@@ -538,17 +538,17 @@ class CvnnModel:
                 y_test = y[:int(dataset_length * validation_split)]
                 if len(x_test) != 0:
                     validation_data = (np.array(x_test), np.array(y_test))
-                train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+                train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size=batch_size)
             else:
                 if validation_split != 0:
                     logger.warning("validation_split was given but will be ignored because "
                                    "validation_data was not None")
-                train_dataset = tf.data.Dataset.from_tensor_slices((x, y))
+                train_dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(batch_size=batch_size)
         elif isinstance(x, tf.data.Dataset):
             if y is not None:
                 logger.warning("y is ignored because x was a Dataset (and should contain the labels), "
                                "however, y was not None")
-            train_dataset = x.unbatch()
+            train_dataset = x
         else:
             logger.error("dataset type ({}) not supported".format(type(x)))
             sys.exit(-1)
@@ -933,7 +933,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.43'
+__version__ = '0.2.44'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

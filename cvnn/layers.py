@@ -268,8 +268,8 @@ class Dense(ComplexLayer):
         out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype) + \
                   ") -> output size = " + str(self.output_size) + \
                   ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
-                  + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + \
                   "\n\tDropout: " + str(self.dropout) + "\n"
+        # + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + \
         return out_str
 
     def call(self, inputs):
@@ -376,7 +376,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.25'
+__version__ = '0.0.26'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -7,9 +7,15 @@ import numpy as np
 from tqdm import tqdm
 from pdb import set_trace
 import plotly.graph_objects as go
+import plotly
 
 tfds.disable_progress_bar()
 tf.enable_v2_behavior()
+
+PLOTLY_CONFIG = {
+    'scrollZoom': True,
+    'editable': True
+}
 
 
 def normalize_img(image, label):
@@ -44,8 +50,13 @@ def get_dataset():
     return ds_train, ds_test
 
 
-def keras_fit(ds_train, ds_test, verbose):
+def keras_fit(ds_train, ds_test, verbose,
+              optimizer_name="Adam"):
     # https://www.tensorflow.org/datasets/keras_example
+    if optimizer_name == "Adam":
+        optimizer = tf.keras.optimizers.Adam()
+    else:
+        optimizer = tf.keras.optimizers.SGD()
     model = tf.keras.models.Sequential([
       tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
       tf.keras.layers.Dense(128, activation='relu'),
@@ -53,7 +64,7 @@ def keras_fit(ds_train, ds_test, verbose):
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
-        optimizer=tf.keras.optimizers.SGD(),  # ATTENTION: The only difference with the link.
+        optimizer=optimizer,  # ATTENTION: The only difference with the link.
         metrics=['accuracy'],
     )
     model.fit(
@@ -65,38 +76,72 @@ def keras_fit(ds_train, ds_test, verbose):
     return model.evaluate(ds_test, verbose=verbose)
 
 
-def own_fit(ds_train, ds_test, verbose):
+def own_fit(ds_train, ds_test, verbose,
+            optimizer_name="Adam",
+            activation_1=tf.keras.activations.relu, activation_2=tf.keras.activations.softmax,
+            weight_initializer=tf.keras.initializers.GlorotUniform(), bias_initializer=tf.keras.initializers.Zeros()):
+    if optimizer_name == "Adam":
+        optimizer = optimizers.Adam()
+    else:
+        optimizer = optimizers.SGD()
     shape = [
         layers.Flatten(input_size=(28, 28, 1), input_dtype=np.float32),
-        layers.Dense(output_size=128, activation='cart_relu', input_dtype=np.float32, dropout=None),
-        layers.Dense(output_size=10, activation='softmax_real')
+        layers.Dense(output_size=128,
+                     activation=activation_1,
+                     input_dtype=np.float32, dropout=None,
+                     weight_initializer=weight_initializer,
+                     bias_initializer=bias_initializer
+                     ),
+        layers.Dense(output_size=10,
+                     activation=activation_2,
+                     weight_initializer=weight_initializer,
+                     bias_initializer=bias_initializer
+                     )
     ]
     model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
-                      optimizer=optimizers.SGD(),
+                      optimizer=optimizer,
                       tensorboard=False, verbose=False)
-    model.fit(x=ds_train, y=None, validation_data=ds_test, batch_size=128, epochs=6,
+    model.fit(x=ds_train, y=None, validation_data=ds_test, epochs=6,
               verbose=verbose, save_csv_history=True)
     return model.evaluate(ds_test)
 
 
-if __name__ == "__main__":
+def test_mnist_montecarlo(optimizer_name='Adam'):
     # Parameters
     KERAS_DEBUG = True
     OWN_MODEL = True
-    iterations = 10
-    verbose = 0
+    iterations = 1000
+    verbose = 1 if iterations == 1 else 0
 
     # Training
     ds_train, ds_test = get_dataset()
     keras_results = []
     own_results = []
-    for it in tqdm(range(iterations)):
-        if KERAS_DEBUG:
-            keras_results.append(keras_fit(ds_train, ds_test, verbose=verbose)[1])
-        if OWN_MODEL:
-            own_results.append(own_fit(ds_train, ds_test, verbose=verbose)[1])
+    activation_1 = tf.keras.activations.relu
+    activation_2 = tf.keras.activations.softmax
+    weight_initializer = tf.keras.initializers.GlorotUniform()
+    bias_initializer = tf.keras.initializers.Zeros()
     fig = go.Figure()
-    fig.add_trace(go.Box(y=keras_results, name='Keras'))
-    fig.add_trace(go.Box(y=own_results, name='Own'))
-    fig.show()
+
+    if KERAS_DEBUG:
+        tf.print("Keras simulation")
+        for _ in tqdm(range(iterations)):
+            keras_results.append(keras_fit(ds_train, ds_test, verbose=verbose, optimizer_name=optimizer_name)[1])
+        fig.add_trace(go.Box(y=keras_results, name='Keras'))
+    if OWN_MODEL:
+        tf.print("Cvnn simulation")
+        for _ in tqdm(range(iterations)):
+            own_results.append(own_fit(ds_train, ds_test, verbose=verbose, optimizer_name=optimizer_name,
+                                       activation_1=activation_1, activation_2=activation_2,
+                                       weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer)[1])
+        fig.add_trace(go.Box(y=own_results, name='Cvnn'))
+    plotly.offline.plot(fig, filename="./results/" + optimizer_name + "_mnist_test.html",
+                        config=PLOTLY_CONFIG, auto_open=True)
+
+
+if __name__ == "__main__":
+    test_mnist_montecarlo("SGD")
+    test_mnist_montecarlo()
+
 
