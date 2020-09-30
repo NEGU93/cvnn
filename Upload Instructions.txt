@@ -1,3 +1,12 @@
+**PIP:**
+
+python setup.py sdist
+twine upload dist/*
+
+https://medium.com/@joel.barmettler/how-to-upload-your-python-package-to-pypi-65edc5fe9c56
+
+**CONDA:**
+
 https://stackoverflow.com/questions/49474575/how-to-install-my-own-python-module-package-via-conda-and-watch-its-changes
 
 https://docs.anaconda.com/anaconda-cloud/user-guide/getting-started/#building-and-uploading-packages
