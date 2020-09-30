@@ -4,8 +4,8 @@ import versioneer
 requirements = [
     'tensorflow>=2.0',
     'numpy',
-    'pandas', 'scipy', 'prettytable',                   # Data
-    'colorlog', 'openpyxl',                             # Logging
+    'pandas', 'scipy',                   # Data
+    'colorlog', 'openpyxl',              # Logging
     'tqdm'
 ]
 
@@ -34,6 +34,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=open('README.md').read(),
     extras_require={
-        'plotter': ['matplotlib', 'seaborn', 'plotly', 'tikzplotlib']
+        'plotter': ['matplotlib', 'seaborn', 'plotly', 'tikzplotlib'],
+        'full': ['prettytable', 'matplotlib', 'seaborn', 'plotly', 'tikzplotlib']
     }
 )

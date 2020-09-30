@@ -24,6 +24,12 @@ has the posibility to plot the results obtained with the training with several p
 pip install cvnn[plotter]
 ```
 
+**Full Version** installs full version with all features
+
+```
+pip install cvnn[full]
+```
+
 ## About me & Motivation
 
 [My personal website](https://negu93.github.io/agustinbarrachina/)

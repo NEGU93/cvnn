@@ -9,7 +9,6 @@ import tensorflow as tf
 from datetime import datetime
 from pdb import set_trace
 from time import strftime, perf_counter, gmtime
-from prettytable import PrettyTable
 # My own module!
 import cvnn.layers as layers
 from cvnn.optimizers import get_optimizer
@@ -18,6 +17,11 @@ import cvnn.data_analysis as da
 from cvnn.utils import create_folder
 from cvnn import logger
 
+try:
+    from prettytable import PrettyTable
+    PRETTY_TABLE = True
+except ImportError:
+    PRETTY_TABLE = False
 
 try:
     import cPickle as pickle
@@ -862,6 +866,14 @@ class CvnnModel:
         return summary_str
 
     def training_param_summary(self):
+        """
+        Prints a table analog to tf.keras.Model.summary()
+        https://www.tensorflow.org/api_docs/python/tf/keras/Model#summary
+        """
+        if not PRETTY_TABLE:
+            logger.warning("Function CvnnModel.training_param_summary() was called "
+                           "but PrettyTable is not installed so it will be omitted")
+            return None
         summary_str = ""
         summary_str += self.name + "\n"
         if self.is_complex():
@@ -936,7 +948,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.50'
+__version__ = '0.2.51'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
