@@ -10,8 +10,18 @@ Please [Read the Docs](https://complex-valued-neural-networks.readthedocs.io/en/
 ## Instalation Guide:
 
 Using [PIP](https://pypi.org/project/cvnn/)
+
+### Vanilla Version
+This version installs all the minimum dependencies.
+
 ```
 pip install cvnn
+```
+### Plot capabilities
+This version has the posibility to plot the results obtained with the training with several plot libraries.
+
+```
+pip install cvnn[plotter]
 ```
 
 ## About me & Motivation
