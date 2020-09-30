@@ -32,8 +32,8 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     long_description_content_type="text/markdown",
-    long_description = open('README.md').read(),
-    extras_require = {
+    long_description=open('README.md').read(),
+    extras_require={
         'plotter': ['matplotlib', 'seaborn', 'plotly', 'tikzplotlib']
     }
 )

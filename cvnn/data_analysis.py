@@ -687,7 +687,7 @@ class MonteCarloPlotter(Plotter):
         if library == 'plotly':
             self._plot_line_confidance_interval_plotly(key=key, showfig=showfig, savefig=savefig,
                                                        title=title, full_border=full_border, x_axis=x_axis)
-        elif library == 'matplotlib':
+        elif library == 'matplotlib' or library == 'seaborn':
             self._plot_line_confidence_interval_matplotlib(key=key, showfig=showfig, savefig=savefig,
                                                            title=title, x_axis=x_axis, extension=extension)
         else:
@@ -1219,6 +1219,6 @@ if __name__ == "__main__":
     monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.30'
+__version__ = '0.1.31'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

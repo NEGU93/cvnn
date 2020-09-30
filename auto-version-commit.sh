@@ -33,6 +33,14 @@ newnum=`expr $oldnum + 1`		# x += 1
 newver="$verf1.$verf2.$newnum\'"	# joins string again.
 sed -i "s/$oldver\$/$newver/g" $file	# replaces line with the new one
 
+# Change doc version and date
+file="docs/index.rst"
+chang=`grep ":Version: " $file`
+verf1=`echo $oldver | cut -d '.' -f1`
+dat=$(date +'%m/%d/%Y')
+newlin="$verf1.$verf2.$oldnum of $dat"
+sed -i "s/$chang\$/$newlin/g" $file
+
 
 git add -A
 git commit -m $1
