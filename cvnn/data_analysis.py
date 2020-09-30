@@ -23,6 +23,7 @@ except ImportError as e:
 try:
     import matplotlib.pyplot as plt
     AVAILABLE_LIBRARIES.add('matplotlib')
+    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']  # [1:] Uncomment to remove blue color
 except ImportError as e:
     logger.info("Matplotlib not installed, consider installing it to get more plotting capabilities")
 if 'matplotlib' in AVAILABLE_LIBRARIES:
@@ -44,8 +45,6 @@ DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',  # Blue
                          'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
                          'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
-
-DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']  # [1:] # Uncomment to remove blue color
 
 
 @dataclass
@@ -1214,15 +1213,12 @@ class MonteCarloAnalyzer:
 if __name__ == "__main__":
     path = "//media/barrachina/data/results/MLSP/results/two hidden layer/TwoLayerTypeA/run_data.csv"
     monte = MonteCarloAnalyzer(path=path)
-    # set_trace()
     monte.do_all(showfig=False, savefig=False)
     monte.plot_histogram(library='matplotlib', showfig=False, savefig=False)
     monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=False)
     monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
-    # monte.plot_histogram(key='test accuracy', library='seaborn')
-    # monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.29'
+__version__ = '0.1.30'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
