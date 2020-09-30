@@ -29,6 +29,9 @@ class Optimizer(ABC):
         pass
 
     def summary(self):
+        """
+        :returns: A one line short string with the description of the optimizer
+        """
         pass
 
     def __deepcopy__(self, memodict=None):
@@ -38,6 +41,8 @@ class Optimizer(ABC):
 class SGD(Optimizer):
     def __init__(self, learning_rate: float = 0.01, momentum: float = 0.0, name: str = 'SGD'):
         """
+        Gradient descent (with momentum) optimizer.
+
         :param learning_rate: The learning rate. Defaults to 0.001.
         :param momentum: float hyperparameter between [0, 1) that accelerates gradient descent in the relevant
                         direction and dampens oscillations. Defaults to 0, i.e., vanilla gradient descent.
@@ -82,6 +87,15 @@ class SGD(Optimizer):
 class RMSprop(Optimizer):
     def __init__(self, learning_rate=0.001, rho=0.9, momentum=0.0, epsilon=1e-07, name="RMSprop"):
         """
+        Optimizer that implements the RMSprop algorithm.
+        Reference: http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+
+        The gist of RMSprop is to:
+            - Maintain a moving (discounted) average of the square of gradients
+            - Divide the gradient by the root of this average
+            - This implementation of RMSprop uses plain momentum, not Nesterov momentum.
+        The centered version additionally maintains a moving average of the gradients, and uses that average to estimate the variance.
+
         :param learning_rate: The learning rate. Defaults to 0.001.
         :param rho: Discounting factor for the history/coming gradient. Defaults to 0.9.
         :param momentum: The exponential decay rate for the 1st moment estimates. Defaults to 0.9.
@@ -132,6 +146,11 @@ class Adam(Optimizer):
     def __init__(self, learning_rate: float = 0.001, beta_1: float = 0.9, beta_2: float = 0.999,
                  epsilon: float = 1e-07, name="Adam"):
         """
+        Optimizer that implements the Adam algorithm.
+        Reference: https://arxiv.org/abs/1412.6980
+        Adam optimization is a stochastic gradient descent method that is based on adaptive estimation of
+                        first-order and second-order moments.
+
         :param learning_rate: The learning rate. Defaults to 0.001.
         :param beta_1: The exponential decay rate for the 1st moment estimates. Defaults to 0.9.
         :param beta_2: The exponential decay rate for the 2nd moment estimates. Defaults to 0.999.

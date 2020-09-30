@@ -6,4 +6,4 @@ This sections shows results of simulations already done, mainly comparing RVNN w
 .. toctree::
 	:maxdepth: 2
 
-    results/correlation_noise
+    experiments/correlation_noise
