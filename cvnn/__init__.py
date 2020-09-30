@@ -13,7 +13,12 @@ def get_version() -> str:
     if mo:
         return mo.group(1)
     else:
-        raise RuntimeError("Unable to find version string in %s." % (versionfile,))
+        VSRE = r"\"version\": ['\"]([^'\"]*)['\"]"
+        mo = re.search(VSRE, verstrline, re.M)
+        if mo:
+            return mo.group(1)
+        else:
+            raise RuntimeError("Unable to find version string in %s." % (versionfile,))
 
 
 # How to comment script header
