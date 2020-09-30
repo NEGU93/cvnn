@@ -855,6 +855,8 @@ class CvnnModel:
             summary_str += "Complex Network\n"
         else:
             summary_str += "Real Network\n"
+        summary_str += "Loss function: " + self.loss_fun.__name__ + "\n"
+        summary_str += self.optimizer.summary()
         for lay in self.shape:
             summary_str += lay.get_description()
         return summary_str
@@ -934,7 +936,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.49'
+__version__ = '0.2.50'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

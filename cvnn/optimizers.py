@@ -28,6 +28,9 @@ class Optimizer(ABC):
     def optimize(self, variables, gradients):
         pass
 
+    def summary(self):
+        pass
+
     def __deepcopy__(self, memodict=None):
         pass
 
@@ -54,6 +57,11 @@ class SGD(Optimizer):
         if memodict is None:
             memodict = {}
         return SGD(learning_rate=self.learning_rate, momentum=self.momentum, name=self.name)
+
+    def summary(self):
+        return "SDG optimizer " + self.name + \
+               ": learning rate = " + str(self.learning_rate) + \
+               "; momentum = " + str(self.momentum) + "\n"
 
     def compile(self, shape):
         for layer in shape:
@@ -101,6 +109,11 @@ class RMSprop(Optimizer):
         return RMSprop(learning_rate=self.learning_rate, rho=self.rho, momentum=self.momentum, epsilon=self.epsilon,
                        name=self.name)
 
+    def summary(self):
+        return "RMSprop optimizer " + self.name + \
+               ": learning rate = " + str(self.learning_rate) + " rho = " + str(self.rho) + \
+               "; momentum = " + str(self.momentum) + "; epsilon = " + str(self.epsilon) + "\n"
+
     def compile(self, shape):
         for layer in shape:
             for elem in layer.trainable_variables():
@@ -146,6 +159,11 @@ class Adam(Optimizer):
             memodict = {}
         return Adam(learning_rate=self.learning_rate, beta_1=self.beta_1, beta_2=self.beta_2, epsilon=self.epsilon,
                     name=self.name)
+
+    def summary(self):
+        return "RMSprop optimizer " + self.name + \
+               ": learning rate = " + str(self.learning_rate) + " beta_1 = " + str(self.beta_1) + \
+               "; beta_2 = " + str(self.beta_2) + "; epsilon = " + str(self.epsilon) + "\n"
 
     def compile(self, shape):
         for layer in shape:
