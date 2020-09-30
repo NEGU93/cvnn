@@ -1,7 +1,6 @@
 import os
 import sys
 import copy
-import re
 import logging
 import numpy as np
 import pandas as pd
@@ -935,7 +934,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.48'
+__version__ = '0.2.49'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

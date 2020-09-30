@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import tensorflow as tf
 from cvnn import logger
-import numpy as np
 import sys
 from pdb import set_trace
 

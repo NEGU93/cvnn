@@ -6,7 +6,6 @@ requirements = [
     'numpy',
     'pandas', 'scipy', 'prettytable',                   # Data
     'colorlog', 'openpyxl',                             # Logging
-    'matplotlib', 'seaborn', 'plotly', 'tikzplotlib',   # Plotting
     'tqdm'
 ]
 
@@ -33,5 +32,8 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     long_description_content_type="text/markdown",
-    long_description = open('README.md').read()
+    long_description = open('README.md').read(),
+    extras_require = {
+        'plotter': ['matplotlib', 'seaborn', 'plotly', 'tikzplotlib']
+    }
 )

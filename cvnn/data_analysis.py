@@ -1,9 +1,4 @@
 from dataclasses import dataclass
-import matplotlib.pyplot as plt
-import plotly
-import plotly.graph_objects as go
-import plotly.figure_factory as ff
-import seaborn as sns
 import pandas as pd
 import numpy as np
 import re
@@ -14,9 +9,33 @@ from pdb import set_trace
 from cvnn.utils import create_folder
 import logging
 import cvnn
-import tikzplotlib
 
 logger = logging.getLogger(cvnn.__name__)
+AVAILABLE_LIBRARIES = set()
+
+try:
+    import plotly
+    import plotly.graph_objects as go
+    import plotly.figure_factory as ff
+    AVAILABLE_LIBRARIES.add('plotly')
+except ImportError as e:
+    logger.info("Plotly not installed, consider installing it to get more plotting capabilities")
+try:
+    import matplotlib.pyplot as plt
+    AVAILABLE_LIBRARIES.add('matplotlib')
+except ImportError as e:
+    logger.info("Matplotlib not installed, consider installing it to get more plotting capabilities")
+if 'matplotlib' in AVAILABLE_LIBRARIES:
+    try:
+        import seaborn as sns
+        AVAILABLE_LIBRARIES.add('seaborn')
+    except ImportError as e:
+        logger.info("Seaborn not installed, consider installing it to get more plotting capabilities")
+    try:
+        import tikzplotlib
+        AVAILABLE_LIBRARIES.add('tikzplotlib')
+    except ImportError as e:
+        logger.info("Tikzplotlib not installed, consider installing it to get more plotting capabilities")
 
 DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',  # Blue
                          'rgb(255, 127, 14)',  # Orange
@@ -123,6 +142,9 @@ def add_params(fig, ax, y_label=None, x_label=None, loc=None, title=None,
     :param savefig: Boolean. If true it will save the figure with the name of filename parameter
     :return None:
     """
+    if 'matplotlib' not in AVAILABLE_LIBRARIES:
+        logger.warning("No Matplotlib installed, function " + add_params.__name__ + " was called but will be omitted")
+        return None
     # Figure parameters
     if loc is not None:
         fig.legend(loc=loc)
@@ -163,40 +185,51 @@ def get_trailing_number(s):
 
 def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=None, showfig=False):
     if library == 'seaborn':
-        fig, ax = plt.subplots()
-        sns.heatmap(data,
-                    annot=True,
-                    linewidths=.5,
-                    cbar=True,
-                    )
-        if filename is not None:
-            fig.savefig(filename)
-    elif library == 'plotly':
-        z = data.values.tolist()
-        if axis_legends is None:
-            y = [str(j) for j in data.axes[0].tolist()]
-            x = [str(i) for i in data.axes[1].tolist()]
+        if 'seaborn' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Seaborn installed, function " + plot_confusion_matrix.__name__ + " was called but will be omitted")
+            return None
         else:
-            y = []
-            x = []
-            for j in data.axes[0].tolist():
-                if isinstance(j, int):
-                    y.append(axis_legends[j])
-                elif isinstance(j, str):
-                    y.append(j)
-                else:
-                    logger.critical("WTF?! should never have arrived here")
-            for i in data.axes[1].tolist():
-                if isinstance(i, int):
-                    x.append(axis_legends[i])
-                elif isinstance(i, str):
-                    x.append(i)
-                else:
-                    logger.critical("WTF?! should never have arrived here")
-        # fig = go.Figure(data=go.Heatmap(z=z, x=x, y=y))
-        fig = ff.create_annotated_heatmap(z, x=x, y=y)
-    if showfig:
-        fig.show()
+            fig, ax = plt.subplots()
+            sns.heatmap(data,
+                        annot=True,
+                        linewidths=.5,
+                        cbar=True,
+                        )
+            if filename is not None:
+                fig.savefig(filename)
+            if showfig:
+                fig.show()
+    elif library == 'plotly':
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning(
+                "No Plotly installed, function " + plot_confusion_matrix.__name__ + " was called but will be omitted")
+            return None
+        else:
+            z = data.values.tolist()
+            if axis_legends is None:
+                y = [str(j) for j in data.axes[0].tolist()]
+                x = [str(i) for i in data.axes[1].tolist()]
+            else:
+                y = []
+                x = []
+                for j in data.axes[0].tolist():
+                    if isinstance(j, int):
+                        y.append(axis_legends[j])
+                    elif isinstance(j, str):
+                        y.append(j)
+                    else:
+                        logger.critical("WTF?! should never have arrived here")
+                for i in data.axes[1].tolist():
+                    if isinstance(i, int):
+                        x.append(axis_legends[i])
+                    elif isinstance(i, str):
+                        x.append(i)
+                    else:
+                        logger.critical("WTF?! should never have arrived here")
+            # fig = go.Figure(data=go.Heatmap(z=z, x=x, y=y))
+            fig = ff.create_annotated_heatmap(z, x=x, y=y)
+            if showfig:
+                fig.show()
 
 
 def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
@@ -291,6 +324,10 @@ class SeveralMonteCarloComparison:
         # Interquartile Range (IQR) = Q3 - Q1
         # Whishker: [Q1 - 1.5*IQR, Q3 + 1.5*IQR], whatever is out of this is an outlier.
         # suspected outlier: [Q1 - 3*IQR, Q3 + 3*IQR]
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning(
+                "No Plotly installed, function " + self._box_plot_plotly.__name__ + " was called but will be omitted")
+            return None
         savefig = False
         if savefile is not None:
             savefig = True
@@ -347,6 +384,10 @@ class SeveralMonteCarloComparison:
             fig.show(config=PLOTLY_CONFIG)
 
     def _box_plot_seaborn(self, key='test accuracy', step=-1, showfig=False, savefile=None, extension=".svg"):
+        if 'seaborn' not in AVAILABLE_LIBRARIES:
+            logger.warning(
+                "No Seaborn installed, function " + self._box_plot_seaborn.__name__ + " was called but will be omitted")
+            return None
         steps = []
         for i in range(len(self.monte_carlo_runs)):
             if step == -1:
@@ -381,8 +422,11 @@ class SeveralMonteCarloComparison:
                 savefile += extension
             os.makedirs(os.path.split(savefile)[0], exist_ok=True)
             fig.savefig(savefile, transparent=True)
-            # tikzplotlib.clean_figure()
-            tikzplotlib.save(Path(os.path.split(savefile)[0]) / ("tikz_box_plot_" + self.x_label + ".tex"))
+            if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+                logger.warning(
+                    "No Tikzplotlib installed, function " + self._box_plot_seaborn.__name__ + " will not save tex file")
+            else:
+                tikzplotlib.save(Path(os.path.split(savefile)[0]) / ("tikz_box_plot_" + self.x_label + ".tex"))
         if showfig:
             fig.show()
         return fig, ax
@@ -516,11 +560,15 @@ class Plotter:
         if library == 'matplotlib':
             self._plot_matplotlib(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc, extension=extension)
         elif library == 'plotly':
-            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc, extension=extension)
+            self._plot_plotly(key=key, showfig=showfig, savefig=savefig, index_loc=index_loc)
         else:
             logger.warning("Unrecognized library to plot " + library)
 
     def _plot_matplotlib(self, key='loss', showfig=False, savefig=True, index_loc=None, extension=".svg"):
+        if 'matplotlib' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Matplotlib installed, function " + self._plot_matplotlib.__name__ +
+                           " was called but will be omitted")
+            return None
         fig, ax = plt.subplots()
         ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         title = None
@@ -547,7 +595,11 @@ class Plotter:
         if savefig:
             fig.savefig(str(self.path / key) + "_matplotlib" + extension, transparent=True)
 
-    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None, extension=".svg"):
+    def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self._plot_plotly.__name__ +
+                           " was called but will be omitted")
+            return None
         fig = go.Figure()
         annotations = []
         title = None
@@ -624,7 +676,7 @@ class MonteCarloPlotter(Plotter):
     def plot_everything(self, reload=False, library='plotly', showfig=False,
                         savefig=True, index_loc='mean', extension=".svg"):
         # Rename this function to change index_loc default value
-        super().plot_key(reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
+        super().plot_everything(reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
     def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True,
                  index_loc='mean', extension=".svg"):
@@ -645,6 +697,10 @@ class MonteCarloPlotter(Plotter):
 
     def _plot_line_confidence_interval_matplotlib(self, key='test accuracy', showfig=False, savefig=True,
                                                   title='', x_axis='step', extension=".svg"):
+        if 'matplotlib' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Matplotlib installed, function " +
+                           self._plot_line_confidence_interval_matplotlib.__name__ + " was called but will be omitted")
+            return None
         fig, ax = plt.subplots()
         for i, data in enumerate(self.pandas_list):
             x = data[x_axis].unique().tolist()
@@ -677,12 +733,21 @@ class MonteCarloPlotter(Plotter):
             os.makedirs(str(self.path / "plots/lines_confidence/"), exist_ok=True)
             fig.savefig(self.path / ("plots/lines_confidence/montecarlo_" +
                                      key.replace(" ", "_") + "_matplotlib" + extension), transparent=True)
-            tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
+            if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+                logger.warning(
+                    "No Tikzplotlib installed, function " + self._plot_line_confidence_interval_matplotlib.__name__ +
+                    " will not save tex file")
+            else:
+                tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
                                           key.replace(" ", "_") + "_matplotlib" + ".tex"))
         # set_trace()
 
     def _plot_line_confidance_interval_plotly(self, key='test accuracy', showfig=False, savefig=True,
                                               title='', full_border=True, x_axis='step'):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self._plot_line_confidance_interval_plotly.__name__ +
+                           " was called but will be omitted")
+            return None
         fig = go.Figure()
         for i, data in enumerate(self.pandas_list):
             # set_trace()
@@ -742,6 +807,10 @@ class MonteCarloPlotter(Plotter):
             fig.show(config=PLOTLY_CONFIG)
 
     def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, x_axis='step'):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self.plot_train_vs_test.__name__ +
+                           " was called but will be omitted")
+            return None
         fig = go.Figure()
         # test plots
         label = 'mean'
@@ -838,7 +907,7 @@ class MonteCarloAnalyzer:
     # Plot methods
     # ------------
 
-    def do_all(self, extension=".svg"):
+    def do_all(self, extension=".svg", showfig=False, savefig=True):
         """self.monte_carlo_plotter.plot_train_vs_test(key='loss')
         self.monte_carlo_plotter.plot_train_vs_test(key='accuracy')
         self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
@@ -848,12 +917,13 @@ class MonteCarloAnalyzer:
         for key in key_list:
             # self.plot_3d_hist(key=key)
             for lib in ['seaborn', 'plotly']:
-                self.box_plot(key=key, extension=extension, library=lib)
+                self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
                 try:
-                    self.plot_histogram(key=key, library=lib, showfig=False, savefig=True, extension=extension)
+                    self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
                 except np.linalg.LinAlgError:
                     logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular")
-                self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib)
+                self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib,
+                                                                       showfig=showfig, savefig=savefig)
 
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
@@ -865,6 +935,10 @@ class MonteCarloAnalyzer:
             return None
 
     def _box_plot_plotly(self, step=-1, key='test accuracy', showfig=False, savefig=True):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self._box_plot_plotly.__name__ +
+                           " was called but will be omitted")
+            return None
         fig = go.Figure()
         if step == -1:
             step = max(self.df.step)
@@ -912,6 +986,10 @@ class MonteCarloAnalyzer:
             fig.show(config=PLOTLY_CONFIG)
 
     def _box_plot_seaborn(self, step=-1, key='test accuracy', showfig=False, savefig=True, extension='.svg'):
+        if 'seaborn' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Seaborn installed, function " + self._box_plot_seaborn.__name__ +
+                           " was called but will be omitted")
+            return None
         if step == -1:
             step = max(self.df.step)
         # Prepare data
@@ -935,13 +1013,20 @@ class MonteCarloAnalyzer:
             os.makedirs(self.path / "plots/box_plot/", exist_ok=True)
             filename = str(self.path / ("plots/box_plot/montecarlo_" + key.replace(" ", "_") + "_box_plot"))
             fig.savefig(filename + extension)
-            # tikzplotlib.clean_figure()
-            tikzplotlib.save(filename + ".tex")
+            if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+                logger.warning(
+                    "No Tikzplotlib installed, function " + self._box_plot_seaborn.__name__ + " will not save tex file")
+            else:
+                tikzplotlib.save(filename + ".tex")
         if showfig:
             fig.show()
         return fig, ax
 
     def show_plotly_table(self):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self.show_plotly_table.__name__ +
+                           " was called but will be omitted")
+            return None
         # TODO: Not yet debugged
         values = [key for key in self.df.keys()]
         fig = go.Figure(data=[go.Table(
@@ -959,6 +1044,10 @@ class MonteCarloAnalyzer:
         # https://plot.ly/python/v3/3d-filled-line-plots/
         # https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
         # https://matplotlib.org/examples/mplot3d/bars3d_demo.html
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self.plot_3d_hist.__name__ +
+                           " was called but will be omitted")
+            return None
         if steps is None:
             # steps = [int(x) for x in np.linspace(min(self.df.step), max(self.df.step), 6)]
             steps = [int(x) for x in np.logspace(min(self.df.step), np.log2(max(self.df.step)), 8, base=2)]
@@ -1020,6 +1109,10 @@ class MonteCarloAnalyzer:
 
     def _plot_histogram_matplotlib(self, key='test accuracy', step=-1,
                                    showfig=False, savefig=True, title='', extension=".svg"):
+        if 'matplotlib' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Matplotlib installed, function " + self._plot_histogram_matplotlib.__name__ +
+                           " was called but will be omitted")
+            return None
         fig, ax = plt.subplots()
         ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         bins = np.linspace(0, 1, 501)
@@ -1043,6 +1136,10 @@ class MonteCarloAnalyzer:
         return fig, ax
 
     def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Plotly installed, function " + self._plot_histogram_plotly.__name__ +
+                           " was called but will be omitted")
+            return None
         networks_availables = self.df.network.unique()
         if step == -1:
             step = max(self.df.step)
@@ -1079,6 +1176,10 @@ class MonteCarloAnalyzer:
 
     def _plot_histogram_seaborn(self, key='test accuracy', step=-1,
                                 showfig=True, savefig=True, title='', extension=".svg"):
+        if 'seaborn' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Seaborn installed, function " + self._plot_histogram_seaborn.__name__ +
+                           " was called but will be omitted")
+            return None
         fig = plt.figure()
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
@@ -1101,18 +1202,27 @@ class MonteCarloAnalyzer:
                    filename=self.path / (
                            "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
                    showfig=showfig, savefig=savefig)
-        # tikzplotlib.clean_figure()
-        tikzplotlib.save(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + ".tex"))
+        if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+            logger.warning(
+                "No Tikzplotlib installed, function " + self._plot_histogram_seaborn.__name__ +
+                " will not save tex file")
+        else:
+            tikzplotlib.save(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + ".tex"))
         return fig, ax
 
 
 if __name__ == "__main__":
     path = "//media/barrachina/data/results/MLSP/results/two hidden layer/TwoLayerTypeA/run_data.csv"
     monte = MonteCarloAnalyzer(path=path)
+    # set_trace()
+    monte.do_all(showfig=False, savefig=False)
+    monte.plot_histogram(library='matplotlib', showfig=False, savefig=False)
+    monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=False)
+    monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
     # monte.plot_histogram(key='test accuracy', library='seaborn')
-    monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
+    # monte.monte_carlo_plotter.plot_line_confidence_interval(key='test loss', x_axis='epochs')
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.28'
+__version__ = '0.1.29'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
