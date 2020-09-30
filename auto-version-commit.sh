@@ -39,7 +39,7 @@ chang=`grep ":Version: " $file`
 verf1=`echo $oldver | cut -d '.' -f1`
 dat=$(date +'%m/%d/%Y')
 newlin="$verf1.$verf2.$oldnum of $dat"
-sed -i "s/$chang/$newlin" $file
+sed "s/$chang/$newlin" $file
 
 
 git add -A
