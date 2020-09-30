@@ -321,7 +321,7 @@ def _save_rvnn_vs_cvnn_montecarlo_log(path, dataset_name, hl, shape, dropout, nu
                 complex_median_train, real_median_train,
                 path, cvnn.__version__, comments  # Library information
                 ]
-    percentage_cols = ['P', 'Q', 'R', 'S', 'T', 'U']
+    percentage_cols = ['O', 'P', 'Q', 'R', 'S', 'T']
     _create_excel_file(fieldnames, row_data, filename, percentage_cols=percentage_cols)
 
 

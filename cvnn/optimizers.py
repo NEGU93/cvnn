@@ -157,8 +157,12 @@ class Adam(Optimizer):
     def optimize(self, variables, gradients):
         with tf.name_scope(self.name):
             for i, val in enumerate(variables):
-                self.vdw[i].assign(self.beta_1 * self.vdw[i] + (1 - self.beta_1) * gradients[i])
-                self.sdw[i].assign(self.beta_2 * self.sdw[i] + (1 - self.beta_2) * tf.math.square(gradients[i]))
+                self.vdw[i].assign(tf.add(
+                    tf.scalar_mul(self.beta_1, self.vdw[i]),
+                    tf.scalar_mul(1 - self.beta_1, gradients[i])))
+                self.sdw[i].assign(tf.add(
+                    tf.scalar_mul(self.beta_2, self.sdw[i]),
+                    tf.scalar_mul(1 - self.beta_2, tf.math.square(gradients[i]))))
                 vdw_corr = self.vdw[i] / (1 - self.beta_1**self.iter)
                 sdw_corr = self.sdw[i] / (1 - self.beta_2**self.iter)
                 val.assign(val - self.learning_rate * vdw_corr / (tf.math.sqrt(sdw_corr) + self.epsilon))

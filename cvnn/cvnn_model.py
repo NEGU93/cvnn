@@ -164,7 +164,8 @@ class CvnnModel:
             else:
                 logger.error("Layer " + str(layer) + " not child of cvnn.layers.ComplexLayer")
                 sys.exit(-1)
-        return CvnnModel(self.name, new_shape, self.loss_fun, verbose=False, tensorboard=self.tensorboard)
+        return CvnnModel(self.name, new_shape, self.loss_fun, optimizer=self.optimizer.__deepcopy__(),
+                         verbose=False, tensorboard=self.tensorboard)
 
     def _get_real_equivalent_multiplier(self, classifier: bool = True, capacity_equivalent: bool = True,
                                         equiv_technique: str = 'ratio'):
@@ -934,7 +935,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.47'
+__version__ = '0.2.48'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
