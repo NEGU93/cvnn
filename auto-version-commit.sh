@@ -40,7 +40,7 @@ chang=`grep ":Version: " $file`
 verf1=`echo $chang | cut -d '.' -f1`
 dat=$(date +'%m/%d/%Y')
 newlin="$verf1.$verf2.$newnum of $dat"
-sed -i "s,$chang,$newline,g" $file
+sed -i "s,$chang,$newlin,g" $file
 
 git add -A
 git commit -m $1
