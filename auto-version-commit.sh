@@ -36,17 +36,17 @@ sed -i "s/$oldver\$/$newver/g" $file	# replaces line with the new one
 # Change doc version and date
 file="docs/index.rst"
 chang=`grep ":Version: " $file`
-verf1=`echo $oldver | cut -d '.' -f1`
+verf1=`echo $chang | cut -d '.' -f1`
 dat=$(date +'%m/%d/%Y')
-newlin="$verf1.$verf2.$oldnum of $dat"
-sed "s/$chang/$newlin" $file
-
+newlin="$verf1.$verf2.$newnum of $dat"
+sed -i "s,$chang,$newline,g" $file
 
 git add -A
 git commit -m $1
 else
-echo No commit message found, please add a message.
+	echo No commit message found, please add a message.
 fi
+
 
 	
 
