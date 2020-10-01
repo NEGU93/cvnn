@@ -54,7 +54,8 @@ Adam (ADAptive Moment estimation)
 
 .. warning::
 
-    Although it presents an ameliration wrt SGD. Adam implementation appears to be rendering lower results than `tf.keras.optimizers.Adam <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Adam>`_ implementation.
+    Adam implementation appears to be rendering lower results than `tf.keras.optimizers.Adam <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Adam>`_ implementation.
+    Further debugging is required.
 
 .. py:class:: Adam
 

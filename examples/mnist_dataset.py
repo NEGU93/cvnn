@@ -122,25 +122,24 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     fig = go.Figure()
     fig_time = go.Figure()
 
-    if KERAS_DEBUG:
-        tf.print("Keras simulation")
-        for _ in tqdm(range(iterations)):
-            result, comp_time = keras_fit(ds_train, ds_test, verbose=verbose, optimizer=optimizer_name)
-            keras_results.append(result[1])
-            keras_fit_time.append(comp_time)
-        fig.add_trace(go.Box(y=keras_results, name='Keras'))
-        fig_time.add_trace(go.Box(y=keras_fit_time, name='Keras'))
     if OWN_MODEL:
         tf.print("Cvnn simulation")
         for _ in tqdm(range(iterations)):
-            result, comp_time = own_fit(ds_train, ds_test, verbose=verbose, optimizer=optimizer_name,
-                                        activation_1=activation_1, activation_2=activation_2,
-                                        weight_initializer=weight_initializer,
-                                        bias_initializer=bias_initializer)
-            own_results.append(result[1])
-            own_fit_time.append(comp_time)
+            result = own_fit(ds_train, ds_test, verbose=verbose, optimizer=optimizer_name,
+                             activation_1=activation_1, activation_2=activation_2,
+                             weight_initializer=weight_initializer, bias_initializer=bias_initializer)
+            own_results.append(result[0][1])
+            own_fit_time.append(result[-1])
         fig.add_trace(go.Box(y=own_results, name='Cvnn'))
         fig_time.add_trace(go.Box(y=own_fit_time, name='Cvnn'))
+    if KERAS_DEBUG:
+        tf.print("Keras simulation")
+        for _ in tqdm(range(iterations)):
+            result = keras_fit(ds_train, ds_test, verbose=verbose, optimizer=optimizer_name)
+            keras_results.append(result[0][1])
+            keras_fit_time.append(result[-1])
+        fig.add_trace(go.Box(y=keras_results, name='Keras'))
+        fig_time.add_trace(go.Box(y=keras_fit_time, name='Keras'))
     plotly.offline.plot(fig, filename="./results/" + optimizer_name + "_mnist_test.html",
                         config=PLOTLY_CONFIG, auto_open=True)
     plotly.offline.plot(fig_time, filename="./results/" + optimizer_name + "_mnist_test_fit_time.html",

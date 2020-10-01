@@ -59,3 +59,10 @@ Finally, this code will render the following output::
 
 .. warning:: 
     ATTENTION: Accuracy is lower than in `Training a neural network on MNIST with Keras <https://www.tensorflow.org/datasets/keras_example>`_ because the optimizer used here is SGD and not Adam. Should we use SGD on the Keras example it will arrive to the same result.
+
+**Statistical Results**
+
+To assert the code works correctly, we have done 1000 iterations of both cvnn model and Keras model. The following box plot shows the results.
+
+.. raw:: html
+   :file: ../source/_static/SGD_mnist_test.html
