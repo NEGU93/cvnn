@@ -170,7 +170,7 @@ class Adam(Optimizer):
         self.epsilon = epsilon
         self.vdw = []
         self.sdw = []
-        self.iter = 1
+        self.iter = tf.Variable(1.)
         super().__init__()
 
     def __deepcopy__(self, memodict={}):
@@ -199,10 +199,10 @@ class Adam(Optimizer):
                 self.sdw[i].assign(tf.add(
                     tf.scalar_mul(self.beta_2, self.sdw[i]),
                     tf.scalar_mul(1 - self.beta_2, tf.math.square(gradients[i]))))
-                vdw_corr = self.vdw[i] / (1 - self.beta_1**self.iter)
-                sdw_corr = self.sdw[i] / (1 - self.beta_2**self.iter)
+                vdw_corr = tf.math.divide(self.vdw[i], tf.math.pow(1 - self.beta_1, self.iter))
+                sdw_corr = tf.math.divide(self.sdw[i], tf.math.pow(1 - self.beta_2, self.iter))
                 val.assign(val - self.learning_rate * vdw_corr / (tf.math.sqrt(sdw_corr) + self.epsilon))
-            self.iter += 1
+            self.iter.assign_add(1.)
 
 
 opt_dispatcher = {

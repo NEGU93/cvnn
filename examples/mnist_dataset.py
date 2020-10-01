@@ -147,8 +147,8 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
 
 
 if __name__ == "__main__":
-    test_mnist_montecarlo("RMSprop")
-    test_mnist_montecarlo("SGD")
+    # test_mnist_montecarlo("RMSprop")
+    # test_mnist_montecarlo("SGD")
     test_mnist_montecarlo()
 
 
