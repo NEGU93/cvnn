@@ -238,7 +238,6 @@ def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
         y_label_np = np.argmax(y_label_np, axis=1)
     y_pred_pd = pd.Series(y_pred_np, name='Predicted')
     y_label_pd = pd.Series(y_label_np, name='Actual')
-    set_trace()
     df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
     if filename is not None:
         df.to_csv(filename)
@@ -738,7 +737,7 @@ class MonteCarloPlotter(Plotter):
                     " will not save tex file")
             else:
                 tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
-                                          key.replace(" ", "_") + "_matplotlib" + ".tex"))
+                                              key.replace(" ", "_") + "_matplotlib" + ".tex"))
         # set_trace()
 
     def _plot_line_confidance_interval_plotly(self, key='test accuracy', showfig=False, savefig=True,
@@ -916,13 +915,21 @@ class MonteCarloAnalyzer:
         for key in key_list:
             # self.plot_3d_hist(key=key)
             for lib in ['seaborn', 'plotly']:
-                self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
+                try:
+                    self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
+                finally:
+                    logger.warning("Could not plot Histogram with " + str(lib))
                 try:
                     self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
                 except np.linalg.LinAlgError:
                     logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular")
-                self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib,
-                                                                       showfig=showfig, savefig=savefig)
+                finally:
+                    logger.warning("Could not plot Histogram with " + str(lib))
+                try:
+                    self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib,
+                                                                           showfig=showfig, savefig=savefig)
+                finally:
+                    logger.warning("Could not plot line_confidence_interval with " + str(lib))
 
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
