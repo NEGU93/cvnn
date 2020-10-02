@@ -127,6 +127,10 @@ def normalize(x):
     return (x-np.amin(x))/np.abs(np.amax(x)-np.amin(x))     # Checked it works for complex values
 
 
+def standarize(x):
+    return (x - np.mean(x)) / np.std(x)
+
+
 def tensorflow_argmax_np_equivalent(x, num_classes):
     res = np.zeros((np.argmax(x, 1).shape[0], num_classes))
     indx = 0
@@ -145,6 +149,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.14'
+__version__ = '0.0.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

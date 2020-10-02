@@ -72,7 +72,6 @@ class MonteCarlo:
                 if do_conf_mat:
                     dataset = dp.Dataset(x_fit, y, ratio=1 - validation_split)
                     self.confusion_matrix[i]["name"] = test_model.name
-                    set_trace()
                     self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
                                                                     test_model.get_confusion_matrix(dataset.x_test,
                                                                                                     dataset.y_test)))
@@ -152,7 +151,7 @@ def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
 
 
 def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
-                                    epochs=150, batch_size=100, display_freq=1, optimizer='Adam',
+                                    epochs=150, batch_size=100, display_freq=1, optimizer='sgd',
                                     shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                     dropout=None):
     """
@@ -203,8 +202,8 @@ def run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=
                                               shape_raw, activation, debug, polar, do_all, dropout=dropout)
 
 
-def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=1000,
-                                       epochs=150, batch_size=100, display_freq=1, optimizer='Adam',
+def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_dataset: bool = None, iterations=1000,
+                                       epochs=150, batch_size=100, display_freq=1, optimizer='sgd',
                                        shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                        dropout=0.5, validation_split=0.2, validation_data=None,
                                        capacity_equivalent=True, equiv_technique='ratio', do_conf_mat=True):
@@ -215,9 +214,6 @@ def mlp_run_real_comparison_montecarlo(dataset, open_dataset=None, iterations=10
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
-    if not len(shape_raw) > 0:
-        logger.error("Shape raw was empty")
-        sys.exit(-1)
     layers.ComplexLayer.last_layer_output_dtype = None
     layers.ComplexLayer.last_layer_output_size = None
     if len(shape_raw) == 0:

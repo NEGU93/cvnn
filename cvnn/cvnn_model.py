@@ -10,6 +10,7 @@ from datetime import datetime
 from pdb import set_trace
 from time import strftime, perf_counter, gmtime
 # My own module!
+import cvnn
 import cvnn.layers as layers
 from cvnn.optimizers import get_optimizer
 import cvnn.dataset as dp
@@ -53,7 +54,7 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name, shape, loss_fun, optimizer='Adam',
+    def __init__(self, name: str, shape, loss_fun, optimizer='Adam',
                  verbose: bool = True, tensorboard: bool = True):
         """
         Constructor
@@ -948,7 +949,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.51'
+__version__ = '0.2.52'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
