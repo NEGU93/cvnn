@@ -104,9 +104,9 @@ def own_fit(ds_train, ds_test, verbose,
 
 def test_mnist_montecarlo(optimizer_name='Adam'):
     # Parameters
-    KERAS_DEBUG = True
+    KERAS_DEBUG = False
     OWN_MODEL = True
-    iterations = 1000
+    iterations = 3
     verbose = 1 if iterations == 1 else 0
 
     # Training

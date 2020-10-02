@@ -3,6 +3,8 @@ MNIST Example
 
 This example is based on `Training a neural network on MNIST with Keras <https://www.tensorflow.org/datasets/keras_example>`_ and is used to help prove the correct performance of our model (as it renders the same result).
 
+The code to test on MNIST is available on GitHub within `examples/mnist_dataset.py <https://github.com/NEGU93/cvnn/blob/master/examples/mnist_dataset.py>`_
+
 First lets import whats needed::
 
     import tensorflow.compat.v2 as tf
@@ -59,6 +61,7 @@ Finally, this code will render the following output::
 
 .. warning:: 
     ATTENTION: Accuracy is lower than in `Training a neural network on MNIST with Keras <https://www.tensorflow.org/datasets/keras_example>`_ because the optimizer used here is SGD and not Adam. Should we use SGD on the Keras example it will arrive to the same result.
+
 
 **Statistical Results**
 
