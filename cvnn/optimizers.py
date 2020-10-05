@@ -28,7 +28,7 @@ class Optimizer(ABC):
     def optimize(self, variables, gradients):
         pass
 
-    def summary(self):
+    def summary(self) -> str:
         """
         :returns: A one line short string with the description of the optimizer
         """

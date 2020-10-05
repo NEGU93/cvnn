@@ -117,12 +117,12 @@ class MonteCarlo:
                 if do_conf_mat:
                     dataset = dp.Dataset(x_fit, y, ratio=1 - validation_split)
                     self.confusion_matrix[i]["name"] = test_model.name
-                    try:
-                        self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
+                    # try:
+                    self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
                                                                     test_model.get_confusion_matrix(dataset.x_test,
                                                                                                     dataset.y_test)))
-                    except ValueError:
-                        logger.warning("ValueError: No objects to concatenate")     # TODO: Debug this!
+                    # except ValueError:
+                    #     logger.warning("ValueError: No objects to concatenate")     # TODO: Debug this!
             if checkpoints:
                 # Save checkpoint in case Monte Carlo stops in the middle
                 self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
@@ -378,7 +378,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     real_median_train = real_last_epochs['train accuracy'].median()
     _save_rvnn_vs_cvnn_montecarlo_log(path=str(monte_carlo.monte_carlo_analyzer.path),
                                       dataset_name=dataset.dataset_name,
-                                      optimizer=optimizer, loss=categorical_crossentropy,
+                                      optimizer=complex_network.optimizer.summary(), loss=categorical_crossentropy,
                                       hl=str(len(shape_raw)), shape=str(shape_raw),
                                       dropout=str(dropout), num_classes=str(dataset.y.shape[1]),
                                       polar_mode='Yes' if polar else 'No',
