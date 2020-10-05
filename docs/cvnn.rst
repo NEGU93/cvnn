@@ -32,28 +32,46 @@ Short example::
 Train
 -----
 
-.. py:method:: fit(self, x, y, ratio=0.8, learning_rate=0.01, epochs=10, batch_size=32, verbose=True, display_freq=None, fast_mode=True, save_txt_fit_summary=False,save_model_checkpoints=False, save_csv_history=True, shuffle=True)
+.. py:method:: fit(x, y=None, validation_split=0.0, validation_data=None, epochs: int = 10, batch_size: int = 32, verbose=True, display_freq: int = 1, save_model_checkpoints=False, save_csv_history=True, shuffle=True)
 
 	Trains the model for a fixed number of epochs (iterations on a dataset).
 
-        :param x: Input data. 
-        :param y: Labels
-        :param ratio: Percentage of the input data to be used as train set (the rest will be use as validation set)
-            Default: 0.8 (80% as train set and 20% as validation set)
-        :param learning_rate: Learning rate for the gradient descent. For the moment only GD is supported.
+        :param x: Input data. It could be:
+            - A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
+            - A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
+            - A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).
+        :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
+            If f x is a dataset then y will be ignored (default None)
+        :param validation_split: Float between 0 and 1.
+            Percentage of the input data to be used as test set (the rest will be use as train set)
+            Default: 0.0 (No validation set).
+            This input is ignored if validation_data is given.
+        :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
+            The model will not be trained on this data. This parameter takes precedence over validation_split.
+            It can be:
+                - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
+                - A tf.data dataset.
         :param epochs: (uint) Number of epochs to do.
         :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
-        :param verbose: (Boolean) Print results of the training while training
-        :param display_freq: Frequency on terms of steps for saving information and running a checkpoint.
-            If :code:`None` (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)
-        :param fast_mode: (Boolean) Does 2 things if False:
-        
-                    1. Saves csv files with each checkpoint
-                    2. Prints loss and accuracy if :code:`verbose = True` 
-        :param save_to_file: (Boolean) save a txt with the information of the fit
-                    (same as what will be printed if :code:`verbose`)
-        :param save_model_checkpoints: Save the model to be able to load and continue training later
-        :param save_csv_history: Save information of the train and test loss and accuracy on csv files
+        :param verbose: Verbosity Mode
+            It can be:
+                - Bool: False defaults to 0 and True to 1.
+                - Int
+                - String: Matching the modes string
+            Verbosity Modes:
+                - "SILENT" or 0:  No prints of any kind
+                - "FAST" or 2:    Does not show the progress bar of each epoch.
+                    Verbosity modes "FAST" and "SILENT" saves the csv file (if save_csv_history) less often.
+                    Making it faster riskier of data loss
+                - "PROBAR" or 4:  Shows progress bar but does not show accuracy or loss (helps on speed)
+                - "INFO" or 1:    Shows a progress bar with current accuracy and loss
+                - "DEBUG" or 3:   Shows start and end messages and also the progress bar with current accuracy and loss
+            Verbosity modes 0, 1 and 2 are coincident with `tensorflow's fit verbose parameter <https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit>`_
+        :param display_freq: Integer (Default 1)
+            Frequency on terms of epochs before saving information and running a checkpoint.
+        :param save_model_checkpoints: (Boolean)
+                    Save the model to be able to load and continue training later TODO: Not yet working
+        :param save_csv_history: (Boolean) Save information of the train and test loss and accuracy on csv files.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch. Default: True
         :return: None
 

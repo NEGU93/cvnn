@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Complex Layers" href="layers.html" />
-    <link rel="prev" title="Complex-Valued Neural Network (CVNN)" href="index.html" /> 
+    <link rel="next" title="Optimizers" href="optimizers.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -84,15 +84,18 @@
             
             
               <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">CVNN</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#train">Train</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#results">Results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#others">Others</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="montecarlo.html">Monte Carlo</a></li>
 <li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code_examples.html">Code Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="results.html">Results</a></li>
@@ -205,31 +208,64 @@
 <h2>Train<a class="headerlink" href="#train" title="Permalink to this headline">¶</a></h2>
 <dl class="method">
 <dt id="fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">ratio=0.8</em>, <em class="sig-param">learning_rate=0.01</em>, <em class="sig-param">epochs=10</em>, <em class="sig-param">batch_size=32</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">display_freq=None</em>, <em class="sig-param">fast_mode=True</em>, <em class="sig-param">save_txt_fit_summary=False</em>, <em class="sig-param">save_model_checkpoints=False</em>, <em class="sig-param">save_csv_history=True</em>, <em class="sig-param">shuffle=True</em><span class="sig-paren">)</span><a class="headerlink" href="#fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y=None</em>, <em class="sig-param">validation_split=0.0</em>, <em class="sig-param">validation_data=None</em>, <em class="sig-param">epochs: int = 10</em>, <em class="sig-param">batch_size: int = 32</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">display_freq: int = 1</em>, <em class="sig-param">save_model_checkpoints=False</em>, <em class="sig-param">save_csv_history=True</em>, <em class="sig-param">shuffle=True</em><span class="sig-paren">)</span><a class="headerlink" href="#fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trains the model for a fixed number of epochs (iterations on a dataset).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – Input data.</p></li>
-<li><p><strong>y</strong> – Labels</p></li>
-<li><p><strong>ratio</strong> – Percentage of the input data to be used as train set (the rest will be use as validation set)
-Default: 0.8 (80% as train set and 20% as validation set)</p></li>
-<li><p><strong>learning_rate</strong> – Learning rate for the gradient descent. For the moment only GD is supported.</p></li>
+<li><p><strong>x</strong> – Input data. It could be:
+- A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
+- A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
+- A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).</p></li>
+<li><p><strong>y</strong> – Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
+If f x is a dataset then y will be ignored (default None)</p></li>
+<li><p><strong>validation_split</strong> – Float between 0 and 1.
+Percentage of the input data to be used as test set (the rest will be use as train set)
+Default: 0.0 (No validation set).
+This input is ignored if validation_data is given.</p></li>
+<li><p><strong>validation_data</strong> – <p>Data on which to evaluate the loss and any model metrics at the end of each epoch.
+The model will not be trained on this data. This parameter takes precedence over validation_split.
+It can be:</p>
+<blockquote>
+<div><ul>
+<li><p>tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).</p></li>
+<li><p>A tf.data dataset.</p></li>
+</ul>
+</div></blockquote>
+</p></li>
 <li><p><strong>epochs</strong> – (uint) Number of epochs to do.</p></li>
 <li><p><strong>batch_size</strong> – (uint) Batch size of the data. Default 32 (because keras use 32 so… why not?)</p></li>
-<li><p><strong>verbose</strong> – (Boolean) Print results of the training while training</p></li>
-<li><p><strong>display_freq</strong> – Frequency on terms of steps for saving information and running a checkpoint.
-If <code class="code docutils literal notranslate"><span class="pre">None</span></code> (default) it will automatically match 1 epoch = 1 step (print/save information at each epoch)</p></li>
-<li><p><strong>fast_mode</strong> – <p>(Boolean) Does 2 things if False:</p>
-<ol class="arabic simple">
-<li><p>Saves csv files with each checkpoint</p></li>
-<li><p>Prints loss and accuracy if <code class="code docutils literal notranslate"><span class="pre">verbose</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
-</ol>
+<li><p><strong>verbose</strong> – <p>Verbosity Mode
+It can be:</p>
+<blockquote>
+<div><ul>
+<li><p>Bool: False defaults to 0 and True to 1.</p></li>
+<li><p>Int</p></li>
+<li><p>String: Matching the modes string</p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>Verbosity Modes:</dt><dd><ul>
+<li><p>”SILENT” or 0:  No prints of any kind</p></li>
+<li><dl class="simple">
+<dt>”FAST” or 2:    Does not show the progress bar of each epoch.</dt><dd><p>Verbosity modes “FAST” and “SILENT” saves the csv file (if save_csv_history) less often.
+Making it faster riskier of data loss</p>
+</dd>
+</dl>
+</li>
+<li><p>”PROBAR” or 4:  Shows progress bar but does not show accuracy or loss (helps on speed)</p></li>
+<li><p>”INFO” or 1:    Shows a progress bar with current accuracy and loss</p></li>
+<li><p>”DEBUG” or 3:   Shows start and end messages and also the progress bar with current accuracy and loss</p></li>
+</ul>
+</dd>
+</dl>
+<p>Verbosity modes 0, 1 and 2 are coincident with <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit">tensorflow’s fit verbose parameter</a></p>
 </p></li>
-<li><p><strong>save_to_file</strong> – (Boolean) save a txt with the information of the fit
-(same as what will be printed if <code class="code docutils literal notranslate"><span class="pre">verbose</span></code>)</p></li>
-<li><p><strong>save_model_checkpoints</strong> – Save the model to be able to load and continue training later</p></li>
-<li><p><strong>save_csv_history</strong> – Save information of the train and test loss and accuracy on csv files</p></li>
+<li><p><strong>display_freq</strong> – Integer (Default 1)
+Frequency on terms of epochs before saving information and running a checkpoint.</p></li>
+<li><p><strong>save_model_checkpoints</strong> – (Boolean)
+Save the model to be able to load and continue training later TODO: Not yet working</p></li>
+<li><p><strong>save_csv_history</strong> – (Boolean) Save information of the train and test loss and accuracy on csv files.</p></li>
 <li><p><strong>shuffle</strong> – (Boolean) Whether to shuffle the training data before each epoch. Default: True</p></li>
 </ul>
 </dd>
@@ -411,10 +447,10 @@ If <code class="code docutils literal notranslate"><span class="pre">None</span>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="layers.html" class="btn btn-neutral float-right" title="Complex Layers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="optimizers.html" class="btn btn-neutral float-right" title="Optimizers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral float-left" title="Complex-Valued Neural Network (CVNN)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

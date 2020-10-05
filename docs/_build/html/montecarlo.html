@@ -1,0 +1,440 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Monte Carlo &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Utils" href="utils.html" />
+    <link rel="prev" title="Initializers" href="initializers.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cvnn.html">CVNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimizers.html">Optimizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="initializers.html">Initializers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Monte Carlo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#real-vs-complex">Real Vs Complex</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#other-helper-function">Other Helper function</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="results.html">Results</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Monte Carlo</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/montecarlo.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="monte-carlo">
+<span id="montecarlo-class"></span><h1>Monte Carlo<a class="headerlink" href="#monte-carlo" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="MonteCarlo">
+<em class="property">class </em><code class="sig-name descname">MonteCarlo</code><a class="headerlink" href="#MonteCarlo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that allows the statistical comparison of several models on the same dataset</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume you already have complex data &#39;x&#39; with its labels &#39;y&#39;... and 3 Cvnn models.</span>
+
+<span class="n">montecarlo</span> <span class="o">=</span> <span class="n">MonteCarlo</span><span class="p">()</span>
+<span class="n">montecarlo</span><span class="o">.</span><span class="n">add_model</span><span class="p">(</span><span class="n">model1</span><span class="p">)</span>
+<span class="n">montecarlo</span><span class="o">.</span><span class="n">add_model</span><span class="p">(</span><span class="n">model1</span><span class="p">)</span>
+<span class="n">montecarlo</span><span class="o">.</span><span class="n">add_model</span><span class="p">(</span><span class="n">model1</span><span class="p">)</span>
+
+<span class="n">montecarlo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This code will generate files into <code class="code docutils literal notranslate"><span class="pre">./log/montecarlo/date/of/run/</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">run_summary.txt</span></code>: Summary of the run models and data</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">run_data.csv</span></code>: Full information of performance of iteration of each model at each epoch</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">&lt;model.name&gt;_statistical_result.csv</span></code>: Statistical results of all iterations of each model per epoch (mean, median, std, etc)</p></li>
+<li><p>(Optional) <code class="code docutils literal notranslate"><span class="pre">plot/</span></code> folder with the corresponding plots generated by <code class="code docutils literal notranslate"><span class="pre">MonteCarloAnalyzer.do_all()</span></code></p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="add_model">
+<code class="sig-name descname">add_model</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">model: CvnnModel</em><span class="sig-paren">)</span><a class="headerlink" href="#add_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a cvnn.CvnnModel to the list to then comparate between them</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">data_summary=''</em>, <em class="sig-param">polar=False</em>, <em class="sig-param">do_conf_mat=True</em>, <em class="sig-param">validation_split=0.2</em>, <em class="sig-param">validation_data=None</em>, <em class="sig-param">iterations=100</em>, <em class="sig-param">epochs=10</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">shuffle=False</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">display_freq=1</em>, <em class="sig-param">checkpoints=False</em><span class="sig-paren">)</span><a class="headerlink" href="#run" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is used to compare all models added with <cite>self.add_model</cite> method.
+Runs the iteration dataset (x, y).</p>
+<ol class="arabic simple">
+<li><p>It then runs a monte carlo simulation of several iterations of both CVNN and an equivalent RVNN model.</p></li>
+<li><dl class="simple">
+<dt>Saves several files into ./log/montecarlo/date/of/run/</dt><dd><p>2.1. run_summary.txt: Summary of the run models and data
+2.2. run_data.csv: Full information of performance of iteration of each model at each epoch
+2.3. &lt;model.name&gt;_network_statistical_result.csv: Statistical results of all iterations of CVNN per epoch
+2.4. (Optional) <cite>plot/</cite> folder with the corresponding plots generated by MonteCarloAnalyzer.do_all()</p>
+</dd>
+</dl>
+</li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Input data. It could be:
+- A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
+- A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
+- A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).</p></li>
+<li><p><strong>y</strong> – Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
+If f x is a dataset then y will be ignored (default None)</p></li>
+<li><p><strong>data_summary</strong> – (String) Dataset name to keep track of it</p></li>
+<li><p><strong>polar</strong> – (Boolean) If the model is real.
+Separate the complex data into real and imaginary part (polar = False) or amplitude and phase (polar = True)</p></li>
+<li><p><strong>do_conf_mat</strong> – Generate a confusion matrix based on results.</p></li>
+<li><p><strong>validation_split</strong> – Float between 0 and 1.
+Percentage of the input data to be used as test set (the rest will be use as train set)
+Default: 0.0 (No validation set).
+This input is ignored if validation_data is given.</p></li>
+<li><p><strong>validation_data</strong> – <p>Data on which to evaluate the loss and any model metrics at the end of each epoch.
+The model will not be trained on this data. This parameter takes precedence over validation_split.
+It can be:</p>
+<blockquote>
+<div><ul>
+<li><p>tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).</p></li>
+<li><p>A tf.data dataset.</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+<li><p><strong>iterations</strong> – Number of iterations to be done for each model</p></li>
+<li><p><strong>epochs</strong> – Number of epochs for each iteration</p></li>
+<li><p><strong>batch_size</strong> – Batch size at each iteration</p></li>
+<li><p><strong>display_freq</strong> – Integer (Default 1)
+Frequency on terms of epochs before saving information and running a checkpoint.</p></li>
+<li><p><strong>shuffle</strong> – (Boolean) Whether to shuffle the training data before each epoch.</p></li>
+<li><p><strong>debug</strong> – </p></li>
+<li><p><strong>checkpoints</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(string) Full path to the run_data.csv generated file.
+It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="section" id="real-vs-complex">
+<span id="id1"></span><h2>Real Vs Complex<a class="headerlink" href="#real-vs-complex" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="RealVsComplex">
+<em class="property">class </em><code class="sig-name descname">RealVsComplex</code><span class="sig-paren">(</span><em class="sig-param">MonteCarlo</em><span class="sig-paren">)</span><a class="headerlink" href="#RealVsComplex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherits from MonteCarlo.</p>
+<p>Compares a complex model with it’s real equivalent.</p>
+<p>Example usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume you already have complex data &#39;x&#39; with its labels &#39;y&#39;... and a Cvnn model.</span>
+
+<span class="n">montecarlo</span> <span class="o">=</span> <span class="n">RealVsComplex</span><span class="p">(</span><span class="n">complex_model</span><span class="p">)</span>
+<span class="n">montecarlo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">complex_model</em>, <em class="sig-param">capacity_equivalent=True</em>, <em class="sig-param">equiv_technique='ratio'</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to compare a single Complex Model given as a parameter. The Code will generate it’s real equivalent and compre both of them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>complex_model</strong> – cvnn.CvnnModel</p></li>
+<li><p><strong>capacity_equivalent</strong> – An equivalent model can be equivalent in terms of layer neurons or trainable parameters (capacity equivalent according to <a class="reference external" href="https://arxiv.org/abs/1811.12351">this paper</a>
+- True, it creates a capacity-equivalent model in terms of trainable parameters
+- False, it will double all layer size (except the last one if classifier=True)</p></li>
+<li><p><strong>equiv_technique</strong> – <p>Used to define the strategy of the capacity equivalent model.
+This parameter is ignored if capacity_equivalent=False
+- ‘ratio’: <code class="code docutils literal notranslate"><span class="pre">neurons_real_valued_layer[i]</span> <span class="pre">=</span> <span class="pre">r</span> <span class="pre">*</span> <span class="pre">neurons_complex_valued_layer[i]</span></code>, ‘r’ constant for all ‘i’
+- ‘alternate’: Method described in <a class="reference external" href="https://arxiv.org/abs/1811.12351">this paper</a> where one alternates between multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="other-helper-function">
+<h2>Other Helper function<a class="headerlink" href="#other-helper-function" title="Permalink to this headline">¶</a></h2>
+<dl class="method">
+<dt id="mlp_run_real_comparison_montecarlo">
+<code class="sig-name descname">mlp_run_real_comparison_montecarlo</code><span class="sig-paren">(</span><em class="sig-param">dataset: cvnn.dataset.Dataset</em>, <em class="sig-param">open_dataset=None</em>, <em class="sig-param">iterations=1000</em>, <em class="sig-param">epochs=150</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">display_freq=1</em>, <em class="sig-param">optimizer='sgd'</em>, <em class="sig-param">shape_raw=None</em>, <em class="sig-param">activation='cart_relu'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">polar=False</em>, <em class="sig-param">do_all=True</em>, <em class="sig-param">dropout=0.5</em>, <em class="sig-param">validation_split=0.2</em>, <em class="sig-param">validation_data=None</em>, <em class="sig-param">capacity_equivalent=True</em>, <em class="sig-param">equiv_technique='ratio'</em>, <em class="sig-param">do_conf_mat=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mlp_run_real_comparison_montecarlo" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
+1. Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.
+2. Runs simulation and compares them.
+3. Saves several files into ./log/montecarlo/date/of/run/</p>
+<blockquote>
+<div><p>3.1. <code class="code docutils literal notranslate"><span class="pre">run_summary.txt</span></code>: Summary of the run models and data
+3.2. <code class="code docutils literal notranslate"><span class="pre">run_data.csv</span></code>: Full information of performance of iteration of each model at each epoch
+3.3. <code class="code docutils literal notranslate"><span class="pre">complex_network_statistical_result.csv</span></code>: Statistical results of all iterations of CVNN per epoch
+3.4. <code class="code docutils literal notranslate"><span class="pre">complex_network_statistical_result.csv</span></code>: Statistical results of all iterations of RVNN per epoch
+3.5. (Optional) <code class="code docutils literal notranslate"><span class="pre">plot/</span></code> folder with the corresponding plots generated by <code class="code docutils literal notranslate"><span class="pre">MonteCarloAnalyzer.do_all()</span></code></p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – cvnn.dataset.Dataset with the dataset to be used on the training</p></li>
+<li><p><strong>open_dataset</strong> – (<code class="code docutils literal notranslate"><span class="pre">None</span></code>)
+If dataset is saved inside a folder and must be opened, path of the Dataset to be opened. Else None (default)</p></li>
+<li><p><strong>iterations</strong> – Number of iterations to be done for each model</p></li>
+<li><p><strong>epochs</strong> – Number of epochs for each iteration</p></li>
+<li><p><strong>batch_size</strong> – Batch size at each iteration</p></li>
+<li><p><strong>display_freq</strong> – Frequency in terms of epochs of when to do a checkpoint.</p></li>
+<li><p><strong>optimizer</strong> – Optimizer to be used. Keras optimizers are not allowed.
+Can be either cvnn.optimizers.Optimizer or a string listed in opt_dispatcher.</p></li>
+<li><p><strong>shape_raw</strong> – List of sizes of each hidden layer.
+For example <code class="code docutils literal notranslate"><span class="pre">[64]</span></code> will generate a CVNN with one hidden layer of size 64.
+Default <code class="code docutils literal notranslate"><span class="pre">None</span></code> will default to example.</p></li>
+<li><p><strong>activation</strong> – Activation function to be used at each hidden layer</p></li>
+<li><p><strong>debug</strong> – </p></li>
+<li><p><strong>polar</strong> – Boolean weather the RVNN should receive real and imaginary part (False) or amplitude and phase (True)</p></li>
+<li><p><strong>do_all</strong> – If true (default) it creates a <code class="code docutils literal notranslate"><span class="pre">plot/</span></code> folder with the plots generated by MonteCarloAnalyzer.do_all()</p></li>
+<li><p><strong>dropout</strong> – (float) Dropout to be used at each hidden layer. If <code class="code docutils literal notranslate"><span class="pre">None</span></code> it will not use any dropout.</p></li>
+<li><p><strong>validation_split</strong> – <dl class="simple">
+<dt>Float between 0 and 1.</dt><dd><p>Percentage of the input data to be used as test set (the rest will be use as train set)
+Default: 0.0 (No validation set).
+This input is ignored if validation_data is given.</p>
+</dd>
+</dl>
+<dl class="field-list">
+<dt class="field-odd">param validation_data</dt>
+<dd class="field-odd"><p>Data on which to evaluate the loss and any model metrics at the end of each epoch.
+The model will not be trained on this data. This parameter takes precedence over validation_split.
+It can be:</p>
+<blockquote>
+<div><ul>
+<li><p>tuple <code class="code docutils literal notranslate"><span class="pre">(x_val,</span> <span class="pre">y_val)</span></code> of Numpy arrays or tensors. Preferred data type (less overhead).</p></li>
+<li><p>A <code class="code docutils literal notranslate"><span class="pre">tf.data</span> <span class="pre">dataset</span></code>.</p></li>
+</ul>
+</div></blockquote>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>capacity_equivalent</strong> – <dl class="simple">
+<dt>An equivalent model can be equivalent in terms of layer neurons or</dt><dd><p>trainable parameters (capacity equivalent according to: <a class="reference external" href="https://arxiv.org/abs/1811.12351">this paper</a></p>
+</dd>
+</dl>
+<ul>
+<li><p>True, it creates a capacity-equivalent model in terms of trainable parameters</p></li>
+<li><p>False, it will double all layer size (except the last one if classifier=True)</p></li>
+</ul>
+</p></li>
+<li><p><strong>equiv_technique</strong> – <p>Used to define the strategy of the capacity equivalent model.
+This parameter is ignored if <code class="code docutils literal notranslate"><span class="pre">capacity_equivalent=False</span></code>
+- ‘ratio’: <code class="code docutils literal notranslate"><span class="pre">neurons_real_valued_layer[i]</span> <span class="pre">=</span> <span class="pre">r</span> <span class="pre">*</span> <span class="pre">neurons_complex_valued_layer[i]</span></code>, ‘r’ constant for all ‘i’
+- ‘alternate’: Method described in <a class="reference external" href="https://arxiv.org/abs/1811.12351">this paper</a> where one alternates between</p>
+<blockquote>
+<div><p>multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>do_conf_mat</strong> – Generate a confusion matrix based on results.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(string) Full path to the run_data.csv generated file.
+It can be used by <code class="code docutils literal notranslate"><span class="pre">cvnn.data_analysis.SeveralMonteCarloComparison</span></code> to compare several runs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.html" class="btn btn-neutral float-right" title="Utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="initializers.html" class="btn btn-neutral float-left" title="Initializers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

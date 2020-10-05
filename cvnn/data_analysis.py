@@ -731,13 +731,13 @@ class MonteCarloPlotter(Plotter):
             os.makedirs(str(self.path / "plots/lines_confidence/"), exist_ok=True)
             fig.savefig(self.path / ("plots/lines_confidence/montecarlo_" +
                                      key.replace(" ", "_") + "_matplotlib" + extension), transparent=True)
-            if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+            """if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
                 logger.warning(
                     "No Tikzplotlib installed, function " + self._plot_line_confidence_interval_matplotlib.__name__ +
                     " will not save tex file")
             else:
                 tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
-                                              key.replace(" ", "_") + "_matplotlib" + ".tex"))
+                                              key.replace(" ", "_") + "_matplotlib" + ".tex"))"""
         # set_trace()
 
     def _plot_line_confidance_interval_plotly(self, key='test accuracy', showfig=False, savefig=True,
@@ -1226,6 +1226,6 @@ if __name__ == "__main__":
     monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.31'
+__version__ = '0.1.32'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
