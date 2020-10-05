@@ -15,13 +15,14 @@ Short example::
 .. py:class:: CvnnModel
 
 
-.. py:method:: __init__(self, name, shape, loss_fun, verbose=True, tensorboard=True)
+.. py:method:: __init__(self, name, shape, loss_fun, optimizer='sgd', verbose=True, tensorboard=True)
 
         Constructor
 
         :param name: Name of the model. It will be used to distinguish models
         :param shape: List of :code:`cvnn.layers.ComplexLayer` objects
         :param loss_fun: :code:`tensorflow.python.keras.losses` to be used.
+        :param optimizer: Optimizer to be used. Keras optimizers are not allowed. Can be either :code:`cvnn.optimizers.Optimizer` or a string listed in :code:`opt_dispatcher`.
         :param verbose: if :code:`True` it will print information of the model just created
         :param tensorboard: If :code:`True` it will save tensorboard information inside :code:`log/.../tensorboard_logs/`
 
@@ -38,21 +39,21 @@ Train
 
         :param x: Input data. It could be:
             - A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
-            - A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
-            - A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).
-        :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
-            If f x is a dataset then y will be ignored (default None)
+            - A :code:`TensorFlow tensor`, or a list of tensors (in case the model has multiple inputs).
+            - A :code:`tf.data dataset`. Should return a tuple (inputs, targets). Preferred data type (less overhead).
+        :param y: Labels/Target data. Like the input data :code:`x`, it could be either Numpy array(s) or TensorFlow tensor(s).
+            If :code:`x` is a dataset then y will be ignored (default :code:`None`)
         :param validation_split: Float between 0 and 1.
             Percentage of the input data to be used as test set (the rest will be use as train set)
             Default: 0.0 (No validation set).
-            This input is ignored if validation_data is given.
+            This input is ignored if :code:`validation_data` is given.
         :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
-            The model will not be trained on this data. This parameter takes precedence over validation_split.
+            The model will not be trained on this data. This parameter takes precedence over :code:`validation_split`.
             It can be:
-                - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
-                - A tf.data dataset.
-        :param epochs: (uint) Number of epochs to do.
-        :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
+                - tuple :code:`(x_val, y_val)` of Numpy arrays or tensors. Preferred data type (less overhead).
+                - A :code:`tf.data dataset`.
+        :param epochs: (:code:`uint`) Number of epochs to do.
+        :param batch_size: (:code:`uint`) Batch size of the data. Default :code:`32` (because keras use 32 so... why not?)
         :param verbose: Verbosity Mode
             It can be:
                 - Bool: False defaults to 0 and True to 1.
@@ -70,7 +71,7 @@ Train
         :param display_freq: Integer (Default 1)
             Frequency on terms of epochs before saving information and running a checkpoint.
         :param save_model_checkpoints: (Boolean)
-                    Save the model to be able to load and continue training later TODO: Not yet working
+                    Save the model to be able to load and continue training later
         :param save_csv_history: (Boolean) Save information of the train and test loss and accuracy on csv files.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch. Default: True
         :return: None

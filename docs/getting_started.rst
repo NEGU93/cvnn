@@ -12,4 +12,7 @@ The recommended way to go would be 1.2. as the other may easily be done from tha
         :doc:`1.2. You want to train a Complex Valued Model as you will do with Keras <cvnn>` 
     :doc:`2. You don't have a specific dataset, you just want to play with this library <experiments/correlation_noise>`
 
+.. note:: 
+    Please, remember to `cite me <https://github.com/NEGU93/cvnn#cite-me>`_ accordingly [CIT2019-BARRACHINA-CODE]_
 
+.. [CIT2019-BARRACHINA-CODE] Jose Agustin Barrachina. "Complex-Valued Neural Networks (CVNN)". GitHub repository. 

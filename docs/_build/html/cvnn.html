@@ -183,7 +183,7 @@
 
 <dl class="method">
 <dt id="__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">name</em>, <em class="sig-param">shape</em>, <em class="sig-param">loss_fun</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">tensorboard=True</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">name</em>, <em class="sig-param">shape</em>, <em class="sig-param">loss_fun</em>, <em class="sig-param">optimizer='sgd'</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">tensorboard=True</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructor</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -191,6 +191,7 @@
 <li><p><strong>name</strong> – Name of the model. It will be used to distinguish models</p></li>
 <li><p><strong>shape</strong> – List of <code class="code docutils literal notranslate"><span class="pre">cvnn.layers.ComplexLayer</span></code> objects</p></li>
 <li><p><strong>loss_fun</strong> – <code class="code docutils literal notranslate"><span class="pre">tensorflow.python.keras.losses</span></code> to be used.</p></li>
+<li><p><strong>optimizer</strong> – Optimizer to be used. Keras optimizers are not allowed. Can be either <code class="code docutils literal notranslate"><span class="pre">cvnn.optimizers.Optimizer</span></code> or a string listed in <code class="code docutils literal notranslate"><span class="pre">opt_dispatcher</span></code>.</p></li>
 <li><p><strong>verbose</strong> – if <code class="code docutils literal notranslate"><span class="pre">True</span></code> it will print information of the model just created</p></li>
 <li><p><strong>tensorboard</strong> – <p>If <code class="code docutils literal notranslate"><span class="pre">True</span></code> it will save tensorboard information inside <code class="code docutils literal notranslate"><span class="pre">log/.../tensorboard_logs/</span></code></p>
 <ul>
@@ -215,26 +216,26 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x</strong> – Input data. It could be:
 - A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
-- A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
-- A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).</p></li>
-<li><p><strong>y</strong> – Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
-If f x is a dataset then y will be ignored (default None)</p></li>
+- A <code class="code docutils literal notranslate"><span class="pre">TensorFlow</span> <span class="pre">tensor</span></code>, or a list of tensors (in case the model has multiple inputs).
+- A <code class="code docutils literal notranslate"><span class="pre">tf.data</span> <span class="pre">dataset</span></code>. Should return a tuple (inputs, targets). Preferred data type (less overhead).</p></li>
+<li><p><strong>y</strong> – Labels/Target data. Like the input data <code class="code docutils literal notranslate"><span class="pre">x</span></code>, it could be either Numpy array(s) or TensorFlow tensor(s).
+If <code class="code docutils literal notranslate"><span class="pre">x</span></code> is a dataset then y will be ignored (default <code class="code docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
 <li><p><strong>validation_split</strong> – Float between 0 and 1.
 Percentage of the input data to be used as test set (the rest will be use as train set)
 Default: 0.0 (No validation set).
-This input is ignored if validation_data is given.</p></li>
+This input is ignored if <code class="code docutils literal notranslate"><span class="pre">validation_data</span></code> is given.</p></li>
 <li><p><strong>validation_data</strong> – <p>Data on which to evaluate the loss and any model metrics at the end of each epoch.
-The model will not be trained on this data. This parameter takes precedence over validation_split.
+The model will not be trained on this data. This parameter takes precedence over <code class="code docutils literal notranslate"><span class="pre">validation_split</span></code>.
 It can be:</p>
 <blockquote>
 <div><ul>
-<li><p>tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).</p></li>
-<li><p>A tf.data dataset.</p></li>
+<li><p>tuple <code class="code docutils literal notranslate"><span class="pre">(x_val,</span> <span class="pre">y_val)</span></code> of Numpy arrays or tensors. Preferred data type (less overhead).</p></li>
+<li><p>A <code class="code docutils literal notranslate"><span class="pre">tf.data</span> <span class="pre">dataset</span></code>.</p></li>
 </ul>
 </div></blockquote>
 </p></li>
-<li><p><strong>epochs</strong> – (uint) Number of epochs to do.</p></li>
-<li><p><strong>batch_size</strong> – (uint) Batch size of the data. Default 32 (because keras use 32 so… why not?)</p></li>
+<li><p><strong>epochs</strong> – (<code class="code docutils literal notranslate"><span class="pre">uint</span></code>) Number of epochs to do.</p></li>
+<li><p><strong>batch_size</strong> – (<code class="code docutils literal notranslate"><span class="pre">uint</span></code>) Batch size of the data. Default <code class="code docutils literal notranslate"><span class="pre">32</span></code> (because keras use 32 so… why not?)</p></li>
 <li><p><strong>verbose</strong> – <p>Verbosity Mode
 It can be:</p>
 <blockquote>
@@ -264,7 +265,7 @@ Making it faster riskier of data loss</p>
 <li><p><strong>display_freq</strong> – Integer (Default 1)
 Frequency on terms of epochs before saving information and running a checkpoint.</p></li>
 <li><p><strong>save_model_checkpoints</strong> – (Boolean)
-Save the model to be able to load and continue training later TODO: Not yet working</p></li>
+Save the model to be able to load and continue training later</p></li>
 <li><p><strong>save_csv_history</strong> – (Boolean) Save information of the train and test loss and accuracy on csv files.</p></li>
 <li><p><strong>shuffle</strong> – (Boolean) Whether to shuffle the training data before each epoch. Default: True</p></li>
 </ul>

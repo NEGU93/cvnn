@@ -37,7 +37,6 @@ Monte Carlo
 
     1. It then runs a monte carlo simulation of several iterations of both CVNN and an equivalent RVNN model.
     2. Saves several files into :code:`./log/montecarlo/date/of/run/`
-
         2.1. :code:`run_summary.txt`: Summary of the run models and data
         2.2. :code:`run_data.csv`: Full information of performance of iteration of each model at each epoch
         2.3. :code:`<model.name>_network_statistical_result.csv`: Statistical results of all iterations of CVNN per epoch
@@ -119,7 +118,6 @@ Other Helper function
     1. Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.
     2. Runs simulation and compares them.
     3. Saves several files into :code:`./log/montecarlo/date/of/run/`
-
         3.1. :code:`run_summary.txt`: Summary of the run models and data
         3.2. :code:`run_data.csv`: Full information of performance of iteration of each model at each epoch
         3.3. :code:`complex_network_statistical_result.csv`: Statistical results of all iterations of CVNN per epoch

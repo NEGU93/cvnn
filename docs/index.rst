@@ -3,7 +3,7 @@ Complex-Valued Neural Network (CVNN)
 ====================================
 
 :Author:  J. Agustin Barrachina
-:Version: 0.3.28 of 10/05/2020
+:Version: 0.3.29 of 10/05/2020
 
 
 Content
@@ -12,6 +12,7 @@ Content
 .. toctree::
 	:maxdepth: 2
 
+	installation
 	getting_started
 	cvnn
 	optimizers
@@ -22,3 +23,4 @@ Content
 	utils
 	code_examples
 	results
+	about
