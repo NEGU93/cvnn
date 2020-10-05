@@ -664,6 +664,7 @@ class CvnnModel:
         filename = None
         if save_result:
             filename = self.root_dir / "categorical.csv"
+        # set_trace()
         return da.confusion_matrix(self.call(x), y, filename=filename)
 
     # ===========
@@ -949,7 +950,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.53'
+__version__ = '0.2.54'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

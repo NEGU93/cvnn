@@ -232,6 +232,7 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
 
 
 def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
+    # TODO: Assert matrices are not empty
     categorical = (len(np.shape(y_label_np)) > 1)
     if categorical:
         y_pred_np = np.argmax(y_pred_np, axis=1)
@@ -917,19 +918,21 @@ class MonteCarloAnalyzer:
             for lib in ['seaborn', 'plotly']:
                 try:
                     self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
-                finally:
-                    logger.warning("Could not plot Histogram with " + str(lib))
+                except:
+                    logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
                 try:
                     self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
                 except np.linalg.LinAlgError:
-                    logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular")
-                finally:
-                    logger.warning("Could not plot Histogram with " + str(lib))
+                    logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular",
+                                   exc_info=True)
+                except:
+                    logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
                 try:
                     self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib,
                                                                            showfig=showfig, savefig=savefig)
-                finally:
-                    logger.warning("Could not plot line_confidence_interval with " + str(lib))
+                except:
+                    logger.warning("Could not plot " + key + " line_confidence_interval with " + str(lib),
+                                   exc_info=True)
 
     def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
@@ -1198,11 +1201,12 @@ class MonteCarloAnalyzer:
         for net in networks_availables:
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]  # Get only the data to plot
-            ax = sns.distplot(data[key], bins, label=net.replace("_", " "))
+            ax = sns.histplot(data[key], bins=bins, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
         title += " " + key + " histogram"
-        ax.axis(xmin=min_ax - 0.01, xmax=max_ax + 0.01)
+        # set_trace()
+        ax.set_xlim((min_ax - 0.01, max_ax + 0.01))
         fig.legend(loc='upper left')  # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
         add_params(fig, ax, x_label=key.capitalize(), y_label="Occurrences",  # loc='upper left',
                    filename=self.path / (
@@ -1226,6 +1230,6 @@ if __name__ == "__main__":
     monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.32'
+__version__ = '0.1.33'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

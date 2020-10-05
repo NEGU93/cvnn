@@ -115,14 +115,24 @@ class MonteCarlo:
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
-                    dataset = dp.Dataset(x_fit, y, ratio=1 - validation_split)
+                    if validation_data is not None:     # TODO: Haven't yet done all cases here!
+                        if model.is_complex():
+                            x_test, y_test = validation_data
+                        else:
+                            x_test, y_test = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
+                    else:
+                        dataset = dp.Dataset(x_fit, y, ratio=1 - validation_split)
+                        x_test = dataset.x_test
+                        y_test = dataset.y_test
                     self.confusion_matrix[i]["name"] = test_model.name
-                    # try:
-                    self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
-                                                                    test_model.get_confusion_matrix(dataset.x_test,
-                                                                                                    dataset.y_test)))
-                    # except ValueError:
-                    #     logger.warning("ValueError: No objects to concatenate")     # TODO: Debug this!
+                    try:
+                        # set_trace()
+                        self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
+                                                                        test_model.get_confusion_matrix(x_test,
+                                                                                                        y_test)))
+                    except ValueError:
+                        logger.warning("ValueError: Could not do confusion matrix. No objects to concatenate. "
+                                       "Not all formats of validation dataset supported yet.")
             if checkpoints:
                 # Save checkpoint in case Monte Carlo stops in the middle
                 self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
