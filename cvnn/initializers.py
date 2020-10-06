@@ -5,6 +5,8 @@ from tensorflow.python.ops import stateless_random_ops
 from cvnn import logger
 import sys
 from pdb import set_trace
+# Typing
+from typing import Optional
 # Initializers:
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers
 # https://keras.io/initializers/
@@ -63,7 +65,7 @@ class RandomInitializer:
         random_tensor = RandomInitializer(distribution="uniform")(shape=(3, 3), c_limit=[2, 3], dtype=tf.complex)
         ```
     """
-    def __init__(self, distribution="uniform", seed=None):
+    def __init__(self, distribution: str = "uniform", seed: Optional[int] = None):
         """
         :param distribution: It can be either a uniform or a normal distribution.
         :param seed: A Python integer. Used to create a random seed for the distribution. See tf.random.set_seed.
@@ -351,11 +353,7 @@ class HeNormal(RandomInitializer):
 
 class HeUniform(RandomInitializer):
     """
-<<<<<<< HEAD
     The He Uniform initializer.
-=======
-    The Glorot uniform initializer, also called Xavier uniform initializer.
->>>>>>> 2a18681b0f0ec5e3a1787b8dd7287f1f3f0de985
     Reference: http://proceedings.mlr.press/v9/glorot10a.html
     Draws samples from a uniform distribution:
         - Real case: `x ~ U[-limit, limit]` where `limit = sqrt(6 / fan_in)`
@@ -417,6 +415,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.9'
+__version__ = '0.0.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

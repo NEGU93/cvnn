@@ -3,13 +3,14 @@ import tensorflow as tf
 from cvnn import logger
 import sys
 from typing import Union
+from cvnn.layers import t_layers_shape
 
 
 class Optimizer(ABC):
     def __init__(self):
         pass
 
-    def compile(self, shape):
+    def compile(self, shape: t_layers_shape) -> None:
         pass
 
     def optimize(self, variables, gradients):
@@ -50,12 +51,12 @@ class SGD(Optimizer):
             memodict = {}
         return SGD(learning_rate=self.learning_rate, momentum=self.momentum, name=self.name)
 
-    def summary(self):
+    def summary(self) -> str:
         return "SDG optimizer " + self.name + \
                ": learning rate = " + str(self.learning_rate) + \
                "; momentum = " + str(self.momentum) + "\n"
 
-    def compile(self, shape):
+    def compile(self, shape: t_layers_shape) -> None:
         for layer in shape:
             for elem in layer.trainable_variables():
                 self.velocity.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
@@ -110,12 +111,12 @@ class RMSprop(Optimizer):
         return RMSprop(learning_rate=self.learning_rate, rho=self.rho, momentum=self.momentum, epsilon=self.epsilon,
                        name=self.name)
 
-    def summary(self):
+    def summary(self) -> str:
         return "RMSprop optimizer " + self.name + \
                ": learning rate = " + str(self.learning_rate) + " rho = " + str(self.rho) + \
                "; momentum = " + str(self.momentum) + "; epsilon = " + str(self.epsilon) + "\n"
 
-    def compile(self, shape):
+    def compile(self, shape: t_layers_shape) -> None:
         for layer in shape:
             for elem in layer.trainable_variables():
                 self.vdw.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))
@@ -166,12 +167,12 @@ class Adam(Optimizer):
         return Adam(learning_rate=self.learning_rate, beta_1=self.beta_1, beta_2=self.beta_2, epsilon=self.epsilon,
                     name=self.name)
 
-    def summary(self):
+    def summary(self) -> str:
         return "RMSprop optimizer " + self.name + \
                ": learning rate = " + str(self.learning_rate) + " beta_1 = " + str(self.beta_1) + \
                "; beta_2 = " + str(self.beta_2) + "; epsilon = " + str(self.epsilon) + "\n"
 
-    def compile(self, shape):
+    def compile(self, shape: t_layers_shape) -> None:
         for layer in shape:
             for elem in layer.trainable_variables():
                 self.vdw.append(tf.Variable(tf.zeros(elem.shape, dtype=layer.get_input_dtype())))

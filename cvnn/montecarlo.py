@@ -9,7 +9,6 @@ from cvnn.utils import transform_to_real, randomize
 from tensorflow.keras.losses import categorical_crossentropy
 import pandas as pd
 import copy
-import sys
 from openpyxl import load_workbook, Workbook
 from openpyxl.worksheet.table import Table
 import os
@@ -115,7 +114,7 @@ class MonteCarlo:
                 self.pandas_full_data = pd.concat([self.pandas_full_data,
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
-                    if validation_data is not None:     # TODO: Haven't yet done all cases here!
+                    if validation_data is not None:  # TODO: Haven't yet done all cases here!
                         if model.is_complex():
                             x_test, y_test = validation_data
                         else:
@@ -166,7 +165,6 @@ class MonteCarlo:
 
 
 class RealVsComplex(MonteCarlo):
-
     """
     Inherits from MonteCarlo. Compares a complex model with it's real equivalent.
 
