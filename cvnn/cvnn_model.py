@@ -16,7 +16,13 @@ import cvnn.dataset as dp
 import cvnn.data_analysis as da
 from cvnn.utils import create_folder
 from cvnn import logger
-from cvnn_typing import *
+# Typing
+from cvnn.optimizers import t_optimizer
+from tensorflow.keras.losses import Loss
+from typing import Union, Optional, Tuple
+from tensorflow import Tensor, data
+from numpy import ndarray
+from cvnn.layers import t_layers_shape
 
 try:
     from prettytable import PrettyTable
@@ -28,6 +34,11 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+t_List = Union[ndarray, list]
+t_input_features = Union[t_List, Tensor, data.Dataset]
+t_labels = Union[t_List, Tensor]
+t_verbose = Union[str, int, bool]
 
 VERBOSITY = {0: "SILENT",  # verbosity 0. NADA DE NADA
              2: "FAST",    # verbosity 2. Muestra al final de cada epoch
@@ -54,7 +65,7 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name: str, shape: t_layers_shape, loss_fun: t_loss_fun, optimizer: t_optimizer = 'sgd',
+    def __init__(self, name: str, shape: t_layers_shape, loss_fun: Loss, optimizer: t_optimizer = 'sgd',
                  verbose: t_verbose = True, tensorboard: bool = True):
         """
         Constructor
@@ -356,7 +367,7 @@ class CvnnModel:
             tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
 
     def fit(self, x: t_input_features, y: Optional[t_labels] = None,
-            validation_split: float = 0.0, validation_data: Optional[Tuple[t_List], data.Dataset] = None,
+            validation_split: float = 0.0, validation_data: Optional[Union[Tuple[t_List], data.Dataset]] = None,
             epochs: int = 10, batch_size: int = 32,
             verbose: t_verbose = True, display_freq: int = 1,
             save_model_checkpoints: bool = False, save_csv_history: bool = True, shuffle: bool = True):
@@ -953,7 +964,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.54'
+__version__ = '0.2.55'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

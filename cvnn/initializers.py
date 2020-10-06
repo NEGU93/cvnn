@@ -4,7 +4,6 @@ from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
 from cvnn import logger
 import sys
-from cvnn_typing import *
 from pdb import set_trace
 # Initializers:
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers
@@ -418,6 +417,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

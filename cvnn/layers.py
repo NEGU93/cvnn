@@ -10,13 +10,18 @@ from cvnn import logger
 from time import time
 from pdb import set_trace
 import cvnn.initializers as initializers
-from cvnn_typing import *
+# Typing
+from tensorflow import dtypes
+from numpy import dtype, ndarray
+from typing import Union, Callable, Optional, List, Set
+
 
 SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
 t_Callable_shape = Union[t_input_shape, Callable]   # Either a input_shape or a function that sets self.output
+t_Dtype = Union[dtypes.DType, dtype]
 
 
 class ComplexLayer(ABC):
@@ -365,6 +370,8 @@ class Dropout(ComplexLayer):
         return []
 
 
+t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
+
 if __name__ == "__main__":
     import pdb; pdb.set_trace()
 
@@ -373,7 +380,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.27'
+__version__ = '0.0.28'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

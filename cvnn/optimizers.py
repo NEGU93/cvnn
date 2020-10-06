@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import tensorflow as tf
 from cvnn import logger
 import sys
-from cvnn_typing import *
+from typing import Union
 
 
 class Optimizer(ABC):
@@ -190,6 +190,9 @@ class Adam(Optimizer):
                 sdw_corr = tf.math.divide(self.sdw[i], tf.math.pow(1 - self.beta_2, self.iter))
                 val.assign(val - self.learning_rate * vdw_corr / (tf.math.sqrt(sdw_corr) + self.epsilon))
             self.iter += 1
+
+
+t_optimizer = Union[str, Optimizer]
 
 
 def get_optimizer(optimizer: t_optimizer) -> Optimizer:
