@@ -2,20 +2,7 @@ from abc import ABC, abstractmethod
 import tensorflow as tf
 from cvnn import logger
 import sys
-from pdb import set_trace
-
-
-def get_optimizer(optimizer):
-    if isinstance(optimizer, Optimizer):
-        return optimizer
-    elif isinstance(optimizer, str):
-        try:
-            # TODO: For the moment is not possible to give parameters to constructors
-            return opt_dispatcher[optimizer.lower()]
-        except KeyError:
-            logger.warning(str(optimizer) + " is not a known optimizer. Known optimizers:" +
-                           s for s in opt_dispatcher.keys())
-            sys.exit(-1)
+from cvnn_typing import *
 
 
 class Optimizer(ABC):
@@ -203,6 +190,19 @@ class Adam(Optimizer):
                 sdw_corr = tf.math.divide(self.sdw[i], tf.math.pow(1 - self.beta_2, self.iter))
                 val.assign(val - self.learning_rate * vdw_corr / (tf.math.sqrt(sdw_corr) + self.epsilon))
             self.iter += 1
+
+
+def get_optimizer(optimizer: t_optimizer) -> Optimizer:
+    if isinstance(optimizer, Optimizer):
+        return optimizer
+    elif isinstance(optimizer, str):
+        try:
+            # TODO: For the moment is not possible to give parameters to constructors
+            return opt_dispatcher[optimizer.lower()]
+        except KeyError:
+            logger.warning(str(optimizer) + " is not a known optimizer. Known optimizers:" +
+                           s for s in opt_dispatcher.keys())
+            sys.exit(-1)
 
 
 opt_dispatcher = {

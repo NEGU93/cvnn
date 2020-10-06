@@ -3,22 +3,20 @@ from itertools import count
 import tensorflow as tf
 from collections.abc import Iterable
 import sys
-import cvnn
-import logging
-from typing import Union, Optional, Callable          # https://docs.python.org/3/library/typing.html
 from cvnn.activation_functions import apply_activation
 from cvnn.utils import get_func_name
 import numpy as np
+from cvnn import logger
 from time import time
 from pdb import set_trace
 import cvnn.initializers as initializers
+from cvnn_typing import *
 
 SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)  # Used to count the number of layers
 
-t_Dtype = Union[tf.dtypes.DType, np.dtype]
-t_Shape = Union[int, tuple, list]
-t_Callable_shape = Union[t_Shape, Callable]
+t_input_shape = Union[int, tuple, list]
+t_Callable_shape = Union[t_input_shape, Callable]   # Either a input_shape or a function that sets self.output
 
 
 class ComplexLayer(ABC):
@@ -28,7 +26,7 @@ class ComplexLayer(ABC):
     last_layer_output_dtype = None      # TODO: Make it work both with np and tf dtypes
     last_layer_output_size = None
 
-    def __init__(self, output_size: t_Callable_shape, input_size=Optional[t_Shape], input_dtype=t_Dtype, **args):
+    def __init__(self, output_size: t_Callable_shape, input_size=Optional[t_input_shape], input_dtype=t_Dtype, **args):
         """
         Base constructor for a complex layer. The first layer will need a input_dtype and input_size.
         For the other classes is optional,
@@ -38,25 +36,24 @@ class ComplexLayer(ABC):
         :param input_size: Input size of the layer
         :param input_dtype: data type of the input
         """
-        self.logger = logging.getLogger(cvnn.__name__)
         if output_size is None:
-            self.logger.error("Output size = None not supported")
+            logger.error("Output size = None not supported")
             sys.exit(-1)
 
         if input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is None:
             # None input dtype given but it's the first layer declared
-            self.logger.error("First layer must be given an input dtype", exc_info=True)
+            logger.error("First layer must be given an input dtype", exc_info=True)
             sys.exit(-1)
         elif input_dtype is None and self.__class__.__bases__[0].last_layer_output_dtype is not None:
             # Use automatic mode
             self.input_dtype = self.__class__.__bases__[0].last_layer_output_dtype
         elif input_dtype is not None:
             if input_dtype not in SUPPORTED_DTYPES:
-                self.logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype), exc_info=True)
+                logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype), exc_info=True)
                 sys.exit(-1)
             if self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 if self.__class__.__bases__[0].last_layer_output_dtype != input_dtype:
-                    self.logger.warning("Input dtype " + str(input_dtype) +
+                    logger.warning("Input dtype " + str(input_dtype) +
                                         " is not equal to last layer's input dtype " +
                                         str(self.__class__.__bases__[0].last_layer_output_dtype))
             self.input_dtype = input_dtype
@@ -69,14 +66,14 @@ class ComplexLayer(ABC):
         if input_size is None:
             if self.__class__.__bases__[0].last_layer_output_size is None:
                 # None input size given but it's the first layer declared
-                self.logger.error("First layer must be given an input size")
+                logger.error("First layer must be given an input size")
                 sys.exit(-1)
             else:  # self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 self.input_size = self.__class__.__bases__[0].last_layer_output_size
         elif input_size is not None:
             if self.__class__.__bases__[0].last_layer_output_size is not None:
                 if input_size != self.__class__.__bases__[0].last_layer_output_size:
-                    self.logger.warning("Input size " + str(input_size) + " is not equal to last layer's output size " +
+                    logger.warning("Input size " + str(input_size) + " is not equal to last layer's output size " +
                                         str(self.__class__.__bases__[0].last_layer_output_size))
             self.input_size = input_size
 
@@ -125,7 +122,7 @@ class ComplexLayer(ABC):
                 tf.summary.histogram(name="Activation_value_" + str(self.layer_number),
                                      data=x, step=step)
             else:
-                self.logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
+                logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
                 sys.exit(-1)
         return x
 
@@ -282,7 +279,7 @@ class Dense(ComplexLayer):
         # TODO: treat bias as a weight. It might optimize training (no add operation, only mult)
         with tf.name_scope("ComplexDense_" + str(self.layer_number)) as scope:
             if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
-                self.logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
+                logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
                                     + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) +
                                     "). Casting input but you most likely have a bug")
             out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
@@ -316,7 +313,7 @@ class Dense(ComplexLayer):
                                      data=self.b, step=step)
             else:
                 # This case should never happen. The constructor should already have checked this
-                self.logger.error("Input_dtype not supported.", exc_info=True)
+                logger.error("Input_dtype not supported.", exc_info=True)
                 sys.exit(-1)
 
     def trainable_variables(self):

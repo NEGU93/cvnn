@@ -3,7 +3,7 @@ import colorlog
 import re
 import os
 from cvnn.utils import create_folder
-from typing import Union, List
+
 
 def get_version() -> str:
     versionfile = os.path.split(os.path.realpath(__file__))[0] + "/_version.py"
@@ -50,8 +50,6 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
-# Typing
-D_num = Union[int, float]
 
 
 

@@ -4,7 +4,7 @@ from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
 from cvnn import logger
 import sys
-from typing import Union, List, Set, Tuple
+from cvnn_typing import *
 from pdb import set_trace
 # Initializers:
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers

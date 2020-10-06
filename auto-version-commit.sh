@@ -44,6 +44,8 @@ sed -i "s,$chang,$newlin,g" $file
 
 git add -A
 git commit -m $1
+tagver="${verf1: -1}.$verf2.$newnum"
+git tag $tagver
 else
 echo No commit message found, please add a message.
 fi

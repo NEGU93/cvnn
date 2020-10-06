@@ -10,13 +10,13 @@ from datetime import datetime
 from pdb import set_trace
 from time import strftime, perf_counter, gmtime
 # My own module!
-import cvnn
 import cvnn.layers as layers
 from cvnn.optimizers import get_optimizer
 import cvnn.dataset as dp
 import cvnn.data_analysis as da
 from cvnn.utils import create_folder
 from cvnn import logger
+from cvnn_typing import *
 
 try:
     from prettytable import PrettyTable
@@ -54,8 +54,8 @@ class CvnnModel:
     # Constructor and Stuff
     # =====================
 
-    def __init__(self, name: str, shape, loss_fun, optimizer='sgd',
-                 verbose: bool = True, tensorboard: bool = True):
+    def __init__(self, name: str, shape: t_layers_shape, loss_fun: t_loss_fun, optimizer: t_optimizer = 'sgd',
+                 verbose: t_verbose = True, tensorboard: bool = True):
         """
         Constructor
         :param name: Name of the model. It will be used to distinguish models
@@ -112,7 +112,7 @@ class CvnnModel:
         self._manage_string(self.summary(), self._get_verbose(verbose), filename=self.name + "_metadata.txt", mode="x")
         self.plotter = da.Plotter(self.root_dir)
 
-    def call(self, x):
+    def call(self, x: t_input_features) -> Tensor:        # TODO: Beware, I think tf.Dataset will break here!
         """
         Forward result of the network
         :param x: Data input to be calculated
@@ -122,7 +122,7 @@ class CvnnModel:
             x = self.shape[i].call(x)
         return x
 
-    def _apply_loss(self, y_true, y_pred):
+    def _apply_loss(self, y_true: t_labels, y_pred: t_labels):
         """
         Private! Use "evaluate loss" instead
         """
@@ -134,7 +134,7 @@ class CvnnModel:
                 sys.exit(-1)
         return tf.reduce_mean(input_tensor=self.loss_fun(y_true, y_pred), name=self.loss_fun.__name__)
 
-    def is_complex(self):
+    def is_complex(self) -> bool:
         """
         :return: True if the network is complex. False otherwise.
         """
@@ -265,7 +265,7 @@ class CvnnModel:
         return output_multiplier[1:]
 
     def get_real_equivalent(self, classifier: bool = True, capacity_equivalent: bool = True,
-                            equiv_technique: str = 'ratio', name: str = None):
+                            equiv_technique: str = 'ratio', name: Optional[str] = None):
         """
         Creates a new model equivalent of current model. If model is already real throws and error.
         :param classifier: True (default) if the model is a classification model. False otherwise.
@@ -355,10 +355,11 @@ class CvnnModel:
         with self.graph_writer.as_default():
             tf.summary.trace_export(name="graph", step=0, profiler_outdir=self.graph_writer_logdir)
 
-    def fit(self, x, y=None,
-            validation_split=0.0, validation_data=None, epochs: int = 10, batch_size: int = 32,
-            verbose=True, display_freq: int = 1,
-            save_model_checkpoints=False, save_csv_history=True, shuffle=True):
+    def fit(self, x: t_input_features, y: Optional[t_labels] = None,
+            validation_split: float = 0.0, validation_data: Optional[Tuple[t_List], data.Dataset] = None,
+            epochs: int = 10, batch_size: int = 32,
+            verbose: t_verbose = True, display_freq: int = 1,
+            save_model_checkpoints: bool = False, save_csv_history: bool = True, shuffle: bool = True):
         """
         Trains the model for a fixed number of epochs (iterations on a dataset).
 
@@ -480,7 +481,8 @@ class CvnnModel:
                             verbose)
         self.plotter.reload_data()
 
-    def verify_fit_input(self, save_model_checkpoints, epochs: int, batch_size: int, display_freq: int, verbose):
+    def verify_fit_input(self, save_model_checkpoints: bool, epochs: int, batch_size: int, display_freq: int,
+                         verbose: t_verbose):
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         if not (isinstance(epochs, int) and epochs > 0):
             logger.error("Epochs must be unsigned integer", exc_info=True)
@@ -931,8 +933,9 @@ if __name__ == '__main__':
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
                       tensorboard=False, verbose=False)
-    model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=10,
+    model.fit(x_fit, dataset.y, validation_split=0.0, batch_size=100, epochs=3,
               verbose=True, save_csv_history=True)
+    model.call(x_fit)
     # start = time.time()
     # model.fit(dataset.x, dataset.y, batch_size=100, epochs=30, verbose=False)
     # end = time.time()
