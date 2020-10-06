@@ -133,7 +133,7 @@ class CvnnModel:
             x = self.shape[i].call(x)
         return x
 
-    def _apply_loss(self, y_true: t_labels, y_pred: t_labels):
+    def _apply_loss(self, y_true: t_labels, y_pred: t_labels) -> Tensor:
         """
         Private! Use "evaluate loss" instead
         """
@@ -335,7 +335,7 @@ class CvnnModel:
 
     # Add '@tf.function' to accelerate the code by a lot!
     @tf.function
-    def _train_step(self, x_train_batch, y_train_batch):
+    def _train_step(self, x_train_batch: Tensor, y_train_batch:  Tensor):
         """
         Performs one step of the training
         :param x_train_batch: input
@@ -415,7 +415,7 @@ class CvnnModel:
         :return: None
         """
         # Check input
-        verbose = self.verify_fit_input(save_model_checkpoints, epochs, batch_size, display_freq, verbose)
+        verbose = self._verify_fit_input(save_model_checkpoints, epochs, batch_size, display_freq, verbose)
         # Prepare dataset
         train_dataset, (x_test, y_test) = self._process_dataset(x, y, validation_split, validation_data, batch_size)
         # train_dataset = train_dataset.batch(batch_size=batch_size)  # TODO: Check if batch_size = 1
@@ -492,8 +492,8 @@ class CvnnModel:
                             verbose)
         self.plotter.reload_data()
 
-    def verify_fit_input(self, save_model_checkpoints: bool, epochs: int, batch_size: int, display_freq: int,
-                         verbose: t_verbose):
+    def _verify_fit_input(self, save_model_checkpoints: bool, epochs: int, batch_size: int, display_freq: int,
+                          verbose: t_verbose) -> str:
         assert not save_model_checkpoints  # TODO: Not working for the moment, sorry!
         if not (isinstance(epochs, int) and epochs > 0):
             logger.error("Epochs must be unsigned integer", exc_info=True)
@@ -527,7 +527,7 @@ class CvnnModel:
     """
 
     @staticmethod
-    def _get_verbose(verbose):
+    def _get_verbose(verbose: t_verbose) -> str:
         if isinstance(verbose, bool):
             return "INFO" if verbose else "SILENT"
         elif isinstance(verbose, int):
@@ -545,7 +545,31 @@ class CvnnModel:
             logger.error("verbose datatype (" + str(type(verbose)) + ") not supported")
 
     @staticmethod
-    def _process_dataset(x, y, validation_split=0.0, validation_data=None, batch_size: int = 32):
+    def _process_dataset(x: t_input_features, y: Optional[t_labels],
+                         validation_split: float = 0.0,
+                         validation_data: Optional[Union[Tuple[t_List], data.Dataset]] = None,
+                         batch_size: int = 32) -> Tuple[data.Dataset, Tuple]:
+        """
+        Process dataset and returns in the preferred format.
+
+        :param x: Input data. It could be:
+            - A Numpy array (or array-like), or a list of arrays (in case the model has multiple inputs).
+            - A TensorFlow tensor, or a list of tensors (in case the model has multiple inputs).
+            - A tf.data dataset. Should return a tuple (inputs, targets). Preferred data type (less overhead).
+        :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
+            If f x is a dataset then y will be ignored (default None)
+        :param validation_split: Float between 0 and 1.
+            Percentage of the input data to be used as test set (the rest will be use as train set)
+            Default: 0.0 (No validation set).
+            This input is ignored if validation_data is given.
+        :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
+            The model will not be trained on this data. This parameter takes precedence over validation_split.
+            It can be:
+                - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
+                - A tf.data dataset.
+        :param batch_size: (uint) Batch size of the data. Default 32 (because keras use 32 so... why not?)
+        :returns: (train, test) with train a tf.data.Dataset and test a tuple (x_val, y_val)
+        """
         test_dataset = None
         if isinstance(x, (list, tuple, np.ndarray)):
             if validation_data is None:
@@ -592,9 +616,9 @@ class CvnnModel:
         return train_dataset, test_dataset
 
     @staticmethod
-    def _dataset_to_array(x, y=None):
+    def _dataset_to_array(x: t_input_features, y: Optional[t_labels] = None) -> Tuple[ndarray, ndarray]:
         if isinstance(y, (list, tuple, np.ndarray, tf.Tensor)):
-            return x, y
+            return np.array(x), np.array(y)
         elif isinstance(x, tf.data.Dataset):
             x_test = []
             y_test = []
@@ -614,7 +638,7 @@ class CvnnModel:
     # Predict models and results
     # ==========================
 
-    def predict(self, x):
+    def predict(self, x: t_input_features) -> Tensor:
         """
         Predicts the value of the class.
         ATTENTION: Use this only for classification tasks. For regression use "call" method.
@@ -624,7 +648,7 @@ class CvnnModel:
         y_out = self.call(x)
         return tf.math.argmax(y_out, 1)
 
-    def evaluate_loss(self, x, y=None):
+    def evaluate_loss(self, x: t_input_features, y: Optional[t_labels] = None) -> ndarray:
         """
         Computes the output of x and computes the loss using y
         :param x: Input of the netwotk
@@ -634,7 +658,7 @@ class CvnnModel:
         x, y = self._dataset_to_array(x, y)
         return self._apply_loss(y, self.call(x)).numpy()
 
-    def evaluate_accuracy(self, x, y=None):
+    def evaluate_accuracy(self, x: t_input_features, y: Optional[t_labels] = None) -> ndarray:
         """
         Computes the output of x and returns the accuracy using y as labels
         :param x: Input of the netwotk
@@ -772,7 +796,7 @@ class CvnnModel:
                                                   self.activation_summary_writer, self.epochs_done)
         self._save_tensorboard_gradients(x_train, y_train)
 
-    def _save_tensorboard_gradients(self, x_train, y_train):
+    def _save_tensorboard_gradients(self, x_train, y_train) -> None:
         with tf.GradientTape() as tape:
             x_called = self.call(x_train)  # Forward mode computation
             current_loss = self._apply_loss(y_train, x_called)  # Compute loss
@@ -802,7 +826,7 @@ class CvnnModel:
                     logger.error("Input_dtype not supported. Should never have gotten here!", exc_info=True)
                     sys.exit(-1)
 
-    def save(self, loss, acc):
+    def save(self, loss, acc) -> None:
         # https://stackoverflow.com/questions/2709800/how-to-pickle-yourself
         # TODO: TypeError: can't pickle _thread._local objects
         # https://github.com/tensorflow/tensorflow/issues/33283
@@ -824,7 +848,7 @@ class CvnnModel:
     # Managing strings
     # ================
 
-    def _manage_string(self, string, verbose="SILENT", filename=None, mode="a"):
+    def _manage_string(self, string, verbose="SILENT", filename=None, mode="a") -> None:
         """
         Prints a string to console and/or saves it to a file
         :param string: String to be printed/saved
@@ -852,8 +876,9 @@ class CvnnModel:
         return self._get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss, test_acc, batch, batches)
 
     @staticmethod
-    def _get_loss_and_acc_string(epoch, epochs, train_loss, train_acc, test_loss=None, test_acc=None, batch=None,
-                                 batches=None) -> str:
+    def _get_loss_and_acc_string(epoch: int, epochs: int, train_loss: float, train_acc: float,
+                                 test_loss: float = None, test_acc: float = None, batch: int = None,
+                                 batches: int = None) -> str:
         ret_str = "Epoch {0}/{1}".format(epoch, epochs)
         if batch is not None and batches is not None:
             ret_str += "; batch {0}/{1}".format(batch, batches)
@@ -863,7 +888,7 @@ class CvnnModel:
             ret_str += "- test loss: {0:.4f} - test accuracy: {1:.2f} %".format(test_loss, test_acc * 100)
         return ret_str
 
-    def summary(self):
+    def summary(self) -> str:
         """
         Generates a string of a summary representation of your model.
         :return: string of the summary of the model
@@ -880,7 +905,7 @@ class CvnnModel:
             summary_str += lay.get_description()
         return summary_str
 
-    def training_param_summary(self):
+    def training_param_summary(self) -> None:
         """
         Prints a table analog to tf.keras.Model.summary()
         https://www.tensorflow.org/api_docs/python/tf/keras/Model#summary
@@ -964,7 +989,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.55'
+__version__ = '0.2.56'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
