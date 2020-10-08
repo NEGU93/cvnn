@@ -286,7 +286,8 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        epochs=150, batch_size=100, display_freq=1, optimizer='sgd',
                                        shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                        dropout=0.5, validation_split=0.2, validation_data=None,
-                                       capacity_equivalent=True, equiv_technique='ratio', do_conf_mat=True):
+                                       capacity_equivalent=True, equiv_technique='ratio', do_conf_mat=True,
+                                       checkpoints=False):
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
     1. Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.
@@ -369,7 +370,8 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar,
-                    validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat)
+                    validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat,
+                    checkpoints=checkpoints)
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 
