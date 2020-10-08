@@ -442,7 +442,7 @@ class CvnnModel:
             # Randomly shuffle the training data at the beginning of each epoch
             if shuffle:
                 train_dataset = train_dataset.shuffle(buffer_size=50000)
-            for x_batch, y_batch in train_dataset.prefetch(tf.data.experimental.AUTOTUNE).cache():
+            for x_batch, y_batch in train_dataset.prefetch(tf.data.experimental.AUTOTUNE):
                 if verbose in ("INFO", "DEBUG", "PROBAR"):
                     values = None
                     if verbose != "PROBAR":
@@ -581,12 +581,12 @@ class CvnnModel:
                 y_test = y[:int(dataset_length * validation_split)]
                 if len(x_test) != 0:
                     validation_data = (np.array(x_test), np.array(y_test))
-                train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size=batch_size)
+                train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).cache().batch(batch_size=batch_size)
             else:
                 if validation_split != 0:
                     logger.warning("validation_split was given but will be ignored because "
                                    "validation_data was not None")
-                train_dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(batch_size=batch_size)
+                train_dataset = tf.data.Dataset.from_tensor_slices((x, y)).cache().batch(batch_size=batch_size)
         elif isinstance(x, tf.data.Dataset):
             if y is not None:
                 logger.warning("y is ignored because x was a Dataset (and should contain the labels), "
@@ -613,7 +613,7 @@ class CvnnModel:
         assert isinstance(test_dataset, (list, tuple, np.ndarray)) or test_dataset is None
         if test_dataset is None:
             test_dataset = (None, None)
-        return train_dataset, test_dataset
+        return train_dataset.cache(), test_dataset
 
     @staticmethod
     def _dataset_to_array(x: t_input_features, y: Optional[t_labels] = None) -> Tuple[ndarray, ndarray]:
@@ -989,7 +989,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.56'
+__version__ = '0.2.57'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -1,0 +1,2 @@
+sudo -s (To become root)
+systemd-inhibit --why="Doing simulations" python my-python-script.py
