@@ -201,18 +201,20 @@ class RealVsComplex(MonteCarlo):
 #     Excel logging
 # ====================================
 def run_montecarlo(models, dataset, open_dataset=None, iterations=500,
-                   epochs=150, batch_size=100, display_freq=1,
-                   debug=False, polar=False, do_all=True):
+                   epochs=150, batch_size=100, display_freq=1, validation_split=0.2, validation_data=None,
+                   debug=False, polar=False, do_all=True, do_conf_mat=True):
     if open_dataset:
         dataset = dp.OpenDataset(open_dataset)  # Warning, open_dataset overwrites dataset
 
     # Monte Carlo
     monte_carlo = MonteCarlo()
     for model in models:
+        model.training_param_summary()
         monte_carlo.add_model(model)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
+                    validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
     if do_all:
@@ -287,7 +289,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        shape_raw=None, activation='cart_relu', debug=False, polar=False, do_all=True,
                                        dropout=0.5, validation_split=0.2, validation_data=None,
                                        capacity_equivalent=True, equiv_technique='ratio', do_conf_mat=True,
-                                       checkpoints=False):
+                                       checkpoints=False, shuffle=False):
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
     1. Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.
@@ -369,7 +371,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar,
+                    shuffle=shuffle, debug=debug, data_summary=dataset.summary(), polar=polar,
                     validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat,
                     checkpoints=checkpoints)
     if do_all:

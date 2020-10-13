@@ -296,10 +296,10 @@ class SeveralMonteCarloComparison:
             logger.error("x ({0}) and paths ({1}) must be the same size".format(len(self.x),
                                                                                 len(self.monte_carlo_runs)))
         frames = [self.monte_carlo_runs[0].df]
-        frames[0]['network'] = frames[0]['network'] + " " + x[0]
+        # frames[0]['network'] = frames[0]['network'] + " " + x[0]
         for i, monte_carlo_run in enumerate(self.monte_carlo_runs[1:]):
             frames.append(self.monte_carlo_runs[i + 1].df)
-            frames[i + 1]['network'] = frames[i + 1]['network'] + " " + x[i + 1]
+            # frames[i + 1]['network'] = frames[i + 1]['network'] + " " + x[i + 1]
         self.df = pd.concat(frames)
         self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df)
 
@@ -395,8 +395,10 @@ class SeveralMonteCarloComparison:
                 steps.append(step)
         # Prepare data
         frames = []
+        # color_pal = []
         for i, mc_run in enumerate(self.monte_carlo_runs):
             df = mc_run.df
+            # color_pal += sns.color_palette()[:len(df.network.unique())]
             filter = df['step'] == steps[i]
             data = df[filter]
             data[self.x_label] = self.x[i]
@@ -405,7 +407,10 @@ class SeveralMonteCarloComparison:
 
         # Run figure
         fig = plt.figure()
+        # set_trace()
         ax = sns.boxplot(x=self.x_label, y=key, hue="network", data=result, boxprops=dict(alpha=.3))
+        # palette=color_pal)
+        # sns.despine(offset=1, trim=True)
         # Make black lines the color of the box
         for i, artist in enumerate(ax.artists):
             col = artist.get_facecolor()[:-1]  # the -1 removes the transparency
@@ -732,13 +737,13 @@ class MonteCarloPlotter(Plotter):
             os.makedirs(str(self.path / "plots/lines_confidence/"), exist_ok=True)
             fig.savefig(self.path / ("plots/lines_confidence/montecarlo_" +
                                      key.replace(" ", "_") + "_matplotlib" + extension), transparent=True)
-            """if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+            if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
                 logger.warning(
                     "No Tikzplotlib installed, function " + self._plot_line_confidence_interval_matplotlib.__name__ +
                     " will not save tex file")
             else:
                 tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
-                                              key.replace(" ", "_") + "_matplotlib" + ".tex"))"""
+                                              key.replace(" ", "_") + "_matplotlib" + ".tex"))
         # set_trace()
 
     def _plot_line_confidance_interval_plotly(self, key='test accuracy', showfig=False, savefig=True,
@@ -1222,14 +1227,26 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    path = "//media/barrachina/data/results/MLSP/results/two hidden layer/TwoLayerTypeA/run_data.csv"
+    path = "/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/06Tuesday/run-16h58m53/run_data.csv"
     monte = MonteCarloAnalyzer(path=path)
     monte.do_all(showfig=False, savefig=False)
     monte.plot_histogram(library='matplotlib', showfig=False, savefig=False)
     monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=False)
     monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
+    """
+    paths = [
+        '/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/06Tuesday/run-16h58m53/run_data',
+        '/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/07Wednesday/run-06h10m00/run_data',
+        '/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/09Friday/run-19h32m25/run_data'
+    ]
+    several = SeveralMonteCarloComparison('Activation Functions', x=['ReLU', 'tanh', 'sigmoid'], paths=paths)
+    several.box_plot(library='seaborn', showfig=True,
+                     savefile='/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/act_fun_comparison_box_plot')
+    several.box_plot(library='plotly', showfig=True,
+                     savefile='/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/act_fun_comparison_box_plot')
+    """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.33'
+__version__ = '0.1.34'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -106,7 +106,7 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     # Parameters
     KERAS_DEBUG = False
     OWN_MODEL = True
-    iterations = 3
+    iterations = 50
     verbose = 1 if iterations == 1 else 0
 
     # Training
@@ -144,11 +144,13 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
                         config=PLOTLY_CONFIG, auto_open=True)
     plotly.offline.plot(fig_time, filename="./results/" + optimizer_name + "_mnist_test_fit_time.html",
                         config=PLOTLY_CONFIG, auto_open=True)
+    np.save("./results/keras_" + optimizer_name + "_mnist_test.npy", np.array(keras_results))
+    np.save("./results/own_" + optimizer_name + "_mnist_test.npy", np.array(own_results))
 
 
 if __name__ == "__main__":
-    # test_mnist_montecarlo("RMSprop")
+    test_mnist_montecarlo("RMSprop")
     # test_mnist_montecarlo("SGD")
-    test_mnist_montecarlo()
+    # test_mnist_montecarlo()
 
 

@@ -260,11 +260,11 @@ class CvnnModel:
         If when both ends meet there's not a coincidence (example: [..., 1, 1, ...]) then
             the code will find a compromise between the two to keep the same real valued trainable parameters.
         """
-        output_multiplier = np.zeros(len(self.shape) + 1)
+        output_multiplier = np.zeros(len(self.shape) + 2)
         output_multiplier[0] = 2
         output_multiplier[-1] = 1 if classification else 2
         i: int = 1
-        while i <= len(self.shape) - i:
+        while i <= (len(self.shape) - i):
             output_multiplier[i] = 2 if output_multiplier[i - 1] == 1 else 1  # From beginning
             output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1  # From the end
             if i == len(self.shape) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
@@ -989,7 +989,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.57'
+__version__ = '0.2.58'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
