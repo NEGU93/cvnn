@@ -144,11 +144,16 @@ def compute_accuracy(x, y):
     return np.average(np.equal(x, y).all(axis=1))
 
 
+def median_error(q_75: float, q_25: float, n: int):
+    assert q_75 > q_25 > 0.0
+    return 1.57*(q_75-q_25)/np.sqrt(n)
+
+
 if __name__ == "__main__":
     logger.warning("Testing logger")
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.15'
+__version__ = '0.0.16'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

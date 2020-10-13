@@ -21,7 +21,7 @@ has the posibility to plot the results obtained with the training with several p
 
 
 Using GitHub
------------
+------------
 
 Useful if you want to modify the source code::
 

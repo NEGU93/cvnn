@@ -2,12 +2,14 @@ import tensorflow as tf
 import sys
 import cvnn
 import logging
+from typing import Union, Callable
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
 """
 
 logger = logging.getLogger(cvnn.__name__)
+t_activation = Union[str, Callable]         # TODO: define better
 
 
 def apply_activation(act_fun, out):
@@ -257,6 +259,6 @@ act_dispatcher = {
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
