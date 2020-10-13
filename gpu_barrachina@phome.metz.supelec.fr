@@ -6,13 +6,9 @@ from cvnn import layers
 import numpy as np
 from tqdm import tqdm
 from pdb import set_trace
+import plotly.graph_objects as go
+import plotly
 import timeit
-try:
-    import plotly.graph_objects as go
-    import plotly
-    PLOTLY = True
-except ModuleNotFoundError:
-    PLOTLY = False
 
 tfds.disable_progress_bar()
 tf.enable_v2_behavior()
@@ -123,9 +119,8 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     activation_2 = tf.keras.activations.softmax
     weight_initializer = tf.keras.initializers.GlorotUniform()
     bias_initializer = tf.keras.initializers.Zeros()
-    if PLOTLY:
-        fig = go.Figure()
-        fig_time = go.Figure()
+    fig = go.Figure()
+    fig_time = go.Figure()
 
     if OWN_MODEL:
         tf.print("Cvnn simulation")
@@ -135,9 +130,8 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
                              weight_initializer=weight_initializer, bias_initializer=bias_initializer)
             own_results.append(result[0][1])
             own_fit_time.append(result[-1])
-        if PLOTLY:
-            fig.add_trace(go.Box(y=own_results, name='Cvnn'))
-            fig_time.add_trace(go.Box(y=own_fit_time, name='Cvnn'))
+        fig.add_trace(go.Box(y=own_results, name='Cvnn'))
+        fig_time.add_trace(go.Box(y=own_fit_time, name='Cvnn'))
     if KERAS_DEBUG:
         tf.print("Keras simulation")
         for _ in tqdm(range(iterations)):
@@ -146,11 +140,10 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
             keras_fit_time.append(result[-1])
         fig.add_trace(go.Box(y=keras_results, name='Keras'))
         fig_time.add_trace(go.Box(y=keras_fit_time, name='Keras'))
-    if PLOTLY:
-        plotly.offline.plot(fig, filename="./results/" + optimizer_name + "_mnist_test.html",
-                            config=PLOTLY_CONFIG, auto_open=True)
-        plotly.offline.plot(fig_time, filename="./results/" + optimizer_name + "_mnist_test_fit_time.html",
-                            config=PLOTLY_CONFIG, auto_open=True)
+    plotly.offline.plot(fig, filename="./results/" + optimizer_name + "_mnist_test.html",
+                        config=PLOTLY_CONFIG, auto_open=True)
+    plotly.offline.plot(fig_time, filename="./results/" + optimizer_name + "_mnist_test_fit_time.html",
+                        config=PLOTLY_CONFIG, auto_open=True)
     np.save("./results/keras_" + optimizer_name + "_mnist_test.npy", np.array(keras_results))
     np.save("./results/own_" + optimizer_name + "_mnist_test.npy", np.array(own_results))
 
