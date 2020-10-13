@@ -255,7 +255,7 @@ def run_montecarlo(models: List[CvnnModel], dataset: cvnn.dataset.Dataset, open_
     # Monte Carlo
     monte_carlo = MonteCarlo()
     for model in models:
-        model.training_param_summary()
+        # model.training_param_summary()
         monte_carlo.add_model(model)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)

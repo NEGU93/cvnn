@@ -2,17 +2,18 @@ import tensorflow as tf
 import sys
 import cvnn
 import logging
-from typing import Union, Callable
+from typing import Union, Callable, Optional
+from tensorflow import Tensor
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
 """
 
 logger = logging.getLogger(cvnn.__name__)
-t_activation = Union[str, Callable]         # TODO: define better
+t_activation = Union[str, Callable]  # TODO: define better
 
 
-def apply_activation(act_fun, out):
+def apply_activation(act_fun: t_activation, out: Tensor) -> Tensor:
     """
     Applies activation function `act` to variable `out`
     :param out: Tensor to whom the activation function will be applied
@@ -38,7 +39,7 @@ def apply_activation(act_fun, out):
         return out
 
 
-def softmax_real(z, axis=-1):
+def softmax_real(z: Tensor, axis=-1) -> Tensor:
     """
     Applies the softmax function to the modulus of z.
     The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
@@ -53,7 +54,7 @@ def softmax_real(z, axis=-1):
 
 
 # Regression
-def linear(z):
+def linear(z: Tensor) -> Tensor:
     """
     Does not apply any activation function. It just outputs the input.
     :param z: Input tensor variable
@@ -66,12 +67,13 @@ def linear(z):
 TYPE A: Cartesian form.
 """
 
+
 # TODO: shall I use tf.nn or tf.keras.activation modules?
 # https://stackoverflow.com/questions/54761088/tf-nn-relu-vs-tf-keras-activations-relu
 # nn has leaky relu, activation doesn't
 
 
-def cart_sigmoid(z):
+def cart_sigmoid(z: Tensor) -> Tensor:
     """
     Applies the function (1.0 / (1.0 + exp(-x))) + j * (1.0 / (1.0 + exp(-y))) where z = x + j * y
     https://www.tensorflow.org/api_docs/python/tf/keras/activations/sigmoid
@@ -82,7 +84,7 @@ def cart_sigmoid(z):
                               tf.keras.activations.sigmoid(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_elu(z, alpha=1.0):
+def cart_elu(z: Tensor, alpha=1.0) -> Tensor:
     """
     Applies the "Exponential linear unit": x if x > 0 and alpha * (exp(x)-1) if x < 0
     To both the real and imaginary part of z.
@@ -95,7 +97,7 @@ def cart_elu(z, alpha=1.0):
                               tf.keras.activations.elu(tf.math.imag(z), alpha)), dtype=z.dtype)
 
 
-def cart_exponential(z):
+def cart_exponential(z: Tensor) -> Tensor:
     """
     Exponential activation function. Applies to both the real and imag part of z the exponential activation: exp(x)
     https://www.tensorflow.org/api_docs/python/tf/keras/activations/exponential
@@ -106,7 +108,7 @@ def cart_exponential(z):
                               tf.keras.activations.exponential(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_hard_sigmoid(z):
+def cart_hard_sigmoid(z: Tensor) -> Tensor:
     """
     Applies the Hard Sigmoid function to both the real and imag part of z.
     The hard sigmoid function is faster to compute than sigmoid activation.
@@ -121,7 +123,7 @@ def cart_hard_sigmoid(z):
                               tf.keras.activations.hard_sigmoid(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_relu(z, alpha=0.0, max_value=None, threshold=0):
+def cart_relu(z: Tensor, alpha=0.0, max_value=None, threshold=0) -> Tensor:
     """
     Applies Rectified Linear Unit to both the real and imag part of z
     The relu function, with default values, it returns element-wise max(x, 0).
@@ -136,7 +138,7 @@ def cart_relu(z, alpha=0.0, max_value=None, threshold=0):
                               tf.keras.activations.relu(tf.math.imag(z), alpha, max_value, threshold)), dtype=z.dtype)
 
 
-def cart_leaky_relu(z, alpha=0.2, name=None):
+def cart_leaky_relu(z: Tensor, alpha=0.2, name=None) -> Tensor:
     """
     Applies Leaky Rectified Linear Unit to both the real and imag part of z
     https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu
@@ -150,7 +152,7 @@ def cart_leaky_relu(z, alpha=0.2, name=None):
                               tf.nn.leaky_relu(tf.math.imag(z), alpha, name)), dtype=z.dtype)
 
 
-def cart_selu(z):
+def cart_selu(z: Tensor) -> Tensor:
     """
     Applies Scaled Exponential Linear Unit (SELU) to both the real and imag part of z.
     The scaled exponential unit activation: scale * elu(x, alpha).
@@ -163,7 +165,7 @@ def cart_selu(z):
                               tf.keras.activations.selu(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_softplus(z):
+def cart_softplus(z: Tensor) -> Tensor:
     """
     Applies Softplus activation function to both the real and imag part of z.
     The Softplus function: log(exp(x) + 1)
@@ -175,7 +177,7 @@ def cart_softplus(z):
                               tf.keras.activations.softplus(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_softsign(z):
+def cart_softsign(z: Tensor) -> Tensor:
     """
     Applies Softsign activation function to both the real and imag part of z.
     The softsign activation: x / (abs(x) + 1).      TODO: typo in tensorflow references (softplus instead of softsign)
@@ -187,7 +189,7 @@ def cart_softsign(z):
                               tf.keras.activations.softsign(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_tanh(z):
+def cart_tanh(z: Tensor) -> Tensor:
     """
     Applies Hyperbolic Tangent (tanh) activation function to both the real and imag part of z.
     The tanh activation: tanh(x) = sinh(x)/cosh(x) = ((exp(x) - exp(-x))/(exp(x) + exp(-x))).
@@ -201,7 +203,7 @@ def cart_tanh(z):
 
 
 # Classification
-def cart_softmax(z, axis=-1):
+def cart_softmax(z: Tensor, axis=-1) -> Tensor:
     """
     Applies the softmax function to both the real and imag part of z.
     The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
@@ -219,10 +221,42 @@ def cart_softmax(z, axis=-1):
 """
 TYPE B: Polar form.
 """
+
+
 # TODO: for all ReLU functions, the polar form makes no real sense. If we keep the phase because abs(z) > 0
 
+def _apply_pol(z: Tensor, amp_fun: Callable[[Tensor], Tensor],
+               pha_fun: Optional[Callable[[Tensor], Tensor]] = None) -> Tensor:
+    amp = amp_fun(tf.math.abs(z))
+    pha = tf.math.angle(z)
+    if pha_fun is not None:
+        pha = pha_fun(pha)
+    return tf.cast(tf.complex(amp * tf.math.cos(pha), amp * tf.math.sin(pha)), dtype=z.dtype)
 
-def pol_selu(z):
+
+def pol_tanh(z: Tensor) -> Tensor:
+    """
+    Applies Hyperbolic Tangent (tanh) activation function to the amplitude of the complex number
+        leaving the phase untouched.
+    The derivative if tanh is computed as 1 - tanh^2 so it should be fast to compute for backprop.
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/tanh
+    :param z: Input tensor.
+    :return: Tensor result of the applied activation function
+    """
+    return _apply_pol(z, tf.keras.activations.tanh)
+
+
+def pol_sigmoid(z: Tensor) -> Tensor:
+    """
+    Applies the sigmoid function to the amplitude of the complex number leaving the phase untouched
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/sigmoid
+    :param z: Tensor to be used as input of the activation function
+    :return: Tensor result of the applied activation function
+    """
+    return _apply_pol(z, tf.keras.activations.sigmoid)
+
+
+def pol_selu(z: Tensor) -> Tensor:
     """
     Applies Scaled Exponential Linear Unit (SELU) to the absolute value of z, keeping the phase unchanged.
     The scaled exponential unit activation: scale * elu(x, alpha).
@@ -254,9 +288,10 @@ act_dispatcher = {
     'cart_tanh': cart_tanh,
     'cart_softmax': cart_softmax,
     'softmax_real': softmax_real,
+    'pol_tanh': pol_tanh,
+    'pol_sigmoid': pol_sigmoid,
     'pol_selu': pol_selu
 }
-
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.0.8'

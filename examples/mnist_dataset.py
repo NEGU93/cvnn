@@ -108,9 +108,9 @@ def own_fit(ds_train, ds_test, verbose,
 
 def test_mnist_montecarlo(optimizer_name='Adam'):
     # Parameters
-    KERAS_DEBUG = False
+    KERAS_DEBUG = True
     OWN_MODEL = True
-    iterations = 50
+    iterations = 1000
     verbose = 1 if iterations == 1 else 0
 
     # Training
@@ -151,8 +151,28 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
                             config=PLOTLY_CONFIG, auto_open=True)
         plotly.offline.plot(fig_time, filename="./results/" + optimizer_name + "_mnist_test_fit_time.html",
                             config=PLOTLY_CONFIG, auto_open=True)
-    np.save("./results/keras_" + optimizer_name + "_mnist_test.npy", np.array(keras_results))
-    np.save("./results/own_" + optimizer_name + "_mnist_test.npy", np.array(own_results))
+    own_results = np.array(own_results)
+    keras_results = np.array(keras_results)
+    np.save("./results/keras_" + optimizer_name + "_mnist_test.npy", keras_results)
+    np.save("./results/own_" + optimizer_name + "_mnist_test.npy", own_results)
+    own_err = own_results.std() * 2.576 / np.sqrt(50)
+    own_mean = 0.975692
+    keras_err = keras_results.std() * 2.576 / np.sqrt(50)
+    keras_mean = keras_results.mean()
+    q75, q25 = np.percentile(own_results, [75, 25])
+    own_median_err = 1.57 * (q75 - q25) / np.sqrt(50)
+    own_median = np.median(own_results)
+    q75, q25 = np.percentile(keras_results, [75, 25])
+    keras_median_err = 1.57 * (q75 - q25) / np.sqrt(50)
+    keras_median = np.median(keras_results)
+    mean_str = "Own Mean: {0} +- {1}\nKeras Mean: {2} +- {3}\n".format(own_mean * 100, own_err * 100, keras_mean * 100,
+                                                                       keras_err * 100)
+    median_str = "Own Median: {0} +- {1}\nKeras Median: {2} +- {3}\n".format(own_median * 100, own_median_err * 100,
+                                                                             keras_median * 100, keras_median_err * 100)
+    f = open("rmsprop_results.txt", "w+")
+    f.write(mean_str)
+    f.write(median_str)
+    f.close()
 
 
 if __name__ == "__main__":
