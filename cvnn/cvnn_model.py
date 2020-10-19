@@ -241,13 +241,12 @@ class CvnnModel:
             if bias_adjust:
                 quadratic_b = quadratic_b + np.sum(x_c) + model_out_c
             quadratic_a = np.sum([x_c[i] * x_c[i + 1] for i in range(len(x_c) - 1)])
-
-            ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
             # The result MUST be positive so I use the '+' solution
-            if not 1 <= ratio <= 2:
+            ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
+            if not 1 <= ratio <= 2:     # Technically it can't be 2 but I leave it just in case for float num approx
                 logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
         else:
-            ratio = 2 * (model_in_c + model_out_c) / (model_in_r + model_out_r)     # TODO: Verify
+            ratio = 2 * (model_in_c + model_out_c) / (model_in_r + model_out_r)
         return [ratio] * len(x_c) + [1 if classification else 2]
 
     def _get_alternate_capacity_equivalent(self, classification: bool = True):
@@ -989,7 +988,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.58'
+__version__ = '0.2.59'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
