@@ -39,15 +39,6 @@ requirements:
     {% endfor %}
     {# raw is for ignoring templating with cookiecutter, leaving it for use with conda-build #}
 
-test:
-  source_files:
-    - tests
-  requires:
-    - pytest
-    - pytest-cov
-  commands:
-    - pytest tests
-
 about:
   home: https://github.com/NEGU93/cvnn
   summary: Library to help implement a complex-valued neural network (cvnn) using tensorflow as back-end
