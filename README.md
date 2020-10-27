@@ -75,6 +75,7 @@ Code:
     author       = {J. Agustin Barrachina},
     title        = {Complex-Valued Neural Networks (CVNN)},
     howpublished = {\url{https://github.com/NEGU93/cvnn}},
+    doi          = {10.5281/zenodo.4140245},
     journal      = {GitHub repository},
     year         = {2019}
 }
