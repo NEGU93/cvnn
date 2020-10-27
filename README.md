@@ -39,6 +39,24 @@ pip install cvnn[plotter]
 pip install cvnn[full]
 ```
 
+## Short example
+
+```
+import numpy as np
+from cvnn.layers import ComplexDense
+from cvnn.cvnn_model import CvnnModel
+from tensorflow.keras.losses import categorical_crossentropy
+
+# Assume you already have complex data 'x' with its labels 'y'...
+x, y = get_dataset()        # to be done by each user
+
+shape = [ComplexDense(output_size=100, input_size=np.shape(x)[1], activation='cart_relu'),
+        ComplexDense(output_size=40, activation='cart_relu'),
+        ComplexDense(output_size=np.shape(y)[1], activation='softmax_real')]
+model = CvnnModel("cvnn_example", shape, categorical_crossentropy)
+model.fit(x, y, batch_size=100, epochs=150)
+```
+
 ## About me & Motivation
 
 [My personal website](https://negu93.github.io/agustinbarrachina/)
