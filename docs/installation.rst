@@ -1,6 +1,12 @@
 Installation
 ============
 
+Using `Anaconda <https://anaconda.org/NEGU93/cvnn>`_::
+----------------------------------------------------
+
+    conda install -c negu93 cvnn
+
+
 Using `PIP <https://pypi.org/project/cvnn/>`_
 ---------------------------------------------
 
