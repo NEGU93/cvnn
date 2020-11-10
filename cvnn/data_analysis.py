@@ -46,6 +46,15 @@ DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',  # Blue
                          'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
                          'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
 
+PLOT_COLORS_TEST = [
+    (31, 119, 180),  # Blue
+    (255, 127, 14),  # Orange
+    (44, 160, 44)  # Green
+]
+
+def rgb_2_hex(rgb_tuple):
+    return '#%02x%02x%02x' % rgb_tuple
+
 
 @dataclass
 class Resolution:
@@ -253,7 +262,7 @@ def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
 
 class SeveralMonteCarloComparison:
 
-    def __init__(self, label, x, paths, round=2):
+    def __init__(self, label, x, paths, round=2, output_path=None):
         """
         This class is used to compare several monte carlo runs done with cvnn.montecarlo.MonteCarlo class.
         MonteCarlo let's you compare different models between them but let's you not change other values like epochs.
@@ -299,9 +308,9 @@ class SeveralMonteCarloComparison:
         # frames[0]['network'] = frames[0]['network'] + " " + x[0]
         for i, monte_carlo_run in enumerate(self.monte_carlo_runs[1:]):
             frames.append(self.monte_carlo_runs[i + 1].df)
-            # frames[i + 1]['network'] = frames[i + 1]['network'] + " " + x[i + 1]
+            frames[i + 1]['network'] = frames[i + 1]['network'] + " " + x[i + 1]
         self.df = pd.concat(frames)
-        self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df)
+        self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df, path=output_path)
 
     def box_plot(self, key='test accuracy', library='plotly', step=-1, showfig=False, savefile=None):
         if library == 'plotly':
@@ -729,8 +738,14 @@ class MonteCarloPlotter(Plotter):
         ax.set_title(title)
         ax.set_xlabel(x_axis)
         ax.set_ylabel(key)
-        ax.grid()
-        ax.legend()
+        ax.set_ylim([0, 1])
+        ax.yaxis.grid()
+        # ax.grid()
+        # ax.legend()
+        # ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax.set_title("Test loss with dropout")
+        fig.savefig("/home/barrachina/Downloads/testing1.svg", transparent=True)
+
         if showfig:
             fig.show()
         if savefig:
@@ -1203,16 +1218,17 @@ class MonteCarloAnalyzer:
         # networks_availables = ['complex network', 'real network', 'polar real network']
         if step == -1:
             step = max(self.df.step)
-        for net in networks_availables:
+        for i, net in enumerate(networks_availables):
             filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
             data = self.df[filter]  # Get only the data to plot
-            ax = sns.histplot(data[key], bins=bins, label=net.replace("_", " "))
+            ax = sns.distplot(data[key], bins=bins, label=net.replace("_", " ")) #, color=rgb_2_hex(PLOT_COLORS_TEST[i]))
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
         title += " " + key + " histogram"
         # set_trace()
         ax.set_xlim((min_ax - 0.01, max_ax + 0.01))
-        fig.legend(loc='upper left')  # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
+        fig.legend(loc=(0.13, 0.8))   # loc='upper left')  # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
+        # print(self.path)
         add_params(fig, ax, x_label=key.capitalize(), y_label="Occurrences",  # loc='upper left',
                    filename=self.path / (
                            "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),

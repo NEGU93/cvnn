@@ -46,6 +46,7 @@ VERBOSITY = {0: "SILENT",  # verbosity 0. NADA DE NADA
              1: "INFO",    # verbosity 1. Muestra entre cada linea
              3: "DEBUG"
              }
+DEBUG = True
 
 
 def run_once(f):

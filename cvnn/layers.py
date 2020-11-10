@@ -14,6 +14,7 @@ import cvnn.initializers as initializers
 from tensorflow import dtypes
 from numpy import dtype, ndarray
 from typing import Union, Callable, Optional, List, Set
+from cvnn.initializers import RandomInitializer
 
 
 SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
@@ -21,8 +22,15 @@ layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
 t_kernel_shape = t_input_shape
+t_padding_shape = Union[str, t_input_shape]
 t_Callable_shape = Union[t_input_shape, Callable]   # Either a input_shape or a function that sets self.output
 t_Dtype = Union[dtypes.DType, dtype]
+
+PADDING_MODES = {
+    "valid",
+    "same",
+    "full"
+}
 
 
 class ComplexLayer(ABC):
@@ -197,7 +205,8 @@ class Dense(ComplexLayer):
     """
 
     def __init__(self, output_size, input_size=None, activation=None, input_dtype=None,
-                 weight_initializer=None, bias_initializer=None,
+                 weight_initializer: Optional[RandomInitializer] = None,
+                 bias_initializer: Optional[RandomInitializer] = None,
                  dropout=None):
         """
         Initializer of the Dense layer
@@ -211,9 +220,9 @@ class Dense(ComplexLayer):
                 - np.complex64
                 - np.float32
         :param weight_initializer: Initializer for the weights.
-            Default: tensorflow.keras.initializers.GlorotUniform
+            Default: cvnn.initializers.GlorotUniform
         :param bias_initializer: Initializer fot the bias.
-            Default: tensorflow.keras.initializers.Zeros
+            Default: cvnn.initializers.Zeros
         :param dropout: Either None (default) and no dropout will be applied or a scalar
             that will be the probability that each element is dropped.
             Example: setting rate=0.1 would drop 10% of input elements.
@@ -376,12 +385,13 @@ class Convolutional(ComplexLayer):
     # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
 
     def __init__(self, filters: int, kernel_shape: t_kernel_shape,
-                 input_shape: Optional[t_input_shape] = None, padding: t_kernel_shape = 0,
+                 input_shape: Optional[t_input_shape] = None, padding: t_padding_shape = 0,
                  stride: t_kernel_shape = 1, input_dtype: Optional[t_Dtype] = None,
                  activation=None,    # TODO: Check type
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
+                 weight_initializer: RandomInitializer = initializers.GlorotUniform(),
+                 bias_initializer: RandomInitializer = initializers.Zeros(),
                  data_format='channels_last'    # TODO: Only supported format for the moment.
-                 # dilatation_rate=(1, 1)   # TODO: Interesting to add
+                 # dilatation_rate=(1, 1)       # TODO: Interesting to add
                  ):
         """
         :param data_format: A string, one of channels_last (default) or channels_first.
@@ -424,12 +434,32 @@ class Convolutional(ComplexLayer):
         else:
             logger.error("Kernel shape: " + str(kernel_shape) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
+        if not np.all(np.asarray(self.kernel_shape) > 1):
+            logger.error("Kernel shape must have all values bigger than 1: " + str(self.kernel_shape))
+            sys.exit(-1)
         # Padding
         if isinstance(padding, int):
             self.padding_shape = (padding,) * (len(self.input_size) - 1)    # -1 because the last is the channel
             # I call super first in the case input_shape is none
         elif isinstance(padding, (tuple, list)):
             self.padding_shape = tuple(padding)
+        elif isinstance(padding, str):
+            padding = padding.lower()
+            if padding in PADDING_MODES:
+                if padding == "valid":
+                    self.padding_shape = (0,) * (len(self.input_size) - 1)
+                elif padding == "same":
+                    if np.all(np.asarray(self.kernel_shape) % 2 == 0):
+                        logger.warning("Same padding needs the kernel to have an odd value")
+                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) / 2).astype(int))
+                elif padding == "full":
+                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) - 1))
+                else:
+                    logger.error("Unknown padding " + padding + " but listed in PADDING_MODES!")
+                    sys.exit(-1)
+            else:
+                logger.error("Unknown padding " + padding)
+                sys.exit(-1)
         else:
             logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
             sys.exit(-1)
@@ -462,30 +492,11 @@ class Convolutional(ComplexLayer):
             logger.error("data_format not supported, should be either 'channels_last' (default) "
                               "or 'channels_first', got " + str(data_format))
             sys.exit(-1)
-        if self.input_dtype == np.complex64 or self.input_dtype == np.complex128:  # Complex layer
-            div = tf.sqrt(tf.constant([2.]))  # To keep the variance as it should.
-            for f in range(self.filters):               # Kernels should be features*channels.
-                self.kernels.append(tf.cast(
-                    tf.Variable(tf.complex(self.weight_initializer()(shape=this_shape)/div,
-                                           self.weight_initializer()(shape=this_shape)/div),
-                                name="kernel" + str(self.layer_number) + "_f" + str(f)),
-                    dtype=self.input_dtype))
-            self.bias = tf.cast(tf.Variable(tf.complex(self.bias_initializer()(shape=self.filters)/div,
-                                                       self.bias_initializer()(shape=self.filters)/div),
-                                            name="bias" + str(self.layer_number)),
-                                dtype=self.input_dtype)
-        elif self.input_dtype == np.float32 or self.input_dtype == np.float64:  # Real Layer
-            for f in range(self.filters):
-                self.kernels.append(tf.cast(tf.Variable(self.weight_initializer()(shape=this_shape),
-                                                        name="kernel" + str(self.layer_number) + "_f" + str(f)),
-                                            dtype=self.input_dtype))
-            self.bias = tf.cast(tf.Variable(self.bias_initializer()(shape=self.filters),
-                                            name="bias" + str(self.layer_number)),
-                                dtype=self.input_dtype)
-        else:
-            # This case should never happen. The abstract constructor should already have checked this
-            logger.error("Input_dtype not supported.", exc_info=True)
-            sys.exit(-1)
+        for f in range(self.filters):               # Kernels should be features*channels.
+            self.kernels.append(tf.Variable(self.weight_initializer(shape=this_shape, dtype=self.input_dtype),
+                                            name="kernel" + str(self.layer_number) + "_f" + str(f)))
+        self.bias = tf.Variable(self.bias_initializer(shape=self.filters, dtype=self.input_dtype),
+                                name="bias" + str(self.layer_number))
 
     def _verify_inputs(self, inputs):
         # TODO: DATA FORMAT!
@@ -532,7 +543,7 @@ class Convolutional(ComplexLayer):
                 self.output_size,                           # Image out size
                 dtype=self.input_dtype
             ))
-            img_index = 0       # I do this ugly thing because https://stackoverflow.com/a/62467248/5931672
+            img_index = 0           # I do this ugly thing because https://stackoverflow.com/a/62467248/5931672
             for image in inputs:    # Cannot use enumerate because https://github.com/tensorflow/tensorflow/issues/32546
                 for filter_index in range(self.filters):
                     for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
@@ -547,7 +558,6 @@ class Convolutional(ComplexLayer):
                         new_value = tf.reduce_sum(sector * self.kernels[filter_index]) + self.bias[filter_index]
                         indices = (img_index,) + index + (filter_index,)
                         output_np = self._assign_value(output_np, indices, new_value)
-                        # set_trace()
                 img_index += 1
 
             output = apply_activation(self.activation, output_np)
@@ -627,7 +637,7 @@ class Convolutional(ComplexLayer):
     def apply_padding(self, inputs):
         pad = [[0, 0]]  # No padding to the images itself
         for p in self.padding_shape:
-            pad.append([p, p])
+            pad.append([p, p])      # This method add same pad to beginning and end
         pad.append([0, 0])  # No padding to the channel
         return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
 
@@ -674,13 +684,17 @@ class Convolutional(ComplexLayer):
 
 class FFTConvolutional2D(Convolutional):
     def __init__(self, filters: int, kernel_shape: t_kernel_shape,
-                 input_shape: Optional[t_input_shape] = None, padding: t_kernel_shape = 0,
+                 input_shape: Optional[t_input_shape] = None, padding: t_padding_shape = "same",
                  stride: t_kernel_shape = 1, input_dtype: Optional[t_Dtype] = None,
                  activation=None,  # TODO: Check type
-                 weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros,
+                 weight_initializer: RandomInitializer = initializers.GlorotUniform(),
+                 bias_initializer: RandomInitializer = initializers.Zeros()
                  # dilatation_rate=(1, 1)   # TODO: Interesting to add
                  ):
         # TODO: Assert input_size is for 2D cases
+        if padding.lower() != "same":
+            logger.warning("Only same padding mode supported, changing it.")
+            padding = "same"
         super(FFTConvolutional2D, self).__init__(filters, kernel_shape, input_shape, padding, stride, input_dtype,
                                                  activation, weight_initializer, bias_initializer,
                                                  data_format='channels_first')    # Force this mode because of fft
@@ -689,6 +703,7 @@ class FFTConvolutional2D(Convolutional):
         k_pads = tf.constant([[0, x[0] - x[1]] for x in zip(self.full_size, self.kernel_shape)])
         self.inputs_pads = [[0, x[0] - x[1]] for x in zip(self.full_size, self.input_size[:-1])]
         self.freq_kernels = []
+        set_trace()
         for k in self.kernels:
             k_pad = tf.pad(k, tf.constant(k_pads))
             self.freq_kernels.append(tf.signal.fft2d(k_pad))
@@ -861,7 +876,7 @@ class MaxPooling(Pooling):
 
 
 if __name__ == "__main__":
-    conv = FFTConvolutional2D(1, (3, 3), (6, 6, 2), padding=0, input_dtype=np.complex64)
+    conv = FFTConvolutional2D(1, (3, 3), (6, 6, 1), padding="same", input_dtype=np.float32)
     # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
     # max_pool = MaxPooling()
     # flat = Flatten()
@@ -874,7 +889,7 @@ if __name__ == "__main__":
         [0, 1, 3, 1, 7, 8],
         [4, 2, 1, 6, 2, 8],
         [2, 4, 5, 2, 3, 9]
-    ])
+    ]).astype(np.float32)
     img2 = np.array([
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0],
@@ -882,22 +897,27 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
-    ])
-    img = img1 + img2 * 1j
-    # img = [img1, img2]
-    img = np.reshape(img, (1, 6, 6, 1))
+    ]).astype(np.float32)
+    # img = img1 + img2 * 1j
+    img = np.array([img1, img2])
+    img = np.reshape(img, (2, 6, 6, 1))
+    # img = np.reshape(img2, (1, 6, 6, 1))
     """img = np.zeros((2, 6, 6, 2))
     img[0, ..., 0] = img1
     img[0, ..., 1] = img2
     img[1, ..., 0] = img1
     img[1, ..., 1] = img2"""
-    """conv.kernels[0] = [
-        [1, 0, -1],
-        [1, 0, -1],
-        [1, 0, -1]
-    ]"""
+    set_trace()
+    # ker = [
+    #     [[1], [0], [-1]],
+    #     [[1], [0], [-1]],
+    #     [[1], [0], [-1]]
+    # ]
+    # conv.kernels[0] = ker
     # out1 = conv(img)
-    out = conv(img)
+    out = conv.call(img)
+    print(out[0, ..., 0])
+    print(out[1, ..., 0])
     """out1 = max_pool(out)
     z = np.zeros((1, 4, 4, 3))
     o = max_pool(z)"""

@@ -246,6 +246,8 @@ class Dataset:
 
     @staticmethod
     def sparse_into_categorical(spar, num_classes=None):
+        if spar.shape[-1] == 1:
+            spar = spar.reshape(-1)
         if len(spar.shape) == 1:  # Check data is indeed sparse
             spar = spar.astype(int)
             if num_classes is None:

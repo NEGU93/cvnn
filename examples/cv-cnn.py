@@ -1,5 +1,6 @@
 from cvnn.layers import Convolutional, MaxPooling, Flatten, Dense, AvgPooling
 from cvnn.cvnn_model import CvnnModel
+from cvnn.dataset import Dataset
 from tensorflow.keras.losses import categorical_crossentropy
 from time import time
 import numpy as np
@@ -9,6 +10,9 @@ from tensorflow.keras import datasets
 
 (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
 train_images, test_images = train_images / 255.0, test_images / 255.0    # Normalize pixel values to be between 0 and 1
+train_labels = Dataset.sparse_into_categorical(train_labels)
+test_labels = Dataset.sparse_into_categorical(test_labels)
+
 """
     Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
     AvgPooling((2, 2)),
@@ -30,7 +34,6 @@ model_layers = [
 
 model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=False, verbose=False)
 model.training_param_summary()
-set_trace()
-model.fit(train_images[:1000].astype(np.float32), train_labels[:1000].astype(np.float32), validation_split=0.2,
-          epochs=5, batch_size=32,
-          verbose=True, save_csv_history=False, fast_mode=False)
+model.fit(train_images[:10].astype(np.float32), train_labels[:10].astype(np.float32), validation_split=0.2,
+          epochs=2, batch_size=2,
+          verbose=True, save_csv_history=False)
