@@ -6,7 +6,7 @@ from math import sqrt
 from scipy import signal
 from pdb import set_trace
 from abc import ABC, abstractmethod
-import plotly.graph_objects as go
+import plotly.graph_objects as go       # TODO: poner como opcional!
 import plotly
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh, cholesky
