@@ -76,6 +76,9 @@ class RandomInitializer:
             self.distribution = distribution.lower()
         self._random_generator = _RandomGenerator(seed)     # ATTENTION: I do not check the seed.
 
+    def __call__(self, shape, dtype=tf.dtypes.complex64):
+        pass
+
     @staticmethod
     def dtype_cast(c_dtype):
         """
@@ -254,11 +257,7 @@ class GlorotNormal(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-<<<<<<< HEAD
         :param dtype: Optinal dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-=======
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
->>>>>>> 2a18681b0f0ec5e3a1787b8dd7287f1f3f0de985
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(1. / (fan_in + fan_out)), tf.math.sqrt(1. / (fan_in + fan_out))]
@@ -339,11 +338,7 @@ class HeNormal(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-<<<<<<< HEAD
         :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-=======
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
->>>>>>> 2a18681b0f0ec5e3a1787b8dd7287f1f3f0de985
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(1. / fan_in), tf.math.sqrt(1. / fan_in)]
