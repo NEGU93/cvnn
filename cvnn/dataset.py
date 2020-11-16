@@ -6,12 +6,33 @@ from math import sqrt
 from scipy import signal
 from pdb import set_trace
 from abc import ABC, abstractmethod
-import plotly.graph_objects as go       # TODO: poner como opcional!
-import plotly
-from matplotlib import pyplot as plt
 from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
-import tikzplotlib
+
+AVAILABLE_LIBRARIES = set()
+try:
+    import plotly
+    import plotly.graph_objects as go
+    AVAILABLE_LIBRARIES.add('plotly')
+except ImportError as e:
+    logger.info("Plotly not installed, consider installing it to get more plotting capabilities")
+try:
+    import matplotlib.pyplot as plt
+    AVAILABLE_LIBRARIES.add('matplotlib')
+    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']  # [1:] Uncomment to remove blue color
+except ImportError as e:
+    logger.info("Matplotlib not installed, consider installing it to get more plotting capabilities")
+if 'matplotlib' in AVAILABLE_LIBRARIES:
+    try:
+        import seaborn as sns
+        AVAILABLE_LIBRARIES.add('seaborn')
+    except ImportError as e:
+        logger.info("Seaborn not installed, consider installing it to get more plotting capabilities")
+    try:
+        import tikzplotlib
+        AVAILABLE_LIBRARIES.add('tikzplotlib')
+    except ImportError as e:
+        logger.info("Tikzplotlib not installed, consider installing it to get more plotting capabilities")
 
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
 logger = logging.getLogger(cvnn.__name__)
@@ -159,6 +180,10 @@ class Dataset:
             return None
 
     def _plot_data_plotly(self, showfig=False, save_path=None, extension=".svg"):
+        if 'plotly' not in AVAILABLE_LIBRARIES:
+            logger.warning(
+                "No Plotly installed, function " + _plot_data_plotly.__name__ + " was called but will be omitted")
+            return None
         fig = go.Figure()
         labels = self.y
         if self.categorical:
@@ -185,6 +210,10 @@ class Dataset:
             fig.show(config={'scrollZoom': True, 'editable': True})
 
     def _plot_data_matplotlib(self, overlapped=False, showfig=False, save_path=None, extension=".svg"):
+        if 'matplotlib' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Matplotlib installed, function " + self._plot_data_matplotlib.__name__ +
+                           " was called but will be omitted")
+            return None
         labels = self.y
         if self.categorical:
             labels = self.categorical_to_sparse(labels)
@@ -221,7 +250,12 @@ class Dataset:
             if overlapped:
                 prefix = "overlapped_"
             fig.savefig(save_path / Path(prefix + "data_example" + extension), transparent=True)
-            tikzplotlib.save(save_path / (prefix + "data_example.tikz"))
+            if 'tikzplotlib' not in AVAILABLE_LIBRARIES:
+                logger.warning(
+                    "No Tikzplotlib installed, function " + self._plot_data_matplotlib.__name__ +
+                    " will not save tex file")
+            else:
+                tikzplotlib.save(save_path / (prefix + "data_example.tikz"))
         return fig, ax
 
     # =======
@@ -588,6 +622,9 @@ class GaussianNoise(GeneratorDataset):
 
 
 def create_subplots_of_graph():
+    if 'matplotlib' not in AVAILABLE_LIBRARIES:
+            logger.warning("No Matplotlib installed, function " + self.create_subplots_of_graph.__name__ + " was called but will be omitted")
+            return None
     # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
     m = 5
     n = 100
