@@ -9,6 +9,7 @@ import tensorflow as tf
 from datetime import datetime
 from pdb import set_trace
 from time import strftime, perf_counter, gmtime
+from packaging import version
 # My own module!
 import cvnn.layers as layers
 from cvnn.optimizers import get_optimizer
@@ -464,9 +465,10 @@ class CvnnModel:
                     values = [('loss', train_loss), ('accuracy', train_acc)]
                     if test_loss is not None:
                         values += [('val_loss', test_loss), ('val_accuracy', test_acc)]
-                progbar.update(iteration,
-                               values=values,
-                               finalize=True)
+                if version.parse(tf.__version__) > version.parse("2.1"):
+                    progbar.update(iteration, values=values, finalize=True)
+                else:
+                    progbar.update(iteration, values=values)
             # Save checkpoint if needed
             if (epochs_before_fit + epoch) % display_freq == 0:
                 self._run_checkpoint(x_batch, y_batch, x_test, y_test,  # Shall I use batch to be more efficient?

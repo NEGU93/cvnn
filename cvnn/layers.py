@@ -3,12 +3,13 @@ from itertools import count
 import tensorflow as tf
 from collections.abc import Iterable
 import sys
+import numpy as np
+from pdb import set_trace
+# My package
 from cvnn.activation_functions import apply_activation
 from cvnn.utils import get_func_name
-import numpy as np
 from cvnn import logger
 from time import time
-from pdb import set_trace
 import cvnn.initializers as initializers
 # Typing
 from tensorflow import dtypes
@@ -380,6 +381,67 @@ class Dropout(ComplexLayer):
         return []
 
 
+class FFT2DTransform(ComplexLayer):
+
+    def __init__(self, input_size=None, input_dtype=None, padding: t_padding_shape = 0,):
+        super().__init__(input_size=input_size, output_size=input_size, input_dtype=input_dtype)
+        self._check_padding(padding)
+
+    def apply_padding(self, inputs):
+        pad = [[0, 0]]  # No padding to the images itself
+        for p in self.padding_shape:
+            pad.append([0, p])      # This method add pad only at the end
+        pad.append([0, 0])  # No padding to the channel
+        return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
+
+    def _check_padding(self, padding):
+        # Padding
+        if isinstance(padding, int):
+            self.padding_shape = (padding,) * (len(self.input_size) - 1)    # -1 because the last is the channel
+            # I call super first in the case input_shape is none
+        elif isinstance(padding, (tuple, list)):
+            self.padding_shape = tuple(padding)
+        elif isinstance(padding, str):
+            padding = padding.lower()
+            if padding in PADDING_MODES:
+                if padding == "valid":
+                    self.padding_shape = (0,) * (len(self.input_size) - 1)
+                elif padding == "same":
+                    if np.all(np.asarray(self.kernel_shape) % 2 == 0):
+                        logger.warning("Same padding needs the kernel to have an odd value")
+                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) / 2).astype(int))
+                elif padding == "full":
+                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) - 1))
+                else:
+                    logger.error("Unknown padding " + padding + " but listed in PADDING_MODES!")
+                    sys.exit(-1)
+            else:
+                logger.error("Unknown padding " + padding)
+                sys.exit(-1)
+        else:
+            logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
+            sys.exit(-1)
+
+    def trainable_variables(self):
+        return []
+
+    def get_real_equivalent(self):
+        return self.__deepcopy__()
+
+    def get_description(self) -> str:
+        return "FFT Transform"
+
+    def _save_tensorboard_weight(self, weight_summary, step):
+        return None
+
+    def __deepcopy__(self, memodict=None):
+        return FFTTransform(input_size=self.input_size, input_dtype=self.input_dtype, padding=self.padding)
+
+    def call(self, inputs):
+        in_pad = self.apply_padding(inputs)
+        return tf.signal.fft2d(tf.cast(in_pad, tf.complex64))
+
+
 class Convolutional(ComplexLayer):
     # http://datahacker.rs/convolution-rgb-image/   For RGB images
     # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
@@ -635,10 +697,10 @@ class Convolutional(ComplexLayer):
         return array * mask + (1 - mask) * value
 
     def apply_padding(self, inputs):
-        pad = [[0, 0]]  # No padding to the images itself
+        pad = [[0, 0]]                  # No padding to the images itself
         for p in self.padding_shape:
-            pad.append([p, p])      # This method add same pad to beginning and end
-        pad.append([0, 0])  # No padding to the channel
+            pad.append([p, p])          # This method add same pad to beginning and end
+        pad.append([0, 0])              # No padding to the channel
         return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
 
     def _save_tensorboard_weight(self, weight_summary, step):
@@ -876,20 +938,6 @@ class MaxPooling(Pooling):
 
 
 if __name__ == "__main__":
-    conv = FFTConvolutional2D(1, (3, 3), (6, 6, 1), padding="same", input_dtype=np.float32)
-    # avg_pool = ComplexAvgPooling(input_shape=(6, 6), input_dtype=np.float32)
-    # max_pool = MaxPooling()
-    # flat = Flatten()
-    # dense = Dense(output_size=2)
-    # https://www.analyticsvidhya.com/blog/2018/12/guide-convolutional-neural-network-cnn/
-    img1 = np.array([
-        [3, 0, 1, 2, 7, 4],
-        [1, 5, 8, 9, 3, 1],
-        [2, 7, 2, 5, 1, 3],
-        [0, 1, 3, 1, 7, 8],
-        [4, 2, 1, 6, 2, 8],
-        [2, 4, 5, 2, 3, 9]
-    ]).astype(np.float32)
     img2 = np.array([
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0],
@@ -898,46 +946,11 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0],
         [10, 10, 10, 0, 0, 0]
     ]).astype(np.float32)
-    # img = img1 + img2 * 1j
-    img = np.array([img1, img2])
-    img = np.reshape(img, (2, 6, 6, 1))
-    # img = np.reshape(img2, (1, 6, 6, 1))
-    """img = np.zeros((2, 6, 6, 2))
-    img[0, ..., 0] = img1
-    img[0, ..., 1] = img2
-    img[1, ..., 0] = img1
-    img[1, ..., 1] = img2"""
-    set_trace()
-    # ker = [
-    #     [[1], [0], [-1]],
-    #     [[1], [0], [-1]],
-    #     [[1], [0], [-1]]
-    # ]
-    # conv.kernels[0] = ker
-    # out1 = conv(img)
-    out = conv.call(img)
-    print(out[0, ..., 0])
-    print(out[1, ..., 0])
-    """out1 = max_pool(out)
-    z = np.zeros((1, 4, 4, 3))
-    o = max_pool(z)"""
-    """
-    # https://machinelearningmastery.com/convolutional-layers-for-deep-learning-neural-networks/
-    img3 = [0, 0, 0, 1, 1, 0, 0, 0]
-    img_padd = [
-        [
-            [1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1]
-        ], [
-            [1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1]
-        ]
+
+    shape = [
+        FFTTransform(input_size=img2.shape, input_dtype=img2.dtype, padding=2)
     ]
-    conv = ComplexConvolutional(1, 3, (8, 2, 2), padding=1, input_dtype=np.complex64)
-    conv.kernels[0] = [0, 1, 0]
-    out3 = conv(img_padd)
-    """
-    import pdb; pdb.set_trace()
+
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
