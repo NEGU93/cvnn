@@ -386,8 +386,22 @@ class Dropout(ComplexLayer):
 
 
 class FFT2DTransform(ComplexLayer):
-
-    def __init__(self, input_size=None, input_dtype=None, padding: t_padding_shape = 0, data_format="Channels_last"):
+    """
+    FFT 2D Transform
+    Layer that implements the Fast Fourier Transform to the 2D images.
+    """
+    def __init__(self, input_size: t_input_shape = None, input_dtype: t_Dtype = None, padding: t_padding_shape = 0, data_format: str = "Channels_last"):
+        """
+        :param input_size: Input shape of the layer, must be of size 3.
+        :param input_dtype: Must be given because of herency, but it is irrelevant. TODO
+        :param padding: Padding to be done before applying FFT. To perform Conv latter, this value must be the kernel_shape - 1.
+            - int: Apply same padding to both axes at the end.
+            - tuple, list: Size 2, padding to be applied to each axis.
+            - str: "valid" No padding is used.
+        :param data_format: A string, one of 'channels_last' (default) or 'channels_first'. 
+            - 'channels_last' corresponds to inputs with shape (batch_size, height, width, channels) 
+            - 'channels_first' corresponds to inputs with shape (batch_size, channels, height, width).
+        """
         if data_format.lower() in DATA_FORMAT:
             self.data_format = data_format.lower()
         assert len(input_size) == 3, "Input size must be lenght 3 of the form ({1})." \
@@ -473,21 +487,7 @@ class Convolutional(ComplexLayer):
             channels_last corresponds to inputs with shape (batch_size, ..., channels) while channels_first corresponds
             to inputs with shape (batch_size, channels, ...)
         """
-        self.filters = filters
-        self.activation = activation
-        data_format = data_format.lower()
-        assert data_format == 'channels_last' or data_format == 'channels_first', \
-            "data_format not supported, should be either 'channels_last' (default) or 'channels_first', got " + \
-            str(data_format)
-        if input_shape is None:
-            self.input_size = None
-        elif isinstance(input_shape, int):
-            self.input_size = (input_shape,)
-        elif isinstance(input_shape, (tuple, list)):
-            self.input_size = tuple(input_shape)
-        else:
-            logger.error("Input shape: " + str(input_shape) + " format not supported. It must be an int or a tuple")
-            sys.exit(-1)
+        
         super(Convolutional, self).__init__(lambda: self._calculate_shapes(kernel_shape, padding, stride),
                                             input_size=self.input_size, input_dtype=input_dtype)
         # Test if the activation function changes datatype or not...
@@ -556,20 +556,7 @@ class Convolutional(ComplexLayer):
         self.output_size = tuple(out_list)
         return self.output_size
 
-    def _init_kernel(self, data_format):
-        self.kernels = []
-        if data_format == 'channels_last':
-            this_shape = self.kernel_shape + (self.input_size[-1],)
-        elif data_format == 'channels_first':
-            this_shape = (self.input_size[-1],) + self.kernel_shape
-        else:
-            logger.error("data_format not supported, should be either 'channels_last' (default) "
-                              "or 'channels_first', got " + str(data_format))
-            sys.exit(-1)
-        for f in range(self.filters):               # Kernels should be features*channels.
-            self.kernels.append(tf.Variable(self.weight_initializer(shape=this_shape, dtype=self.input_dtype),
-                                            name="kernel" + str(self.layer_number) + "_f" + str(f)))
-        self.bias = tf.Variable(self.bias_initializer(shape=self.filters, dtype=self.input_dtype),
+    
                                 name="bias" + str(self.layer_number))
 
     def _verify_inputs(self, inputs):
@@ -756,32 +743,69 @@ class Convolutional(ComplexLayer):
         return self.kernels + [self.bias]
 
 
-class FFTConvolutional2D(Convolutional):
+class FrequencyConvolutional2D(ComplexLayer):
     def __init__(self, filters: int, kernel_shape: t_kernel_shape,
-                 input_shape: Optional[t_input_shape] = None, padding: t_padding_shape = "same",
-                 stride: t_kernel_shape = 1, input_dtype: Optional[t_Dtype] = None,
-                 activation=None,  # TODO: Check type
-                 weight_initializer: RandomInitializer = initializers.GlorotUniform(),
-                 bias_initializer: RandomInitializer = initializers.Zeros()
+                 input_shape: Optional[t_input_shape] = None, 
+                 padding: t_padding_shape = "same",     # TODO: This should only be to crop the output
+                 # stride: t_kernel_shape = 1,          # TODO: The method is stride = 1. It may be possible to simulate a stride?
+                 activation=None,                       # TODO: Check type
+                 weight_initializer: Optional[RandomInitializer] = None,
+                 bias_initializer: Optional[RandomInitializer] = None,
+                 data_format="channels_last"
                  # dilatation_rate=(1, 1)   # TODO: Interesting to add
                  ):
-        # TODO: Assert input_size is for 2D cases
+        self.filters = filters
+        self.activation = activation
+        if weight_initializer is None:
+            weight_initializer = initializers.GlorotUniform()
+        self.weight_initializer = weight_initializer
+        if bias_initializer is None:
+            bias_initializer = initializers.Zeros()
+        self.bias_initializer = bias_initializer
         if padding.lower() != "same":
             logger.warning("Only same padding mode supported, changing it.")
             padding = "same"
-        super(FFTConvolutional2D, self).__init__(filters, kernel_shape, input_shape, padding, stride, input_dtype,
-                                                 activation, weight_initializer, bias_initializer,
-                                                 data_format='channels_first')    # Force this mode because of fft
-        self.full_size = [x[0] + x[1] - x[2] for x in zip(self.kernel_shape, self.input_size[:-1],
-                                                          tf.ones(len(kernel_shape)).numpy())]
-        k_pads = tf.constant([[0, x[0] - x[1]] for x in zip(self.full_size, self.kernel_shape)])
-        self.inputs_pads = [[0, x[0] - x[1]] for x in zip(self.full_size, self.input_size[:-1])]
-        self.freq_kernels = []
-        set_trace()
-        for k in self.kernels:
-            k_pad = tf.pad(k, tf.constant(k_pads))
-            self.freq_kernels.append(tf.signal.fft2d(k_pad))
-        set_trace()
+        if input_shape is None:
+            self.input_size = None
+        elif isinstance(input_shape, (tuple, list)):
+            self.input_size = tuple(input_shape)
+        else:
+            logger.error("Input shape: " + str(input_shape) + " format not supported. It must be a tuple or None.")
+            sys.exit(-1)
+        # TODO: Assert input_size is for 2D input
+        self.data_format = data_format.lower()
+        if self.data_format not in DATA_FORMAT:
+            logger.error("data_format = " + self.data_format + " unknown")
+            sys.exit(-1)
+        super(FrequencyConvolutional2D, self).__init__(output_size=self._calculate_output_shape, 
+                                                       input_size=input_shape, 
+                                                       input_dtype=np.complex64)    # dtype is always complex!
+        self._init_kernel(data_format=data_format)
+
+    def _init_kernel(self, data_format):
+        self.kernels = []
+        if data_format == 'channels_last':
+            this_shape = self.kernel_shape + (self.input_size[-1],)
+        elif data_format == 'channels_first':
+            this_shape = (self.input_size[-1],) + self.kernel_shape
+        else:
+            logger.error("data_format not supported, should be either 'channels_last' (default) "
+                              "or 'channels_first', got " + str(data_format))
+            sys.exit(-1)
+        for f in range(self.filters):               # Kernels should be features*channels.
+            self.kernels.append(tf.Variable(self.weight_initializer(shape=this_shape, dtype=self.input_dtype),
+                                            name="kernel" + str(self.layer_number) + "_f" + str(f)))
+        self.bias = tf.Variable(self.bias_initializer(shape=self.filters, dtype=self.input_dtype),
+        
+
+    def _calculate_output_shape(self):
+        if self.data_format == "channels_last":
+            return self.input_size[:-1] + (self.filters,)
+        elif self.data_format == "channels_first":
+            return (self.filters,) + self.input_size[:-1] 
+        else:
+            logger.error("data_format = " + self.data_format + " unknown")
+            sys.exit(-1)
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]

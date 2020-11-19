@@ -37,10 +37,10 @@ Complex Layers
 
 
 
-Complex Dense
--------------
+Dense
+-----
 
-.. py:class:: ComplexDense
+.. py:class:: Dense
 
     Fully connected complex-valued layer
 
@@ -67,9 +67,9 @@ Complex Dense
             or a string as listed in :code:`act_dispatcher`
         :param input_dtype: data type of the input. If :code:`None` (default) it will be defined automatically. 
         :param weight_initializer: Initializer for the weights. 
-            Default: `tensorflow.keras.initializers.GlorotUniform <https://www.tensorflow.org/api_docs/python/tf/keras/initializers/GlorotUniform>`_
+            Default: `cvnn.initializers.GlorotUniform <https://www.tensorflow.org/api_docs/python/tf/keras/initializers/GlorotUniform>`_
         :param bias_initializer: Initializer fot the bias. 
-            Default: :code:`tensorflow.keras.initializers.Zeros`
+            Default: :code:`cvnn.initializers.Zeros`
         :param dropout: Either None (default) and no dropout will be applied or a scalar that will be the probability that each element is dropped.
 
             Example: setting rate=0.1 would drop 10% of input elements.
@@ -79,8 +79,10 @@ Complex Dense
         :param output_multiplier: Multiplier of output and input size (normally by 2). Can be used 1 for the output layer of a classifier.
         :return: real-valued copy of self
 
+Dropout
+-------
 
-.. py:class:: ComplexDropout
+.. py:class:: Dropout
 
     Computes dropout: randomly sets elements to zero to prevent overfitting.
 
@@ -88,11 +90,36 @@ Complex Dense
 
 .. py:method:: __init__(self, rate, noise_shape=None, seed=None)
         
-        :param rate: A scalar Tensor with the same type as x.
+        :param rate: A scalar Tensor with the same type as :code:`x`.
             The probability that each element is dropped.
-            For example, setting rate=0.1 would drop 10% of input elements.
-        :param noise_shape: A 1-D Tensor of type int32, representing the shape for randomly generated keep/drop flags.
-        :param seed:  A Python integer. Used to create random seeds. See tf.random.set_seed for behavior.
+            For example, setting :code:`rate=0.1` would drop 10% of input elements.
+        :param noise_shape: A 1-D Tensor of type :code:`int32`, representing the shape for randomly generated keep/drop flags.
+        :param seed:  A Python integer. Used to create random seeds. See :code:`tf.random.set_seed` for behavior.
+
+FFT 2D Transport
+----------------
+
+.. py:class:: FFT2DTransofrm
+
+    FFT 2D Transform.
+
+    Layer that implements the Fast Fourier Transform to the 2D images.
+
+.. py:method:: __init__(self, input_size: t_input_shape = None, input_dtype: t_Dtype = None, padding: t_padding_shape = 0, data_format: str = "Channels_last")
+
+    :param input_size: Input shape of the layer, must be of size 3.
+    :param input_dtype: Must be given because of herency, but it is irrelevant.
+    :param padding: Padding to be done before applying FFT. To perform Conv latter, this value must be the :code:`kernel_shape - 1`.
+        
+        - int: Apply same padding to both axes at the end.
+        - tuple, list: Size 2, padding to be applied to each axis.
+        - str: "valid" No padding is used.
+    :param data_format: A string, one of 'channels_last' (default) or 'channels_first'. 
+        
+        - 'channels_last' corresponds to inputs with shape (batch_size, height, width, channels) 
+        - 'channels_first' corresponds to inputs with shape (batch_size, channels, height, width).
+
+
 
 
 .. [CIT2014-SRIVASTAVA] N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and R. Salakhutdinov, “Dropout: a simple way to prevent neural networks from overfitting,” J. Mach. Learn. Res., vol. 15, no. 1, pp. 1929–1958, Jan. 2014
