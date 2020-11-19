@@ -1,6 +1,6 @@
 import numpy as np
 from tensorflow.keras.losses import categorical_crossentropy
-from cvnn.layers import FFTTransform
+from cvnn.layers import FFT2DTransform
 from cvnn.cvnn_model import CvnnModel
 
 

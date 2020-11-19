@@ -438,8 +438,12 @@ class FFT2DTransform(ComplexLayer):
         return FFTTransform(input_size=self.input_size, input_dtype=self.input_dtype, padding=self.padding)
 
     def call(self, inputs):
+        # TODO: Check input shape
         in_pad = self.apply_padding(inputs)
-        return tf.signal.fft2d(tf.cast(in_pad, tf.complex64))
+        in_pad = tf.transpose(in_pad, perm=[0, 3, 1, 2])
+        out = tf.signal.fft2d(tf.cast(in_pad, tf.complex64))
+        out = tf.transpose(out, perm=[0, 2, 3, 1])
+        return out
 
 
 class Convolutional(ComplexLayer):
@@ -935,21 +939,6 @@ class MaxPooling(Pooling):
     def get_description(self):
         out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
         return out_str
-
-
-if __name__ == "__main__":
-    img2 = np.array([
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0]
-    ]).astype(np.float32)
-
-    shape = [
-        FFTTransform(input_size=img2.shape, input_dtype=img2.dtype, padding=2)
-    ]
 
 
 
