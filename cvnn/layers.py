@@ -384,6 +384,7 @@ class Dropout(ComplexLayer):
 class FFT2DTransform(ComplexLayer):
 
     def __init__(self, input_size=None, input_dtype=None, padding: t_padding_shape = 0,):
+        
         super().__init__(input_size=input_size, output_size=input_size, input_dtype=input_dtype)
         self._check_padding(padding)
 
@@ -429,13 +430,13 @@ class FFT2DTransform(ComplexLayer):
         return self.__deepcopy__()
 
     def get_description(self) -> str:
-        return "FFT Transform"
+        return "FFT 2D Transform"
 
     def _save_tensorboard_weight(self, weight_summary, step):
         return None
 
     def __deepcopy__(self, memodict=None):
-        return FFTTransform(input_size=self.input_size, input_dtype=self.input_dtype, padding=self.padding)
+        return FFT2DTransform(input_size=self.input_size, input_dtype=self.input_dtype, padding=self.padding)
 
     def call(self, inputs):
         # TODO: Check input shape
@@ -774,172 +775,6 @@ class FFTConvolutional2D(Convolutional):
             k_pad = tf.pad(k, tf.constant(k_pads))
             self.freq_kernels.append(tf.signal.fft2d(k_pad))
         set_trace()
-
-
-class Pooling(ComplexLayer, ABC):
-
-    def __init__(self, pool_size: t_kernel_shape = (2, 2), strides: Optional[t_kernel_shape] = None):
-        """
-        Downsamples the input representation by taking the maximum value over the window defined by pool_size for each
-        dimension along the features axis. The window is shifted by strides in each dimension.
-        :param pool_size: Integer or tuple of integers with the size for each dimension.
-            If only one integer is specified, the same window length will be used for all dimensions and the N
-                dimension will be given by the output size of the last ComplexLayer instantiated.
-            Default: (2, 2) Meaning it's a 2D Max pool getting the max for sectors of 2x2.
-        :param strides: Integer, tuple of integers, or None. Strides values.
-            Specifies how far the pooling window moves for each pooling step.
-            If None (default), it will default to pool_size.
-        """
-        input_dtype = None
-        """if self.__class__.mro()[2].last_layer_output_dtype is None:
-            input_dtype = np.complex64      # Randomly choose one"""
-        super().__init__(lambda: self._set_output_size(pool_size, strides),
-                         input_size=None, input_dtype=input_dtype)
-        # set_trace()
-        # self.__class__.mro()[2].last_layer_output_dtype = None
-
-    def _set_output_size(self, pool_size, strides):
-        # Pooling size
-        if isinstance(pool_size, int):
-            self.pool_size = (pool_size,) * len(self.input_size[:-1])
-            # I call super first in the case input_shape is none
-        elif isinstance(pool_size, (tuple, list)):
-            self.pool_size = tuple(pool_size)
-        else:
-            logger.error("Padding: " + str(pool_size) + " format not supported. It must be an int or a tuple")
-            sys.exit(-1)
-        self.stride_shape = strides
-        if self.stride_shape is None:
-            self.stride_shape = pool_size
-        out_list = []
-        for i in range(len(self.input_size[:-1])):
-            # 2.4 on https://arxiv.org/abs/1603.07285
-            out_list.append(int(np.floor(
-                (self.input_size[i] - self.pool_size[i]) / self.stride_shape[i]
-            ) + 1))
-        out_list.append(self.input_size[-1])
-        self.output_size = tuple(out_list)
-        return self.output_size
-
-    def get_real_equivalent(self):
-        return self.__deepcopy__()      # Pooling layer is dtype agnostic
-
-    def _save_tensorboard_weight(self, weight_summary, step):
-        return None
-
-    @abstractmethod
-    def _pooling_function(self, sector):
-        pass
-
-    def _verify_inputs(self, inputs):
-        inputs = tf.convert_to_tensor(inputs)   # This checks all images are same size! Nice
-        if len(inputs.shape) == len(self.input_size):   # No channel was given
-            # case with no channel
-            if self.input_size[-1] != 1:
-                logger.warning("Channel not given and should not be 1")
-            inputs = tf.reshape(inputs, inputs.shape + (1,))  # Then I have only one channel, I add dimension
-        elif len(inputs.shape) != len(self.input_size) + 1:     # This is the other expected input.
-            logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
-                              "with the shape of (images, channels, vector size)")
-            sys.exit(-1)
-        if inputs.shape[1:] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
-            if inputs.shape[1:-1] != self.input_size[:-1]:
-                expected_shape = self._get_expected_input_shape_description()
-
-                received_shape = "(images=" + str(inputs.shape[0]) + ", "
-                received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
-                received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
-                logger.error("Unexpected image shape. Expecting image of shape " +
-                                  expected_shape + " but received " + received_shape)
-                sys.exit(-1)
-            else:
-                logger.warning("Received channels " + str(inputs.shape[-1]) +
-                                    " not coincident with the expected input (" + str(self.input_size[-1]) + ")")
-        return inputs
-
-    def _get_expected_input_shape_description(self) -> str:
-        expected_shape = "(images, "
-        expected_shape += "x".join([str(x) for x in self.input_size[:-1]])
-        expected_shape += ", channels=" + str(self.input_size[-1]) + ")\n"
-        return expected_shape
-
-    def call(self, inputs):
-        with tf.name_scope("ComplexAvgPooling_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)
-            out_list = []
-            for i in range(len(inputs.shape) - 2):
-                # 2.4 on https://arxiv.org/abs/1603.07285
-                out_list.append(int(np.floor(
-                    (inputs.shape[i+1] - self.pool_size[i]) / self.stride_shape[i]
-                ) + 1))
-            out_list.append(inputs.shape[-1])
-            self.output_size = tuple(out_list)
-            if not len(inputs.shape) > 2:
-                logger.error("Unexpected shape of inputs. Received shape " + str(inputs.shape) +
-                             ". Expecting shape (images, ... input shape ..., channels)")
-            # inputs = self.apply_padding(inputs) Pooling has no padding
-            # set_trace()
-            output = np.zeros(
-                (inputs.shape[0],) +                        # Per each image
-                self.output_size,                           # Image out size
-                dtype=inputs.numpy().dtype
-            )
-            for img_index, image in enumerate(inputs):
-                for channel_index in range(image.shape[-1]):
-                    img_channel = image[..., channel_index]     # Get each channel
-                    for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size[:-1])
-                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.pool_size)])
-                        sector_slice = tuple(
-                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                        )
-                        sector = img_channel[sector_slice]
-                        output[img_index][index][channel_index] = self._pooling_function(sector)
-        return output
-
-    def trainable_variables(self):
-        return []
-
-    def get_output_shape_description(self) -> str:
-        expected_out_shape = "(None, "
-        expected_out_shape += "x".join([str(x) for x in self.output_size])
-        expected_out_shape += ")"
-        return expected_out_shape
-
-
-class AvgPooling(Pooling):
-
-    def _pooling_function(self, sector):
-        return np.sum(sector)/np.prod(self.pool_size)
-
-    def __deepcopy__(self, memodict={}):
-        if memodict is None:
-            memodict = {}
-        return AvgPooling(pool_size=self.pool_size, strides=self.stride_shape)
-
-    def get_description(self):
-        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
-        return out_str
-
-
-class MaxPooling(Pooling):
-
-    def _pooling_function(self, sector):
-        abs_sector = tf.math.abs(sector)
-        max_index = np.unravel_index(np.argmax(abs_sector), abs_sector.shape)
-        # set_trace()
-        return sector[max_index].numpy()
-
-    def __deepcopy__(self, memodict={}):
-        if memodict is None:
-            memodict = {}
-        return MaxPooling(pool_size=self.pool_size, strides=self.stride_shape)
-
-    def get_description(self):
-        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
-        return out_str
-
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
