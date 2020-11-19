@@ -19,6 +19,10 @@ from cvnn.initializers import RandomInitializer
 
 
 SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
+DATA_FORMAT = {
+    "channels_last",
+    "channels_first"
+}
 layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
@@ -383,8 +387,12 @@ class Dropout(ComplexLayer):
 
 class FFT2DTransform(ComplexLayer):
 
-    def __init__(self, input_size=None, input_dtype=None, padding: t_padding_shape = 0,):
-        
+    def __init__(self, input_size=None, input_dtype=None, padding: t_padding_shape = 0, data_format="Channels_last"):
+        if data_format.lower() in DATA_FORMAT:
+            self.data_format = data_format.lower()
+        assert len(input_size) == 3, "Input size must be lenght 3 of the form ({1})." \
+            " Got {0}".format(input_size, 
+                              "channels, height, width" if self.data_format == "channels_first" else "height, width, channels")
         super().__init__(input_size=input_size, output_size=input_size, input_dtype=input_dtype)
         self._check_padding(padding)
 
@@ -402,17 +410,14 @@ class FFT2DTransform(ComplexLayer):
             # I call super first in the case input_shape is none
         elif isinstance(padding, (tuple, list)):
             self.padding_shape = tuple(padding)
+            if len(self.padding_shape) != 2:
+                logger.error("Padding should have length 2")
+                exit(-1)
         elif isinstance(padding, str):
             padding = padding.lower()
             if padding in PADDING_MODES:
                 if padding == "valid":
                     self.padding_shape = (0,) * (len(self.input_size) - 1)
-                elif padding == "same":
-                    if np.all(np.asarray(self.kernel_shape) % 2 == 0):
-                        logger.warning("Same padding needs the kernel to have an odd value")
-                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) / 2).astype(int))
-                elif padding == "full":
-                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) - 1))
                 else:
                     logger.error("Unknown padding " + padding + " but listed in PADDING_MODES!")
                     sys.exit(-1)
@@ -441,9 +446,11 @@ class FFT2DTransform(ComplexLayer):
     def call(self, inputs):
         # TODO: Check input shape
         in_pad = self.apply_padding(inputs)
-        in_pad = tf.transpose(in_pad, perm=[0, 3, 1, 2])
+        if self.data_format == "channels_last":
+            in_pad = tf.transpose(in_pad, perm=[0, 3, 1, 2])
         out = tf.signal.fft2d(tf.cast(in_pad, tf.complex64))
-        out = tf.transpose(out, perm=[0, 2, 3, 1])
+        if self.data_format == "channels_last":
+            out = tf.transpose(out, perm=[0, 2, 3, 1])
         return out
 
 
