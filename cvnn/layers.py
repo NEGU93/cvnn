@@ -403,17 +403,35 @@ class FFT2DTransform(ComplexLayer):
         """
         if data_format.lower() in DATA_FORMAT:
             self.data_format = data_format.lower()
-        assert len(input_size) == 3, "Input size must be lenght 3 of the form ({1})." \
-                                     " Got {0}".format(input_size,
-                                                       "channels, height, width" if self.data_format == "channels_first" else "height, width, channels")
         super().__init__(input_size=input_size, output_size=input_size, input_dtype=input_dtype)
+        if len(input_size) == 2:
+            logger.warning("Assuming channel was implicit. Adding axis.")
+            if self.data_format == "channels_last":
+                input_size = input_size + (1,)
+            elif self.data_format == "channels_first":
+                input_size = input_size.insert(0, 1)
+            else:
+                logger.error(f"Unknown data_format {self.data_format}")
+                sys.exit(-1)
+        assert len(input_size) == 3, f"Input size must be lenght 3 of the form (" \
+                                     f"{'channels, height, width' if self.data_format == 'channels_first' else 'height, width, channels'}). " \
+                                     f"Got {input_size} "
         self._check_padding(padding)
 
     def apply_padding(self, inputs):
         pad = [[0, 0]]  # No padding to the images itself
         for p in self.padding_shape:
             pad.append([0, p])  # This method add pad only at the end
-        pad.append([0, 0])  # No padding to the channel
+        if self.data_format == "channels_last":
+            if self.data_format == "channels_last":
+                pad.append([0, 0])
+            elif self.data_format == "channels_first":
+                pad = pad.insert(0, 1)
+            else:
+                logger.error(f"Unknown data_format {self.data_format}")
+                sys.exit(-1)
+        # pad.append([0, 0])  # No padding to the channel
+        set_trace()
         return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
 
     def _check_padding(self, padding):
@@ -453,11 +471,26 @@ class FFT2DTransform(ComplexLayer):
     def _save_tensorboard_weight(self, weight_summary, step):
         return None
 
+    def _verify_inputs(self, inputs):
+        if len(inputs.shape) == 3:
+            logger.warning("Assuming channel was implicit. Adding axis.")
+            if self.data_format == "channels_last":
+                inputs = tf.reshape(inputs, inputs.shape + (1,))
+            elif self.data_format == "channels_first":
+                inputs = tf.reshape(inputs, (inputs.shape[0],) + (1,) + inputs.shape[1:])
+            else:
+                logger.error(f"Unknown data_format {self.data_format}")
+                sys.exit(-1)
+        assert len(inputs.shape) == 4, f"Input size must be lenght 3 of the form (" \
+                                     f"{'images, channels, height, width' if self.data_format == 'channels_first' else 'images, height, width, channels'}). " \
+                                     f"Got {inputs.shape} "
+        return inputs
+
     def __deepcopy__(self, memodict=None):
         return FFT2DTransform(input_size=self.input_size, input_dtype=self.input_dtype, padding=self.padding)
 
     def call(self, inputs):
-        # TODO: Check input shape
+        inputs = self._verify_inputs(inputs)
         in_pad = self.apply_padding(inputs)
         if self.data_format == "channels_last":
             in_pad = tf.transpose(in_pad, perm=[0, 3, 1, 2])
@@ -823,10 +856,10 @@ class FrequencyConvolutional2D(ComplexLayer):
             time_kernel = self.weight_initializer(shape=this_shape, dtype=self.input_dtype)
             time_kernel_padded = tf.pad(time_kernel, pad)
             if self.data_format == "channels_last":
-                time_kernel_padded = tf.transpose(time_kernel_padded, perm=[2, 0, 1])   # Move channels to the beginning
+                time_kernel_padded = tf.transpose(time_kernel_padded, perm=[2, 0, 1])  # Move channels to the beginning
             freq_kernel = tf.signal.fft2d(tf.cast(time_kernel_padded, tf.complex64))
             if self.data_format == "channels_last":
-                freq_kernel = tf.transpose(freq_kernel, perm=[1, 2, 0])     # Return channels to the end
+                freq_kernel = tf.transpose(freq_kernel, perm=[1, 2, 0])  # Return channels to the end
             kernels_tmp.append(freq_kernel)
         self.kernels = tf.convert_to_tensor(
             tf.transpose(kernels_tmp, perm=[1, 2, 3, 0]),  # Take filter to last
@@ -891,8 +924,8 @@ class FrequencyConvolutional2D(ComplexLayer):
                                  data=tf.math.imag(self.bias), step=step)
 
     def call(self, inputs):
-        inputs = tf.reshape(inputs, shape=inputs.shape + (1,))      # Add a last axis of "filters"
-        broadcast = tf.multiply(inputs, self.kernels)      # Broadcasting should work good for all images.
+        inputs = tf.reshape(inputs, shape=inputs.shape + (1,))  # Add a last axis of "filters"
+        broadcast = tf.multiply(inputs, self.kernels)  # Broadcasting should work good for all images.
         reduced = tf.reduce_sum(broadcast, axis=-2 if self.data_format == "channels_last" else 1)
         y_out = apply_activation(self.activation, reduced)
         if self.dropout:

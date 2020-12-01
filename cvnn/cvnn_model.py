@@ -131,8 +131,8 @@ class CvnnModel:
         :param x: Data input to be calculated
         :return: Output of the netowrk
         """
-        for i in range(len(self.shape)):  # Apply all the layers
-            x = self.shape[i].call(x)
+        for lay in self.shape:  # Apply all the layers
+            x = lay.call(x)
         return x
 
     def _apply_loss(self, y_true: t_labels, y_pred: t_labels) -> Tensor:
