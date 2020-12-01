@@ -2,21 +2,41 @@ import numpy as np
 from tensorflow.keras.losses import categorical_crossentropy
 from cvnn.layers import FFT2DTransform, FrequencyConvolutional2D
 from cvnn.cvnn_model import CvnnModel
+from pdb import set_trace
 
 
-img2 = np.array([
-    [10, 10, 10, 0, 0, 0],
-    [10, 10, 10, 0, 0, 0],
-    [10, 10, 10, 0, 0, 0],
-    [10, 10, 10, 0, 0, 0],
-    [10, 10, 10, 0, 0, 0],
-    [10, 10, 10, 0, 0, 0]
+img1 = np.array([
+    [
+        [10, 10, 10, 0, 0, 0],      # R
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0],
+        [10, 10, 10, 0, 0, 0]
+    ],
+    [
+        [20, 20, 20, 0, 0, 0],      # G
+        [20, 20, 20, 0, 0, 0],
+        [20, 20, 20, 0, 0, 0],
+        [20, 20, 20, 0, 0, 0],
+        [20, 20, 20, 0, 0, 0],
+        [20, 20, 20, 0, 0, 0]
+    ],
+    [
+        [30, 30, 30, 0, 0, 0],      # B
+        [30, 30, 30, 0, 0, 0],
+        [30, 30, 30, 0, 0, 0],
+        [30, 30, 30, 0, 0, 0],
+        [30, 30, 30, 0, 0, 0],
+        [30, 30, 30, 0, 0, 0]
+    ]
 ]).astype(np.float32)
-img2 = np.reshape(img2, (1, 6, 6, 1))
+img2 = img1
+img = np.array([img1, img2]).transpose((0, 2, 3, 1))
 
 shape = [
-    FFT2DTransform(input_size=img2.shape[1:], input_dtype=img2.dtype, padding=2),
-    FrequencyConvolutional2D(filter=1, kernel_shape=(3, 3))
+    FFT2DTransform(input_size=img.shape[1:], input_dtype=img.dtype, padding=2),
+    FrequencyConvolutional2D(filters=1, kernel_shape=(3, 3))
 ]
 model = CvnnModel("Testing_fft", shape, categorical_crossentropy, tensorboard=False, verbose=False)
-print(model.call(img2)[0,...,0])
+print(model.call(img))
