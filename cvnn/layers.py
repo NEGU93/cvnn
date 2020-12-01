@@ -212,7 +212,7 @@ class Dense(ComplexLayer):
     def __init__(self, output_size, input_size=None, activation=None, input_dtype=None,
                  weight_initializer: Optional[RandomInitializer] = None,
                  bias_initializer: Optional[RandomInitializer] = None,
-                 dropout=None):
+                 dropout: Optional[float] = None):
         """
         Initializer of the Dense layer
         :param output_size: Output size of the layer
@@ -306,9 +306,6 @@ class Dense(ComplexLayer):
             y_out = apply_activation(self.activation, out)
 
             if self.dropout:
-                # $ tf.nn.dropout(tf.complex(x,x), rate=0.5)
-                # *** ValueError: x has to be a floating point tensor since it's going to be scaled.
-                # Got a <dtype: 'complex64'> tensor instead.
                 drop_filter = tf.nn.dropout(tf.ones(y_out.shape), rate=self.dropout)
                 y_out_real = tf.multiply(drop_filter, tf.math.real(y_out))
                 y_out_imag = tf.multiply(drop_filter, tf.math.imag(y_out))
@@ -750,10 +747,11 @@ class FrequencyConvolutional2D(ComplexLayer):
                  activation=None,  # TODO: Check type
                  weight_initializer: Optional[RandomInitializer] = None,
                  bias_initializer: Optional[RandomInitializer] = None,
-                 data_format="channels_last"
+                 data_format: str = "channels_last", dropout: Optional[float] = None
                  # dilatation_rate=(1, 1)   # TODO: Interesting to add
                  ):
         self.filters = filters
+        self.dropout = dropout
         if activation is None:
             activation = 'linear'
         self.activation = activation
@@ -866,7 +864,7 @@ class FrequencyConvolutional2D(ComplexLayer):
             sys.exit(-1)
         assert len(self.kernel_shape) == 2, f"Kernel size must be 2 but it was {len(self.kernel_shape)}."
 
-    def _calculate_output_shape(self) -> Tuple[int]:
+    def _calculate_output_shape(self) -> None:
         """
         returns the output shape of the layer
         """
@@ -896,7 +894,13 @@ class FrequencyConvolutional2D(ComplexLayer):
         inputs = tf.reshape(inputs, shape=inputs.shape + (1,))      # Add a last axis of "filters"
         broadcast = tf.multiply(inputs, self.kernels)      # Broadcasting should work good for all images.
         reduced = tf.reduce_sum(broadcast, axis=-2 if self.data_format == "channels_last" else 1)
-        return reduced
+        y_out = apply_activation(self.activation, reduced)
+        if self.dropout:
+            drop_filter = tf.nn.dropout(tf.ones(y_out.shape), rate=self.dropout)
+            y_out_real = tf.multiply(drop_filter, tf.math.real(y_out))
+            y_out_imag = tf.multiply(drop_filter, tf.math.imag(y_out))
+            y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=y_out.dtype)
+        return y_out
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
