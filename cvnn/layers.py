@@ -68,13 +68,11 @@ class ComplexLayer(ABC):
             self.input_dtype = self.__class__.__bases__[0].last_layer_output_dtype
         elif input_dtype is not None:
             if input_dtype not in SUPPORTED_DTYPES:
-                logger.error("Layer::__init__: unsupported input_dtype " + str(input_dtype), exc_info=True)
+                logger.error(f"Layer::__init__: unsupported input_dtype {input_dtype}", exc_info=True)
                 sys.exit(-1)
             if self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 if self.__class__.__bases__[0].last_layer_output_dtype != input_dtype:
-                    logger.warning("Input dtype " + str(input_dtype) +
-                                   " is not equal to last layer's input dtype " +
-                                   str(self.__class__.__bases__[0].last_layer_output_dtype))
+                    logger.warning(f"Input dtype {input_dtype} is not equal to last layer's output dtype {self.__class__.__bases__[0].last_layer_output_dtype}")
             self.input_dtype = input_dtype
 
         # This will be normally the case.
@@ -95,6 +93,7 @@ class ComplexLayer(ABC):
                     logger.warning(f"Input size {input_size} is not equal to last layer's output "
                                    f"size {self.__class__.__bases__[0].last_layer_output_size}")
             self.input_size = input_size
+        self._verify_input_size()
 
         if callable(output_size):
             output_size()
@@ -105,8 +104,8 @@ class ComplexLayer(ABC):
             if x == ComplexLayer:
                 x.last_layer_output_size = self.output_size
         # self.__class__.__bases__[0].last_layer_output_size = self.output_size
-        self.layer_number = next(layer_count)  # Know it's own number
-        self.__class__.__call__ = self.call  # Make my object callable
+        self.layer_number = next(layer_count)   # Know it's own number
+        self.__class__.__call__ = self.call     # Make my object callable
 
     @abstractmethod
     def __deepcopy__(self, memodict=None):
@@ -148,6 +147,13 @@ class ComplexLayer(ABC):
     def save_tensorboard_checkpoint(self, x, weight_summary, activation_summary, step=None):
         self._save_tensorboard_weight(weight_summary, step)
         return self._save_tensorboard_output(x, activation_summary, step)
+
+    @abstractmethod
+    def _verify_input_size(self) -> None:
+        """
+        Rewrite function to check input size is Ok
+        """
+        pass
 
     @abstractmethod
     def _save_tensorboard_weight(self, weight_summary, step):
@@ -196,6 +202,9 @@ class Flatten(ComplexLayer):
 
     def trainable_variables(self):
         return []
+
+    def _verify_input_size(self) -> None:
+        return None
 
 
 class Dense(ComplexLayer):
@@ -336,6 +345,9 @@ class Dense(ComplexLayer):
     def trainable_variables(self):
         return [self.w, self.b]
 
+    def _verify_input_size(self) -> None:
+        return None
+
 
 class Dropout(ComplexLayer):
 
@@ -381,6 +393,9 @@ class Dropout(ComplexLayer):
     def trainable_variables(self):
         return []
 
+    def _verify_input_size(self) -> None:
+        return None
+
 
 class FFT2DTransform(ComplexLayer):
     """
@@ -403,60 +418,71 @@ class FFT2DTransform(ComplexLayer):
         """
         if data_format.lower() in DATA_FORMAT:
             self.data_format = data_format.lower()
-        super().__init__(input_size=input_size, output_size=input_size, input_dtype=input_dtype)
-        if len(input_size) == 2:
+        self.padding_shape = padding
+        super().__init__(input_size=input_size, output_size=self._calculate_output_shape, input_dtype=input_dtype)
+        self.last_layer_output_dtype = np.complex64
+
+    def _calculate_output_shape(self) -> None:
+        self.output_size = self.input_size
+
+    def _verify_input_size(self) -> None:
+        if len(self.input_size) == 2:
             logger.warning("Assuming channel was implicit. Adding axis.")
             if self.data_format == "channels_last":
-                input_size = input_size + (1,)
+                self.input_size = self.input_size + (1,)
             elif self.data_format == "channels_first":
-                input_size = input_size.insert(0, 1)
+                self.input_size = self.input_size.insert(0, 1)
             else:
                 logger.error(f"Unknown data_format {self.data_format}")
                 sys.exit(-1)
-        assert len(input_size) == 3, f"Input size must be lenght 3 of the form (" \
+        assert len(self.input_size) == 3, f"Input size must be lenght 3 of the form (" \
                                      f"{'channels, height, width' if self.data_format == 'channels_first' else 'height, width, channels'}). " \
-                                     f"Got {input_size} "
-        self._check_padding(padding)
+                                     f"Got {self.input_size} "
+        self._check_padding()
+        if self.data_format == "channels_last":
+            self.input_size = (self.input_size[0]+self.padding_shape[0], self.input_size[1]+self.padding_shape[1], self.input_size[2])
+        elif self.data_format == "channels_first":
+            self.input_size = (self.input_size[0], self.input_size[1]+self.padding_shape[0], self.input_size[2]+self.padding_shape[1])
+        else:
+            logger.error(f"Unknown data_format {self.data_format}")
+            sys.exit(-1)
 
     def apply_padding(self, inputs):
-        pad = [[0, 0]]  # No padding to the images itself
+        pad = [[0, 0]]      # Don't add pad to the images
         for p in self.padding_shape:
             pad.append([0, p])  # This method add pad only at the end
         if self.data_format == "channels_last":
-            if self.data_format == "channels_last":
-                pad.append([0, 0])
-            elif self.data_format == "channels_first":
-                pad = pad.insert(0, 1)
-            else:
-                logger.error(f"Unknown data_format {self.data_format}")
-                sys.exit(-1)
-        # pad.append([0, 0])  # No padding to the channel
-        set_trace()
+            pad.append([0, 0])
+        elif self.data_format == "channels_first":
+            pad = pad.insert(0, 1)
+        else:
+            logger.error(f"Unknown data_format {self.data_format}")
+            sys.exit(-1)
         return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
 
-    def _check_padding(self, padding):
+    def _check_padding(self):
         # Padding
-        if isinstance(padding, int):
-            self.padding_shape = (padding,) * (len(self.input_size) - 1)  # -1 because the last is the channel
+        if isinstance(self.padding_shape, int):
+            self.padding_shape = (self.padding_shape,) * (len(self.input_size) - 1)  # -1 because the last is the channel
             # I call super first in the case input_shape is none
-        elif isinstance(padding, (tuple, list)):
-            self.padding_shape = tuple(padding)
+        elif isinstance(self.padding_shape, (tuple, list)):
+            self.padding_shape = tuple(self.padding_shape)
             if len(self.padding_shape) != 2:
                 logger.error("Padding should have length 2")
                 exit(-1)
-        elif isinstance(padding, str):
-            padding = padding.lower()
-            if padding in PADDING_MODES:
-                if padding == "valid":
+        elif isinstance(self.padding_shape, str):
+            self.padding_shape = self.padding_shape.lower()
+            if self.padding_shape in PADDING_MODES:
+                if self.padding_shape == "valid":
                     self.padding_shape = (0,) * (len(self.input_size) - 1)
                 else:
-                    logger.error("Unknown padding " + padding + " but listed in PADDING_MODES!")
+                    logger.error(f"Unknown padding {self.padding_shape} but listed in PADDING_MODES!")
                     sys.exit(-1)
             else:
-                logger.error("Unknown padding " + padding)
+                logger.error(f"Unknown padding {self.padding_shape}")
                 sys.exit(-1)
         else:
-            logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
+            logger.error(f"Padding: {self.padding_shape} format not supported. It must be an int or a tuple")
             sys.exit(-1)
 
     def trainable_variables(self):
@@ -619,6 +645,9 @@ class Convolutional(ComplexLayer):
             sys.exit(-1)
         return inputs
 
+    def _verify_input_size(self) -> None:
+        return None
+    
     def call(self, inputs):
         """
         :param inputs:
@@ -812,7 +841,7 @@ class FrequencyConvolutional2D(ComplexLayer):
         super(FrequencyConvolutional2D, self).__init__(output_size=self._calculate_output_shape,
                                                        input_size=input_shape,
                                                        input_dtype=np.complex64)  # dtype is always complex!
-        self._verify_input_size()
+        # self._verify_input_size()
         self._init_kernel(data_format=data_format, kernel_shape=kernel_shape)
 
     def __deepcopy__(self, memodict=None):
@@ -841,11 +870,11 @@ class FrequencyConvolutional2D(ComplexLayer):
         self._verify_kernel_shape(kernel_shape)
         kernels_tmp = []
         if data_format == 'channels_last':
-            pad = [[0, s - 1] for s in self.input_size[:-1]]
+            pad = [[0, s - k] for k, s in zip(self.kernel_shape, self.input_size[:-1])]
             pad.append([0, 0])
             this_shape = self.kernel_shape + (self.input_size[-1],)
         elif data_format == 'channels_first':
-            pad = [[0, s - k - 1] for k, s in zip(self.kernel_shape, self.input_size[1:])]
+            pad = [[0, s - k] for k, s in zip(self.kernel_shape, self.input_size[1:])]
             pad.insert(0, [0, 0])
             this_shape = (self.input_size[1:],) + self.kernel_shape
         else:
@@ -867,7 +896,7 @@ class FrequencyConvolutional2D(ComplexLayer):
         self.bias = tf.Variable(self.bias_initializer(shape=self.filters, dtype=self.input_dtype),
                                 name=f"bias {self.layer_number}")
 
-    def _verify_input_size(self) -> bool:
+    def _verify_input_size(self) -> None:
         if len(self.input_size) == 2:
             if self.data_format == "channels_last":
                 self.input_size = self.input_size + (1,)
@@ -879,7 +908,7 @@ class FrequencyConvolutional2D(ComplexLayer):
         elif len(self.input_size) != 3:
             logger.error(f"Input shape must be of size 3. Gotten {len(self.input_size)}", exc_info=True)
             sys.exit(-1)
-        return True
+        return None
 
     def _verify_kernel_shape(self, kernel_shape: t_kernel_shape):
         """
