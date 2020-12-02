@@ -499,7 +499,7 @@ class FFT2DTransform(ComplexLayer):
 
     def _verify_inputs(self, inputs):
         if len(inputs.shape) == 3:
-            logger.warning("Assuming channel was implicit. Adding axis.")
+            # logger.warning("Assuming channel was implicit. Adding axis.")
             if self.data_format == "channels_last":
                 inputs = tf.reshape(inputs, inputs.shape + (1,))
             elif self.data_format == "channels_first":
@@ -893,8 +893,6 @@ class FrequencyConvolutional2D(ComplexLayer):
         self.kernels = tf.convert_to_tensor(
             tf.transpose(kernels_tmp, perm=[1, 2, 3, 0]),  # Take filter to last
             name="Kernels")
-        self.bias = tf.Variable(self.bias_initializer(shape=self.filters, dtype=self.input_dtype),
-                                name=f"bias {self.layer_number}")
 
     def _verify_input_size(self) -> None:
         if len(self.input_size) == 2:
@@ -939,7 +937,7 @@ class FrequencyConvolutional2D(ComplexLayer):
             sys.exit(-1)
 
     def trainable_variables(self):
-        return [self.kernels, self.bias]
+        return [self.kernels]
 
     def _save_tensorboard_weight(self, summary, step):
         with summary.as_default():

@@ -354,8 +354,9 @@ class CvnnModel:
         with tf.name_scope("Gradient"):
             variables = []
             for lay in self.shape:
-                variables.extend(lay.trainable_variables())  # TODO: Debug this for all layers.
+                variables.extend(lay.trainable_variables())
             gradients = tape.gradient(current_loss, variables)  # Compute gradients
+            set_trace()
             assert all(g is not None for g in gradients)
 
         # Backpropagation
@@ -424,9 +425,7 @@ class CvnnModel:
         start_status = ''
         if x_test is not None and y_test is not None:
             start_status = self._get_str_evaluate(self.epochs_done, epochs, x_test, y_test)
-        self._manage_string("Starting training...\n" +
-                            "Epochs = " + str(epochs) + "\nBatch Size = " + str(batch_size) + "\n" +
-                            start_status, verbose)
+        self._manage_string(f"Starting training...\nEpochs = {epochs}\nBatch Size = {batch_size}\n{start_status}", verbose)
         # -----------------------------------------------------
         # input processing ended
         # num_tr_iter = int(x_train.shape[0] / batch_size)  # Number of training iterations in each epoch

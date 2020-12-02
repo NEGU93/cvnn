@@ -52,5 +52,7 @@ shape = [
     Flatten(),
     Dense(output_size=10, activation="softmax_real")
 ]
-model = CvnnModel("Testing_fft", shape, categorical_crossentropy, tensorboard=False, verbose=False)
-model.fit(train_images, train_labels, validation_data=(test_images, test_labels))
+model = CvnnModel("Testing_fft", shape, categorical_crossentropy, tensorboard=True, verbose=False)
+out = model.call(train_images[:1])
+# set_trace()
+# model.fit(train_images, train_labels, validation_data=(test_images, test_labels))
