@@ -50,7 +50,7 @@ shape = [
     FFT2DTransform(input_size=train_images.shape[1:], input_dtype=train_images.dtype, padding=2),
     FrequencyConvolutional2D(filters=1, kernel_shape=(3, 3), activation="cart_relu"),
     Flatten(),
-    Dense(output_size=10, activation="cart_relu")
+    Dense(output_size=10, activation="softmax_real")
 ]
 model = CvnnModel("Testing_fft", shape, categorical_crossentropy, tensorboard=False, verbose=False)
 model.fit(train_images, train_labels, validation_data=(test_images, test_labels))
