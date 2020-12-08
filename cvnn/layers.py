@@ -14,7 +14,7 @@ import cvnn.initializers as initializers
 # Typing
 from tensorflow import dtypes
 from numpy import dtype, ndarray
-from typing import Union, Callable, Optional, List, Set
+from typing import Union, Callable, Optional, List, Set, Tuple
 from cvnn.initializers import RandomInitializer
 
 REAL = (np.float32,)
@@ -23,7 +23,7 @@ SUPPORTED_DTYPES = REAL + COMPLEX  # , np.complex128, np.float64) Gradients retu
 layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
-t_kernel_shape = t_input_shape
+t_kernel_2_shape = Union[int, Tuple[int, int], List[int, int]]
 t_stride_shape = t_input_shape
 t_padding_shape = Union[str, t_input_shape]
 t_Callable_shape = Union[t_input_shape, Callable]  # Either a input_shape or a function that sets self.output
@@ -206,7 +206,7 @@ class Flatten(ComplexLayer):
         return []
 
 
-class Dense(ComplexLayer):
+class ComplexDense(ComplexLayer):
     """
     Fully connected complex-valued layer
     Implements the operation:
@@ -240,7 +240,7 @@ class Dense(ComplexLayer):
             that will be the probability that each element is dropped.
             Example: setting rate=0.1 would drop 10% of input elements.
         """
-        super(Dense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
+        super(ComplexDense, self).__init__(output_size=output_size, input_size=input_size, input_dtype=input_dtype)
         if activation is None:
             activation = 'linear'
         self.activation = activation
@@ -263,24 +263,24 @@ class Dense(ComplexLayer):
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return Dense(output_size=self.output_size, input_size=self.input_size,
-                     activation=self.activation,
-                     input_dtype=self.input_dtype,
-                     weight_initializer=self.weight_initializer,
-                     bias_initializer=self.bias_initializer, dropout=self.dropout
-                     )
+        return ComplexDense(output_size=self.output_size, input_size=self.input_size,
+                            activation=self.activation,
+                            input_dtype=self.input_dtype,
+                            weight_initializer=self.weight_initializer,
+                            bias_initializer=self.bias_initializer, dropout=self.dropout
+                            )
 
     def get_real_equivalent(self, output_multiplier=2, input_multiplier=2):
         """
         :param output_multiplier: Multiplier of output and input size (normally by 2)
         :return: real-valued copy of self
         """
-        return Dense(output_size=int(round(self.output_size * output_multiplier)),
-                     input_size=int(round(self.input_size * input_multiplier)),
-                     activation=self.activation, input_dtype=np.float32,
-                     weight_initializer=self.weight_initializer,
-                     bias_initializer=self.bias_initializer, dropout=self.dropout
-                     )
+        return ComplexDense(output_size=int(round(self.output_size * output_multiplier)),
+                            input_size=int(round(self.input_size * input_multiplier)),
+                            activation=self.activation, input_dtype=np.float32,
+                            weight_initializer=self.weight_initializer,
+                            bias_initializer=self.bias_initializer, dropout=self.dropout
+                            )
 
     def _init_weights(self):
         self.w = tf.Variable(self.weight_initializer(shape=(self.input_size, self.output_size), dtype=self.input_dtype),
@@ -397,15 +397,23 @@ class ComplexConv2D(ComplexLayer):
     # http://datahacker.rs/convolution-rgb-image/   For RGB images
     # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
 
-    def __init__(self, filters: int, kernel_shape: t_kernel_shape, input_shape: Optional[t_input_shape] = None,
+    def __init__(self, filters: int, kernel_size: t_kernel_2_shape,
+                 input_shape: Optional[t_input_shape] = None,
                  padding: t_padding_shape = "valid", data_format: str = 'channels_last', dilatation_rate=(1, 1),
-                 strides: t_kernel_shape = 1,
+                 strides: t_kernel_2_shape = 1,
                  activation=None, dropout: Optional[bool] = None,  # TODO: Check type
                  weight_initializer: RandomInitializer = initializers.GlorotUniform(),
                  bias_initializer: RandomInitializer = initializers.Zeros(),
                  input_dtype: Optional[t_Dtype] = None
                  ):
         """
+        :param filters: Integer, the dimensionality of the output space
+            (i.e. the number of output filters in the convolution).
+        :param kernel_size: An integer or tuple/list of 2 or 4 integers,
+            specifying the height and width of the 2D convolution window.
+            Can be a single integer to specify the same value for all spatial dimensions.
+        :param input_shape: An integer or tuple/list of integers of the input tensor shape.
+        :param padding:
         :param data_format: A string, one of channels_last (default) or channels_first.
             The ordering of the dimensions in the inputs.
             channels_last corresponds to inputs with shape (batch_size, ..., channels) while channels_first corresponds
@@ -433,7 +441,7 @@ class ComplexConv2D(ComplexLayer):
             bias_initializer = initializers.Zeros()
         self.bias_initializer = bias_initializer
         super(ComplexConv2D, self).__init__(self._calculate_shapes, self.input_size, input_dtype,
-                                            kernel_shape, padding, strides)
+                                            kernel_size, padding, strides)
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
             np.dtype(apply_activation(self.activation,
@@ -444,7 +452,7 @@ class ComplexConv2D(ComplexLayer):
         self.bias = tf.Variable(self.bias_initializer(shape=self.output_size, dtype=self.input_dtype),
                                 name="bias" + str(self.layer_number))
 
-    def _verify_and_create_kernel_shape(self, kernel_shape: t_kernel_shape, dimensions: int = 2) -> None:
+    def _verify_and_create_kernel_shape(self, kernel_shape: t_kernel_2_shape, dimensions: int = 2) -> None:
         """
         Verifies Kernel shape and creates self.kernel_shape variable
         :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
@@ -455,10 +463,10 @@ class ComplexConv2D(ComplexLayer):
             self.kernel_shape = [kernel_shape] * dimensions + [channels] + [self.filters]
         elif isinstance(kernel_shape, (tuple, list)):
             self.kernel_shape = list(kernel_shape)
-            if len(self.kernel_shape) == 2:
+            if len(self.kernel_shape) == dimensions:
                 # Assume only height and width was given, in and out channels are calculated automatically
                 self.kernel_shape = self.kernel_shape + [channels] + [self.filters]
-            elif len(self.kernel_shape) == 3:
+            elif len(self.kernel_shape) == dimensions + 1:
                 # Assume only height, width and in_channels was given, out channels is calculated automatically
                 self.kernel_shape = self.kernel_shape + [self.filters]
         else:
@@ -555,7 +563,7 @@ class ComplexConv2D(ComplexLayer):
                 self.stride.insert(1, 1)
             print(self.stride)
 
-    def _calculate_shapes(self, kernel_shape: t_kernel_shape, padding: t_padding_shape, stride: t_stride_shape):
+    def _calculate_shapes(self, kernel_shape: t_kernel_2_shape, padding: t_padding_shape, stride: t_stride_shape):
         """
         Sets the values of kernel_shape, padding, stride and output_size
         """
@@ -681,11 +689,11 @@ class ComplexConv2D(ComplexLayer):
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return ComplexConv2D(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+        return ComplexConv2D(filters=self.filters, kernel_size=self.kernel_shape, input_shape=self.input_size,
                              padding=self.padding_shape, strides=self.stride_shape, input_dtype=self.input_dtype)
 
     def get_real_equivalent(self):
-        return ComplexConv2D(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+        return ComplexConv2D(filters=self.filters, kernel_size=self.kernel_shape, input_shape=self.input_size,
                              padding=self.padding_shape, strides=self.stride_shape, input_dtype=np.float32)
 
     def trainable_variables(self):
@@ -694,7 +702,7 @@ class ComplexConv2D(ComplexLayer):
 
 class Pooling(ComplexLayer, ABC):
 
-    def __init__(self, pool_size: t_kernel_shape = (2, 2), strides: Optional[t_kernel_shape] = None):
+    def __init__(self, pool_size: t_kernel_2_shape = (2, 2), strides: Optional[t_kernel_2_shape] = None):
         """
         Downsamples the input representation by taking the maximum value over the window defined by pool_size for each
         dimension along the features axis. The window is shifted by strides in each dimension.
@@ -869,7 +877,7 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0]
     ]).astype(np.float32)
 
-    conv = ComplexConv2D(filters=5, kernel_shape=3, input_shape=img2.shape, input_dtype=np.float32)
+    conv = ComplexConv2D(filters=5, kernel_size=3, input_shape=img2.shape, input_dtype=np.float32)
     print(conv.call(img2))
 
 
@@ -879,7 +887,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.28'
+__version__ = '0.0.29'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

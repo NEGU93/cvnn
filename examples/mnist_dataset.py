@@ -59,8 +59,8 @@ def keras_fit(ds_train, ds_test, verbose, optimizer="Adam"):
     # https://www.tensorflow.org/datasets/keras_example
     model = tf.keras.models.Sequential([
       tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
-      tf.keras.layers.Dense(128, activation='relu'),
-      tf.keras.layers.Dense(10, activation='softmax')
+      tf.keras.layers.ComplexDense(128, activation='relu'),
+      tf.keras.layers.ComplexDense(10, activation='softmax')
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
@@ -84,17 +84,17 @@ def own_fit(ds_train, ds_test, verbose,
             weight_initializer=tf.keras.initializers.GlorotUniform(), bias_initializer=tf.keras.initializers.Zeros()):
     shape = [
         layers.Flatten(input_size=(28, 28, 1), input_dtype=np.float32),
-        layers.Dense(output_size=128,
-                     activation=activation_1,
-                     input_dtype=np.float32, dropout=None,
-                     weight_initializer=weight_initializer,
-                     bias_initializer=bias_initializer
-                     ),
-        layers.Dense(output_size=10,
-                     activation=activation_2,
-                     weight_initializer=weight_initializer,
-                     bias_initializer=bias_initializer
-                     )
+        layers.ComplexDense(output_size=128,
+                            activation=activation_1,
+                            input_dtype=np.float32, dropout=None,
+                            weight_initializer=weight_initializer,
+                            bias_initializer=bias_initializer
+                            ),
+        layers.ComplexDense(output_size=10,
+                            activation=activation_2,
+                            weight_initializer=weight_initializer,
+                            bias_initializer=bias_initializer
+                            )
     ]
     model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
                       optimizer=optimizer,

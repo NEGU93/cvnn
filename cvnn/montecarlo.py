@@ -4,7 +4,7 @@ import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.cvnn_model import CvnnModel
 from cvnn.data_analysis import MonteCarloAnalyzer
-from cvnn.layers import Dense
+from cvnn.layers import ComplexDense
 from cvnn.utils import transform_to_real, randomize
 from tensorflow.keras.losses import categorical_crossentropy
 import pandas as pd
@@ -415,15 +415,15 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     if len(shape_raw) == 0:
         logger.warning("No hidden layers are used. activation and dropout will be ignored")
         shape = [
-            Dense(input_size=input_size, output_size=output_size, activation='softmax_real',
-                  input_dtype=np.complex64, dropout=None)
+            ComplexDense(input_size=input_size, output_size=output_size, activation='softmax_real',
+                         input_dtype=np.complex64, dropout=None)
         ]
     else:  # len(shape_raw) > 0:
-        shape = [Dense(input_size=input_size, output_size=shape_raw[0], activation=activation,
-                       input_dtype=np.complex64, dropout=dropout)]
+        shape = [ComplexDense(input_size=input_size, output_size=shape_raw[0], activation=activation,
+                              input_dtype=np.complex64, dropout=dropout)]
         for i in range(1, len(shape_raw)):
-            shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=dropout))
-        shape.append(Dense(output_size=output_size, activation='softmax_real', dropout=None))
+            shape.append(ComplexDense(output_size=shape_raw[i], activation=activation, dropout=dropout))
+        shape.append(ComplexDense(output_size=output_size, activation='softmax_real', dropout=None))
 
     complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,
                                 optimizer=optimizer, verbose=False, tensorboard=False)

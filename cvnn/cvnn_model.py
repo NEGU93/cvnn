@@ -308,7 +308,7 @@ class CvnnModel:
         output_multiplier = self._get_real_equivalent_multiplier(classifier, capacity_equivalent, equiv_technique)
         for i, layer in enumerate(self.shape):
             if isinstance(layer, layers.ComplexLayer):
-                if isinstance(layer, layers.Dense):  # TODO: Check if I can do this with kargs or sth
+                if isinstance(layer, layers.ComplexDense):  # TODO: Check if I can do this with kargs or sth
                     real_shape.append(layer.get_real_equivalent(
                         output_multiplier=output_multiplier[i],
                         input_multiplier=output_multiplier[i - 1] if i > 0 else 2))
@@ -961,12 +961,12 @@ if __name__ == '__main__':
     hidden_size = 100
     output_size = np.shape(dataset.y_train)[1]
     # set_trace()
-    shape = [layers.Dense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
-                          input_dtype=cdtype, dropout=None),
-             layers.Dense(output_size=hidden_size, activation='cart_relu'),
-             layers.Dense(output_size=hidden_size, activation='cart_relu'),
-             layers.Dense(output_size=hidden_size, activation='cart_relu'),
-             layers.Dense(output_size=output_size, activation='softmax_real')]
+    shape = [layers.ComplexDense(output_size=hidden_size, input_size=input_size, activation='cart_relu',
+                                 input_dtype=cdtype, dropout=None),
+             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
+             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
+             layers.ComplexDense(output_size=hidden_size, activation='cart_relu'),
+             layers.ComplexDense(output_size=output_size, activation='softmax_real')]
     # set_trace()
     # Train model
     model = CvnnModel("Testing_dropout", shape, tf.keras.losses.categorical_crossentropy,
@@ -991,7 +991,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.2.59'
+__version__ = '0.2.60'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
