@@ -1,4 +1,4 @@
-from cvnn.layers import Convolutional, MaxPooling, Flatten, Dense, AvgPooling
+from cvnn.layers import ComplexConv2D, MaxPooling, Flatten, Dense, AvgPooling
 from cvnn.cvnn_model import CvnnModel
 from cvnn.dataset import Dataset
 from tensorflow.keras.losses import categorical_crossentropy
@@ -13,18 +13,9 @@ train_images, test_images = train_images / 255.0, test_images / 255.0    # Norma
 train_labels = Dataset.sparse_into_categorical(train_labels)
 test_labels = Dataset.sparse_into_categorical(test_labels)
 
-"""
-    Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
-    AvgPooling((2, 2)),
-    Convolutional(64, (3, 3), activation='cart_relu'),
-    AvgPooling((2, 2)),
-    Convolutional(64, (3, 3), activation='cart_relu'),
-    Flatten(),
-    """
-# train_images = np.reshape(train_images, (train_images.shape[0], np.prod(train_images.shape[1:])))
-# train_labels = np.reshape(train_labels, (train_labels.shape[0], np.prod(train_labels.shape[1:])))
 model_layers = [
-    Convolutional(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
+    ComplexConv2D(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
+    ComplexConv2D(5, (3, 3), activation='cart_relu'),
     Flatten(),
     # Flatten(input_dtype=np.float32, input_size=train_images.shape[1:]),
     # Dense(64, activation='cart_relu', input_dtype=np.float32, input_size=train_images.shape[1]),
@@ -34,6 +25,7 @@ model_layers = [
 
 model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tensorboard=False, verbose=False)
 model.training_param_summary()
-model.fit(train_images[:10].astype(np.float32), train_labels[:10].astype(np.float32), validation_split=0.2,
-          epochs=2, batch_size=2,
+model.fit(train_images[:10].astype(np.float32), train_labels[:10].astype(np.float32),
+          validation_data=(test_images.astype(np.float32), test_labels.astype(np.float32)),
+          epochs=5, batch_size=2,
           verbose=True, save_csv_history=False)

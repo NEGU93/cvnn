@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from cvnn.layers import Convolutional
+from cvnn.layers import ComplexConv2D
 from pdb import set_trace
 import sys
 from scipy import signal
@@ -63,7 +63,7 @@ if TWO_DIM_TEST:
         ]).astype(np.float32)
     mode = 'full'
 
-    conv = Convolutional(1, (3, 3), (6, 6, 1), padding=2, input_dtype=np.float32)
+    conv = ComplexConv2D(1, (3, 3), (6, 6, 1), padding=2, input_dtype=np.float32)
     conv.kernels = []
     conv.kernels.append(tf.reshape(tf.cast(tf.Variable(k, name="kernel" + str(0) + "_f" + str(0)), dtype=np.float32),
                                    (3, 3, 1)))

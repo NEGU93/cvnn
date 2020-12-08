@@ -17,14 +17,16 @@ from numpy import dtype, ndarray
 from typing import Union, Callable, Optional, List, Set
 from cvnn.initializers import RandomInitializer
 
-
-SUPPORTED_DTYPES = (np.complex64, np.float32)  # , np.complex128, np.float64) Gradients return None when complex128
+REAL = (np.float32,)
+COMPLEX = (np.complex64,)
+SUPPORTED_DTYPES = REAL + COMPLEX  # , np.complex128, np.float64) Gradients return None when complex128
 layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
 t_kernel_shape = t_input_shape
+t_stride_shape = t_input_shape
 t_padding_shape = Union[str, t_input_shape]
-t_Callable_shape = Union[t_input_shape, Callable]   # Either a input_shape or a function that sets self.output
+t_Callable_shape = Union[t_input_shape, Callable]  # Either a input_shape or a function that sets self.output
 t_Dtype = Union[dtypes.DType, dtype]
 
 PADDING_MODES = {
@@ -33,15 +35,21 @@ PADDING_MODES = {
     "full"
 }
 
+DATA_FORMAT = {
+    "channels_last",
+    "channels_first"
+}
+
 
 class ComplexLayer(ABC):
     # Being ComplexLayer an abstract class, then this can be called using:
     #   self.__class__.__bases__.<variable>
     # As all child's will have this class as base, mro gives a full list so won't work.
-    last_layer_output_dtype = None      # TODO: Make it work both with np and tf dtypes
+    last_layer_output_dtype = None  # TODO: Make it work both with np and tf dtypes
     last_layer_output_size = None
 
-    def __init__(self, output_size: t_Callable_shape, input_size=Optional[t_input_shape], input_dtype=t_Dtype, **args):
+    def __init__(self, output_size: t_Callable_shape, input_size=Optional[t_Callable_shape], input_dtype=t_Dtype,
+                 *args):
         """
         Base constructor for a complex layer. The first layer will need a input_dtype and input_size.
         For the other classes is optional,
@@ -69,9 +77,9 @@ class ComplexLayer(ABC):
             if self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 if self.__class__.__bases__[0].last_layer_output_dtype != input_dtype:
                     logger.warning("Input dtype " + str(input_dtype) +
-                                        " is not equal to last layer's input dtype " +
-                                        str(self.__class__.__bases__[0].last_layer_output_dtype))
-            self.input_dtype = input_dtype
+                                   " is not equal to last layer's input dtype " +
+                                   str(self.__class__.__bases__[0].last_layer_output_dtype))
+            self.input_dtype = np.dtype(input_dtype)
 
         # This will be normally the case.
         # Each layer must change this value if needed.
@@ -86,15 +94,19 @@ class ComplexLayer(ABC):
             else:  # self.__class__.__bases__[0].last_layer_output_dtype is not None:
                 self.input_size = self.__class__.__bases__[0].last_layer_output_size
         elif input_size is not None:
+            if callable(input_size):
+                input_size()
+                assert self.input_size, "Error: input_size function must set self.input_size"
+            else:
+                self.input_size = input_size
             if self.__class__.__bases__[0].last_layer_output_size is not None:
                 if input_size != self.__class__.__bases__[0].last_layer_output_size:
-                    logger.warning("Input size " + str(input_size) + " is not equal to last layer's output size " +
-                                        str(self.__class__.__bases__[0].last_layer_output_size))
-            self.input_size = input_size
+                    logger.warning(f"Input size {input_size} is not equal to last layer's output size "
+                                   f"{self.__class__.__bases__[0].last_layer_output_size}")
 
         if callable(output_size):
-            output_size()
-            assert self.output_size is not None, "Error: output_size function must set self.output_size"
+            output_size(*args)
+            assert self.output_size, "Error: output_size function must set self.output_size"
         else:
             self.output_size = output_size
         for x in self.__class__.mro():
@@ -102,7 +114,7 @@ class ComplexLayer(ABC):
                 x.last_layer_output_size = self.output_size
         # self.__class__.__bases__[0].last_layer_output_size = self.output_size
         self.layer_number = next(layer_count)  # Know it's own number
-        self.__class__.__call__ = self.call     # Make my object callable
+        self.__class__.__call__ = self.call  # Make my object callable
 
     @abstractmethod
     def __deepcopy__(self, memodict=None):
@@ -237,7 +249,7 @@ class Dense(ComplexLayer):
             apply_activation(self.activation,
                              tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
                              ).numpy().dtype
-        self.dropout = dropout      # TODO: I don't find the verification that it is between 0 and 1. I think I omitted
+        self.dropout = dropout  # TODO: I don't find the verification that it is between 0 and 1. I think I omitted it
         if weight_initializer is None:
             weight_initializer = initializers.GlorotUniform()
         self.weight_initializer = weight_initializer
@@ -258,7 +270,7 @@ class Dense(ComplexLayer):
                      bias_initializer=self.bias_initializer, dropout=self.dropout
                      )
 
-    def get_real_equivalent(self, output_multiplier=2, input_multiplier = 2):
+    def get_real_equivalent(self, output_multiplier=2, input_multiplier=2):
         """
         :param output_multiplier: Multiplier of output and input size (normally by 2)
         :return: real-valued copy of self
@@ -281,7 +293,7 @@ class Dense(ComplexLayer):
         out_str = "Dense layer:\n\tinput size = " + str(self.input_size) + "(" + str(self.input_dtype) + \
                   ") -> output size = " + str(self.output_size) + \
                   ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
-                  "\n\tDropout: " + str(self.dropout) + "\n"
+                                                 "\n\tDropout: " + str(self.dropout) + "\n"
         # + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + \
         return out_str
 
@@ -296,8 +308,8 @@ class Dense(ComplexLayer):
         with tf.name_scope("ComplexDense_" + str(self.layer_number)) as scope:
             if tf.dtypes.as_dtype(inputs.dtype) is not tf.dtypes.as_dtype(np.dtype(self.input_dtype)):
                 logger.warning("Dense::apply_layer: Input dtype " + str(inputs.dtype) + " is not as expected ("
-                                    + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) +
-                                    "). Casting input but you most likely have a bug")
+                               + str(tf.dtypes.as_dtype(np.dtype(self.input_dtype))) +
+                               "). Casting input but you most likely have a bug")
             out = tf.add(tf.matmul(tf.cast(inputs, self.input_dtype), self.w), self.b)
             y_out = apply_activation(self.activation, out)
 
@@ -375,85 +387,23 @@ class Dropout(ComplexLayer):
         return Dropout(rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
 
     def get_real_equivalent(self):
-        return self.__deepcopy__()      # Dropout layer is dtype agnostic
+        return self.__deepcopy__()  # Dropout layer is dtype agnostic
 
     def trainable_variables(self):
         return []
 
 
-class FFT2DTransform(ComplexLayer):
-
-    def __init__(self, input_size=None, input_dtype=None, padding: t_padding_shape = 0,):
-        super().__init__(input_size=input_size, output_size=input_size, input_dtype=input_dtype)
-        self._check_padding(padding)
-
-    def apply_padding(self, inputs):
-        pad = [[0, 0]]  # No padding to the images itself
-        for p in self.padding_shape:
-            pad.append([0, p])      # This method add pad only at the end
-        pad.append([0, 0])  # No padding to the channel
-        return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
-
-    def _check_padding(self, padding):
-        # Padding
-        if isinstance(padding, int):
-            self.padding_shape = (padding,) * (len(self.input_size) - 1)    # -1 because the last is the channel
-            # I call super first in the case input_shape is none
-        elif isinstance(padding, (tuple, list)):
-            self.padding_shape = tuple(padding)
-        elif isinstance(padding, str):
-            padding = padding.lower()
-            if padding in PADDING_MODES:
-                if padding == "valid":
-                    self.padding_shape = (0,) * (len(self.input_size) - 1)
-                elif padding == "same":
-                    if np.all(np.asarray(self.kernel_shape) % 2 == 0):
-                        logger.warning("Same padding needs the kernel to have an odd value")
-                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) / 2).astype(int))
-                elif padding == "full":
-                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) - 1))
-                else:
-                    logger.error("Unknown padding " + padding + " but listed in PADDING_MODES!")
-                    sys.exit(-1)
-            else:
-                logger.error("Unknown padding " + padding)
-                sys.exit(-1)
-        else:
-            logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
-            sys.exit(-1)
-
-    def trainable_variables(self):
-        return []
-
-    def get_real_equivalent(self):
-        return self.__deepcopy__()
-
-    def get_description(self) -> str:
-        return "FFT Transform"
-
-    def _save_tensorboard_weight(self, weight_summary, step):
-        return None
-
-    def __deepcopy__(self, memodict=None):
-        return FFTTransform(input_size=self.input_size, input_dtype=self.input_dtype, padding=self.padding)
-
-    def call(self, inputs):
-        in_pad = self.apply_padding(inputs)
-        return tf.signal.fft2d(tf.cast(in_pad, tf.complex64))
-
-
-class Convolutional(ComplexLayer):
+class ComplexConv2D(ComplexLayer):
     # http://datahacker.rs/convolution-rgb-image/   For RGB images
     # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
 
-    def __init__(self, filters: int, kernel_shape: t_kernel_shape,
-                 input_shape: Optional[t_input_shape] = None, padding: t_padding_shape = 0,
-                 stride: t_kernel_shape = 1, input_dtype: Optional[t_Dtype] = None,
-                 activation=None,    # TODO: Check type
+    def __init__(self, filters: int, kernel_shape: t_kernel_shape, input_shape: Optional[t_input_shape] = None,
+                 padding: t_padding_shape = "valid", data_format: str = 'channels_last', dilatation_rate=(1, 1),
+                 strides: t_kernel_shape = 1,
+                 activation=None, dropout: Optional[bool] = None,  # TODO: Check type
                  weight_initializer: RandomInitializer = initializers.GlorotUniform(),
                  bias_initializer: RandomInitializer = initializers.Zeros(),
-                 data_format='channels_last'    # TODO: Only supported format for the moment.
-                 # dilatation_rate=(1, 1)       # TODO: Interesting to add
+                 input_dtype: Optional[t_Dtype] = None
                  ):
         """
         :param data_format: A string, one of channels_last (default) or channels_first.
@@ -462,132 +412,207 @@ class Convolutional(ComplexLayer):
             to inputs with shape (batch_size, channels, ...)
         """
         self.filters = filters
+        self.dropout = dropout
+        self.dilatation = dilatation_rate
+        if activation is None:
+            activation = 'linear'
         self.activation = activation
-        data_format = data_format.lower()
-        assert data_format == 'channels_last' or data_format == 'channels_first', \
-            "data_format not supported, should be either 'channels_last' (default) or 'channels_first', got " + \
-            str(data_format)
+        self.data_format = data_format.lower()
+        assert self.data_format in DATA_FORMAT, f"data_format = {self.data_format} unknown"
         if input_shape is None:
             self.input_size = None
-        elif isinstance(input_shape, int):
-            self.input_size = (input_shape,)
         elif isinstance(input_shape, (tuple, list)):
             self.input_size = tuple(input_shape)
         else:
-            logger.error("Input shape: " + str(input_shape) + " format not supported. It must be an int or a tuple")
+            logger.error(f"Input shape: {input_shape} format not supported. It must be an int or a tuple")
             sys.exit(-1)
-        super(Convolutional, self).__init__(lambda: self._calculate_shapes(kernel_shape, padding, stride),
-                                            input_size=self.input_size, input_dtype=input_dtype)
+        if weight_initializer is None:
+            weight_initializer = initializers.GlorotUniform()
+        self.weight_initializer = weight_initializer
+        if bias_initializer is None:
+            bias_initializer = initializers.Zeros()
+        self.bias_initializer = bias_initializer
+        super(ComplexConv2D, self).__init__(self._calculate_shapes, self.input_size, input_dtype,
+                                            kernel_shape, padding, strides)
         # Test if the activation function changes datatype or not...
         self.__class__.__bases__[0].last_layer_output_dtype = \
-            apply_activation(self.activation,
-                             tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
-                             ).numpy().dtype
-        self.weight_initializer = weight_initializer
-        self.bias_initializer = bias_initializer  # TODO: Not working yet
+            np.dtype(apply_activation(self.activation,
+                                      tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
+                                      ).numpy().dtype)
+        self.kernels = tf.Variable(self.weight_initializer(shape=self.kernel_shape, dtype=self.input_dtype),
+                                   name="kernel" + str(self.layer_number))
+        self.bias = tf.Variable(self.bias_initializer(shape=self.output_size, dtype=self.input_dtype),
+                                name="bias" + str(self.layer_number))
 
-        self._init_kernel(data_format)
-
-    def _calculate_shapes(self, kernel_shape, padding, stride):
+    def _verify_and_create_kernel_shape(self, kernel_shape: t_kernel_shape, dimensions: int = 2) -> None:
+        """
+        Verifies Kernel shape and creates self.kernel_shape variable
+        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
+        :return: None
+        """
+        channels = self.input_size[0] if self.data_format == "channels_first" else self.input_size[-1]
         if isinstance(kernel_shape, int):
-            self.kernel_shape = (kernel_shape,) * (len(self.input_size) - 1)    # -1 because the last is the channel
+            self.kernel_shape = [kernel_shape] * dimensions + [channels] + [self.filters]
         elif isinstance(kernel_shape, (tuple, list)):
-            self.kernel_shape = tuple(kernel_shape)
+            self.kernel_shape = list(kernel_shape)
+            if len(self.kernel_shape) == 2:
+                # Assume only height and width was given, in and out channels are calculated automatically
+                self.kernel_shape = self.kernel_shape + [channels] + [self.filters]
+            elif len(self.kernel_shape) == 3:
+                # Assume only height, width and in_channels was given, out channels is calculated automatically
+                self.kernel_shape = self.kernel_shape + [self.filters]
         else:
-            logger.error("Kernel shape: " + str(kernel_shape) + " format not supported. It must be an int or a tuple")
+            logger.error(f"Kernel shape: {kernel_shape} format not supported. It must be an int or a tuple. "
+                         f"Received {kernel_shape}")
             sys.exit(-1)
-        if not np.all(np.asarray(self.kernel_shape) > 1):
-            logger.error("Kernel shape must have all values bigger than 1: " + str(self.kernel_shape))
+        assert len(self.kernel_shape) == dimensions + 2, f"Kernel must be a {dimensions + 2}-D tensor of shape " \
+                                                         f"[filter_height, filter_width, in_channels, out_channels] " \
+                                                         f"but it had size {len(self.kernel_shape)}."
+        if not np.all(np.asarray(self.kernel_shape) >= 1):
+            logger.error(f"Kernel shape must have all values bigger than 1: {self.kernel_shape}.")
             sys.exit(-1)
-        # Padding
+        if not np.all(np.asarray(self.kernel_shape) == np.asarray(self.kernel_shape).astype(int)):
+            logger.error(f"Kernel shape must have all integer values: {self.kernel_shape}.")
+            sys.exit(-1)
+
+    def _verify_and_create_padding(self, padding: t_padding_shape, dimensions: int = 2) -> None:
+        """
+        Creates self.padding variable and verifies it
+        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
+        :return: None
+        """
+        # Get padding
         if isinstance(padding, int):
-            self.padding_shape = (padding,) * (len(self.input_size) - 1)    # -1 because the last is the channel
-            # I call super first in the case input_shape is none
+            self.padding = [[padding, padding]] * dimensions
         elif isinstance(padding, (tuple, list)):
-            self.padding_shape = tuple(padding)
+            self.padding = list(padding)
+            if len(self.padding) in {dimensions + 2, dimensions}:  # TODO: I have to check each element is a list
+                logger.error("Padding should have length 2 or 4")
+                exit(-1)
         elif isinstance(padding, str):
             padding = padding.lower()
             if padding in PADDING_MODES:
                 if padding == "valid":
-                    self.padding_shape = (0,) * (len(self.input_size) - 1)
+                    self.padding = [[0, 0]] * (len(self.input_size) + 1)
                 elif padding == "same":
-                    if np.all(np.asarray(self.kernel_shape) % 2 == 0):
-                        logger.warning("Same padding needs the kernel to have an odd value")
-                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) / 2).astype(int))
+                    pads = [np.floor(k / 2) for k in self.kernel_shape[:2]]
+                    self.padding = [[p, p] for p in pads]
                 elif padding == "full":
-                    self.padding_shape = tuple(np.floor(np.asarray(self.kernel_shape) - 1))
+                    pads = [k - 1 for k in self.kernel_shape[:2]]
+                    self.padding = [[p, p] for p in pads]
                 else:
-                    logger.error("Unknown padding " + padding + " but listed in PADDING_MODES!")
+                    logger.error(f"Unknown padding {self.padding} but listed in PADDING_MODES!")
                     sys.exit(-1)
             else:
-                logger.error("Unknown padding " + padding)
+                logger.error(f"Unknown padding {padding}")
                 sys.exit(-1)
         else:
-            logger.error("Padding: " + str(padding) + " format not supported. It must be an int or a tuple")
+            logger.error(f"Padding: {padding} format not supported. It must be an int or a tuple")
             sys.exit(-1)
-        # Stride
-        if isinstance(stride, int):
-            self.stride_shape = (stride,) * (len(self.input_size) - 1)
-            # I call super first in the case input_shape is none
-        elif isinstance(stride, (tuple, list)):
-            self.stride_shape = tuple(stride)
+        # Fill missing data
+        if len(self.padding) == 2:
+            self.padding = [[0, 0]] + self.padding  # Don't pad images itself!
+            if self.data_format == "channels_last":  # And don't pad the channels neither!
+                self.padding.append([0, 0])
+            elif self.data_format == "channels_first":
+                self.padding = self.padding.insert(1, [0, 0])
+            else:
+                logger.error(f"Unknown data_format {self.data_format}")
+                sys.exit(-1)
+        # Verify padding was done correctly
+        assert len(self.padding) == dimensions + 2, f"padding = {self.padding} should be of size {dimensions + 2}"
+        assert self.padding[0] == [0, 0], "First element of the padding should be [0, 0] not to pad images!"
+        if (self.data_format == "channels_first" and self.padding[1] != [0, 0]) or \
+                (self.data_format == "channels_last" and self.padding[-1] != [0, 0]):
+            logger.error("Channels should have no padding!")
+            sys.exit(-1)
+
+    def _verify_and_create_stride(self, stride: t_stride_shape, dimensions: int = 2) -> None:
+        """
+        Creates self.stride variable and verifies it
+        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
+        :return: None
+        """
+        if isinstance(stride, (tuple, list)):
+            self.stride = list(stride)
+            set_trace()
+            assert len(self.stride) in {1, dimensions, dimensions + 2}
+        elif isinstance(stride, int):
+            # TODO: This is probably unnecessary actually...
+            self.stride = [stride]
         else:
-            logger.error("stride: " + str(stride) + " format not supported. It must be an int or a tuple")
+            logger.error(f"stride: {stride} format not supported. It must be either int or list of ints that "
+                         f"has length 1, {dimensions} or {dimensions + 2}.")
             sys.exit(-1)
+        # Here I have self stride of sizes {1, dimensions, dimensions + 2} but I want dimensions + 2 (compulsory)
+        if len(self.stride) == 1:  # Move size 1 to size dimensions
+            self.stride = self.stride * dimensions
+        if len(self.stride) != dimensions + 2:  # Move size dimensions to dimensions +2
+            self.stride.insert(0, 1)  # Image stride is one
+            if self.data_format == "channels_last":  # Channel stride = 1
+                self.stride.append(1)
+            elif self.data_format == "channels_first":
+                self.stride.insert(1, 1)
+            print(self.stride)
+
+    def _calculate_shapes(self, kernel_shape: t_kernel_shape, padding: t_padding_shape, stride: t_stride_shape):
+        """
+        Sets the values of kernel_shape, padding, stride and output_size
+        """
+        self._verify_input_size()
+        self._verify_and_create_kernel_shape(kernel_shape)
+        self._verify_and_create_padding(padding)
+        self._verify_and_create_stride(stride)
+
         out_list = []
-        for i in range(len(self.input_size) - 1):   # -1 because the number of input channels is irrelevant
+        indx = 1 if self.data_format == "channels_last" else 2
+        for i, p, k, s in zip(self.input_size[indx - 1:], self.padding[indx:], self.kernel_shape[:2],
+                              self.stride[indx:]):
+            # self.kernel_shape will be size 2 and will truncate the zip.
             # 2.4 on https://arxiv.org/abs/1603.07285
-            out_list.append(int(np.floor(
-                (self.input_size[i] + 2 * self.padding_shape[i] - self.kernel_shape[i]) / self.stride_shape[i]
-            ) + 1))
-        out_list.append(self.filters)       # New channels are actually the filters
+            out_list.append(int(np.floor((i + 2 * p[0] - k) / s) + 1))
+        if self.data_format == "channels_last":  # New channels are actually the filters
+            out_list.append(self.filters)
+        elif self.data_format == "channels_first":
+            out_list.insert(0, self.filters)
         self.output_size = tuple(out_list)
+        assert len(self.output_size) == 3, f"Error! output shape should have been 3 but was " \
+                                           f"{len(self.output_size)} : {self.output_size}"
         return self.output_size
 
-    def _init_kernel(self, data_format):
-        self.kernels = []
-        if data_format == 'channels_last':
-            this_shape = self.kernel_shape + (self.input_size[-1],)
-        elif data_format == 'channels_first':
-            this_shape = (self.input_size[-1],) + self.kernel_shape
-        else:
-            logger.error("data_format not supported, should be either 'channels_last' (default) "
-                              "or 'channels_first', got " + str(data_format))
-            sys.exit(-1)
-        for f in range(self.filters):               # Kernels should be features*channels.
-            self.kernels.append(tf.Variable(self.weight_initializer(shape=this_shape, dtype=self.input_dtype),
-                                            name="kernel" + str(self.layer_number) + "_f" + str(f)))
-        self.bias = tf.Variable(self.bias_initializer(shape=self.filters, dtype=self.input_dtype),
-                                name="bias" + str(self.layer_number))
+    def _verify_input_size(self, dimension=2):
+        if isinstance(self.input_size, int):
+            self.input_size = (self.input_size,) * dimension
+        if len(self.input_size) != dimension + 1:
+            if len(self.input_size) == dimension:  # Assume channels where omitted (so they are added)
+                if self.data_format == "channels_last":  # And don't pad the channels neither!
+                    self.input_size = self.input_size + (1,)
+                elif self.data_format == "channels_first":
+                    self.input_size = (1,) + self.input_size
+            else:
+                form = "(channels, row, cols)" if self.data_format == "channels_first" else "(row, cols, channels)"
+                logger.error(
+                    f"input_size should be rank {dimension + 1} of the form {form} but received {self.input_size}")
+                sys.exit(-1)
 
     def _verify_inputs(self, inputs):
-        # TODO: DATA FORMAT!
-        # Expected inputs shape: (images, image_shape, channel (optional))
         inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
         if inputs.dtype != self.input_dtype:
             logger.warning("input dtype (" + str(inputs.dtype) + ") not what expected ("
-                                + str(self.input_dtype) + "). Attempting cast...")
+                           + str(self.input_dtype) + "). Attempting cast...")
             inputs = tf.dtypes.cast(inputs, self.input_dtype)
-        if len(inputs.shape) == len(self.input_size):   # No channel was given
-            # case with no channel
-            if self.input_size[-1] == 1:
-                inputs = tf.reshape(inputs, inputs.shape + (1,))    # Then I have only one channel, I add dimension
+        if len(inputs.shape) == len(self.input_size) - 1:  # Assume only one image and channels omitted
+            inputs = tf.reshape(inputs, (1,) + inputs.shape)
+        if len(inputs.shape) == len(self.input_size):  # Assume channels omitted
+            if self.data_format == "channels_last":
+                inputs = tf.reshape(inputs, inputs.shape + (1,))
+            elif self.data_format == "channels_first":
+                inputs = tf.reshape(inputs, (inputs.shape[0],) + (1,) + inputs.shape[1:])
             else:
-                logger.error("Expected shape " + self._get_expected_input_shape_description())
-                # TODO: Add received shape
+                logger.error(f"Unknown data_format {self.data_format}")
                 sys.exit(-1)
-        elif len(inputs.shape) != len(self.input_size) + 1:     # This is the other expected input.
-            logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
-                              "with the shape of (images, channels, vector size)")
-            sys.exit(-1)
-        if inputs.shape[1:] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
-            expected_shape = self._get_expected_input_shape_description()
-
-            received_shape = "(images=" + str(inputs.shape[0]) + ", "
-            received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
-            received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
-            logger.error("Unexpected image shape. Expecting image of shape " +
-                              expected_shape + " but received " + received_shape)
+        if inputs.shape[1:] != self.input_size:
+            logger.error(f"Expected shape {self.input_size}. Got {inputs.shape}")
             sys.exit(-1)
         return inputs
 
@@ -596,180 +621,75 @@ class Convolutional(ComplexLayer):
         :param inputs:
         :return:
         """
-        # TODO: DATA FORMAT!
-        with tf.name_scope("ComplexConvolution_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)            # Check inputs are of expected shape and format
-            inputs = self.apply_padding(inputs)             # Add zeros if needed
-            output_np = tf.Variable(tf.zeros(
-                (inputs.shape[0],) +                        # Per each image
-                self.output_size,                           # Image out size
-                dtype=self.input_dtype
-            ))
-            img_index = 0           # I do this ugly thing because https://stackoverflow.com/a/62467248/5931672
-            for image in inputs:    # Cannot use enumerate because https://github.com/tensorflow/tensorflow/issues/32546
-                for filter_index in range(self.filters):
-                    for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size[:-1])
-                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.kernel_shape)])
-                        sector_slice = tuple(
-                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                        )
-                        sector = image[sector_slice]
-                        # I use Tied Bias https://datascience.stackexchange.com/a/37748/75968
-                        new_value = tf.reduce_sum(sector * self.kernels[filter_index]) + self.bias[filter_index]
-                        indices = (img_index,) + index + (filter_index,)
-                        output_np = self._assign_value(output_np, indices, new_value)
-                img_index += 1
-
-            output = apply_activation(self.activation, output_np)
-        return output
-
-    def _assign_value(self, array, indices, value):
-        """
-        I did this function because of the difficutly on this simple step. I save all references.
-        Assigns value on a tensor as array[index] = value
-        Original version:
-        ```
-        indices = (img_index,) + index + (filter_index,)
-        output_np[indices] = new_value
-        ```
-        Options:
-        1. All in tensorflow. Issue:
-            *** TypeError: 'tensorflow.python.framework.ops.EagerTensor' object does not support item assignment
-            References:
-                Item alone (My case):
-                    https://github.com/tensorflow/tensorflow/issues/14132
-                1.1. Solution using tf.tensor_scatter_nd_update. It recreates matrix from scratch.
-                    https://stackoverflow.com/questions/55652981/tensorflow-2-0-how-to-update-tensors
-                    ```
-                    tf_new_value = tf.constant([new_value.numpy()], dtype=self.input_dtype)
-                    indices = tf.constant([list((img_index,) + index + (filter_index,))])
-                    output_np = tf.tensor_scatter_nd_update(output_np, indices, tf_new_value)
-                    ```
-                1.2. Solution using assign:
-                    https://stackoverflow.com/a/45184132/5931672
-                    ```
-                    indices = (img_index,) + index + (filter_index,)
-                    output_np = output_np[indices].assign(new_value)
-                    ```
-                1.3. Using tf.stack https://www.tensorflow.org/api_docs/python/tf/stack
-                    Not yet tested. Unsure on how to do it
-                    https://stackoverflow.com/a/37706972/5931672
-                b. Slices:
-                The github issue:
-                    https://github.com/tensorflow/tensorflow/issues/33131
-                    https://github.com/tensorflow/tensorflow/issues/40605
-                A workaround (Highly inefficient): Create new matrix using a mask (Memory inefficient isn't it?)
-                    THIS IS MY CURRENT SOLUTION!
-                    ```
-                    mask = tf.Variable(tf.fill(array.shape, 1))
-                    mask = mask[indices].assign(0)
-                    mask = tf.cast(mask, dtype=self.input_dtype)
-                    return array * mask + (1 - mask) * value
-                    ```
-                    https://github.com/tensorflow/tensorflow/issues/14132#issuecomment-483002522
-                    https://towardsdatascience.com/how-to-replace-values-by-index-in-a-tensor-with-tensorflow-2-0-510994fe6c5f
-                Misc:
-                    https://stackoverflow.com/questions/37697747/typeerror-tensor-object-does-not-support-item-assignment-in-tensorflow
-                    https://stackoverflow.com/questions/62092147/how-to-efficiently-assign-to-a-slice-of-a-tensor-in-tensorflow
-        1.1.1. Issue: Cannot use tf.function decorator
-            AttributeError: 'Tensor' object has no attribute 'numpy'
-            References:
-                Github issue:
-                    https://github.com/cvxgrp/cvxpylayers/issues/56
-                Why I need it:
-                    https://www.tensorflow.org/guide/function
-                Misc:
-                    https://stackoverflow.com/questions/52357542/attributeerror-tensor-object-has-no-attribute-numpy
-        1.1.2. Removing .numpy() method:
-            ValueError: Sliced assignment is only supported for variables
-        2. Using numpy.zeros: Issue:
-            NotImplementedError: Cannot convert a symbolic Tensor (placeholder_1:0) to a numpy array.
-            Github Issue:
-                https://github.com/tensorflow/tensorflow/issues/36792
-        0. Best option:
-            Do it without loops :O (Don't know how possible is this but it will be optimal)
-        """
-        mask = tf.Variable(tf.fill(array.shape, 1))
-        mask = mask[indices].assign(0)
-        mask = tf.cast(mask, dtype=self.input_dtype)
-        return array * mask + (1 - mask) * value
+        inputs = self._verify_inputs(inputs=inputs)
+        data_format = "NHWC" if self.data_format == "channels_last" else "NCHW"
+        inputs_r = tf.math.real(inputs)
+        inputs_i = tf.math.imag(inputs)
+        kernel_r = tf.math.real(self.kernels)
+        kernel_i = tf.math.imag(self.kernels)
+        real_res = tf.nn.conv2d(inputs_r, kernel_r,
+                                strides=self.stride, padding=self.padding,
+                                data_format=data_format, dilations=self.dilatation
+                                ) - tf.nn.conv2d(inputs_i, kernel_i,
+                                                 strides=self.stride, padding=self.padding,
+                                                 data_format=data_format, dilations=self.dilatation
+                                                 )
+        imag_res = tf.nn.conv2d(inputs_r, kernel_i,
+                                strides=self.stride, padding=self.padding,
+                                data_format=data_format, dilations=self.dilatation
+                                ) + tf.nn.conv2d(inputs_i, kernel_r,
+                                                 strides=self.stride, padding=self.padding,
+                                                 data_format=data_format, dilations=self.dilatation
+                                                 )
+        if self.input_dtype in COMPLEX:
+            res = tf.complex(real_res, imag_res) + self.bias
+        elif self.input_dtype in REAL:
+            res = real_res + self.bias
+        else:
+            logger.error(f"self.input_dtype ({self.input_dtype}) not supported")
+            sys.exit(-1)
+        y_out = apply_activation(self.activation, res)
+        if self.dropout:
+            drop_filter = tf.nn.dropout(tf.ones(y_out.shape), rate=self.dropout)
+            y_out_real = tf.multiply(drop_filter, tf.math.real(y_out))
+            y_out_imag = tf.multiply(drop_filter, tf.math.imag(y_out))
+            y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=y_out.dtype)
+        return y_out
 
     def apply_padding(self, inputs):
-        pad = [[0, 0]]                  # No padding to the images itself
+        pad = [[0, 0]]  # No padding to the images itself
         for p in self.padding_shape:
-            pad.append([p, p])          # This method add same pad to beginning and end
-        pad.append([0, 0])              # No padding to the channel
+            pad.append([p, p])  # This method add same pad to beginning and end
+        pad.append([0, 0])  # No padding to the channel
         return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
 
     def _save_tensorboard_weight(self, weight_summary, step):
-        return None     # TODO
+        return None  # TODO
 
     def get_description(self):
         fun_name = get_func_name(self.activation)
-        out_str = "Complex Convolutional layer:\n\tinput size = " + self._get_expected_input_shape_description() + \
+        out_str = "Complex Convolutional layer:\n\tinput size = " + str(self.input_size) + \
                   "(" + str(self.input_dtype) + \
-                  ") -> output size = " + self.get_output_shape_description() + \
+                  ") -> output size = " + str(self.output_size) + \
                   "\n\tkernel shape = (" + "x".join([str(x) for x in self.kernel_shape]) + ")" + \
-                  "\n\tstride shape = (" + "x".join([str(x) for x in self.stride_shape]) + ")" + \
-                  "\n\tzero padding shape = (" + "x".join([str(x) for x in self.padding_shape]) + ")" + \
+                  "\n\tstride shape = (" + "x".join([str(x) for x in self.stride]) + ")" + \
+                  "\n\tzero padding shape = (" + "x".join([str(x) for x in self.padding]) + ")" + \
                   ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
                   + self.weight_initializer.__name__ + "; bias init = " + self.bias_initializer.__name__ + "\n"
         return out_str
 
-    def _get_expected_input_shape_description(self) -> str:
-        expected_shape = "(images, "
-        expected_shape += "x".join([str(x) for x in self.input_size[:-1]])
-        expected_shape += ", channels=" + str(self.input_size[-1]) + ")\n"
-        return expected_shape
-
-    def get_output_shape_description(self) -> str:
-        expected_out_shape = "(None, "
-        expected_out_shape += "x".join([str(x) for x in self.output_size[:-1]])
-        expected_out_shape += ", " + str(self.output_size[-1]) + ")"
-        return expected_out_shape
-
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return Convolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
-                             padding=self.padding_shape, stride=self.stride_shape, input_dtype=self.input_dtype)
+        return ComplexConv2D(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+                             padding=self.padding_shape, strides=self.stride_shape, input_dtype=self.input_dtype)
 
     def get_real_equivalent(self):
-        return Convolutional(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
-                             padding=self.padding_shape, stride=self.stride_shape, input_dtype=np.float32)
+        return ComplexConv2D(filters=self.filters, kernel_shape=self.kernel_shape, input_shape=self.input_size,
+                             padding=self.padding_shape, strides=self.stride_shape, input_dtype=np.float32)
 
     def trainable_variables(self):
-        return self.kernels + [self.bias]
-
-
-class FFTConvolutional2D(Convolutional):
-    def __init__(self, filters: int, kernel_shape: t_kernel_shape,
-                 input_shape: Optional[t_input_shape] = None, padding: t_padding_shape = "same",
-                 stride: t_kernel_shape = 1, input_dtype: Optional[t_Dtype] = None,
-                 activation=None,  # TODO: Check type
-                 weight_initializer: RandomInitializer = initializers.GlorotUniform(),
-                 bias_initializer: RandomInitializer = initializers.Zeros()
-                 # dilatation_rate=(1, 1)   # TODO: Interesting to add
-                 ):
-        # TODO: Assert input_size is for 2D cases
-        if padding.lower() != "same":
-            logger.warning("Only same padding mode supported, changing it.")
-            padding = "same"
-        super(FFTConvolutional2D, self).__init__(filters, kernel_shape, input_shape, padding, stride, input_dtype,
-                                                 activation, weight_initializer, bias_initializer,
-                                                 data_format='channels_first')    # Force this mode because of fft
-        self.full_size = [x[0] + x[1] - x[2] for x in zip(self.kernel_shape, self.input_size[:-1],
-                                                          tf.ones(len(kernel_shape)).numpy())]
-        k_pads = tf.constant([[0, x[0] - x[1]] for x in zip(self.full_size, self.kernel_shape)])
-        self.inputs_pads = [[0, x[0] - x[1]] for x in zip(self.full_size, self.input_size[:-1])]
-        self.freq_kernels = []
-        set_trace()
-        for k in self.kernels:
-            k_pad = tf.pad(k, tf.constant(k_pads))
-            self.freq_kernels.append(tf.signal.fft2d(k_pad))
-        set_trace()
+        return [self.kernels, self.bias]
 
 
 class Pooling(ComplexLayer, ABC):
@@ -818,7 +738,7 @@ class Pooling(ComplexLayer, ABC):
         return self.output_size
 
     def get_real_equivalent(self):
-        return self.__deepcopy__()      # Pooling layer is dtype agnostic
+        return self.__deepcopy__()  # Pooling layer is dtype agnostic
 
     def _save_tensorboard_weight(self, weight_summary, step):
         return None
@@ -828,17 +748,17 @@ class Pooling(ComplexLayer, ABC):
         pass
 
     def _verify_inputs(self, inputs):
-        inputs = tf.convert_to_tensor(inputs)   # This checks all images are same size! Nice
-        if len(inputs.shape) == len(self.input_size):   # No channel was given
+        inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
+        if len(inputs.shape) == len(self.input_size):  # No channel was given
             # case with no channel
             if self.input_size[-1] != 1:
                 logger.warning("Channel not given and should not be 1")
             inputs = tf.reshape(inputs, inputs.shape + (1,))  # Then I have only one channel, I add dimension
-        elif len(inputs.shape) != len(self.input_size) + 1:     # This is the other expected input.
+        elif len(inputs.shape) != len(self.input_size) + 1:  # This is the other expected input.
             logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
-                              "with the shape of (images, channels, vector size)")
+                         "with the shape of (images, channels, vector size)")
             sys.exit(-1)
-        if inputs.shape[1:] != self.input_size:   # Remove # of images (index 0) and remove channels (index -1)
+        if inputs.shape[1:] != self.input_size:  # Remove # of images (index 0) and remove channels (index -1)
             if inputs.shape[1:-1] != self.input_size[:-1]:
                 expected_shape = self._get_expected_input_shape_description()
 
@@ -846,11 +766,11 @@ class Pooling(ComplexLayer, ABC):
                 received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
                 received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
                 logger.error("Unexpected image shape. Expecting image of shape " +
-                                  expected_shape + " but received " + received_shape)
+                             expected_shape + " but received " + received_shape)
                 sys.exit(-1)
             else:
                 logger.warning("Received channels " + str(inputs.shape[-1]) +
-                                    " not coincident with the expected input (" + str(self.input_size[-1]) + ")")
+                               " not coincident with the expected input (" + str(self.input_size[-1]) + ")")
         return inputs
 
     def _get_expected_input_shape_description(self) -> str:
@@ -866,7 +786,7 @@ class Pooling(ComplexLayer, ABC):
             for i in range(len(inputs.shape) - 2):
                 # 2.4 on https://arxiv.org/abs/1603.07285
                 out_list.append(int(np.floor(
-                    (inputs.shape[i+1] - self.pool_size[i]) / self.stride_shape[i]
+                    (inputs.shape[i + 1] - self.pool_size[i]) / self.stride_shape[i]
                 ) + 1))
             out_list.append(inputs.shape[-1])
             self.output_size = tuple(out_list)
@@ -876,17 +796,17 @@ class Pooling(ComplexLayer, ABC):
             # inputs = self.apply_padding(inputs) Pooling has no padding
             # set_trace()
             output = np.zeros(
-                (inputs.shape[0],) +                        # Per each image
-                self.output_size,                           # Image out size
+                (inputs.shape[0],) +  # Per each image
+                self.output_size,  # Image out size
                 dtype=inputs.numpy().dtype
             )
             for img_index, image in enumerate(inputs):
                 for channel_index in range(image.shape[-1]):
-                    img_channel = image[..., channel_index]     # Get each channel
+                    img_channel = image[..., channel_index]  # Get each channel
                     for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
                         index = np.unravel_index(i, self.output_size[:-1])
                         start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a+b for a, b in zip(start_index, self.pool_size)])
+                        end_index = tuple([a + b for a, b in zip(start_index, self.pool_size)])
                         sector_slice = tuple(
                             [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
                         )
@@ -907,7 +827,7 @@ class Pooling(ComplexLayer, ABC):
 class AvgPooling(Pooling):
 
     def _pooling_function(self, sector):
-        return np.sum(sector)/np.prod(self.pool_size)
+        return np.sum(sector) / np.prod(self.pool_size)
 
     def __deepcopy__(self, memodict={}):
         if memodict is None:
@@ -915,7 +835,8 @@ class AvgPooling(Pooling):
         return AvgPooling(pool_size=self.pool_size, strides=self.stride_shape)
 
     def get_description(self):
-        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
+        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size,
+                                                                                         self.stride_shape)
         return out_str
 
 
@@ -933,7 +854,8 @@ class MaxPooling(Pooling):
         return MaxPooling(pool_size=self.pool_size, strides=self.stride_shape)
 
     def get_description(self):
-        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size, self.stride_shape)
+        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size,
+                                                                                         self.stride_shape)
         return out_str
 
 
@@ -947,10 +869,8 @@ if __name__ == "__main__":
         [10, 10, 10, 0, 0, 0]
     ]).astype(np.float32)
 
-    shape = [
-        FFTTransform(input_size=img2.shape, input_dtype=img2.dtype, padding=2)
-    ]
-
+    conv = ComplexConv2D(filters=5, kernel_shape=3, input_shape=img2.shape, input_dtype=np.float32)
+    print(conv.call(img2))
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
