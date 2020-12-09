@@ -24,6 +24,7 @@ SUPPORTED_DTYPES = REAL + COMPLEX  # , np.complex128, np.float64) Gradients retu
 layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
+t_kernel_shape = t_input_shape
 t_kernel_2_shape = Union[int, Tuple[int, int], Tuple[int, int, int, int], List[int]]
 t_stride_shape = t_input_shape
 t_padding_shape = Union[str, t_input_shape]
@@ -218,10 +219,11 @@ class ComplexDense(ComplexLayer):
     - bias is a bias vector created by the layer
     """
 
-    def __init__(self, output_size, input_size=None, activation=None, input_dtype=None,
+    def __init__(self, output_size, input_size=None, 
+                 activation: Optional[t_activation] = None, input_dtype: Optional[t_Dtype] = None,
                  weight_initializer: Optional[RandomInitializer] = None,
                  bias_initializer: Optional[RandomInitializer] = None,
-                 dropout=None):
+                 dropout: Optional[float] = None):
         """
         Initializer of the Dense layer
         :param output_size: Output size of the layer
@@ -393,69 +395,13 @@ class Dropout(ComplexLayer):
     def trainable_variables(self):
         return []
 
+class ComplexConvolution(ComplexLayer):
 
-class ComplexConv2D(ComplexLayer):
-    # http://datahacker.rs/convolution-rgb-image/   For RGB images
-    # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
-
-    def __init__(self, filters: int, kernel_size: t_kernel_2_shape,
-                 input_shape: Optional[t_input_shape] = None,
-                 padding: t_padding_shape = "valid", data_format: str = 'channels_last', dilatation_rate=(1, 1),
-                 strides: t_kernel_2_shape = 1,
-                 activation: Optional[t_activation] = None, dropout: Optional[float] = None,
-                 weight_initializer: RandomInitializer = initializers.GlorotUniform(),
-                 bias_initializer: RandomInitializer = initializers.Zeros(),
-                 input_dtype: Optional[t_Dtype] = None
-                 ):
-        """
-        :param filters: Integer, the dimensionality of the output space
-            (i.e. the number of output filters in the convolution).
-        :param kernel_size: An integer or tuple/list of 2 or 4 integers,
-            specifying the height and width of the 2D convolution window.
-            Can be a single integer to specify the same value for all spatial dimensions.
-        :param input_shape: An integer or tuple/list of integers of the input tensor shape.
-        :param padding: One of the following:
-            - Integer: zero's to be added at the bottom, top, right and left of the image (same for every dimension)
-            - List or Tuple of the form: 
-                - [[pad_top, pad_bottom], [pad_left, pad_right]]
-                - [[0, 0], [pad_top, pad_bottom], [pad_left, pad_right], [0, 0]] for data_format = channels_last (default)
-                - [[0, 0], [0, 0], [pad_top, pad_bottom], [pad_left, pad_right]] for data_format = channels_first
-            - string (case in-sensitive):
-                - "same":  output size is the same as input size (for an odd kernel size)
-                - "valid": no padding applied
-                - "full":  output size bigger than input size (for unit stride)
-        :param data_format: A string, one of channels_last (default) or channels_first.
-            The ordering of the dimensions in the inputs.
-            channels_last corresponds to inputs with shape (batch_size, ..., channels) while channels_first corresponds
-            to inputs with shape (batch_size, channels, ...)
-        :param dilatation_rate: An int or list of ints that has length 1, 2 or 4, defaults to 1. 
-            The dilation factor for each dimension of input. 
-            If a single value is given it is replicated in the H and W dimension. 
-            By default the N and C dimensions are set to 1. If set to k > 1, 
-            there will be k-1 skipped cells between each filter element on that dimension. 
-            The dimension order is determined by the value of data_format, see above for details. 
-            Dilations in the batch and depth dimensions if a 4-d tensor must be 1.
-        :param activation: Activation function to be used.
-            Can be either the function from cvnn.activation or tensorflow.python.keras.activations
-            or a string as listed in act_dispatcher
-        :param input_dtype: data type of the input. Default: np.complex64
-            Supported data types:
-                - np.complex64
-                - np.float32
-        :param weight_initializer: Initializer for the weights.
-            Default: cvnn.initializers.GlorotUniform
-        :param bias_initializer: Initializer fot the bias.
-            Default: cvnn.initializers.Zeros
-        :param dropout: Either None (default) and no dropout will be applied or a scalar
-            that will be the probability that each element is dropped.
-            Example: setting rate=0.1 would drop 10% of input elements.
-        """
-        self.filters = filters
-        self.dropout = dropout
-        self.dilatation = dilatation_rate
-        if activation is None:
-            activation = 'linear'
-        self.activation = activation
+    def __init__(self, filter_shape: t_kernel_shape, input_shape: Optional[t_input_shape] = None,
+                 padding: t_padding_shape = "valid", data_format: str = 'channels_last',
+                 strides: t_stride_shape = 1, input_dtype: Optional[t_Dtype] = None,
+                 dimensions: int = 2):
+        self.dimensions = int(dimensions)
         self.data_format = data_format.lower()
         assert self.data_format in DATA_FORMAT, f"data_format = {self.data_format} unknown"
         if input_shape is None:
@@ -465,54 +411,16 @@ class ComplexConv2D(ComplexLayer):
         else:
             logger.error(f"Input shape: {input_shape} format not supported. It must be an int or a tuple")
             sys.exit(-1)
-        if weight_initializer is None:
-            weight_initializer = initializers.GlorotUniform()
-        self.weight_initializer = weight_initializer
-        if bias_initializer is None:
-            bias_initializer = initializers.Zeros()
-        self.bias_initializer = bias_initializer
-        super(ComplexConv2D, self).__init__(self._calculate_shapes, self.input_size, input_dtype,
-                                            kernel_size, padding, strides)
-        # Test if the activation function changes datatype or not...
-        self.__class__.__bases__[0].last_layer_output_dtype = \
-            np.dtype(apply_activation(self.activation,
-                                      tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
-                                      ).numpy().dtype)
-        self.kernels = tf.Variable(self.weight_initializer(shape=self.kernel_shape, dtype=self.input_dtype),
-                                   name="kernel" + str(self.layer_number))
-        self.bias = tf.Variable(self.bias_initializer(shape=self.output_size, dtype=self.input_dtype),
-                                name="bias" + str(self.layer_number))
+        super(ComplexConvolution, self).__init__(self._calculate_shapes, self.input_size, input_dtype,
+                                                 filter_shape, padding, strides)
 
-    def _verify_and_create_kernel_shape(self, kernel_shape: t_kernel_2_shape, dimensions: int = 2) -> None:
-        """
-        Verifies Kernel shape and creates self.kernel_shape variable
-        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
-        :return: None
-        """
-        channels = self.input_size[0] if self.data_format == "channels_first" else self.input_size[-1]
-        if isinstance(kernel_shape, int):
-            self.kernel_shape = [kernel_shape] * dimensions + [channels] + [self.filters]
-        elif isinstance(kernel_shape, (tuple, list)):
-            self.kernel_shape = list(kernel_shape)
-            if len(self.kernel_shape) == dimensions:
-                # Assume only height and width was given, in and out channels are calculated automatically
-                self.kernel_shape = self.kernel_shape + [channels] + [self.filters]
-            elif len(self.kernel_shape) == dimensions + 1:
-                # Assume only height, width and in_channels was given, out channels is calculated automatically
-                self.kernel_shape = self.kernel_shape + [self.filters]
-        else:
-            logger.error(f"Kernel shape: {kernel_shape} format not supported. It must be an int or a tuple. "
-                         f"Received {kernel_shape}")
-            sys.exit(-1)
-        assert len(self.kernel_shape) == dimensions + 2, f"Kernel must be a {dimensions + 2}-D tensor of shape " \
-                                                         f"[filter_height, filter_width, in_channels, out_channels] " \
-                                                         f"but it had size {len(self.kernel_shape)}."
-        if not np.all(np.asarray(self.kernel_shape) >= 1):
-            logger.error(f"Kernel shape must have all values bigger than 1: {self.kernel_shape}.")
-            sys.exit(-1)
-        if not np.all(np.asarray(self.kernel_shape) == np.asarray(self.kernel_shape).astype(int)):
-            logger.error(f"Kernel shape must have all integer values: {self.kernel_shape}.")
-            sys.exit(-1)
+    @abstractmethod
+    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape, dimensions: int = 2):
+        pass
+
+    @abstractmethod
+    def _calculate_output_shape(self):
+        pass
 
     def _verify_and_create_padding(self, padding: t_padding_shape, dimensions: int = 2) -> None:
         """
@@ -534,10 +442,10 @@ class ComplexConv2D(ComplexLayer):
                 if padding == "valid":
                     self.padding = [[0, 0]] * (len(self.input_size) + 1)
                 elif padding == "same":
-                    pads = [np.floor(k / 2) for k in self.kernel_shape[:2]]
+                    pads = [np.floor(k / 2) for k in self.filter_shape[:2]]
                     self.padding = [[p, p] for p in pads]
                 elif padding == "full":
-                    pads = [k - 1 for k in self.kernel_shape[:2]]
+                    pads = [k - 1 for k in self.filter_shape[:2]]
                     self.padding = [[p, p] for p in pads]
                 else:
                     logger.error(f"Unknown padding {self.padding} but listed in PADDING_MODES!")
@@ -594,30 +502,16 @@ class ComplexConv2D(ComplexLayer):
                 self.stride.insert(1, 1)
             print(self.stride)
 
-    def _calculate_shapes(self, kernel_shape: t_kernel_2_shape, padding: t_padding_shape, stride: t_stride_shape):
+    def _calculate_shapes(self, filter_shape: t_kernel_shape, padding: t_padding_shape, stride: t_stride_shape):
         """
-        Sets the values of kernel_shape, padding, stride and output_size
+        Sets the values of filter_shape, padding, stride and output_size
         """
         self._verify_input_size()
-        self._verify_and_create_kernel_shape(kernel_shape)
+        self._verifiy_and_create_filter(filter_shape)
         self._verify_and_create_padding(padding)
         self._verify_and_create_stride(stride)
 
-        out_list = []
-        indx = 1 if self.data_format == "channels_last" else 2
-        for i, p, k, s in zip(self.input_size[indx - 1:], self.padding[indx:], self.kernel_shape[:2],
-                              self.stride[indx:]):
-            # self.kernel_shape will be size 2 and will truncate the zip.
-            # 2.4 on https://arxiv.org/abs/1603.07285
-            out_list.append(int(np.floor((i + 2 * p[0] - k) / s) + 1))
-        if self.data_format == "channels_last":  # New channels are actually the filters
-            out_list.append(self.filters)
-        elif self.data_format == "channels_first":
-            out_list.insert(0, self.filters)
-        self.output_size = tuple(out_list)
-        assert len(self.output_size) == 3, f"Error! output shape should have been 3 but was " \
-                                           f"{len(self.output_size)} : {self.output_size}"
-        return self.output_size
+        return self._calculate_output_shape()
 
     def _verify_input_size(self, dimension=2):
         if isinstance(self.input_size, int):
@@ -633,7 +527,121 @@ class ComplexConv2D(ComplexLayer):
                 logger.error(
                     f"input_size should be rank {dimension + 1} of the form {form} but received {self.input_size}")
                 sys.exit(-1)
+    
 
+
+class ComplexConv2D(ComplexConvolution):
+    # http://datahacker.rs/convolution-rgb-image/   For RGB images
+    # https://towardsdatascience.com/a-beginners-guide-to-convolutional-neural-networks-cnns-14649dbddce8
+
+    def __init__(self, filters: int, kernel_size: t_kernel_2_shape,
+                 input_shape: Optional[t_input_shape] = None,
+                 padding: t_padding_shape = "valid", data_format: str = 'channels_last', dilatation_rate=(1, 1),
+                 strides: t_kernel_2_shape = 1,
+                 activation: Optional[t_activation] = None, dropout: Optional[float] = None,
+                 weight_initializer: Optional[RandomInitializer] = initializers.GlorotUniform(),
+                 bias_initializer: Optional[RandomInitializer] = initializers.Zeros(),
+                 input_dtype: Optional[t_Dtype] = None
+                 ):
+        """
+        :param filters: Integer, the dimensionality of the output space
+            (i.e. the number of output filters in the convolution).
+        :param kernel_size: An integer or tuple/list of 2 or 4 integers,
+            specifying the height and width of the 2D convolution window.
+            Can be a single integer to specify the same value for all spatial dimensions.
+        :param input_shape: An integer or tuple/list of integers of the input tensor shape.
+        :param padding: One of the following:
+            - Integer: zero's to be added at the bottom, top, right and left of the image (same for every dimension)
+            - List or Tuple of the form: 
+                - [[pad_top, pad_bottom], [pad_left, pad_right]]
+                - [[0, 0], [pad_top, pad_bottom], [pad_left, pad_right], [0, 0]] for data_format = channels_last (default)
+                - [[0, 0], [0, 0], [pad_top, pad_bottom], [pad_left, pad_right]] for data_format = channels_first
+            - string (case in-sensitive):
+                - "same":  output size is the same as input size (for an odd kernel size)
+                - "valid": no padding applied
+                - "full":  output size bigger than input size (for unit stride)
+        :param data_format: A string, one of channels_last (default) or channels_first.
+            The ordering of the dimensions in the inputs.
+            channels_last corresponds to inputs with shape (batch_size, ..., channels) while channels_first corresponds
+            to inputs with shape (batch_size, channels, ...)
+        :param dilatation_rate: An int or list of ints that has length 1, 2 or 4, defaults to 1. 
+            The dilation factor for each dimension of input. 
+            If a single value is given it is replicated in the H and W dimension. 
+            By default the N and C dimensions are set to 1. If set to k > 1, 
+            there will be k-1 skipped cells between each filter element on that dimension. 
+            The dimension order is determined by the value of data_format, see above for details. 
+            Dilations in the batch and depth dimensions if a 4-d tensor must be 1.
+        :param activation: Activation function to be used.
+            Can be either the function from cvnn.activation or tensorflow.python.keras.activations
+            or a string as listed in act_dispatcher
+        :param input_dtype: data type of the input. Default: np.complex64
+            Supported data types:
+                - np.complex64
+                - np.float32
+        :param weight_initializer: Initializer for the weights.
+            Default: cvnn.initializers.GlorotUniform
+        :param bias_initializer: Initializer fot the bias.
+            Default: cvnn.initializers.Zeros
+        :param dropout: Either None (default) and no dropout will be applied or a scalar
+            that will be the probability that each element is dropped.
+            Example: setting rate=0.1 would drop 10% of input elements.
+        """
+        self.filters = filters
+        self.dropout = dropout
+        self.dilatation = dilatation_rate
+        if activation is None:
+            activation = 'linear'
+        self.activation = activation
+        if weight_initializer is None:
+            weight_initializer = initializers.GlorotUniform()
+        self.weight_initializer = weight_initializer
+        if bias_initializer is None:
+            bias_initializer = initializers.Zeros()
+        self.bias_initializer = bias_initializer
+        super(ComplexConv2D, self).__init__(filter_shape=kernel_size, input_shape=input_shape, padding=padding, 
+                                            data_format=data_format, strides=strides, input_dtype=input_dtype,
+                                            )
+        # Test if the activation function changes datatype or not...
+        self.__class__.__bases__[0].last_layer_output_dtype = \
+            np.dtype(apply_activation(self.activation,
+                                      tf.cast(tf.complex([[1., 1.], [1., 1.]], [[1., 1.], [1., 1.]]), self.input_dtype)
+                                      ).numpy().dtype)
+        self.kernels = tf.Variable(self.weight_initializer(shape=self.kernel_size, dtype=self.input_dtype),
+                                   name="kernel" + str(self.layer_number))
+        self.bias = tf.Variable(self.bias_initializer(shape=self.output_size, dtype=self.input_dtype),
+                                name="bias" + str(self.layer_number))
+
+    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape, dimensions: int = 2):
+        """
+        Verifies Kernel shape and creates self.filter_shape variable
+        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
+        :return: None
+        """
+        channels = self.input_size[0] if self.data_format == "channels_first" else self.input_size[-1]
+        if isinstance(filter_shape, int):
+            self.kernel_size = [filter_shape] * dimensions + [channels] + [self.filters]
+        elif isinstance(filter_shape, (tuple, list)):
+            self.kernel_size = list(filter_shape)
+            if len(self.kernel_size) == dimensions:
+                # Assume only height and width was given, in and out channels are calculated automatically
+                self.kernel_size = self.kernel_size + [channels] + [self.filters]
+            elif len(self.kernel_size) == dimensions + 1:
+                # Assume only height, width and in_channels was given, out channels is calculated automatically
+                self.kernel_size = self.kernel_size + [self.filters]
+        else:
+            logger.error(f"Kernel shape: {filter_shape} format not supported. It must be an int or a tuple. "
+                         f"Received {filter_shape}")
+            sys.exit(-1)
+        assert len(self.kernel_size) == dimensions + 2, f"Kernel must be a {dimensions + 2}-D tensor of shape " \
+                                                         f"[filter_height, filter_width, in_channels, out_channels] " \
+                                                         f"but it had size {len(self.kernel_size)}."
+        if not np.all(np.asarray(self.kernel_size) >= 1):
+            logger.error(f"Kernel shape must have all values bigger than 1: {self.kernel_size}.")
+            sys.exit(-1)
+        if not np.all(np.asarray(self.kernel_size) == np.asarray(self.kernel_size).astype(int)):
+            logger.error(f"Kernel shape must have all integer values: {self.kernel_size}.")
+            sys.exit(-1)
+    
     def _verify_inputs(self, inputs):
         inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
         if inputs.dtype != self.input_dtype:
@@ -654,6 +662,23 @@ class ComplexConv2D(ComplexLayer):
             logger.error(f"Expected shape {self.input_size}. Got {inputs.shape}")
             sys.exit(-1)
         return inputs
+
+    def _calculate_output_shape(self):
+        out_list = []
+        indx = 1 if self.data_format == "channels_last" else 2
+        for i, p, k, s in zip(self.input_size[indx - 1:], self.padding[indx:], self.kernel_size[:2],
+                              self.stride[indx:]):
+            # self.kernel_size will be size 2 and will truncate the zip.
+            # 2.4 on https://arxiv.org/abs/1603.07285
+            out_list.append(int(np.floor((i + 2 * p[0] - k) / s) + 1))
+        if self.data_format == "channels_last":  # New channels are actually the filters
+            out_list.append(self.filters)
+        elif self.data_format == "channels_first":
+            out_list.insert(0, self.filters)
+        self.output_size = tuple(out_list)
+        assert len(self.output_size) == 3, f"Error! output shape should have been 3 but was " \
+                                           f"{len(self.output_size)} : {self.output_size}"
+        return self.output_size
 
     def call(self, inputs):
         """
@@ -710,7 +735,7 @@ class ComplexConv2D(ComplexLayer):
         out_str = "Complex Convolutional layer:\n\tinput size = " + str(self.input_size) + \
                   "(" + str(self.input_dtype) + \
                   ") -> output size = " + str(self.output_size) + \
-                  "\n\tkernel shape = (" + "x".join([str(x) for x in self.kernel_shape]) + ")" + \
+                  "\n\tkernel shape = (" + "x".join([str(x) for x in self.filter_shape]) + ")" + \
                   "\n\tstride shape = (" + "x".join([str(x) for x in self.stride]) + ")" + \
                   "\n\tzero padding shape = (" + "x".join([str(x) for x in self.padding]) + ")" + \
                   ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
@@ -720,182 +745,15 @@ class ComplexConv2D(ComplexLayer):
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return ComplexConv2D(filters=self.filters, kernel_size=self.kernel_shape, input_shape=self.input_size,
+        return ComplexConv2D(filters=self.filters, kernel_size=self.filter_shape, input_shape=self.input_size,
                              padding=self.padding_shape, strides=self.stride_shape, input_dtype=self.input_dtype)
 
     def get_real_equivalent(self):
-        return ComplexConv2D(filters=self.filters, kernel_size=self.kernel_shape, input_shape=self.input_size,
+        return ComplexConv2D(filters=self.filters, kernel_size=self.filter_shape, input_shape=self.input_size,
                              padding=self.padding_shape, strides=self.stride_shape, input_dtype=np.float32)
 
     def trainable_variables(self):
         return [self.kernels, self.bias]
-
-
-class Pooling(ComplexLayer, ABC):
-
-    def __init__(self, pool_size: t_kernel_2_shape = (2, 2), strides: Optional[t_kernel_2_shape] = None):
-        """
-        Downsamples the input representation by taking the maximum value over the window defined by pool_size for each
-        dimension along the features axis. The window is shifted by strides in each dimension.
-        :param pool_size: Integer or tuple of integers with the size for each dimension.
-            If only one integer is specified, the same window length will be used for all dimensions and the N
-                dimension will be given by the output size of the last ComplexLayer instantiated.
-            Default: (2, 2) Meaning it's a 2D Max pool getting the max for sectors of 2x2.
-        :param strides: Integer, tuple of integers, or None. Strides values.
-            Specifies how far the pooling window moves for each pooling step.
-            If None (default), it will default to pool_size.
-        """
-        input_dtype = None
-        """if self.__class__.mro()[2].last_layer_output_dtype is None:
-            input_dtype = np.complex64      # Randomly choose one"""
-        super().__init__(lambda: self._set_output_size(pool_size, strides),
-                         input_size=None, input_dtype=input_dtype)
-        # set_trace()
-        # self.__class__.mro()[2].last_layer_output_dtype = None
-
-    def _set_output_size(self, pool_size, strides):
-        # Pooling size
-        if isinstance(pool_size, int):
-            self.pool_size = (pool_size,) * len(self.input_size[:-1])
-            # I call super first in the case input_shape is none
-        elif isinstance(pool_size, (tuple, list)):
-            self.pool_size = tuple(pool_size)
-        else:
-            logger.error("Padding: " + str(pool_size) + " format not supported. It must be an int or a tuple")
-            sys.exit(-1)
-        self.stride_shape = strides
-        if self.stride_shape is None:
-            self.stride_shape = pool_size
-        out_list = []
-        for i in range(len(self.input_size[:-1])):
-            # 2.4 on https://arxiv.org/abs/1603.07285
-            out_list.append(int(np.floor(
-                (self.input_size[i] - self.pool_size[i]) / self.stride_shape[i]
-            ) + 1))
-        out_list.append(self.input_size[-1])
-        self.output_size = tuple(out_list)
-        return self.output_size
-
-    def get_real_equivalent(self):
-        return self.__deepcopy__()  # Pooling layer is dtype agnostic
-
-    def _save_tensorboard_weight(self, weight_summary, step):
-        return None
-
-    @abstractmethod
-    def _pooling_function(self, sector):
-        pass
-
-    def _verify_inputs(self, inputs):
-        inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
-        if len(inputs.shape) == len(self.input_size):  # No channel was given
-            # case with no channel
-            if self.input_size[-1] != 1:
-                logger.warning("Channel not given and should not be 1")
-            inputs = tf.reshape(inputs, inputs.shape + (1,))  # Then I have only one channel, I add dimension
-        elif len(inputs.shape) != len(self.input_size) + 1:  # This is the other expected input.
-            logger.error("inputs.shape should at least be of size 3 (case of 1D inputs) "
-                         "with the shape of (images, channels, vector size)")
-            sys.exit(-1)
-        if inputs.shape[1:] != self.input_size:  # Remove # of images (index 0) and remove channels (index -1)
-            if inputs.shape[1:-1] != self.input_size[:-1]:
-                expected_shape = self._get_expected_input_shape_description()
-
-                received_shape = "(images=" + str(inputs.shape[0]) + ", "
-                received_shape += "x".join([str(x) for x in inputs.shape[1:-1]])
-                received_shape += ", channels=" + str(inputs.shape[-1]) + ")"
-                logger.error("Unexpected image shape. Expecting image of shape " +
-                             expected_shape + " but received " + received_shape)
-                sys.exit(-1)
-            else:
-                logger.warning("Received channels " + str(inputs.shape[-1]) +
-                               " not coincident with the expected input (" + str(self.input_size[-1]) + ")")
-        return inputs
-
-    def _get_expected_input_shape_description(self) -> str:
-        expected_shape = "(images, "
-        expected_shape += "x".join([str(x) for x in self.input_size[:-1]])
-        expected_shape += ", channels=" + str(self.input_size[-1]) + ")\n"
-        return expected_shape
-
-    def call(self, inputs):
-        with tf.name_scope("ComplexAvgPooling_" + str(self.layer_number)) as scope:
-            inputs = self._verify_inputs(inputs)
-            out_list = []
-            for i in range(len(inputs.shape) - 2):
-                # 2.4 on https://arxiv.org/abs/1603.07285
-                out_list.append(int(np.floor(
-                    (inputs.shape[i + 1] - self.pool_size[i]) / self.stride_shape[i]
-                ) + 1))
-            out_list.append(inputs.shape[-1])
-            self.output_size = tuple(out_list)
-            if not len(inputs.shape) > 2:
-                logger.error("Unexpected shape of inputs. Received shape " + str(inputs.shape) +
-                             ". Expecting shape (images, ... input shape ..., channels)")
-            # inputs = self.apply_padding(inputs) Pooling has no padding
-            # set_trace()
-            output = np.zeros(
-                (inputs.shape[0],) +  # Per each image
-                self.output_size,  # Image out size
-                dtype=inputs.numpy().dtype
-            )
-            for img_index, image in enumerate(inputs):
-                for channel_index in range(image.shape[-1]):
-                    img_channel = image[..., channel_index]  # Get each channel
-                    for i in range(int(np.prod(self.output_size[:-1]))):  # for each element in the output
-                        index = np.unravel_index(i, self.output_size[:-1])
-                        start_index = tuple([a * b for a, b in zip(index, self.stride_shape)])
-                        end_index = tuple([a + b for a, b in zip(start_index, self.pool_size)])
-                        sector_slice = tuple(
-                            [slice(start_index[ind], end_index[ind]) for ind in range(len(start_index))]
-                        )
-                        sector = img_channel[sector_slice]
-                        output[img_index][index][channel_index] = self._pooling_function(sector)
-        return output
-
-    def trainable_variables(self):
-        return []
-
-    def get_output_shape_description(self) -> str:
-        expected_out_shape = "(None, "
-        expected_out_shape += "x".join([str(x) for x in self.output_size])
-        expected_out_shape += ")"
-        return expected_out_shape
-
-
-class AvgPooling(Pooling):
-
-    def _pooling_function(self, sector):
-        return np.sum(sector) / np.prod(self.pool_size)
-
-    def __deepcopy__(self, memodict={}):
-        if memodict is None:
-            memodict = {}
-        return AvgPooling(pool_size=self.pool_size, strides=self.stride_shape)
-
-    def get_description(self):
-        out_str = "Avg Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size,
-                                                                                         self.stride_shape)
-        return out_str
-
-
-class MaxPooling(Pooling):
-
-    def _pooling_function(self, sector):
-        abs_sector = tf.math.abs(sector)
-        max_index = np.unravel_index(np.argmax(abs_sector), abs_sector.shape)
-        # set_trace()
-        return sector[max_index].numpy()
-
-    def __deepcopy__(self, memodict={}):
-        if memodict is None:
-            memodict = {}
-        return MaxPooling(pool_size=self.pool_size, strides=self.stride_shape)
-
-    def get_description(self):
-        out_str = "Max Pooling layer:\n\tPooling shape: {0}; Stride shape: {1}\n".format(self.pool_size,
-                                                                                         self.stride_shape)
-        return out_str
 
 
 if __name__ == "__main__":
