@@ -16,6 +16,7 @@ from tensorflow import dtypes
 from numpy import dtype, ndarray
 from typing import Union, Callable, Optional, List, Set, Tuple
 from cvnn.initializers import RandomInitializer
+from cvnn.activation_functions import t_activation
 
 REAL = (np.float32,)
 COMPLEX = (np.complex64,)
@@ -23,7 +24,7 @@ SUPPORTED_DTYPES = REAL + COMPLEX  # , np.complex128, np.float64) Gradients retu
 layer_count = count(0)  # Used to count the number of layers
 
 t_input_shape = Union[int, tuple, list]
-t_kernel_2_shape = Union[int, Tuple[int, int], List[int, int]]
+t_kernel_2_shape = Union[int, Tuple[int, int], Tuple[int, int, int, int], List[int]]
 t_stride_shape = t_input_shape
 t_padding_shape = Union[str, t_input_shape]
 t_Callable_shape = Union[t_input_shape, Callable]  # Either a input_shape or a function that sets self.output
@@ -401,7 +402,7 @@ class ComplexConv2D(ComplexLayer):
                  input_shape: Optional[t_input_shape] = None,
                  padding: t_padding_shape = "valid", data_format: str = 'channels_last', dilatation_rate=(1, 1),
                  strides: t_kernel_2_shape = 1,
-                 activation=None, dropout: Optional[bool] = None,  # TODO: Check type
+                 activation: Optional[t_activation] = None, dropout: Optional[float] = None,
                  weight_initializer: RandomInitializer = initializers.GlorotUniform(),
                  bias_initializer: RandomInitializer = initializers.Zeros(),
                  input_dtype: Optional[t_Dtype] = None
@@ -413,11 +414,41 @@ class ComplexConv2D(ComplexLayer):
             specifying the height and width of the 2D convolution window.
             Can be a single integer to specify the same value for all spatial dimensions.
         :param input_shape: An integer or tuple/list of integers of the input tensor shape.
-        :param padding:
+        :param padding: One of the following:
+            - Integer: zero's to be added at the bottom, top, right and left of the image (same for every dimension)
+            - List or Tuple of the form: 
+                - [[pad_top, pad_bottom], [pad_left, pad_right]]
+                - [[0, 0], [pad_top, pad_bottom], [pad_left, pad_right], [0, 0]] for data_format = channels_last (default)
+                - [[0, 0], [0, 0], [pad_top, pad_bottom], [pad_left, pad_right]] for data_format = channels_first
+            - string (case in-sensitive):
+                - "same":  output size is the same as input size (for an odd kernel size)
+                - "valid": no padding applied
+                - "full":  output size bigger than input size (for unit stride)
         :param data_format: A string, one of channels_last (default) or channels_first.
             The ordering of the dimensions in the inputs.
             channels_last corresponds to inputs with shape (batch_size, ..., channels) while channels_first corresponds
             to inputs with shape (batch_size, channels, ...)
+        :param dilatation_rate: An int or list of ints that has length 1, 2 or 4, defaults to 1. 
+            The dilation factor for each dimension of input. 
+            If a single value is given it is replicated in the H and W dimension. 
+            By default the N and C dimensions are set to 1. If set to k > 1, 
+            there will be k-1 skipped cells between each filter element on that dimension. 
+            The dimension order is determined by the value of data_format, see above for details. 
+            Dilations in the batch and depth dimensions if a 4-d tensor must be 1.
+        :param activation: Activation function to be used.
+            Can be either the function from cvnn.activation or tensorflow.python.keras.activations
+            or a string as listed in act_dispatcher
+        :param input_dtype: data type of the input. Default: np.complex64
+            Supported data types:
+                - np.complex64
+                - np.float32
+        :param weight_initializer: Initializer for the weights.
+            Default: cvnn.initializers.GlorotUniform
+        :param bias_initializer: Initializer fot the bias.
+            Default: cvnn.initializers.Zeros
+        :param dropout: Either None (default) and no dropout will be applied or a scalar
+            that will be the probability that each element is dropped.
+            Example: setting rate=0.1 would drop 10% of input elements.
         """
         self.filters = filters
         self.dropout = dropout
