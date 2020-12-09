@@ -1,4 +1,4 @@
-from cvnn.layers import ComplexConv2D, MaxPooling, Flatten, ComplexDense, AvgPooling
+from cvnn.layers import ComplexConv2D, Flatten, ComplexDense
 from cvnn.cvnn_model import CvnnModel
 from cvnn.dataset import Dataset
 from tensorflow.keras.losses import categorical_crossentropy
@@ -15,7 +15,7 @@ test_labels = Dataset.sparse_into_categorical(test_labels)
 
 model_layers = [
     ComplexConv2D(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
-    ComplexConv2D(5, (3, 3), activation='cart_relu'),
+    # ComplexConv2D(5, (3, 3), activation='cart_relu'),
     Flatten(),
     # Flatten(input_dtype=np.float32, input_size=train_images.shape[1:]),
     # Dense(64, activation='cart_relu', input_dtype=np.float32, input_size=train_images.shape[1]),

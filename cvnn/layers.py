@@ -83,10 +83,6 @@ class ComplexLayer(ABC):
                                    str(self.__class__.__bases__[0].last_layer_output_dtype))
             self.input_dtype = np.dtype(input_dtype)
 
-        # This will be normally the case.
-        # Each layer must change this value if needed.
-        self.__class__.__bases__[0].last_layer_output_dtype = self.input_dtype
-
         # Input Size
         if input_size is None:
             if self.__class__.__bases__[0].last_layer_output_size is None:
@@ -111,9 +107,13 @@ class ComplexLayer(ABC):
             assert self.output_size, "Error: output_size function must set self.output_size"
         else:
             self.output_size = output_size
+        
         for x in self.__class__.mro():
             if x == ComplexLayer:
                 x.last_layer_output_size = self.output_size
+                # This will be normally the case.
+                # Each layer must change this value if needed.
+                x.last_layer_output_dtype = self.input_dtype
         # self.__class__.__bases__[0].last_layer_output_size = self.output_size
         self.layer_number = next(layer_count)  # Know it's own number
         self.__class__.__call__ = self.call  # Make my object callable
@@ -395,6 +395,7 @@ class Dropout(ComplexLayer):
     def trainable_variables(self):
         return []
 
+
 class ComplexConvolution(ComplexLayer):
 
     def __init__(self, filter_shape: t_kernel_shape, input_shape: Optional[t_input_shape] = None,
@@ -414,15 +415,36 @@ class ComplexConvolution(ComplexLayer):
         super(ComplexConvolution, self).__init__(self._calculate_shapes, self.input_size, input_dtype,
                                                  filter_shape, padding, strides)
 
+    def _verify_inputs(self, inputs):
+        inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
+        if inputs.dtype != self.input_dtype:
+            logger.warning("input dtype (" + str(inputs.dtype) + ") not what expected ("
+                           + str(self.input_dtype) + "). Attempting cast...")
+            inputs = tf.dtypes.cast(inputs, self.input_dtype)
+        if len(inputs.shape) == len(self.input_size) - 1:  # Assume only one image and channels omitted
+            inputs = tf.reshape(inputs, (1,) + inputs.shape)
+        if len(inputs.shape) == len(self.input_size):  # Assume channels omitted
+            if self.data_format == "channels_last":
+                inputs = tf.reshape(inputs, inputs.shape + (1,))
+            elif self.data_format == "channels_first":
+                inputs = tf.reshape(inputs, (inputs.shape[0],) + (1,) + inputs.shape[1:])
+            else:
+                logger.error(f"Unknown data_format {self.data_format}")
+                sys.exit(-1)
+        if inputs.shape[1:] != self.input_size:
+            logger.error(f"Expected shape {self.input_size}. Got {inputs.shape}")
+            sys.exit(-1)
+        return inputs
+
     @abstractmethod
-    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape, dimensions: int = 2):
+    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape):
         pass
 
     @abstractmethod
     def _calculate_output_shape(self):
         pass
 
-    def _verify_and_create_padding(self, padding: t_padding_shape, dimensions: int = 2) -> None:
+    def _verify_and_create_padding(self, padding: t_padding_shape) -> None:
         """
         Creates self.padding variable and verifies it
         :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
@@ -430,10 +452,10 @@ class ComplexConvolution(ComplexLayer):
         """
         # Get padding
         if isinstance(padding, int):
-            self.padding = [[padding, padding]] * dimensions
+            self.padding = [[padding, padding]] * self.dimensions
         elif isinstance(padding, (tuple, list)):
             self.padding = list(padding)
-            if len(self.padding) in {dimensions + 2, dimensions}:  # TODO: I have to check each element is a list
+            if len(self.padding) in {self.dimensions + 2, self.dimensions}:  # TODO: I have to check each element is a list
                 logger.error("Padding should have length 2 or 4")
                 exit(-1)
         elif isinstance(padding, str):
@@ -442,10 +464,10 @@ class ComplexConvolution(ComplexLayer):
                 if padding == "valid":
                     self.padding = [[0, 0]] * (len(self.input_size) + 1)
                 elif padding == "same":
-                    pads = [np.floor(k / 2) for k in self.filter_shape[:2]]
+                    pads = [np.floor(k / 2) for k in self.kernel_shape[:2]]
                     self.padding = [[p, p] for p in pads]
                 elif padding == "full":
-                    pads = [k - 1 for k in self.filter_shape[:2]]
+                    pads = [k - 1 for k in self.kernel_shape[:2]]
                     self.padding = [[p, p] for p in pads]
                 else:
                     logger.error(f"Unknown padding {self.padding} but listed in PADDING_MODES!")
@@ -467,14 +489,14 @@ class ComplexConvolution(ComplexLayer):
                 logger.error(f"Unknown data_format {self.data_format}")
                 sys.exit(-1)
         # Verify padding was done correctly
-        assert len(self.padding) == dimensions + 2, f"padding = {self.padding} should be of size {dimensions + 2}"
+        assert len(self.padding) == self.dimensions + 2, f"padding = {self.padding} should be of size {self.dimensions + 2}"
         assert self.padding[0] == [0, 0], "First element of the padding should be [0, 0] not to pad images!"
         if (self.data_format == "channels_first" and self.padding[1] != [0, 0]) or \
                 (self.data_format == "channels_last" and self.padding[-1] != [0, 0]):
             logger.error("Channels should have no padding!")
             sys.exit(-1)
 
-    def _verify_and_create_stride(self, stride: t_stride_shape, dimensions: int = 2) -> None:
+    def _verify_and_create_stride(self, stride: t_stride_shape) -> None:
         """
         Creates self.stride variable and verifies it
         :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
@@ -483,18 +505,18 @@ class ComplexConvolution(ComplexLayer):
         if isinstance(stride, (tuple, list)):
             self.stride = list(stride)
             set_trace()
-            assert len(self.stride) in {1, dimensions, dimensions + 2}
+            assert len(self.stride) in {1, self.dimensions, self.dimensions + 2}
         elif isinstance(stride, int):
             # TODO: This is probably unnecessary actually...
             self.stride = [stride]
         else:
             logger.error(f"stride: {stride} format not supported. It must be either int or list of ints that "
-                         f"has length 1, {dimensions} or {dimensions + 2}.")
+                         f"has length 1, {self.dimensions} or {self.dimensions + 2}.")
             sys.exit(-1)
         # Here I have self stride of sizes {1, dimensions, dimensions + 2} but I want dimensions + 2 (compulsory)
         if len(self.stride) == 1:  # Move size 1 to size dimensions
-            self.stride = self.stride * dimensions
-        if len(self.stride) != dimensions + 2:  # Move size dimensions to dimensions +2
+            self.stride = self.stride * self.dimensions
+        if len(self.stride) != self.dimensions + 2:  # Move size dimensions to dimensions +2
             self.stride.insert(0, 1)  # Image stride is one
             if self.data_format == "channels_last":  # Channel stride = 1
                 self.stride.append(1)
@@ -528,7 +550,6 @@ class ComplexConvolution(ComplexLayer):
                     f"input_size should be rank {dimension + 1} of the form {form} but received {self.input_size}")
                 sys.exit(-1)
     
-
 
 class ComplexConv2D(ComplexConvolution):
     # http://datahacker.rs/convolution-rgb-image/   For RGB images
@@ -611,12 +632,13 @@ class ComplexConv2D(ComplexConvolution):
         self.bias = tf.Variable(self.bias_initializer(shape=self.output_size, dtype=self.input_dtype),
                                 name="bias" + str(self.layer_number))
 
-    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape, dimensions: int = 2):
+    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape):
         """
-        Verifies Kernel shape and creates self.filter_shape variable
+        Verifies Kernel shape and creates self.kerel_size variable
         :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
         :return: None
         """
+        dimensions = 2
         channels = self.input_size[0] if self.data_format == "channels_first" else self.input_size[-1]
         if isinstance(filter_shape, int):
             self.kernel_size = [filter_shape] * dimensions + [channels] + [self.filters]
@@ -641,27 +663,6 @@ class ComplexConv2D(ComplexConvolution):
         if not np.all(np.asarray(self.kernel_size) == np.asarray(self.kernel_size).astype(int)):
             logger.error(f"Kernel shape must have all integer values: {self.kernel_size}.")
             sys.exit(-1)
-    
-    def _verify_inputs(self, inputs):
-        inputs = tf.convert_to_tensor(inputs)  # This checks all images are same size! Nice
-        if inputs.dtype != self.input_dtype:
-            logger.warning("input dtype (" + str(inputs.dtype) + ") not what expected ("
-                           + str(self.input_dtype) + "). Attempting cast...")
-            inputs = tf.dtypes.cast(inputs, self.input_dtype)
-        if len(inputs.shape) == len(self.input_size) - 1:  # Assume only one image and channels omitted
-            inputs = tf.reshape(inputs, (1,) + inputs.shape)
-        if len(inputs.shape) == len(self.input_size):  # Assume channels omitted
-            if self.data_format == "channels_last":
-                inputs = tf.reshape(inputs, inputs.shape + (1,))
-            elif self.data_format == "channels_first":
-                inputs = tf.reshape(inputs, (inputs.shape[0],) + (1,) + inputs.shape[1:])
-            else:
-                logger.error(f"Unknown data_format {self.data_format}")
-                sys.exit(-1)
-        if inputs.shape[1:] != self.input_size:
-            logger.error(f"Expected shape {self.input_size}. Got {inputs.shape}")
-            sys.exit(-1)
-        return inputs
 
     def _calculate_output_shape(self):
         out_list = []
@@ -720,13 +721,6 @@ class ComplexConv2D(ComplexConvolution):
             y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=y_out.dtype)
         return y_out
 
-    def apply_padding(self, inputs):
-        pad = [[0, 0]]  # No padding to the images itself
-        for p in self.padding_shape:
-            pad.append([p, p])  # This method add same pad to beginning and end
-        pad.append([0, 0])  # No padding to the channel
-        return tf.pad(inputs, tf.constant(pad), "CONSTANT", 0)
-
     def _save_tensorboard_weight(self, weight_summary, step):
         return None  # TODO
 
@@ -735,7 +729,7 @@ class ComplexConv2D(ComplexConvolution):
         out_str = "Complex Convolutional layer:\n\tinput size = " + str(self.input_size) + \
                   "(" + str(self.input_dtype) + \
                   ") -> output size = " + str(self.output_size) + \
-                  "\n\tkernel shape = (" + "x".join([str(x) for x in self.filter_shape]) + ")" + \
+                  "\n\tkernel shape = (" + "x".join([str(x) for x in self.kernel_size]) + ")" + \
                   "\n\tstride shape = (" + "x".join([str(x) for x in self.stride]) + ")" + \
                   "\n\tzero padding shape = (" + "x".join([str(x) for x in self.padding]) + ")" + \
                   ";\n\tact_fun = " + fun_name + ";\n\tweight init = " \
@@ -745,12 +739,12 @@ class ComplexConv2D(ComplexConvolution):
     def __deepcopy__(self, memodict=None):
         if memodict is None:
             memodict = {}
-        return ComplexConv2D(filters=self.filters, kernel_size=self.filter_shape, input_shape=self.input_size,
-                             padding=self.padding_shape, strides=self.stride_shape, input_dtype=self.input_dtype)
+        return ComplexConv2D(filters=self.filters, kernel_size=self.kernel_size, input_shape=self.input_size,
+                             padding=self.padding, strides=self.stride, input_dtype=self.input_dtype)
 
     def get_real_equivalent(self):
-        return ComplexConv2D(filters=self.filters, kernel_size=self.filter_shape, input_shape=self.input_size,
-                             padding=self.padding_shape, strides=self.stride_shape, input_dtype=np.float32)
+        return ComplexConv2D(filters=self.filters, kernel_size=self.kernel_size, input_shape=self.input_size,
+                             padding=self.padding, strides=self.stride, input_dtype=np.float32)
 
     def trainable_variables(self):
         return [self.kernels, self.bias]
