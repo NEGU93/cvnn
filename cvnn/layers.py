@@ -407,10 +407,10 @@ class ComplexConvolution(ComplexLayer):
         assert self.data_format in DATA_FORMAT, f"data_format = {self.data_format} unknown"
         if input_shape is None:
             self.input_size = None
-        elif isinstance(input_shape, (tuple, list)):
+        elif isinstance(input_shape, (tuple, list, tf.TensorShape)):    # TODO: Add the tensorShape everywhere.
             self.input_size = tuple(input_shape)
         else:
-            logger.error(f"Input shape: {input_shape} format not supported. It must be an int or a tuple")
+            logger.error(f"Input shape: {input_shape} format not supported. It must be an int list or tuple")
             sys.exit(-1)
         super(ComplexConvolution, self).__init__(self._calculate_shapes, self.input_size, input_dtype,
                                                  filter_shape, padding, strides)
@@ -750,18 +750,122 @@ class ComplexConv2D(ComplexConvolution):
         return [self.kernels, self.bias]
 
 
-if __name__ == "__main__":
-    img2 = np.array([
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0],
-        [10, 10, 10, 0, 0, 0]
-    ]).astype(np.float32)
+class ComplexMaxPool2D(ComplexConvolution):
 
-    conv = ComplexConv2D(filters=5, kernel_size=3, input_shape=img2.shape, input_dtype=np.float32)
-    print(conv.call(img2))
+    def __init__(self, pool_size: t_kernel_shape = (2, 2), input_shape: Optional[t_input_shape] = None,
+                 padding: t_padding_shape = "valid", data_format: str = 'channels_last',
+                 strides: t_stride_shape = 1, input_dtype: Optional[t_Dtype] = None):
+        super(ComplexMaxPool2D, self).__init__(filter_shape=pool_size, input_shape=input_shape, padding=padding, 
+                                               data_format=data_format, strides=strides, input_dtype=input_dtype,
+                                               )
+
+    def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape):
+        """
+        Verifies Kernel shape and creates self.kerel_size variable
+        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
+        :return: None
+        """
+        dimensions = 2
+        channels = self.input_size[0] if self.data_format == "channels_first" else self.input_size[-1]
+        if isinstance(filter_shape, int):
+            self.pool_size = (filter_shape,) * dimensions
+        elif isinstance(filter_shape, (tuple, list)):
+            self.pool_size = tuple(filter_shape)
+        else:
+            logger.error(f"Kernel shape: {filter_shape} format not supported. It must be an int or a tuple. "
+                         f"Received {filter_shape}")
+            sys.exit(-1)
+        assert len(self.pool_size) == dimensions, f"Pool size must be a {dimensions}-D tensor of shape " \
+                                                    f"[filter_height, filter_width] but it had size {len(self.pool_size)}."
+        if not np.all(np.asarray(self.pool_size) >= 1):
+            logger.error(f"Pool size must have all values bigger than 1: {self.pool_size}.")
+            sys.exit(-1)
+        if not np.all(np.asarray(self.pool_size) == np.asarray(self.pool_size).astype(int)):
+            logger.error(f"Pool size shape must have all integer values: {self.pool_size}.")
+            sys.exit(-1)
+
+    def _verify_and_create_padding(self, padding: t_padding_shape) -> None:
+        """
+        Creates self.padding variable and verifies it
+        :param dimensions: (default 2), total dimensions to be padded (ex. for conv2D is 2, for conv1D is 1).
+        :return: None
+        """
+        # Get padding
+        if isinstance(padding, str):
+            self.padding = padding.lower()
+            assert self.padding in PADDING_MODES, f"Unknown padding mode {self.padding}"
+        else:
+            logger.error(f"Expected string for argument 'padding' not {padding}")
+            sys.exit(-1)
+
+    def call(self, inputs):
+        inputs = self._verify_inputs(inputs=inputs)
+        data_format = "NHWC" if self.data_format == "channels_last" else "NCHW"
+        abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value
+        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=self.pool_size, strides=self.stride,
+                                                    padding=self.padding.upper(), data_format=data_format)  # TODO: Stride not used!
+        flat_in = tf.reshape(inputs, (inputs.shape[0], np.prod(inputs.shape[1:])))      # Flatten input and argmax to make them equivalent
+        flat_argmax = tf.reshape(argmax, (argmax.shape[0], np.prod(argmax.shape[1:])))
+        res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
+        tf_res = tf.reshape(res, output.shape)
+        # assert np.all(tf_res == output)             # For debugging when the input is real only!
+        return tf_res
+
+    def _calculate_output_shape(self):
+        out_list = []
+        indx = 1 if self.data_format == "channels_last" else 2
+        for i, k, s in zip(self.input_size[indx - 1:], self.pool_size,
+                              self.stride[indx:]):
+            p = np.floor(k/2) if self.padding == "valid" else 1
+            # self.kernel_size will be size 2 and will truncate the zip.
+            # 2.4 on https://arxiv.org/abs/1603.07285
+            out_list.append(int(np.floor((i + 2 * p - k) / s) + 1))
+        if self.data_format == "channels_last":  # New channels are actually the filters
+            out_list.append(self.input_size[-1])
+        elif self.data_format == "channels_first":
+            out_list.insert(0, self.input_size[0])
+        self.output_size = tuple(out_list)
+        assert len(self.output_size) == 3, f"Error! output shape should have been 3 but was " \
+                                           f"{len(self.output_size)} : {self.output_size}"
+        return self.output_size
+
+    def _save_tensorboard_weight(self, weight_summary, step):
+        return None  # TODO
+
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
+        return ComplexMaxPool2D(pool_size=self.pool_size, input_shape=self.input_size,
+                                padding=self.padding, data_format=self.data_format,
+                                strides=self.stride, input_dtype=self.input_dtype)
+
+    def get_real_equivalent(self):
+        return ComplexMaxPool2D(pool_size=self.pool_size, input_shape=self.input_size,
+                                padding=self.padding, data_format=self.data_format,
+                                strides=self.stride, input_dtype=np.float32)
+
+    def trainable_variables(self):
+        return []
+
+    def get_description(self) -> str:
+        return "Complex Max 2D Pooling"
+    
+
+if __name__ == "__main__":
+    x = tf.constant([[
+                        [1., 2., 3.],
+                        [4., 5., 6.],
+                        [7., 8., 2.]
+                    ], [
+                        [0., 2., 3.],
+                        [7., 8., 4.],
+                        [4., 5., 6.]
+                    ]], dtype=np.float32)
+    x = tf.reshape(x, [1, 3, 3, 2])
+
+    # conv = ComplexConv2D(filters=5, kernel_size=3, input_shape=img2.shape, input_dtype=np.float32)
+    conv = ComplexMaxPool2D(input_shape=x.shape[1:], input_dtype=np.float32)
+    print(conv.call(x))
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
