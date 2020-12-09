@@ -750,14 +750,14 @@ class ComplexConv2D(ComplexConvolution):
         return [self.kernels, self.bias]
 
 
-class ComplexMaxPool2D(ComplexConvolution):
+class ComplexPooling2D(ComplexConvolution):
 
     def __init__(self, pool_size: t_kernel_shape = (2, 2), input_shape: Optional[t_input_shape] = None,
                  padding: t_padding_shape = "valid", data_format: str = 'channels_last',
                  strides: t_stride_shape = 1, input_dtype: Optional[t_Dtype] = None):
-        super(ComplexMaxPool2D, self).__init__(filter_shape=pool_size, input_shape=input_shape, padding=padding, 
+        super(ComplexPooling2D, self).__init__(filter_shape=pool_size, input_shape=input_shape, padding=padding, 
                                                data_format=data_format, strides=strides, input_dtype=input_dtype,
-                                               )
+                                               dimensions=2)
 
     def _verifiy_and_create_filter(self, filter_shape: t_kernel_shape):
         """
@@ -798,19 +798,6 @@ class ComplexMaxPool2D(ComplexConvolution):
             logger.error(f"Expected string for argument 'padding' not {padding}")
             sys.exit(-1)
 
-    def call(self, inputs):
-        inputs = self._verify_inputs(inputs=inputs)
-        data_format = "NHWC" if self.data_format == "channels_last" else "NCHW"
-        abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value
-        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=self.pool_size, strides=self.stride,
-                                                    padding=self.padding.upper(), data_format=data_format)  # TODO: Stride not used!
-        flat_in = tf.reshape(inputs, (inputs.shape[0], np.prod(inputs.shape[1:])))      # Flatten input and argmax to make them equivalent
-        flat_argmax = tf.reshape(argmax, (argmax.shape[0], np.prod(argmax.shape[1:])))
-        res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
-        tf_res = tf.reshape(res, output.shape)
-        # assert np.all(tf_res == output)             # For debugging when the input is real only!
-        return tf_res
-
     def _calculate_output_shape(self):
         out_list = []
         indx = 1 if self.data_format == "channels_last" else 2
@@ -848,8 +835,27 @@ class ComplexMaxPool2D(ComplexConvolution):
         return []
 
     def get_description(self) -> str:
-        return "Complex Max 2D Pooling"
+        return "Complex 2D Pooling"
     
+
+class ComplexMaxPool2D(ComplexPooling2D):
+    
+    def call(self, inputs):
+        inputs = self._verify_inputs(inputs=inputs)
+        data_format = "NHWC" if self.data_format == "channels_last" else "NCHW"
+        abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value
+        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=self.pool_size, strides=self.stride,
+                                                    padding=self.padding.upper(), data_format=data_format)  # TODO: Stride not used!
+        flat_in = tf.reshape(inputs, (inputs.shape[0], np.prod(inputs.shape[1:])))      # Flatten input and argmax to make them equivalent
+        flat_argmax = tf.reshape(argmax, (argmax.shape[0], np.prod(argmax.shape[1:])))
+        res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
+        tf_res = tf.reshape(res, output.shape)
+        # assert np.all(tf_res == output)             # For debugging when the input is real only!
+        return tf_res
+
+    def get_description(self) -> str:
+        return "Complex Max 2D Pooling"
+
 
 if __name__ == "__main__":
     x = tf.constant([[
