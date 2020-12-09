@@ -845,7 +845,7 @@ class ComplexMaxPool2D(ComplexPooling2D):
         data_format = "NHWC" if self.data_format == "channels_last" else "NCHW"
         abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value
         output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=self.pool_size, strides=self.stride,
-                                                    padding=self.padding.upper(), data_format=data_format)  # TODO: Stride not used!
+                                                    padding=self.padding.upper(), data_format=data_format)
         flat_in = tf.reshape(inputs, (inputs.shape[0], np.prod(inputs.shape[1:])))      # Flatten input and argmax to make them equivalent
         flat_argmax = tf.reshape(argmax, (argmax.shape[0], np.prod(argmax.shape[1:])))
         res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
@@ -857,7 +857,29 @@ class ComplexMaxPool2D(ComplexPooling2D):
         return "Complex Max 2D Pooling"
 
 
+class ComplexAvgPool2D(ComplexMaxPool2D):
+
+    def call(self, inputs):
+        inputs = self._verify_inputs(inputs=inputs)
+        data_format = "NHWC" if self.data_format == "channels_last" else "NCHW"
+        inputs_r = tf.math.real(inputs)
+        inputs_i = tf.math.imag(inputs)
+        output_r = tf.nn.avg_pool2d(input=inputs_r, ksize=self.pool_size, strides=self.stride,
+                                    padding=self.padding.upper(), data_format=data_format)
+        output_i = tf.nn.avg_pool2d(input=inputs_i, ksize=self.pool_size, strides=self.stride,
+                                    padding=self.padding.upper(), data_format=data_format)
+        if self.input_dtype in COMPLEX:
+            res = tf.complex(output_r, output_i)
+        elif self.input_dtype in REAL:
+            res = output_r
+        return res
+
+    def get_description(self) -> str:
+        return "Complex Avg 2D Pooling"
+
+
 if __name__ == "__main__":
+    Dtype = np.float32
     x = tf.constant([[
                         [1., 2., 3.],
                         [4., 5., 6.],
@@ -867,11 +889,23 @@ if __name__ == "__main__":
                         [7., 8., 4.],
                         [4., 5., 6.]
                     ]], dtype=np.float32)
-    x = tf.reshape(x, [1, 3, 3, 2])
-
+    y = tf.constant([[
+                        [1., 2., 3.],
+                        [7., 3., 4.],
+                        [5., 5., 11.]
+                    ], 
+                    [
+                        [3., 2., 3.],
+                        [4., 2., 7.],
+                        [7., 3., 2.]
+                    ]], dtype=np.float32)
+    z = tf.cast(tf.complex(x, y), Dtype)
+    z = tf.reshape(z, [2, 3, 3, 1])
+    z = tf.transpose(z, [3, 1, 2, 0])
+    
     # conv = ComplexConv2D(filters=5, kernel_size=3, input_shape=img2.shape, input_dtype=np.float32)
-    conv = ComplexMaxPool2D(input_shape=x.shape[1:], input_dtype=np.float32)
-    print(conv.call(x))
+    conv = ComplexAvgPool2D(input_shape=z.shape[1:], input_dtype=Dtype)
+    print(conv.call(z)[0, ..., 0])
 
 
 t_layers_shape = Union[ndarray, List[ComplexLayer], Set[ComplexLayer]]
