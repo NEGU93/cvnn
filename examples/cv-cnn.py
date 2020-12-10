@@ -1,4 +1,4 @@
-from cvnn.layers import ComplexConv2D, Flatten, ComplexDense
+from cvnn.layers import ComplexConv2D, Flatten, ComplexDense, ComplexMaxPool2D
 from cvnn.cvnn_model import CvnnModel
 from cvnn.dataset import Dataset
 from tensorflow.keras.losses import categorical_crossentropy
@@ -15,10 +15,11 @@ test_labels = Dataset.sparse_into_categorical(test_labels)
 
 model_layers = [
     ComplexConv2D(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), input_dtype=np.float32),
-    # ComplexConv2D(5, (3, 3), activation='cart_relu'),
+    ComplexMaxPool2D((2, 2)),
+    ComplexConv2D(64, (3, 3), activation='cart_relu'),
+    ComplexMaxPool2D((2, 2)),
+    ComplexConv2D(64, (3, 3), activation='cart_relu'),
     Flatten(),
-    # Flatten(input_dtype=np.float32, input_size=train_images.shape[1:]),
-    # Dense(64, activation='cart_relu', input_dtype=np.float32, input_size=train_images.shape[1]),
     ComplexDense(64, activation='cart_relu'),
     ComplexDense(10, activation='softmax_real')
 ]
@@ -27,5 +28,5 @@ model = CvnnModel("CV-CNN Testing", model_layers, categorical_crossentropy, tens
 model.training_param_summary()
 model.fit(train_images[:10].astype(np.float32), train_labels[:10].astype(np.float32),
           validation_data=(test_images.astype(np.float32), test_labels.astype(np.float32)),
-          epochs=5, batch_size=2,
+          epochs=10, batch_size=32,
           verbose=True, save_csv_history=False)

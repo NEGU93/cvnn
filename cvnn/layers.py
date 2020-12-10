@@ -522,7 +522,6 @@ class ComplexConvolution(ComplexLayer):
                 self.stride.append(1)
             elif self.data_format == "channels_first":
                 self.stride.insert(1, 1)
-            print(self.stride)
 
     def _calculate_shapes(self, filter_shape: t_kernel_shape, padding: t_padding_shape, stride: t_stride_shape):
         """
