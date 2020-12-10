@@ -80,6 +80,22 @@ Code:
     year         = {2019}
 }
 ```
+I recommend changing the year and adding a `version` item with the one you used.
+
+Or cite the Zenodo version:
+```
+@software{j_agustin_barrachina_2020_4140245,
+  author       = {J Agustin Barrachina},
+  title        = {NEGU93/cvnn: First official release},
+  month        = oct,
+  year         = 2020,
+  publisher    = {Zenodo},
+  version      = {v0.3.40},
+  doi          = {10.5281/zenodo.4140245},
+  url          = {https://doi.org/10.5281/zenodo.4140245}
+}
+```
+
 Paper:
 ```
 @misc{barrachina2020complexvalued,
