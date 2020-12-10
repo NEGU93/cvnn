@@ -11,17 +11,18 @@ train_images, test_images = tf.cast(train_images, tf.complex64) / 255.0, tf.cast
 
 model = Sequential([
   layers.Flatten(input_shape=(28, 28, 1)),
-  layers.Dense(128, activation='relu', input_shape=(28, 28, 1)),
-  layers.Dense(10, activation='softmax')
+  # layers.Dense(128, activation='relu', input_shape=(28, 28, 1)),
+  # layers.Dense(10, activation='softmax')
 ])
 model.compile(
     loss='sparse_categorical_crossentropy',
     optimizer=Adam(0.001),
     metrics=['accuracy'],
 )
+print(model.predict(train_images).dtype)
 
-model.fit(
-    train_images, train_labels,
-    epochs=6,
-    validation_data=(test_images, test_labels),
-)
+# model.fit(
+#     train_images, train_labels,
+#     epochs=6,
+#     validation_data=(test_images, test_labels),
+# )
