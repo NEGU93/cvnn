@@ -36,8 +36,7 @@ class ComplexDense(Dense):
                                     kernel_initializer=kernel_initializer,
                                     bias_initializer=bias_initializer, **kwargs)
         self.my_dtype = tf.dtypes.as_dtype(dtype)    # Cannot override dtype of the layer because it has a read-only @property
-        
-    
+         
     def build(self, input_shape):
         if self.my_dtype.is_complex:
             self.w_r = self.add_weight(
