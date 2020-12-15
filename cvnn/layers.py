@@ -1,36 +1,49 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import tensorflow.compat.v2 as tf
-from tensorflow.keras.layers import Flatten, Dense, Layer
+from tensorflow.keras.layers import Flatten, Dense, InputLayer
 from tensorflow import TensorShape, Tensor
 import numpy as np
+from cvnn.activation_functions import cart_relu, convert_to_real_with_abs
 from cvnn import logger
 from pdb import set_trace
 # Typing
-from tensorflow import dtypes
-from numpy import dtype, ndarray
 from typing import Union, List
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
 
-def iscomplex(inputs:t_input):
+DEFAULT_COMPLEX_TYPE = np.complex64
+
+
+def iscomplex(inputs: t_input):
     return inputs.dtype.is_complex
-    
+
+
+class ComplexInput(InputLayer):
+
+    def __init__(self, input_shape=None, batch_size=None, dtype=DEFAULT_COMPLEX_TYPE, input_tensor=None, sparse=False,
+                 name=None, ragged=False, **kwargs):
+        super(ComplexInput, self).__init__(input_shape=input_shape, batch_size=batch_size, dtype=dtype,
+                                           input_tensor=input_tensor, sparse=sparse,
+                                           name=name, ragged=ragged, **kwargs
+                                           )
+
    
 class ComplexFlatten(Flatten):
     
     def call(self, inputs: t_input):
+        # tf.print(f"inputs at ComplexFlatten are {inputs.dtype}")
         real_flat = super(ComplexFlatten, self).call(tf.math.real(inputs))
         imag_flat = super(ComplexFlatten, self).call(tf.math.imag(inputs))
         return tf.cast(tf.complex(real_flat, imag_flat), inputs.dtype)      # Keep input dtype
-    
+
+
 class ComplexDense(Dense):
     
     def __init__(self, units, activation=None, use_bias=True,
                  kernel_initializer='glorot_uniform',
                  bias_initializer='zeros',
-                 dtype = tf.complex128,
+                 dtype=DEFAULT_COMPLEX_TYPE,
                  **kwargs):
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                     kernel_initializer=kernel_initializer,
@@ -58,25 +71,28 @@ class ComplexDense(Dense):
         else:
             self.w = self.add_weight(
                 shape=(input_shape[-1], self.units),
+                dtype=self.my_dtype,
                 initializer=self.kernel_initializer,
                 trainable=True,
             )
-            self.b = self.add_weight(
-                shape=(self.units,), initializer=self.bias_initializer, trainable=True
-            )
+            self.b = self.add_weight(shape=(self.units,), dtype=self.my_dtype,
+                                     initializer=self.bias_initializer, trainable=True)
 
     def call(self, inputs: t_input):
+        # tf.print(f"inputs at ComplexDense are {inputs.dtype}")
         if inputs.dtype != self.my_dtype:
-            tf.print(f"Expected input to be {self.my_dtype}, but received {inputs.dtype}.")
+            tf.print(f"Expected input to be {self.my_dtype}, but received {inputs.dtype}.\n"
+                     f"You might have forgotten to use tf.keras.Input(shape, dtype=np.complex128).")
             # logger.warning(f"Input expected to be {self.my_dtype}, but received {inputs.dtype}.") 
             inputs = tf.cast(inputs, self.my_dtype)
         if self.my_dtype.is_complex:
             w = tf.cast(tf.complex(self.w_r, self.w_i), self.my_dtype)
             b = tf.cast(tf.complex(self.b_r, self.b_i), self.my_dtype)
         else:
-            w = tf.cast(self.w, self.my_dtype)
-            b = tf.cast(self.b, self.my_dtype)
-        return tf.matmul(inputs, w) + b
+            w = self.w
+            b = self.b
+        out = tf.matmul(inputs, w) + b
+        return self.activation(out)
 
 
 def small_example():
@@ -102,16 +118,19 @@ def small_example():
     c_flat = ComplexFlatten()
     c_dense = ComplexDense(units=10)
     res = c_dense(c_flat(img.astype(np.complex64)))
-    
+
+
 def serial_layers():
     model = tf.keras.models.Sequential()
     model.add(ComplexDense(32, activation='relu', input_shape=(32, 32, 3)))
     model.add(ComplexDense(32))
     print(model.output_shape)
-    
+
+
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
     return tf.cast(image, tf.float32) / 255., label
+
 
 def mnist_example():
     tf.enable_v2_behavior()
@@ -152,25 +171,28 @@ def mnist_example():
         validation_data=ds_test,
     )
 
+
 if __name__ == "__main__":
-    dtype = np.float32
+    dtype_1 = np.complex64
     fashion_mnist = tf.keras.datasets.fashion_mnist
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
-    train_images = train_images.astype(dtype)
-    test_images = test_images.astype(dtype)
-    train_labels = train_labels.astype(dtype)
-    test_labels = test_labels.astype(dtype)
-    
+    train_images = train_images.astype(dtype_1)
+    test_images = test_images.astype(dtype_1)
+    train_labels = train_labels.astype(dtype_1)
+    test_labels = test_labels.astype(dtype_1)
+
     model = tf.keras.Sequential([
-        ComplexFlatten(input_shape=(28, 28)),
-        ComplexDense(128, activation='relu', dtype=np.complex64),
-        ComplexDense(10, dtype=np.float32)
+        ComplexInput(input_shape=(28, 28)),
+        ComplexFlatten(),
+        ComplexDense(128, activation='cart_relu'),
+        ComplexDense(10, activation='convert_to_real_with_abs')
     ])
+    model.summary()
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy']
                   )
-    model.fit(tf.complex(train_images, train_images), train_labels, epochs=1)
+    model.fit(train_images, train_labels, epochs=10)
     
     # import pdb; pdb.set_trace()
 
@@ -179,7 +201,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.28'
+__version__ = '0.0.29'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

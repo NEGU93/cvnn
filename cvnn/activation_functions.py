@@ -2,6 +2,7 @@ import tensorflow as tf
 import sys
 import cvnn
 import logging
+from tensorflow.keras.layers import Activation
 from typing import Union, Callable, Optional
 from tensorflow import Tensor
 
@@ -61,6 +62,10 @@ def linear(z: Tensor) -> Tensor:
     :return: z
     """
     return z
+
+
+def convert_to_real_with_abs(z: Tensor) -> Tensor:
+    return tf.math.abs(z)
 
 
 """
@@ -123,7 +128,7 @@ def cart_hard_sigmoid(z: Tensor) -> Tensor:
                               tf.keras.activations.hard_sigmoid(tf.math.imag(z))), dtype=z.dtype)
 
 
-def cart_relu(z: Tensor, alpha=0.0, max_value=None, threshold=0) -> Tensor:
+def cart_relu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, threshold: float = 0) -> Tensor:
     """
     Applies Rectified Linear Unit to both the real and imag part of z
     The relu function, with default values, it returns element-wise max(x, 0).
@@ -131,7 +136,12 @@ def cart_relu(z: Tensor, alpha=0.0, max_value=None, threshold=0) -> Tensor:
                             f(x) = x for threshold <= x < max_value,
                             f(x) = alpha * (x - threshold) otherwise.
     https://www.tensorflow.org/api_docs/python/tf/keras/activations/relu
-    :param z: Input tensor.
+    :param z: Tensor -- Input tensor.
+    :param alpha: float -- A float that governs the slope for values lower than the threshold (default 0.0).
+    :param max_value: Optional float -- A float that sets the saturation threshold (the largest value the function will return)
+        (default None).
+    :param threshold: float -- A float giving the threshold value of the activation function below which
+        values will be damped or set to zero (default 0).
     :return: Tensor result of the applied activation function
     """
     return tf.cast(tf.complex(tf.keras.activations.relu(tf.math.real(z), alpha, max_value, threshold),
@@ -275,25 +285,26 @@ def pol_selu(z: Tensor) -> Tensor:
 
 
 act_dispatcher = {
-    'linear': linear,
-    'cart_sigmoid': cart_sigmoid,
-    'cart_elu': cart_elu,
-    'cart_exponential': cart_exponential,
-    'cart_hard_sigmoid': cart_hard_sigmoid,
-    'cart_relu': cart_relu,
-    'cart_leaky_relu': cart_leaky_relu,
-    'cart_selu': cart_selu,
-    'cart_softplus': cart_softplus,
-    'cart_softsign': cart_softsign,
-    'cart_tanh': cart_tanh,
-    'cart_softmax': cart_softmax,
-    'softmax_real': softmax_real,
-    'pol_tanh': pol_tanh,
-    'pol_sigmoid': pol_sigmoid,
-    'pol_selu': pol_selu
+    'linear': Activation(linear),
+    'convert_to_real_with_abs': Activation(convert_to_real_with_abs),
+    'cart_sigmoid': Activation(cart_sigmoid),
+    'cart_elu': Activation(cart_elu),
+    'cart_exponential': Activation(cart_exponential),
+    'cart_hard_sigmoid': Activation(cart_hard_sigmoid),
+    'cart_relu': Activation(cart_relu),
+    'cart_leaky_relu': Activation(cart_leaky_relu),
+    'cart_selu': Activation(cart_selu),
+    'cart_softplus': Activation(cart_softplus),
+    'cart_softsign': Activation(cart_softsign),
+    'cart_tanh': Activation(cart_tanh),
+    'cart_softmax': Activation(cart_softmax),
+    'softmax_real': Activation(softmax_real),
+    'pol_tanh': Activation(pol_tanh),
+    'pol_sigmoid': Activation(pol_sigmoid),
+    'pol_selu': Activation(pol_selu)
 }
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

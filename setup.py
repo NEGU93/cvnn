@@ -2,7 +2,7 @@ from setuptools import setup
 import versioneer
 
 requirements = [
-    'tensorflow>=2.0',
+    'tensorflow>=2.0', 'keras_applications',
     'numpy',
     'pandas', 'scipy',                   # Data
     'colorlog', 'openpyxl',              # Logging
