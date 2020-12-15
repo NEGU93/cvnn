@@ -10,6 +10,8 @@ from typing import Optional
 # Initializers:
 # https://www.tensorflow.org/api_docs/python/tf/keras/initializers
 # https://keras.io/initializers/
+# TODO: Think about updating using Variance Scaling
+# TODO: https://www.tensorflow.org/api_docs/python/tf/keras/initializers/VarianceScaling
 
 
 class _RandomGenerator(object):
@@ -141,17 +143,14 @@ class RandomInitializer:
             r_dtype = self.dtype_cast(dtype)
             c_arg = tf.cast(c_arg, r_dtype)
             # TODO: I do not yet understand the random_generator thing. I could use tf.random.uniform once I do
-            ret = tf.complex(
-                self._call_random_generator(shape=shape, arg=c_arg[0], dtype=r_dtype),
-                self._call_random_generator(shape=shape, arg=c_arg[1], dtype=r_dtype))
+            return self._call_random_generator(shape=shape, arg=c_arg[0], dtype=r_dtype)
         elif dtype.is_floating:     # Real Layer
             # ret = tf.random.uniform(shape=shape, minval=-limit, maxval=limit, dtype=dtype, seed=seed, name=name)
             r_arg = tf.cast(r_arg, dtype)
-            ret = self._call_random_generator(shape=shape, arg=r_arg, dtype=dtype)
+            return self._call_random_generator(shape=shape, arg=r_arg, dtype=dtype)
         else:
             logger.error("Input_dtype not supported.", exc_info=True)
             sys.exit(-1)
-        return ret
 
     @staticmethod
     def _verify_limits(c_limit, r_limit, dtype):
@@ -217,7 +216,8 @@ class GlorotUniform(RandomInitializer):
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [self.scale * tf.math.sqrt(3. / (fan_in + fan_out)),
                    self.scale * tf.math.sqrt(3. / (fan_in + fan_out))]
-        r_limit = self.scale * tf.math.sqrt(6. / (fan_in + fan_out))
+        # r_limit = self.scale * tf.math.sqrt(6. / (fan_in + fan_out))
+        r_limit = self.scale * tf.math.sqrt(3. / (fan_in + fan_out))
         return self.get_random_tensor(shape, c_limit, r_limit, dtype)
 
 
@@ -254,15 +254,12 @@ class GlorotNormal(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-<<<<<<< HEAD
         :param dtype: Optinal dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-=======
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
->>>>>>> 2a18681b0f0ec5e3a1787b8dd7287f1f3f0de985
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(1. / (fan_in + fan_out)), tf.math.sqrt(1. / (fan_in + fan_out))]
-        r_limit = tf.math.sqrt(2. / (fan_in + fan_out))
+        # r_limit = tf.math.sqrt(2. / (fan_in + fan_out))
+        r_limit = tf.math.sqrt(1. / (fan_in + fan_out))
         return self.get_random_tensor(shape, c_limit, r_limit, dtype)
 
 
@@ -299,7 +296,8 @@ class GlorotUniformCompromise(RandomInitializer):
     def __call__(self, shape, dtype=tf.dtypes.complex64):
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(3. / (2. * fan_in)), tf.math.sqrt(3. / (2. * fan_out))]
-        r_limit = tf.math.sqrt(6. / (fan_in + fan_out))
+        # r_limit = tf.math.sqrt(6. / (fan_in + fan_out))
+        r_limit = tf.math.sqrt(3. / (fan_in + fan_out))
         return self.get_random_tensor(shape, c_limit, r_limit, dtype)
 
 
@@ -339,15 +337,12 @@ class HeNormal(RandomInitializer):
         """
         Returns a tensor object initialized as specified by the initializer.
         :param shape: Shape of the tensor.
-<<<<<<< HEAD
         :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-=======
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex63 or tf.float32
->>>>>>> 2a18681b0f0ec5e3a1787b8dd7287f1f3f0de985
         """
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(1. / fan_in), tf.math.sqrt(1. / fan_in)]
-        r_limit = tf.math.sqrt(2. / fan_in)
+        # r_limit = tf.math.sqrt(2. / fan_in)
+        r_limit = tf.math.sqrt(1. / fan_in)
         return self.get_random_tensor(shape, c_limit, r_limit, dtype)
 
 
@@ -382,7 +377,8 @@ class HeUniform(RandomInitializer):
     def __call__(self, shape, dtype=tf.dtypes.complex64):
         fan_in, fan_out = self._compute_fans(shape)
         c_limit = [tf.math.sqrt(3. / fan_in), tf.math.sqrt(3. / fan_in)]
-        r_limit = tf.math.sqrt(6. / fan_in)
+        # r_limit = tf.math.sqrt(6. / fan_in)
+        r_limit = tf.math.sqrt(3. / fan_in)
         return self.get_random_tensor(shape, c_limit, r_limit, dtype)
 
 
@@ -415,6 +411,6 @@ if __name__ == '__main__':
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.10'
+__version__ = '0.0.11'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

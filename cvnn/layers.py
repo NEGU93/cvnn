@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer
 from tensorflow import TensorShape, Tensor
+from cvnn.initializers import GlorotUniform, Zeros
 import numpy as np
 from cvnn import logger
 from pdb import set_trace
@@ -39,8 +40,8 @@ class ComplexFlatten(Flatten):
 class ComplexDense(Dense):
     
     def __init__(self, units, activation=None, use_bias=True,
-                 kernel_initializer='glorot_uniform',
-                 bias_initializer='zeros',
+                 kernel_initializer=GlorotUniform(),
+                 bias_initializer=Zeros(),
                  dtype=DEFAULT_COMPLEX_TYPE,
                  **kwargs):
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
@@ -98,7 +99,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.30'
+__version__ = '0.0.31'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

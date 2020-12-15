@@ -1,8 +1,10 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput
+from cvnn.initializers import GlorotUniform
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
 import tensorflow_datasets as tfds
+from pdb import set_trace
 
 
 def small_example():
@@ -35,6 +37,33 @@ def serial_layers():
     model.add(ComplexDense(32, activation='relu', input_shape=(32, 32, 3)))
     model.add(ComplexDense(32))
     print(model.output_shape)
+
+    img_r = np.array([[
+        [0, 1, 2],
+        [0, 2, 2],
+        [0, 5, 7]
+    ], [
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ]]).astype(np.float32)
+    img_i = np.array([[
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ], [
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ]]).astype(np.float32)
+    img = img_r + 1j * img_i
+
+    model = Sequential()
+    # model.add(ComplexInput(img.shape[1:]))
+    model.add(ComplexFlatten(input_shape=img.shape[1:]))
+    model.add(ComplexDense(units=10))
+
+    res = model(img)
 
 
 def normalize_img(image, label):
@@ -80,7 +109,7 @@ def mnist_example():
     )
 
 
-def fashin_mnist_example():
+def fashion_mnist_example():
     dtype_1 = np.complex64
     fashion_mnist = tf.keras.datasets.fashion_mnist
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
@@ -92,8 +121,8 @@ def fashin_mnist_example():
     model = tf.keras.Sequential([
         ComplexInput(input_shape=(28, 28)),
         ComplexFlatten(),
-        ComplexDense(128, activation='cart_relu'),
-        ComplexDense(10, activation='convert_to_real_with_abs')
+        ComplexDense(128, activation='cart_relu', kernel_initializer=GlorotUniform()),
+        ComplexDense(10, activation='convert_to_real_with_abs', kernel_initializer=GlorotUniform())
     ])
     model.summary()
     model.compile(optimizer='adam',
@@ -103,3 +132,7 @@ def fashin_mnist_example():
     model.fit(train_images, train_labels, epochs=10)
 
     # import pdb; pdb.set_trace()
+
+
+if __name__ == '__main__':
+    fashion_mnist_example()
