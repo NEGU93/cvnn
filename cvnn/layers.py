@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow import TensorShape, Tensor
@@ -16,6 +18,8 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.keras.engine.input_spec import InputSpec
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import nn_ops
+# For pooling
+from tensorflow.python.keras import backend
 from cvnn import logger
 from pdb import set_trace
 # Typing
@@ -177,7 +181,7 @@ class ComplexConv(Layer):
             activity_regularizer=regularizers.get(activity_regularizer),
             **kwargs)
         self.rank = rank
-        self.my_dtype = dtype   # I use no default dtype to make sure I don't forget to give it to my ComplexConv layers
+        self.my_dtype = dtype  # I use no default dtype to make sure I don't forget to give it to my ComplexConv layers
         if isinstance(filters, float):
             filters = int(filters)
         self.filters = filters
@@ -737,11 +741,98 @@ class ComplexConv3D(ComplexConv):
             **kwargs)
 
 
+class ComplexPooling2D(Layer):
+    """
+    Pooling layer for arbitrary pooling functions, for 2D inputs (e.g. images).
+    Abstract class. This class only exists for code reuse. It will never be an exposed API.
+      Arguments:
+        pool_function: The pooling function to apply, e.g. `tf.nn.max_pool2d`.
+        pool_size: An integer or tuple/list of 2 integers: (pool_height, pool_width)
+          specifying the size of the pooling window.
+          Can be a single integer to specify the same value for
+          all spatial dimensions.
+        strides: An integer or tuple/list of 2 integers,
+          specifying the strides of the pooling operation.
+          Can be a single integer to specify the same value for
+          all spatial dimensions.
+        padding: A string. The padding method, either 'valid' or 'same'.
+          Case-insensitive.
+        data_format: A string, one of `channels_last` (default) or `channels_first`.
+          The ordering of the dimensions in the inputs.
+          `channels_last` corresponds to inputs with shape
+          `(batch, height, width, channels)` while `channels_first` corresponds to
+          inputs with shape `(batch, channels, height, width)`.
+        name: A string, the name of the layer.
+    """
+
+    def __init__(self, pool_size=(2, 2), strides=None,
+                 padding='valid', data_format=None,
+                 name=None, **kwargs):
+        super(ComplexPooling2D, self).__init__(name=name, **kwargs)
+        if data_format is None:
+            data_format = backend.image_data_format()
+        if strides is None:
+            strides = pool_size
+        self.pool_size = conv_utils.normalize_tuple(pool_size, 2, 'pool_size')
+        self.strides = conv_utils.normalize_tuple(strides, 2, 'strides')
+        self.padding = conv_utils.normalize_padding(padding)
+        self.data_format = conv_utils.normalize_data_format(data_format)
+        self.input_spec = InputSpec(ndim=4)
+
+    @abstractmethod
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        pass
+
+    def call(self, inputs):
+        if self.data_format == 'channels_last':
+            pool_shape = (1,) + self.pool_size + (1,)
+            strides = (1,) + self.strides + (1,)
+        else:
+            pool_shape = (1, 1) + self.pool_size
+            strides = (1, 1) + self.strides
+        outputs = self.pool_function(
+            inputs,
+            ksize=pool_shape,
+            strides=strides,
+            padding=self.padding.upper(),
+            data_format=conv_utils.convert_data_format(self.data_format, 4))
+        return outputs
+
+    def compute_output_shape(self, input_shape):
+        input_shape = tensor_shape.TensorShape(input_shape).as_list()
+        if self.data_format == 'channels_first':
+            rows = input_shape[2]
+            cols = input_shape[3]
+        else:
+            rows = input_shape[1]
+            cols = input_shape[2]
+        rows = conv_utils.conv_output_length(rows, self.pool_size[0], self.padding,
+                                             self.strides[0])
+        cols = conv_utils.conv_output_length(cols, self.pool_size[1], self.padding,
+                                             self.strides[1])
+        if self.data_format == 'channels_first':
+            return tensor_shape.TensorShape(
+                [input_shape[0], input_shape[1], rows, cols])
+        else:
+            return tensor_shape.TensorShape(
+                [input_shape[0], rows, cols, input_shape[3]])
+
+    def get_config(self):
+        config = {
+            'pool_size': self.pool_size,
+            'padding': self.padding,
+            'strides': self.strides,
+            'data_format': self.data_format
+        }
+        base_config = super(ComplexPooling2D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.33'
+__version__ = '0.0.34'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
