@@ -13,6 +13,10 @@ import logging
 logger = logging.getLogger(cvnn.__name__)
 
 
+def iscomplex(inputs):
+    return inputs.dtype.is_complex
+
+
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
     """
     Opens Matlab matrix (.mat) as numpy array.
@@ -154,6 +158,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.16'
+__version__ = '0.0.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

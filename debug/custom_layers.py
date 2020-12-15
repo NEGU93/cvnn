@@ -1,5 +1,5 @@
 import numpy as np
-from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput
+from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D
 from cvnn.initializers import GlorotUniform
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -135,4 +135,8 @@ def fashion_mnist_example():
 
 
 if __name__ == '__main__':
-    fashion_mnist_example()
+    input_shape = (4, 28, 28, 3)
+    x = tf.cast(tf.random.normal(input_shape), tf.complex64)
+    y = ComplexConv2D(2, 3, activation='cart_relu', padding="same", input_shape=input_shape[1:], dtype=x.dtype)(x)
+    print(y.shape)
+    print(y.dtype)
