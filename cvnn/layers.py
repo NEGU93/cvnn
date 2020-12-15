@@ -1,9 +1,7 @@
 import tensorflow as tf
-import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Flatten, Dense, InputLayer
 from tensorflow import TensorShape, Tensor
 import numpy as np
-from cvnn.activation_functions import cart_relu, convert_to_real_with_abs
 from cvnn import logger
 from pdb import set_trace
 # Typing
@@ -46,9 +44,10 @@ class ComplexDense(Dense):
                  dtype=DEFAULT_COMPLEX_TYPE,
                  **kwargs):
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
-                                    kernel_initializer=kernel_initializer,
-                                    bias_initializer=bias_initializer, **kwargs)
-        self.my_dtype = tf.dtypes.as_dtype(dtype)    # Cannot override dtype of the layer because it has a read-only @property
+                                           kernel_initializer=kernel_initializer,
+                                           bias_initializer=bias_initializer, **kwargs)
+        # Cannot override dtype of the layer because it has a read-only @property
+        self.my_dtype = tf.dtypes.as_dtype(dtype)
          
     def build(self, input_shape):
         if self.my_dtype.is_complex:
@@ -95,113 +94,11 @@ class ComplexDense(Dense):
         return self.activation(out)
 
 
-def small_example():
-    img_r = np.array([[
-        [0, 1, 2], 
-        [0, 2, 2], 
-        [0, 5, 7]
-    ],[
-        [0, 4, 5], 
-        [3, 7, 9], 
-        [4, 5, 3]
-    ]]).astype(np.float32)
-    img_i = np.array([[
-        [0, 4, 5], 
-        [3, 7, 9], 
-        [4, 5, 3]
-    ],[
-        [0, 4, 5], 
-        [3, 7, 9], 
-        [4, 5, 3]
-    ]]).astype(np.float32)
-    img =img_r + 1j * img_i
-    c_flat = ComplexFlatten()
-    c_dense = ComplexDense(units=10)
-    res = c_dense(c_flat(img.astype(np.complex64)))
-
-
-def serial_layers():
-    model = tf.keras.models.Sequential()
-    model.add(ComplexDense(32, activation='relu', input_shape=(32, 32, 3)))
-    model.add(ComplexDense(32))
-    print(model.output_shape)
-
-
-def normalize_img(image, label):
-    """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255., label
-
-
-def mnist_example():
-    tf.enable_v2_behavior()
-    
-    (ds_train, ds_test), ds_info = tfds.load(
-        'mnist',
-        split=['train', 'test'],
-        shuffle_files=True,
-        as_supervised=True,
-        with_info=True,
-    )
-    ds_train = ds_train.map(
-        normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    ds_train = ds_train.cache()
-    ds_train = ds_train.shuffle(ds_info.splits['train'].num_examples)
-    ds_train = ds_train.batch(128)
-    ds_train = ds_train.prefetch(tf.data.experimental.AUTOTUNE)
-    ds_test = ds_test.map(
-    normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    ds_test = ds_test.batch(128)
-    ds_test = ds_test.cache()
-    ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
-    
-    model = tf.keras.models.Sequential([
-        ComplexFlatten(input_shape=(28, 28, 1)),
-        ComplexDense(128,activation='relu', dtype=tf.float32),
-        ComplexDense(10, dtype=tf.float32)
-    ])
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
-    )
-
-    model.fit(
-        ds_train,
-        epochs=6,
-        validation_data=ds_test,
-    )
-
-
-if __name__ == "__main__":
-    dtype_1 = np.complex64
-    fashion_mnist = tf.keras.datasets.fashion_mnist
-    (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
-    train_images = train_images.astype(dtype_1)
-    test_images = test_images.astype(dtype_1)
-    train_labels = train_labels.astype(dtype_1)
-    test_labels = test_labels.astype(dtype_1)
-
-    model = tf.keras.Sequential([
-        ComplexInput(input_shape=(28, 28)),
-        ComplexFlatten(),
-        ComplexDense(128, activation='cart_relu'),
-        ComplexDense(10, activation='convert_to_real_with_abs')
-    ])
-    model.summary()
-    model.compile(optimizer='adam',
-                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                  metrics=['accuracy']
-                  )
-    model.fit(train_images, train_labels, epochs=10)
-    
-    # import pdb; pdb.set_trace()
-
-
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '0.0.29'
+__version__ = '0.0.30'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
