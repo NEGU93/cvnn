@@ -1,5 +1,5 @@
 import numpy as np
-from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D
+from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D
 from cvnn.initializers import GlorotUniform
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -65,6 +65,13 @@ def serial_layers():
 
     res = model(img)
 
+
+def shape_ad_dtype_of_conv2d():
+    input_shape = (4, 28, 28, 3)
+    x = tf.cast(tf.random.normal(input_shape), tf.complex64)
+    y = ComplexConv2D(2, 3, activation='cart_relu', padding="same", input_shape=input_shape[1:], dtype=x.dtype)(x)
+    print(y.shape)
+    print(y.dtype)
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
@@ -135,8 +142,26 @@ def fashion_mnist_example():
 
 
 if __name__ == '__main__':
-    input_shape = (4, 28, 28, 3)
-    x = tf.cast(tf.random.normal(input_shape), tf.complex64)
-    y = ComplexConv2D(2, 3, activation='cart_relu', padding="same", input_shape=input_shape[1:], dtype=x.dtype)(x)
-    print(y.shape)
-    print(y.dtype)
+    img_r = np.array([[
+        [0, 1, 2],
+        [0, 2, 2],
+        [0, 5, 7]
+    ], [
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ]]).astype(np.float32)
+    img_i = np.array([[
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ], [
+        [0, 4, 5],
+        [3, 2, 2],
+        [4, 8, 9]
+    ]]).astype(np.float32)
+    img = img_r + 1j * img_i
+    img = np.reshape(img, (2, 3, 3, 1))
+    max_pool = ComplexMaxPooling2D(strides=1)
+    res = max_pool(img.astype(np.complex64))
+    set_trace()

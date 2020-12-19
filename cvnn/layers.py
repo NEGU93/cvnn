@@ -773,7 +773,7 @@ class ComplexPooling2D(Layer):
             data_format = backend.image_data_format()
         if strides is None:
             strides = pool_size
-        self.pool_size = conv_utils.normalize_tuple(pool_size, 2, 'pool_size')
+        self.pool_size = conv_utils.normalize_tuple(pool_size, 2, 'pool_size')      # Values are checked here. No need to check them latter.
         self.strides = conv_utils.normalize_tuple(strides, 2, 'strides')
         self.padding = conv_utils.normalize_padding(padding)
         self.data_format = conv_utils.normalize_data_format(data_format)
@@ -827,6 +827,19 @@ class ComplexPooling2D(Layer):
         base_config = super(ComplexPooling2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
+
+class ComplexMaxPooling2D(ComplexPooling2D):
+    
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value. This will still work on real values.
+        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
+        flat_in = tf.reshape(inputs, (inputs.shape[0], np.prod(inputs.shape[1:])))      # Flatten input and argmax to make them equivalent
+        flat_argmax = tf.reshape(argmax, (argmax.shape[0], np.prod(argmax.shape[1:])))
+        res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
+        tf_res = tf.reshape(res, output.shape)
+        # assert np.all(tf_res == output)             # For debugging when the input is real only!
+        return tf_res
+    
 
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
