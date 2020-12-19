@@ -1,5 +1,5 @@
 import numpy as np
-from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D
+from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, ComplexAvgPooling2D
 from cvnn.initializers import GlorotUniform
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -141,7 +141,7 @@ def fashion_mnist_example():
     # import pdb; pdb.set_trace()
 
 
-if __name__ == '__main__':
+def complex_max_pool_2d():
     img_r = np.array([[
         [0, 1, 2],
         [0, 2, 2],
@@ -165,3 +165,33 @@ if __name__ == '__main__':
     max_pool = ComplexMaxPooling2D(strides=1)
     res = max_pool(img.astype(np.complex64))
     set_trace()
+
+complex_avg_pool():
+    img_r = np.array([[
+        [0, 1, 2],
+        [0, 2, 2],
+        [0, 5, 7]
+    ], [
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ]]).astype(np.float32)
+    img_i = np.array([[
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ], [
+        [0, 4, 5],
+        [3, 2, 2],
+        [4, 8, 9]
+    ]]).astype(np.float32)
+    img = img_r + 1j * img_i
+    img = np.reshape(img, (2, 3, 3, 1))
+    avg_pool = ComplexAvgPooling2D(strides=1)
+    res = avg_pool(img.astype(np.complex64))
+    expected_res = np.array([[[[0.75+3.5j ], [1.75+6.25j]], [[1.75+4.75j], [4.  +6.j  ]]], [[[3.5 +2.25j], [6.25+3.25j]], [[4.75+4.25j], [6.  +5.25j]]]])
+    assert (res == expected_res.astype(np.complex64)).numpy().all()
+
+if __name__ == '__main__':
+    set_trace()
+    

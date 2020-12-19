@@ -841,6 +841,21 @@ class ComplexMaxPooling2D(ComplexPooling2D):
         return tf_res
     
 
+class ComplexAvgPooling2D(ComplexPooling2D):
+    
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        inputs_r = tf.math.real(inputs)
+        inputs_i = tf.math.imag(inputs)
+        output_r = tf.nn.avg_pool2d(input=inputs_r, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        output_i = tf.nn.avg_pool2d(input=inputs_i, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        if inputs.dtype.is_complex:
+            output = tf.complex(output_r, output_i)
+        else:
+            output = output_r
+        return output
+
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
