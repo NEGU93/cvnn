@@ -73,6 +73,7 @@ def shape_ad_dtype_of_conv2d():
     print(y.shape)
     print(y.dtype)
 
+
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
     return tf.cast(image, tf.float32) / 255., label
@@ -166,7 +167,8 @@ def complex_max_pool_2d():
     res = max_pool(img.astype(np.complex64))
     set_trace()
 
-complex_avg_pool():
+
+def complex_avg_pool():
     img_r = np.array([[
         [0, 1, 2],
         [0, 2, 2],

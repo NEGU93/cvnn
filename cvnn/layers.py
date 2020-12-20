@@ -856,6 +856,7 @@ class ComplexAvgPooling2D(ComplexPooling2D):
             output = output_r
         return output
 
+
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']

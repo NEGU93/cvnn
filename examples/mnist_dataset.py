@@ -1,7 +1,5 @@
-import tensorflow.compat.v2 as tf
+import tensorflow as tf
 import tensorflow_datasets as tfds
-import cvnn.optimizers as optimizers
-from cvnn.cvnn_model import CvnnModel
 from cvnn import layers
 import numpy as np
 from tqdm import tqdm
@@ -15,7 +13,6 @@ except ModuleNotFoundError:
     PLOTLY = False
 
 tfds.disable_progress_bar()
-tf.enable_v2_behavior()
 
 PLOTLY_CONFIG = {
     'scrollZoom': True,
@@ -26,10 +23,6 @@ PLOTLY_CONFIG = {
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
     return tf.cast(image, tf.float32) / 255., label
-
-
-def normalize(image):
-    return (image / 255.).astype(np.float32)
 
 
 def get_dataset():
@@ -55,7 +48,7 @@ def get_dataset():
     return ds_train, ds_test
 
 
-def keras_fit(ds_train, ds_test, verbose, optimizer="Adam"):
+def keras_fit(ds_train, ds_test, verbose=True):
     # https://www.tensorflow.org/datasets/keras_example
     model = tf.keras.models.Sequential([
       tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
@@ -64,7 +57,7 @@ def keras_fit(ds_train, ds_test, verbose, optimizer="Adam"):
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
-        optimizer=optimizer,  # ATTENTION: The only difference with the link.
+        optimizer=tf.keras.optimizers.Adam(0.001),
         metrics=['accuracy'],
     )
     start = timeit.default_timer()
@@ -78,35 +71,29 @@ def keras_fit(ds_train, ds_test, verbose, optimizer="Adam"):
     return model.evaluate(ds_test, verbose=verbose), stop - start
 
 
-def own_fit(ds_train, ds_test, verbose,
-            optimizer="Adam",
-            activation_1=tf.keras.activations.relu, activation_2=tf.keras.activations.softmax,
-            weight_initializer=tf.keras.initializers.GlorotUniform(), bias_initializer=tf.keras.initializers.Zeros()):
-    shape = [
-        layers.Flatten(input_size=(28, 28, 1), input_dtype=np.float32),
-        layers.Dense(output_size=128,
-                     activation=activation_1,
-                     input_dtype=np.float32, dropout=None,
-                     weight_initializer=weight_initializer,
-                     bias_initializer=bias_initializer
-                     ),
-        layers.Dense(output_size=10,
-                     activation=activation_2,
-                     weight_initializer=weight_initializer,
-                     bias_initializer=bias_initializer
-                     )
-    ]
-    model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
-                      optimizer=optimizer,
-                      tensorboard=False, verbose=False)
+def own_fit(ds_train, ds_test, verbose=True):
+    model = tf.keras.models.Sequential([
+        layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
+        layers.ComplexDense(128, activation='cart_relu', dtype=np.float32),
+        layers.ComplexDense(10, activation='softmax_real', dtype=np.float32)
+    ])
+    model.compile(
+        loss='sparse_categorical_crossentropy',
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        metrics=['accuracy'],
+    )
     start = timeit.default_timer()
-    model.fit(x=ds_train, y=None, validation_data=ds_test, epochs=6,
-              verbose=verbose, save_csv_history=True)
+    model.fit(
+        ds_train,
+        epochs=6,
+        validation_data=ds_test,
+        verbose=verbose
+    )
     stop = timeit.default_timer()
-    return model.evaluate(ds_test), stop - start
+    return model.evaluate(ds_test, verbose=verbose), stop - start
 
 
-def test_mnist_montecarlo(optimizer_name='Adam'):
+def test_mnist_montecarlo():
     # Parameters
     KERAS_DEBUG = True
     OWN_MODEL = True
@@ -119,10 +106,6 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     own_results = []
     keras_fit_time = []
     own_fit_time = []
-    activation_1 = tf.keras.activations.relu
-    activation_2 = tf.keras.activations.softmax
-    weight_initializer = tf.keras.initializers.GlorotUniform()
-    bias_initializer = tf.keras.initializers.Zeros()
     if PLOTLY:
         fig = go.Figure()
         fig_time = go.Figure()
@@ -130,9 +113,7 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     if OWN_MODEL:
         tf.print("Cvnn simulation")
         for _ in tqdm(range(iterations)):
-            result = own_fit(ds_train, ds_test, verbose=verbose, optimizer=optimizer_name,
-                             activation_1=activation_1, activation_2=activation_2,
-                             weight_initializer=weight_initializer, bias_initializer=bias_initializer)
+            result = own_fit(ds_train, ds_test, verbose=verbose)
             own_results.append(result[0][1])
             own_fit_time.append(result[-1])
         if PLOTLY:
@@ -141,22 +122,23 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     if KERAS_DEBUG:
         tf.print("Keras simulation")
         for _ in tqdm(range(iterations)):
-            result = keras_fit(ds_train, ds_test, verbose=verbose, optimizer=optimizer_name)
+            result = keras_fit(ds_train, ds_test, verbose=verbose)
             keras_results.append(result[0][1])
             keras_fit_time.append(result[-1])
-        fig.add_trace(go.Box(y=keras_results, name='Keras'))
-        fig_time.add_trace(go.Box(y=keras_fit_time, name='Keras'))
+        if PLOTLY:  
+            fig.add_trace(go.Box(y=keras_results, name='Keras'))
+            fig_time.add_trace(go.Box(y=keras_fit_time, name='Keras'))
     if PLOTLY:
-        plotly.offline.plot(fig, filename="./results/" + optimizer_name + "_mnist_test.html",
+        plotly.offline.plot(fig, filename="./results/mnist_test.html",
                             config=PLOTLY_CONFIG, auto_open=True)
-        plotly.offline.plot(fig_time, filename="./results/" + optimizer_name + "_mnist_test_fit_time.html",
+        plotly.offline.plot(fig_time, filename="./results/mnist_test_fit_time.html",
                             config=PLOTLY_CONFIG, auto_open=True)
     own_results = np.array(own_results)
     keras_results = np.array(keras_results)
-    np.save("./results/keras_" + optimizer_name + "_mnist_test.npy", keras_results)
-    np.save("./results/own_" + optimizer_name + "_mnist_test.npy", own_results)
+    np.save("./results/keras_mnist_test.npy", keras_results)
+    np.save("./results/own_mnist_test.npy", own_results)
     own_err = own_results.std() * 2.576 / np.sqrt(50)
-    own_mean = 0.975692
+    own_mean = own_results.mean()
     keras_err = keras_results.std() * 2.576 / np.sqrt(50)
     keras_mean = keras_results.mean()
     q75, q25 = np.percentile(own_results, [75, 25])
@@ -165,10 +147,8 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
     q75, q25 = np.percentile(keras_results, [75, 25])
     keras_median_err = 1.57 * (q75 - q25) / np.sqrt(50)
     keras_median = np.median(keras_results)
-    mean_str = "Own Mean: {0} +- {1}\nKeras Mean: {2} +- {3}\n".format(own_mean * 100, own_err * 100, keras_mean * 100,
-                                                                       keras_err * 100)
-    median_str = "Own Median: {0} +- {1}\nKeras Median: {2} +- {3}\n".format(own_median * 100, own_median_err * 100,
-                                                                             keras_median * 100, keras_median_err * 100)
+    mean_str = f"Own Mean: {own_mean * 100} +- {own_err * 100}\nKeras Mean: {keras_mean * 100} +- {keras_err * 100}\n"
+    median_str = f"Own Median: {own_median * 100} +- {own_median_err * 100}\nKeras Median: {keras_median * 100} +- {keras_median_err * 100}\n"
     f = open("rmsprop_results.txt", "w+")
     f.write(mean_str)
     f.write(median_str)
@@ -176,8 +156,9 @@ def test_mnist_montecarlo(optimizer_name='Adam'):
 
 
 if __name__ == "__main__":
-    test_mnist_montecarlo("RMSprop")
-    # test_mnist_montecarlo("SGD")
-    # test_mnist_montecarlo()
+    test_mnist_montecarlo()
+    # ds_train, ds_test = get_dataset()
+    # keras_fit(ds_train, ds_test)
+    # own_fit(ds_train, ds_test)
 
 
