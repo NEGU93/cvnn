@@ -11,9 +11,9 @@ def keras_fit(epochs=10):
     init = tf.keras.initializers.GlorotUniform(seed=117)
     model = models.Sequential()
     model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3), kernel_initializer=init))
-    model.add(layers.AveragePooling2D((2, 2)))
+    model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=init))
-    model.add(layers.AveragePooling2D((2, 2)))
+    model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer=init))
     model.add(layers.Flatten())
     model.add(layers.Dense(64, activation='relu', kernel_initializer=init))
@@ -29,13 +29,14 @@ def own_fit(epochs=10):
     init = tf.keras.initializers.GlorotUniform(seed=117)
     model = models.Sequential()
     model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu', input_shape=(32, 32, 3), dtype=np.float32, kernel_initializer=init))
-    model.add(complex_layers.ComplexAvgPooling2D((2, 2), dtype=np.float32))
+    model.add(complex_layers.ComplexMaxPooling2D((2, 2), dtype=np.float32))
     model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu', dtype=np.float32, kernel_initializer=init))
-    model.add(complex_layers.ComplexAvgPooling2D((2, 2), dtype=np.float32))
+    model.add(complex_layers.ComplexMaxPooling2D((2, 2), dtype=np.float32))
     model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu', dtype=np.float32, kernel_initializer=init))
     model.add(complex_layers.ComplexFlatten())
     model.add(complex_layers.ComplexDense(64, activation='cart_relu', dtype=np.float32, kernel_initializer=init))
     model.add(complex_layers.ComplexDense(10, dtype=np.float32, kernel_initializer=init))
+    # model.summary()
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
@@ -52,3 +53,4 @@ def test_fashion_mnist():
     
 if __name__ == "__main__":
     test_fashion_mnist()
+    # own_fit(epochs=1)
