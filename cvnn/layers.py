@@ -181,7 +181,7 @@ class ComplexConv(Layer):
             activity_regularizer=regularizers.get(activity_regularizer),
             **kwargs)
         self.rank = rank
-        self.my_dtype = dtype  # I use no default dtype to make sure I don't forget to give it to my ComplexConv layers
+        self.my_dtype = tf.dtypes.as_dtype(dtype)  # I use no default dtype to make sure I don't forget to give it to my ComplexConv layers
         if isinstance(filters, float):
             filters = int(filters)
         self.filters = filters
@@ -833,8 +833,9 @@ class ComplexMaxPooling2D(ComplexPooling2D):
     def pool_function(self, inputs, ksize, strides, padding, data_format):
         abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value. This will still work on real values.
         output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
-        flat_in = tf.reshape(inputs, (inputs.shape[0], np.prod(inputs.shape[1:])))      # Flatten input and argmax to make them equivalent
-        flat_argmax = tf.reshape(argmax, (argmax.shape[0], np.prod(argmax.shape[1:])))
+        # TODO: Not working for shape[0] = None!
+        flat_in = tf.reshape(inputs, [inputs.shape[0], np.prod(inputs.shape[1:])])      # Flatten input and argmax to make them equivalent
+        flat_argmax = tf.reshape(argmax, [argmax.shape[0], np.prod(argmax.shape[1:])])
         res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
         tf_res = tf.reshape(res, output.shape)
         # assert np.all(tf_res == output)             # For debugging when the input is real only!
