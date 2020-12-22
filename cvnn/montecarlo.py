@@ -2,11 +2,12 @@ import logging
 import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
-from cvnn.cvnn_model import CvnnModel
+import tensorflow as tf
 from cvnn.data_analysis import MonteCarloAnalyzer
-from cvnn.layers import Dense
-from cvnn.utils import transform_to_real, randomize
+from cvnn.layers import ComplexDense
+from cvnn.utils import transform_to_real, randomize, is_model_complex
 from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras import Model
 import pandas as pd
 import copy
 from openpyxl import load_workbook, Workbook
@@ -20,10 +21,9 @@ from cvnn.utils import median_error
 # typing
 from pathlib import Path
 from typing import Union, Optional, List, Tuple
-from cvnn.optimizers import t_optimizer
 from cvnn.activation_functions import t_activation
 from tensorflow import data
-from cvnn.cvnn_model import t_List
+from typing import Type
 
 logger = logging.getLogger(cvnn.__name__)
 
@@ -41,14 +41,14 @@ class MonteCarlo:
         self.confusion_matrix = []
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
 
-    def add_model(self, model: CvnnModel):
+    def add_model(self, model: Type[Model]):
         """
         Adds a cvnn.CvnnModel to the list to then comparate between them
         """
         self.models.append(model)
 
     def run(self, x, y, data_summary: str = '', polar: bool = False, do_conf_mat: bool = True,
-            validation_split: float = 0.2, validation_data: Optional[Union[Tuple[t_List], data.Dataset]] = None,
+            validation_split: float = 0.2, validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add the tuple of validation data details.
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
             shuffle: bool = True, debug: bool = False, display_freq=1, checkpoints: bool = False):
         """
@@ -109,7 +109,7 @@ class MonteCarlo:
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
                 val_data_fit = None
-                if model.is_complex():
+                if is_model_complex(model):
                     x_fit = x
                     if validation_data is not None:
                         val_data_fit = validation_data
@@ -126,7 +126,7 @@ class MonteCarlo:
                                                    test_model.plotter.get_full_pandas_dataframe()], sort=False)
                 if do_conf_mat:
                     if validation_data is not None:  # TODO: Haven't yet done all cases here!
-                        if model.is_complex():
+                        if is_model_complex(model):
                             x_test, y_test = validation_data
                         else:
                             x_test, y_test = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
@@ -157,9 +157,9 @@ class MonteCarlo:
     @staticmethod
     def _run_summary(iterations: int, epochs: int, batch_size: int, shuffle: bool):
         ret_str = "Monte Carlo run\n"
-        ret_str += "\tIterations: {}\n".format(iterations)
-        ret_str += "\tepochs: {}\n".format(epochs)
-        ret_str += "\tbatch_size: {}\n".format(batch_size)
+        ret_str += f"\tIterations: {iterations}\n"
+        ret_str += f"\tepochs: {epochs}\n"
+        ret_str += f"\tbatch_size: {batch_size}\n"
         if shuffle:
             ret_str += "\tShuffle data at each iteration\n"
         else:
@@ -172,7 +172,7 @@ class MonteCarlo:
             file.write(data_summary)
             file.write("Models:\n")
             for model in self.models:
-                file.write(model.summary())
+                model.summary(print_fn=lambda x: file.write(x + '\n'))
 
 
 class RealVsComplex(MonteCarlo):
@@ -188,7 +188,7 @@ class RealVsComplex(MonteCarlo):
     ```
     """
 
-    def __init__(self, complex_model: CvnnModel, capacity_equivalent: bool = True, equiv_technique: str = 'ratio'):
+    def __init__(self, complex_model: Type[Model], capacity_equivalent: bool = True, equiv_technique: str = 'ratio'):
         """
         :param complex_model: cvnn.CvnnModel
         :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
@@ -211,10 +211,10 @@ class RealVsComplex(MonteCarlo):
 # ====================================
 #   Monte Carlo simulation methods
 # ====================================
-def run_montecarlo(models: List[CvnnModel], dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
+def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
                    iterations: int = 500,
                    epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
-                   validation_split: float = 0.2, validation_data: Optional[Union[Tuple[t_List], data.Dataset]] = None,
+                   validation_split: float = 0.2, validation_data: Optional[Union[Tuple, data.Dataset]] = None,     # TODO: Add vallidation data tuple details
                    debug: bool = False, polar: bool = False, do_all: bool = True, do_conf_mat: bool = True) -> str:
     """
     This function is used to compare different neural networks performance.
@@ -281,10 +281,10 @@ def run_montecarlo(models: List[CvnnModel], dataset: cvnn.dataset.Dataset, open_
 
 def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: int = 128, param_list=None,
                                     epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
-                                    optimizer: t_optimizer = 'sgd',
+                                    optimizer='sgd',       # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
                                     debug: bool = False, polar: bool = False, do_all: bool = True,
-                                    dropout: Optional[float] = None, models: Optional[List[CvnnModel]] = None) -> str:
+                                    dropout: Optional[float] = None, models: Optional[List[Model]] = None) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
         1. Generates a complex-valued gaussian correlated noise with the characteristics given by the inputs.
@@ -345,11 +345,11 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
 def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
                                        iterations: int = 1000,
                                        epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
-                                       optimizer: t_optimizer = 'sgd',
+                                       optimizer='sgd',     # TODO: Typing
                                        shape_raw=None, activation: t_activation = 'cart_relu',
                                        debug:  bool = False, polar: bool = False, do_all: bool = True,
                                        dropout: float = 0.5, validation_split: float = 0.2,
-                                       validation_data: Optional[Union[Tuple[t_List], data.Dataset]] = None,
+                                       validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                        do_conf_mat: bool = True, checkpoints: bool = False,
                                        shuffle: bool = False) -> str:

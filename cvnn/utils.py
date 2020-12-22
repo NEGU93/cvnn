@@ -3,15 +3,22 @@ from datetime import datetime
 from pathlib import Path
 from pdb import set_trace
 import sys
+from tensorflow.python.keras import Model
+import tensorflow as tf     # TODO: Imported only for dtype
 import os
 from os.path import join
 from scipy.io import loadmat
 # To test logger:
 import cvnn
 import logging
+from typing import Type
 
 logger = logging.getLogger(cvnn.__name__)
 
+
+def is_model_complex(model: Type[Model]) -> bool:
+    return tf.dtypes.as_dtype(model.get_layer(index=0).dtype).is_complex
+    
 
 def iscomplex(inputs):
     return inputs.dtype.is_complex
@@ -78,6 +85,10 @@ def transform_to_real(x_complex, polar=False):
     :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
     """
     # import pdb; pdb.set_trace()
+    if not tf.dtypes.as_dtype(x_complex.dtype).is_complex:
+        # Intput was not complex, nothing to do
+        return x_complex
+    set_trace()
     m = np.shape(x_complex)[0]
     n = np.shape(x_complex)[1]
     x_real = np.ones((m, 2*n))
