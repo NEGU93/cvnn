@@ -457,7 +457,7 @@ class SeveralMonteCarloComparison:
 
 class Plotter:
 
-    def __init__(self, path, file_suffix="_results_fit.csv"):
+    def __init__(self, path, file_suffix:str = "_results_fit.csv", data_results_dict: dict = None, model_name: str = None):
         """
         This class manages the plot of results for a model train.
         It opens the csv files (test and train) saved during training and plots results as wrt each step saved.
@@ -476,6 +476,12 @@ class Plotter:
         self.file_suffix = file_suffix
         self.pandas_list = []
         self.labels = []
+        self.model_name = model_name
+        
+        if data_results_dict:
+            result_pandas = pd.DataFrame.from_dict(data_results_dict)
+            result_pandas.to_csv(self.path / f"{model_name}{file_suffix}", index=False)
+        
         self._csv_to_pandas()
 
     def _csv_to_pandas(self):
@@ -508,7 +514,7 @@ class Plotter:
         Merges every dataframe obtained from each csv file into a single dataframe.
         It adds the columns:
             - network: name of the train model
-            - step: information of the step index
+            - epoch: information of the step index
             - path: path where the information of the train model was saved (used as parameter with the constructor)
         :retun: pd.Dataframe
         """
@@ -524,7 +530,7 @@ class Plotter:
 
         result = pd.DataFrame({
             'network': [self.get_net_name()] * length,
-            # 'step': list(range(length)), # No longer needed, already added in base file
+            'epoch': list(range(1, length+1)),
             'path': [self.path] * length
         })
 
@@ -534,7 +540,9 @@ class Plotter:
             result = pd.concat([result, data_frame], axis=1, sort=False)
         return result
 
-    def get_net_name(self):
+    def get_net_name(self) -> str:
+        if self.model_name:
+            return self.model_name
         str_to_match = "_metadata.txt"
         for file in os.listdir(self.path):
             if file.endswith(str_to_match):
@@ -868,7 +876,7 @@ class MonteCarloAnalyzer:
         else:  # I have nothing
             self.path = create_folder("./log/montecarlo/")
             self.df = pd.DataFrame()
-        self.plotable_info = ['train loss', 'test loss', 'train accuracy', 'test accuracy']  # TODO: Consider delete
+        self.plotable_info = ['loss', 'val_loss', 'accuracy', 'val_accuracy']  # TODO: Consider delete
         self.monte_carlo_plotter = MonteCarloPlotter(self.path)
         self.summary = []
 
@@ -889,17 +897,14 @@ class MonteCarloAnalyzer:
         networks_availables = self.df.network.unique()
         for net in networks_availables:
             data = self.df[self.df.network == net]
-            cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+            cols = ['loss', 'val_loss', 'accuracy', 'val_accuracy']
             frames = []
             keys = []
-            epochs = []
-            for step in data.step.unique():
-                desc_frame = data[data.step == step][cols].describe()
+            for epoch in data.epoch.unique():
+                desc_frame = data[data.epoch == epoch][cols].describe()
                 frames.append(desc_frame)
-                epochs += [data[data.step == step]['epoch'].iloc[0]] * len(desc_frame)
-                keys.append(step)
-            data_to_save = pd.concat(frames, keys=keys, names=['step', 'stats'])
-            data_to_save['epoch'] = epochs
+                keys.append(epoch)
+            data_to_save = pd.concat(frames, keys=keys, names=['epoch', 'stats'])
             data_to_save.to_csv(self.path / (net + "_statistical_result.csv"))
             self.summary.append(data_to_save)
         # Save confusion matrix
@@ -939,7 +944,7 @@ class MonteCarloAnalyzer:
                     logger.warning("Could not plot " + key + " line_confidence_interval with " + str(lib),
                                    exc_info=True)
 
-    def box_plot(self, step=-1, library='plotly', key='test accuracy', showfig=False, savefig=True, extension='.svg'):
+    def box_plot(self, step=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
             self._box_plot_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
         elif library == 'seaborn':
@@ -948,7 +953,7 @@ class MonteCarloAnalyzer:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _box_plot_plotly(self, step=-1, key='test accuracy', showfig=False, savefig=True):
+    def _box_plot_plotly(self, step=-1, key='val_accuracy', showfig=False, savefig=True):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._box_plot_plotly.__name__ +
                            " was called but will be omitted")
@@ -999,7 +1004,7 @@ class MonteCarloAnalyzer:
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
-    def _box_plot_seaborn(self, step=-1, key='test accuracy', showfig=False, savefig=True, extension='.svg'):
+    def _box_plot_seaborn(self, step=-1, key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._box_plot_seaborn.__name__ +
                            " was called but will be omitted")
@@ -1053,7 +1058,7 @@ class MonteCarloAnalyzer:
         ])
         fig.show(config=PLOTLY_CONFIG)
 
-    def plot_3d_hist(self, steps=None, key='test accuracy', title=''):
+    def plot_3d_hist(self, steps=None, key='val_accuracy', title=''):
         # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
         # https://plot.ly/python/v3/3d-filled-line-plots/
         # https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
@@ -1107,7 +1112,7 @@ class MonteCarloAnalyzer:
                                     "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
                             config=PLOTLY_CONFIG, auto_open=False)
 
-    def plot_histogram(self, key='test accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
+    def plot_histogram(self, key='val_accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
                        extension=".svg"):
         if library == 'matplotlib':
             self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
@@ -1121,7 +1126,7 @@ class MonteCarloAnalyzer:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_histogram_matplotlib(self, key='test accuracy', step=-1,
+    def _plot_histogram_matplotlib(self, key='val_accuracy', step=-1,
                                    showfig=False, savefig=True, title='', extension=".svg"):
         if 'matplotlib' not in AVAILABLE_LIBRARIES:
             logger.warning("No Matplotlib installed, function " + self._plot_histogram_matplotlib.__name__ +
@@ -1149,7 +1154,7 @@ class MonteCarloAnalyzer:
                    showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='test accuracy', step=-1, showfig=False, savefig=True, title=''):
+    def _plot_histogram_plotly(self, key='val_accuracy', step=-1, showfig=False, savefig=True, title=''):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._plot_histogram_plotly.__name__ +
                            " was called but will be omitted")
@@ -1188,7 +1193,7 @@ class MonteCarloAnalyzer:
             fig.show(config=PLOTLY_CONFIG)
         return fig
 
-    def _plot_histogram_seaborn(self, key='test accuracy', step=-1,
+    def _plot_histogram_seaborn(self, key='val_accuracy', step=-1,
                                 showfig=True, savefig=True, title='', extension=".svg"):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._plot_histogram_seaborn.__name__ +

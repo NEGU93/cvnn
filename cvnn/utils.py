@@ -16,6 +16,33 @@ from typing import Type
 logger = logging.getLogger(cvnn.__name__)
 
 
+
+def reset_weights(model: Type[Model]):
+    # https://github.com/keras-team/keras/issues/341#issuecomment-539198392
+    for layer in model.layers:
+        if isinstance(layer, tf.keras.Model): #if you're using a model as a layer
+            reset_weights(layer) #apply function recursively
+            continue
+
+        #where are the initializers?
+        if hasattr(layer, 'cell'):
+            init_container = layer.cell
+        else:
+            init_container = layer
+
+        for key, initializer in init_container.__dict__.items():
+            if "initializer" not in key: #is this item an initializer?
+                  continue #if no, skip it
+
+            # find the corresponding variable, like the kernel or the bias
+            if key == 'recurrent_initializer': #special case check
+                var = getattr(init_container, 'recurrent_kernel')
+            else:
+                var = getattr(init_container, key.replace("_initializer", ""))
+
+            var.assign(initializer(var.shape, var.dtype))
+
+
 def is_model_complex(model: Type[Model]) -> bool:
     return tf.dtypes.as_dtype(model.get_layer(index=0).dtype).is_complex
     

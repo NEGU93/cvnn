@@ -3,7 +3,7 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 import tensorflow as tf
-from cvnn.data_analysis import MonteCarloAnalyzer
+from cvnn.data_analysis import MonteCarloAnalyzer, Plotter
 from cvnn.layers import ComplexDense
 from cvnn.utils import transform_to_real, randomize, is_model_complex
 from tensorflow.keras.losses import categorical_crossentropy
@@ -50,7 +50,7 @@ class MonteCarlo:
     def run(self, x, y, data_summary: str = '', polar: bool = False, do_conf_mat: bool = True,
             validation_split: float = 0.2, validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add the tuple of validation data details.
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
-            shuffle: bool = True, debug: bool = False, display_freq=1, checkpoints: bool = False):
+            shuffle: bool = True, debug: bool = False, display_freq: int = 1, checkpoints: bool = False):
         """
         This function is used to compare all models added with `self.add_model` method.
         Runs the iteration dataset (x, y).
@@ -82,8 +82,8 @@ class MonteCarlo:
         :param iterations: Number of iterations to be done for each model
         :param epochs: Number of epochs for each iteration
         :param batch_size: Batch size at each iteration
-        :param display_freq: Integer (Default 1)
-            Frequency on terms of epochs before saving information and running a checkpoint.
+        :param display_freq: Integer (Default 1). Only relevant if validation data is provided.
+            Frequency on terms of epochs before running the validation.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
         :param debug:
         :param checkpoints:
@@ -91,11 +91,11 @@ class MonteCarlo:
             It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
         """
         x, y = randomize(x, y)
+        w_save = []
+        for model in self.models:       # ATTENTION: This will omake all models have the SAME weights, not ideal
+            w_save.append(model.get_weights())     # Save model weights
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
-        if do_conf_mat:
-            for i in range(len(self.models)):
-                self.confusion_matrix.append({"name": "model_name", "matrix": pd.DataFrame()})
         self.save_summary_of_run(self._run_summary(iterations, epochs, batch_size, shuffle),
                                  data_summary)
         if not debug:
@@ -103,8 +103,6 @@ class MonteCarlo:
         for it in range(iterations):
             if debug:
                 logger.info("Iteration {}/{}".format(it + 1, iterations))
-            else:
-                pbar.update()
             if shuffle:  # shuffle all data at each iteration
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
@@ -117,45 +115,32 @@ class MonteCarlo:
                     x_fit = transform_to_real(x, polar=polar)
                     if validation_data is not None:
                         val_data_fit = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
-                test_model = copy.deepcopy(model)
-                test_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
-                               epochs=epochs, batch_size=batch_size,
-                               verbose=debug, display_freq=display_freq,
-                               save_csv_history=True)  # Must have save_csv_history to do the montecarlo results latter
-                self.pandas_full_data = pd.concat([self.pandas_full_data,
-                                                   test_model.plotter.get_full_pandas_dataframe()], sort=False)
-                if do_conf_mat:
-                    if validation_data is not None:  # TODO: Haven't yet done all cases here!
-                        if is_model_complex(model):
-                            x_test, y_test = validation_data
-                        else:
-                            x_test, y_test = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
-                    else:
-                        dataset = dp.Dataset(x_fit, y, ratio=1 - validation_split)
-                        x_test = dataset.x_test
-                        y_test = dataset.y_test
-                    self.confusion_matrix[i]["name"] = test_model.name
-                    try:
-                        # set_trace()
-                        self.confusion_matrix[i]["matrix"] = pd.concat((self.confusion_matrix[i]["matrix"],
-                                                                        test_model.get_confusion_matrix(x_test,
-                                                                                                        y_test)))
-                    except ValueError:
-                        logger.warning("ValueError: Could not do confusion matrix. No objects to concatenate. "
-                                       "Not all formats of validation dataset supported yet.")
+                if validation_data is not None:
+                    validation_split = 0.0
+                model.set_weights(w_save[i])
+                run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
+                                       epochs=epochs, batch_size=batch_size,
+                                       verbose=debug, validation_freq=display_freq)  # TODO: Must have save_csv_history to do the montecarlo results latter
+                # 
+                # Save all results
+                temp_path = self.monte_carlo_analyzer.path / f"iteration{it}_model{i}_{model.name}"
+                os.makedirs(temp_path, exist_ok=True)
+                plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
+                self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
+                with open(temp_path / f'{model.name}_metadata.txt','w') as fh:
+                    model.summary(print_fn=lambda x: fh.write(x + '\n'))
+            if not debug:
+                pbar.update()
             if checkpoints:
                 # Save checkpoint in case Monte Carlo stops in the middle
                 self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
         if not debug:
             pbar.close()
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
-        conf_mat = None
-        if do_conf_mat:
-            conf_mat = self.confusion_matrix
-        self.monte_carlo_analyzer.set_df(self.pandas_full_data, conf_mat)
+        self.monte_carlo_analyzer.set_df(self.pandas_full_data)
 
     @staticmethod
-    def _run_summary(iterations: int, epochs: int, batch_size: int, shuffle: bool):
+    def _run_summary(iterations: int, epochs: int, batch_size: int, shuffle: bool) -> str:
         ret_str = "Monte Carlo run\n"
         ret_str += f"\tIterations: {iterations}\n"
         ret_str += f"\tepochs: {epochs}\n"
