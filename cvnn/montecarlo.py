@@ -1,22 +1,23 @@
 import logging
+import os
+import tensorflow as tf
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
+from pdb import set_trace
+from time import sleep
+from openpyxl import load_workbook, Workbook
+from openpyxl.worksheet.table import Table
+from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras import Model
+# Own modules
 import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
-import tensorflow as tf
 from cvnn.data_analysis import MonteCarloAnalyzer, Plotter
 from cvnn.layers import ComplexDense
-from cvnn.utils import transform_to_real, randomize, is_model_complex
-from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras import Model
-import pandas as pd
-import copy
-from openpyxl import load_workbook, Workbook
-from openpyxl.worksheet.table import Table
-import os
-from tqdm import tqdm
-import numpy as np
-from pdb import set_trace
-from time import sleep
+from cvnn.utils import transform_to_real, randomize
+from cvnn.real_equiv_tools import get_real_equivalent
 from cvnn.utils import median_error
 # typing
 from pathlib import Path
@@ -38,7 +39,6 @@ class MonteCarlo:
         """
         self.models = []
         self.pandas_full_data = pd.DataFrame()
-        self.confusion_matrix = []
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
 
     def add_model(self, model: Type[Model]):
@@ -107,7 +107,7 @@ class MonteCarlo:
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
                 val_data_fit = None
-                if is_model_complex(model):
+                if model.inputs[0].dtype.is_complex:
                     x_fit = x
                     if validation_data is not None:
                         val_data_fit = validation_data
@@ -120,14 +120,16 @@ class MonteCarlo:
                 model.set_weights(w_save[i])
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
-                                       verbose=debug, validation_freq=display_freq)  # TODO: Must have save_csv_history to do the montecarlo results latter
+                                       verbose=debug, validation_freq=display_freq)
+                # TODO: Must have save_csv_history to do the montecarlo results latter
                 # 
                 # Save all results
-                temp_path = self.monte_carlo_analyzer.path / f"iteration{it}_model{i}_{model.name}"
+                temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
                 os.makedirs(temp_path, exist_ok=True)
                 plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
-                self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
-                with open(temp_path / f'{model.name}_metadata.txt','w') as fh:
+                self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()],
+                                                  sort=False)
+                with open(temp_path / f'{model.name}_metadata.txt', 'w') as fh:
                     model.summary(print_fn=lambda x: fh.write(x + '\n'))
             if not debug:
                 pbar.update()
@@ -189,8 +191,8 @@ class RealVsComplex(MonteCarlo):
         super().__init__()
         # add models
         self.add_model(complex_model)
-        self.add_model(complex_model.get_real_equivalent(capacity_equivalent=capacity_equivalent,
-                                                         equiv_technique=equiv_technique, name="real_network"))
+        self.add_model(get_real_equivalent(complex_model, capacity_equivalent=capacity_equivalent,
+                                           equiv_technique=equiv_technique, name="real_network"))
 
 
 # ====================================
@@ -199,7 +201,8 @@ class RealVsComplex(MonteCarlo):
 def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
                    iterations: int = 500,
                    epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
-                   validation_split: float = 0.2, validation_data: Optional[Union[Tuple, data.Dataset]] = None,     # TODO: Add vallidation data tuple details
+                   validation_split: float = 0.2,
+                   validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
                    debug: bool = False, polar: bool = False, do_all: bool = True, do_conf_mat: bool = True) -> str:
     """
     This function is used to compare different neural networks performance.
@@ -395,23 +398,21 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
-    layers.ComplexLayer.last_layer_output_dtype = None
-    layers.ComplexLayer.last_layer_output_size = None
+    shape = [
+        layers.ComplexInput(input_shape=input_size)
+    ]
     if len(shape_raw) == 0:
         logger.warning("No hidden layers are used. activation and dropout will be ignored")
-        shape = [
-            Dense(input_size=input_size, output_size=output_size, activation='softmax_real',
-                  input_dtype=np.complex64, dropout=None)
-        ]
+        shape.append(
+            ComplexDense(units=output_size, activation='softmax_real', input_dtype=np.complex64)
+        )
     else:  # len(shape_raw) > 0:
-        shape = [Dense(input_size=input_size, output_size=shape_raw[0], activation=activation,
-                       input_dtype=np.complex64, dropout=dropout)]
-        for i in range(1, len(shape_raw)):
-            shape.append(Dense(output_size=shape_raw[i], activation=activation, dropout=dropout))
-        shape.append(Dense(output_size=output_size, activation='softmax_real', dropout=None))
+        for s in shape_raw:
+            shape.append(ComplexDense(units=s, activation=activation))   # Add dropout!
+        shape.append(ComplexDense(units=output_size, activation='softmax_real'))
 
-    complex_network = CvnnModel(name="complex_network", shape=shape, loss_fun=categorical_crossentropy,
-                                optimizer=optimizer, verbose=False, tensorboard=False)
+    complex_network = tf.keras.Sequential(shape, name="complex_network")
+    complex_network.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=['accuracy'])
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network,
@@ -428,19 +429,20 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     # Save data to remember later what I did.
     max_epoch = monte_carlo.pandas_full_data['epoch'].max()
     epoch_filter = monte_carlo.pandas_full_data['epoch'] == max_epoch
-    complex_filter = monte_carlo.pandas_full_data['network'] == "complex network"
-    real_filter = monte_carlo.pandas_full_data['network'] == "real network"
+    complex_filter = monte_carlo.pandas_full_data['network'] == "complex_network"
+    real_filter = monte_carlo.pandas_full_data['network'] == "real_network"
     complex_last_epochs = monte_carlo.pandas_full_data[epoch_filter & complex_filter]
     real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
-    complex_median = complex_last_epochs['test accuracy'].median()
-    real_median = real_last_epochs['test accuracy'].median()
-    complex_median_train = complex_last_epochs['train accuracy'].median()
-    real_median_train = real_last_epochs['train accuracy'].median()
+    complex_median = complex_last_epochs['accuracy'].median()
+    real_median = real_last_epochs['accuracy'].median()
+    complex_median_train = complex_last_epochs['val_accuracy'].median()
+    real_median_train = real_last_epochs['val_accuracy'].median()
     _save_rvnn_vs_cvnn_montecarlo_log(
         iterations=iterations,
         path=str(monte_carlo.monte_carlo_analyzer.path),
         dataset_name=dataset.dataset_name,
-        optimizer=complex_network.optimizer.summary(), loss=categorical_crossentropy,
+        optimizer=str(complex_network.optimizer.__class__),
+        loss=str(complex_network.loss.__class__),
         hl=str(len(shape_raw)), shape=str(shape_raw),
         dropout=str(dropout), num_classes=str(dataset.y.shape[1]),
         polar_mode='Yes' if polar else 'No',
@@ -450,10 +452,10 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         winner='CVNN' if complex_median > real_median else 'RVNN',
         complex_median=complex_median, real_median=real_median,
         complex_median_train=complex_median_train, real_median_train=real_median_train,
-        complex_err=median_error(complex_last_epochs['test accuracy'].quantile(.75),
-                                 complex_last_epochs['test accuracy'].quantile(.25), iterations),
-        real_err=median_error(real_last_epochs['test accuracy'].quantile(.75),
-                              real_last_epochs['test accuracy'].quantile(.25), iterations),
+        complex_err=median_error(complex_last_epochs['accuracy'].quantile(.75),
+                                 complex_last_epochs['accuracy'].quantile(.25), iterations),
+        real_err=median_error(real_last_epochs['val_accuracy'].quantile(.75),
+                              real_last_epochs['val_accuracy'].quantile(.25), iterations),
         filename='./log/mlp_montecarlo_summary.xlsx'
     )
     return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")

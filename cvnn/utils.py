@@ -43,14 +43,6 @@ def reset_weights(model: Type[Model]):
             var.assign(initializer(var.shape, var.dtype))
 
 
-def is_model_complex(model: Type[Model]) -> bool:
-    return tf.dtypes.as_dtype(model.get_layer(index=0).dtype).is_complex
-    
-
-def iscomplex(inputs):
-    return inputs.dtype.is_complex
-
-
 def load_matlab_matrices(fname="data_cnn1dT.mat", path="/media/barrachina/data/gilles_data/"):
     """
     Opens Matlab matrix (.mat) as numpy array.
@@ -115,7 +107,6 @@ def transform_to_real(x_complex, polar=False):
     if not tf.dtypes.as_dtype(x_complex.dtype).is_complex:
         # Intput was not complex, nothing to do
         return x_complex
-    set_trace()
     m = np.shape(x_complex)[0]
     n = np.shape(x_complex)[1]
     x_real = np.ones((m, 2*n))
@@ -187,7 +178,7 @@ def compute_accuracy(x, y):
 
 
 def median_error(q_75: float, q_25: float, n: int):
-    assert q_75 > q_25 > 0.0
+    assert q_75 >= q_25 >= 0.0, f"q_75 {q_75} < q_25 {q_25}"
     return 1.57*(q_75-q_25)/np.sqrt(n)
 
 

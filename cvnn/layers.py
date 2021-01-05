@@ -1,5 +1,4 @@
-from abc import abstractmethod
-
+from abc import ABC, abstractmethod
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow import TensorShape, Tensor
@@ -31,7 +30,17 @@ t_input_shape = Union[TensorShape, List[TensorShape]]
 DEFAULT_COMPLEX_TYPE = np.complex64
 
 
-class ComplexInput(InputLayer):
+class ComplexLayer(ABC):
+
+    @abstractmethod
+    def get_real_equivalent(self):
+        """
+        :return: Gets a real-valued COPY of the Complex Layer.
+        """
+        pass
+
+
+class ComplexInput(InputLayer, ComplexLayer):
 
     def __init__(self, input_shape=None, batch_size=None, dtype=DEFAULT_COMPLEX_TYPE, input_tensor=None, sparse=False,
                  name=None, ragged=False, **kwargs):
@@ -40,8 +49,13 @@ class ComplexInput(InputLayer):
                                            name=name, ragged=ragged, **kwargs
                                            )
 
+    def get_real_equivalent(self):
+        return ComplexInput(input_shape=self.input_shape, batch_size=self.batch_size, dtype=self.dtype,
+                            input_tensor=self.input_tensor, sparse=self.sparse, name=f'real_{self.name}',
+                            ragged=self.ragged)
 
-class ComplexFlatten(Flatten):
+
+class ComplexFlatten(Flatten, ComplexLayer):
 
     def call(self, inputs: t_input):
         # tf.print(f"inputs at ComplexFlatten are {inputs.dtype}")
@@ -49,8 +63,12 @@ class ComplexFlatten(Flatten):
         imag_flat = super(ComplexFlatten, self).call(tf.math.imag(inputs))
         return tf.cast(tf.complex(real_flat, imag_flat), inputs.dtype)  # Keep input dtype
 
+    def get_real_equivalent(self):
+        # Dtype agnostic so just init one.
+        return ComplexFlatten()
 
-class ComplexDense(Dense):
+
+class ComplexDense(Dense, ComplexLayer):
 
     def __init__(self, units, activation=None, use_bias=True,
                  kernel_initializer=GlorotUniform(),
@@ -60,7 +78,7 @@ class ComplexDense(Dense):
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                            kernel_initializer=kernel_initializer,
                                            bias_initializer=bias_initializer, **kwargs)
-        # Cannot override dtype of the layer because it has a read-only @property
+        # !Cannot override dtype of the layer because it has a read-only @property
         self.my_dtype = tf.dtypes.as_dtype(dtype)
 
     def build(self, input_shape):
@@ -96,9 +114,7 @@ class ComplexDense(Dense):
     def call(self, inputs: t_input):
         # tf.print(f"inputs at ComplexDense are {inputs.dtype}")
         if inputs.dtype != self.my_dtype:
-            tf.print(f"Expected input to be {self.my_dtype}, but received {inputs.dtype}.\n"
-                     f"You might have forgotten to use tf.keras.Input(shape, dtype=np.complex128).")
-            # logger.warning(f"Input expected to be {self.my_dtype}, but received {inputs.dtype}.") 
+            tf.print(f"Expected input to be {self.my_dtype}, but received {inputs.dtype}.\n")
             inputs = tf.cast(inputs, self.my_dtype)
         if self.my_dtype.is_complex:
             w = tf.complex(self.w_r, self.w_i)
@@ -109,8 +125,16 @@ class ComplexDense(Dense):
         out = tf.matmul(inputs, w) + b
         return self.activation(out)
 
+    def get_real_equivalent(self, output_multiplier=2):
+        # assert self.my_dtype.is_complex, "The layer was already real!"    # TODO: Shall I check this?
+        # TODO: Does it pose a problem not to re-create an object of the initializer?
+        return ComplexDense(units=int(round(self.units * output_multiplier)),
+                            activation=self.activation, use_bias=self.use_bias,
+                            kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
+                            dtype=self.my_dtype.real_dtype)
 
-class ComplexConv(Layer):
+
+class ComplexConv(Layer, ComplexLayer):
     """
     Almost exact copy of
         https://github.com/tensorflow/tensorflow/blob/v2.4.0/tensorflow/python/keras/layers/convolutional.py#L52
@@ -470,6 +494,18 @@ class ComplexConv(Layer):
             op_padding = op_padding.upper()
         return op_padding
 
+    def get_real_equivalent(self):
+        # TODO: Shall I check it's not already complex?
+        return ComplexConv(rank=self.rank, filters=self.filters, kernel_size=self.kernel_size,
+                           dtype=self.my_dtype.real_dtype, strides=self.strides, padding=self.padding,
+                           data_format=self.data_format, dilation_rate=self.dilation_rate, groups=self.groups,
+                           activation=self.activation, use_bias=self.use_bias,
+                           kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
+                           kernel_regularizer=self.kernel_regularizer, bias_regularizer=self.bias_regularizer,
+                           activity_regularizer=self.activity_regularizer, kernel_constraint=self.kernel_constraint,
+                           bias_constraint=self.bias_constraint, trainable=self.trainable, name=self.name,
+                           conv_op=self.conv_op)
+
 
 class ComplexConv1D(ComplexConv):
     def __init__(self,
@@ -741,7 +777,7 @@ class ComplexConv3D(ComplexConv):
             **kwargs)
 
 
-class ComplexPooling2D(Layer):
+class ComplexPooling2D(Layer, ComplexLayer):
     """
     Pooling layer for arbitrary pooling functions, for 2D inputs (e.g. images).
     Abstract class. This class only exists for code reuse. It will never be an exposed API.
@@ -842,6 +878,10 @@ class ComplexMaxPooling2D(ComplexPooling2D):
         tf_res = tf.reshape(res, output.shape)
         # assert np.all(tf_res == output)             # For debugging when the input is real only!
         return tf_res
+
+    def get_real_equivalent(self):
+        return ComplexMaxPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
+                                   data_format=self.data_format, name=f'real_{self.name}')
     
 
 class ComplexAvgPooling2D(ComplexPooling2D):
@@ -858,6 +898,10 @@ class ComplexAvgPooling2D(ComplexPooling2D):
         else:
             output = output_r
         return output
+
+    def get_real_equivalent(self):
+        return ComplexAvgPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
+                                   data_format=self.data_format, name=f'real_{self.name}')
 
 
 __author__ = 'J. Agustin BARRACHINA'

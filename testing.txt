@@ -1,0 +1,11 @@
+TESTING module pytest
+
+Good practices: 
+	https://docs.pytest.org/en/stable/goodpractices.html
+Installation and getting started:
+	https://docs.pytest.org/en/stable/getting-started.html
+
+Adding it to Conda
+
+https://docs.conda.io/projects/conda-build/en/latest/concepts/recipe.html#testing
+https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#test-section

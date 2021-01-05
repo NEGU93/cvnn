@@ -303,17 +303,17 @@ class SeveralMonteCarloComparison:
         self.df = pd.concat(frames)
         self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df)
 
-    def box_plot(self, key='test accuracy', library='plotly', step=-1, showfig=False, savefile=None):
+    def box_plot(self, key='accuracy', library='plotly', epoch=-1, showfig=False, savefile=None):
         if library == 'plotly':
-            self._box_plot_plotly(key=key, step=step, showfig=showfig, savefile=savefile)
+            self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefile=savefile)
         # TODO: https://seaborn.pydata.org/examples/grouped_boxplot.html
         elif library == 'seaborn':
-            self._box_plot_seaborn(key=key, step=step, showfig=showfig, savefile=savefile)
+            self._box_plot_seaborn(key=key, epoch=epoch, showfig=showfig, savefile=savefile)
         else:
             logger.warning("Unrecognized library to plot " + library)
         return None
 
-    def _box_plot_plotly(self, key='test accuracy', step=-1, showfig=False, savefile=None):
+    def _box_plot_plotly(self, key='accuracy', epoch=-1, showfig=False, savefile=None):
         # https://en.wikipedia.org/wiki/Box_plot
         # https://plot.ly/python/box-plots/
         # https://towardsdatascience.com/understanding-boxplots-5e2df7bcbd51
@@ -331,12 +331,12 @@ class SeveralMonteCarloComparison:
         if savefile is not None:
             savefig = True
 
-        steps = []
+        epochs = []
         for i in range(len(self.monte_carlo_runs)):
-            if step == -1:
-                steps.append(max(self.monte_carlo_runs[i].df.step))
+            if epoch == -1:
+                epochs.append(max(self.monte_carlo_runs[i].df.epoch))
             else:
-                steps.append(step)
+                epochs.append(epoch)
 
         fig = go.Figure()
 
@@ -344,7 +344,7 @@ class SeveralMonteCarloComparison:
             df = mc_run.df
             networks_availables = df.network.unique()
             for color_index, net in enumerate(networks_availables):
-                filter = [a == net and b == steps[i] for a, b in zip(df.network, df.step)]
+                filter = [a == net and b == epochs[i] for a, b in zip(df.network, df.epoch)]
                 data = df[filter]
                 fig.add_trace(go.Box(
                     y=data[key],
@@ -382,24 +382,24 @@ class SeveralMonteCarloComparison:
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
-    def _box_plot_seaborn(self, key='test accuracy', step=-1, showfig=False, savefile=None, extension=".svg"):
+    def _box_plot_seaborn(self, key='accuracy', epoch=-1, showfig=False, savefile=None, extension=".svg"):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning(
                 "No Seaborn installed, function " + self._box_plot_seaborn.__name__ + " was called but will be omitted")
             return None
-        steps = []
+        epochs = []
         for i in range(len(self.monte_carlo_runs)):
-            if step == -1:
-                steps.append(max(self.monte_carlo_runs[i].df.step))
+            if epoch == -1:
+                epochs.append(max(self.monte_carlo_runs[i].df.epoch))
             else:
-                steps.append(step)
+                epochs.append(epoch)
         # Prepare data
         frames = []
         # color_pal = []
         for i, mc_run in enumerate(self.monte_carlo_runs):
             df = mc_run.df
             # color_pal += sns.color_palette()[:len(df.network.unique())]
-            filter = df['step'] == steps[i]
+            filter = df['epoch'] == epochs[i]
             data = df[filter]
             data[self.x_label] = self.x[i]
             frames.append(data)
@@ -435,23 +435,23 @@ class SeveralMonteCarloComparison:
             fig.show()
         return fig, ax
 
-    def save_pandas_csv_result(self, path, step=-1):
+    def save_pandas_csv_result(self, path, epoch=-1):
         # TODO: Check path
-        if step == -1:
-            step = max(self.monte_carlo_runs[0].df.step)  # TODO: Assert it's the same for all cases
-        cols = ['train loss', 'test loss', 'train accuracy', 'test accuracy']
+        if epoch == -1:
+            epoch = max(self.monte_carlo_runs[0].df.epoch)  # TODO: Assert it's the same for all cases
+        cols = ['val_loss', 'loss', 'val_accuracy', 'accuracy']
         for i, run in enumerate(self.monte_carlo_runs):
             df = run.df
             networks_availables = df.network.unique()
             for col, net in enumerate(networks_availables):
-                filter = [a == net and b == step for a, b in zip(df.network, df.step)]
+                filter = [a == net and b == epoch for a, b in zip(df.network, df.epoch)]
                 data = df[filter].describe()
                 data = data[cols]
                 data.to_csv(path + net + "_" + self.x[i] + "_stats.csv")
 
-    def plot_histogram(self, key='test accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
+    def plot_histogram(self, key='accuracy', epoch=-1, library='seaborn', showfig=False, savefig=True, title='',
                        extension=".svg"):
-        self.monte_carlo_analyzer.plot_histogram(key=key, step=step, library=library, showfig=showfig, savefig=savefig,
+        self.monte_carlo_analyzer.plot_histogram(key=key, epoch=epoch, library=library, showfig=showfig, savefig=savefig,
                                                  title=title, extension=extension)
 
 
@@ -460,7 +460,7 @@ class Plotter:
     def __init__(self, path, file_suffix:str = "_results_fit.csv", data_results_dict: dict = None, model_name: str = None):
         """
         This class manages the plot of results for a model train.
-        It opens the csv files (test and train) saved during training and plots results as wrt each step saved.
+        It opens the csv files (test and train) saved during training and plots results as wrt each epoch saved.
         This class is generally used to plot accuracy and loss evolution during training.
 
         :path: Full path where the csv results are stored
@@ -514,7 +514,7 @@ class Plotter:
         Merges every dataframe obtained from each csv file into a single dataframe.
         It adds the columns:
             - network: name of the train model
-            - epoch: information of the step index
+            - epoch: information of the epoch index
             - path: path where the information of the train model was saved (used as parameter with the constructor)
         :retun: pd.Dataframe
         """
@@ -600,7 +600,7 @@ class Plotter:
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
-        ax.set_xlabel("step")
+        ax.set_xlabel("epoch")
         ax.set_title(title)
         if showfig:
             fig.show()
@@ -669,7 +669,7 @@ class Plotter:
         title += " " + key
         fig.update_layout(annotations=annotations,
                           title=title,
-                          xaxis_title='steps',
+                          xaxis_title='epochs',
                           yaxis_title=key)
         if savefig:
             plotly.offline.plot(fig, filename=str(self.path / key) + ".html",
@@ -690,13 +690,13 @@ class MonteCarloPlotter(Plotter):
         # Rename this function to change index_loc default value
         super().plot_everything(reload=False, library=library, showfig=showfig, savefig=savefig, index_loc=index_loc)
 
-    def plot_key(self, key='test accuracy', reload=False, library='plotly', showfig=False, savefig=True,
+    def plot_key(self, key='accuracy', reload=False, library='plotly', showfig=False, savefig=True,
                  index_loc='mean', extension=".svg"):
         # Rename this function to change index_loc default value
         super().plot_key(key, reload, library, showfig, savefig, index_loc, extension=extension)
 
-    def plot_line_confidence_interval(self, key='test accuracy', showfig=False, savefig=True, library='matplotlib',
-                                      title='', full_border=True, x_axis='step', extension=".svg"):
+    def plot_line_confidence_interval(self, key='accuracy', showfig=False, savefig=True, library='matplotlib',
+                                      title='', full_border=True, x_axis='epoch', extension=".svg"):
         if library == 'plotly':
             self._plot_line_confidance_interval_plotly(key=key, showfig=showfig, savefig=savefig,
                                                        title=title, full_border=full_border, x_axis=x_axis)
@@ -707,8 +707,8 @@ class MonteCarloPlotter(Plotter):
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_line_confidence_interval_matplotlib(self, key='test accuracy', showfig=False, savefig=True,
-                                                  title='', x_axis='step', extension=".svg"):
+    def _plot_line_confidence_interval_matplotlib(self, key='accuracy', showfig=False, savefig=True,
+                                                  title='', x_axis='epoch', extension=".svg"):
         if 'matplotlib' not in AVAILABLE_LIBRARIES:
             logger.warning("No Matplotlib installed, function " +
                            self._plot_line_confidence_interval_matplotlib.__name__ + " was called but will be omitted")
@@ -754,8 +754,8 @@ class MonteCarloPlotter(Plotter):
                                               key.replace(" ", "_") + "_matplotlib" + ".tex"))
         # set_trace()
 
-    def _plot_line_confidance_interval_plotly(self, key='test accuracy', showfig=False, savefig=True,
-                                              title='', full_border=True, x_axis='step'):
+    def _plot_line_confidance_interval_plotly(self, key='accuracy', showfig=False, savefig=True,
+                                              title='', full_border=True, x_axis='epoch'):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._plot_line_confidance_interval_plotly.__name__ +
                            " was called but will be omitted")
@@ -818,7 +818,7 @@ class MonteCarloPlotter(Plotter):
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
-    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, x_axis='step'):
+    def plot_train_vs_test(self, key='loss', showfig=False, savefig=True, median=False, x_axis='epoch'):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self.plot_train_vs_test.__name__ +
                            " was called but will be omitted")
@@ -922,7 +922,7 @@ class MonteCarloAnalyzer:
         self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
         self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True)"""
 
-        key_list = ['test accuracy', 'test loss', 'train accuracy', 'train loss']
+        key_list = ['accuracy', 'loss', 'val_accuracy', 'val_loss']
         for key in key_list:
             # self.plot_3d_hist(key=key)
             for lib in ['seaborn', 'plotly']:
@@ -938,33 +938,33 @@ class MonteCarloAnalyzer:
                 except:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
                 try:
-                    self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='step', library=lib,
+                    self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib,
                                                                            showfig=showfig, savefig=savefig)
                 except:
                     logger.warning("Could not plot " + key + " line_confidence_interval with " + str(lib),
                                    exc_info=True)
 
-    def box_plot(self, step=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
+    def box_plot(self, epoch=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
-            self._box_plot_plotly(key=key, step=step, showfig=showfig, savefig=savefig)
+            self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig)
         elif library == 'seaborn':
-            self._box_plot_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, extension=extension)
+            self._box_plot_seaborn(key=key, epoch=epoch, showfig=showfig, savefig=savefig, extension=extension)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _box_plot_plotly(self, step=-1, key='val_accuracy', showfig=False, savefig=True):
+    def _box_plot_plotly(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._box_plot_plotly.__name__ +
                            " was called but will be omitted")
             return None
         fig = go.Figure()
-        if step == -1:
-            step = max(self.df.step)
+        if epoch == -1:
+            epoch = max(self.df.epoch)
         networks_availables = self.df.network.unique()
         # set_trace()
         for col, net in enumerate(networks_availables):
-            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
             data = self.df[filter]
             fig.add_trace(go.Box(
                 y=data[key],
@@ -1004,15 +1004,15 @@ class MonteCarloAnalyzer:
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
 
-    def _box_plot_seaborn(self, step=-1, key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
+    def _box_plot_seaborn(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._box_plot_seaborn.__name__ +
                            " was called but will be omitted")
             return None
-        if step == -1:
-            step = max(self.df.step)
+        if epoch == -1:
+            epoch = max(self.df.epoch)
         # Prepare data
-        filter = self.df['step'] == step
+        filter = self.df['epoch'] == epoch
         data = self.df[filter]
 
         # Run figure
@@ -1058,7 +1058,7 @@ class MonteCarloAnalyzer:
         ])
         fig.show(config=PLOTLY_CONFIG)
 
-    def plot_3d_hist(self, steps=None, key='val_accuracy', title=''):
+    def plot_3d_hist(self, epochs=None, key='val_accuracy', title=''):
         # https://stackoverflow.com/questions/60398154/plotly-how-to-make-a-3d-stacked-histogram/60403270#60403270
         # https://plot.ly/python/v3/3d-filled-line-plots/
         # https://community.plot.ly/t/will-there-be-3d-bar-charts-in-the-future/1045/3
@@ -1067,17 +1067,17 @@ class MonteCarloAnalyzer:
             logger.warning("No Plotly installed, function " + self.plot_3d_hist.__name__ +
                            " was called but will be omitted")
             return None
-        if steps is None:
-            # steps = [int(x) for x in np.linspace(min(self.df.step), max(self.df.step), 6)]
-            steps = [int(x) for x in np.logspace(min(self.df.step), np.log2(max(self.df.step)), 8, base=2)]
-            # steps = [int(x) for x in np.logspace(min(self.df.step), np.log10(max(self.df.step)), 8)]
-            steps[0] = 0
+        if epochs is None:
+            # epochs = [int(x) for x in np.linspace(min(self.df.epoch), max(self.df.epoch), 6)]
+            epochs = [int(x) for x in np.logspace(min(self.df.epoch), np.log2(max(self.df.epoch)), 8, base=2)]
+            # epochs = [int(x) for x in np.logspace(min(self.df.epoch), np.log10(max(self.df.epoch)), 8)]
+            epochs[0] = 0
         networks_availables = self.df.network.unique()
-        cols = ['step', key]
+        cols = ['epoch', key]
         fig = go.Figure()
-        for step in steps:  # TODO: verify steps are in df
+        for epoch in epochs:  # TODO: verify epochs are in df
             for i, net in enumerate(networks_availables):
-                filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+                filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
                 data_to_plot = self.df[filter][cols]
                 # https://stackoverflow.com/a/60403270/5931672
                 counts, bins = np.histogram(data_to_plot[key], bins=10, density=False)
@@ -1086,14 +1086,14 @@ class MonteCarloAnalyzer:
                 counts.append(0)
                 bins = np.repeat(bins, 2)
 
-                fig.add_traces(go.Scatter3d(x=[step] * len(counts), y=bins, z=counts,
-                                            mode='lines', name=net.replace("_", " ") + "; step: " + str(step),
+                fig.add_traces(go.Scatter3d(x=[epoch] * len(counts), y=bins, z=counts,
+                                            mode='lines', name=net.replace("_", " ") + "; epoch: " + str(epoch),
                                             surfacecolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
                                             # surfaceaxis=0,
                                             line=dict(color=DEFAULT_PLOTLY_COLORS[i], width=4)
                                             )
                                )
-                verts, tri = triangulate_histogram([step] * len(counts), bins, counts)
+                verts, tri = triangulate_histogram([epoch] * len(counts), bins, counts)
                 x, y, z = verts.T
                 I, J, K = tri.T
                 fig.add_traces(go.Mesh3d(x=x, y=y, z=z, i=I, j=J, k=K, color=DEFAULT_PLOTLY_COLORS[i], opacity=0.4))
@@ -1102,7 +1102,7 @@ class MonteCarloAnalyzer:
         title += key + " comparison"
         fig.update_layout(title=title,
                           scene=dict(
-                              xaxis=dict(title='step'),
+                              xaxis=dict(title='epoch'),
                               yaxis=dict(title=key),
                               zaxis=dict(title='counts'),
                               xaxis_type="log"))
@@ -1112,21 +1112,21 @@ class MonteCarloAnalyzer:
                                     "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
                             config=PLOTLY_CONFIG, auto_open=False)
 
-    def plot_histogram(self, key='val_accuracy', step=-1, library='seaborn', showfig=False, savefig=True, title='',
+    def plot_histogram(self, key='val_accuracy', epoch=-1, library='seaborn', showfig=False, savefig=True, title='',
                        extension=".svg"):
         if library == 'matplotlib':
-            self._plot_histogram_matplotlib(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
+            self._plot_histogram_matplotlib(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title,
                                             extension=extension)
         elif library == 'plotly':
-            self._plot_histogram_plotly(key=key, step=step, showfig=showfig, savefig=savefig, title=title)
+            self._plot_histogram_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title)
         elif library == 'seaborn':
-            self._plot_histogram_seaborn(key=key, step=step, showfig=showfig, savefig=savefig, title=title,
+            self._plot_histogram_seaborn(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title,
                                          extension=extension)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _plot_histogram_matplotlib(self, key='val_accuracy', step=-1,
+    def _plot_histogram_matplotlib(self, key='val_accuracy', epoch=-1,
                                    showfig=False, savefig=True, title='', extension=".svg"):
         if 'matplotlib' not in AVAILABLE_LIBRARIES:
             logger.warning("No Matplotlib installed, function " + self._plot_histogram_matplotlib.__name__ +
@@ -1138,10 +1138,10 @@ class MonteCarloAnalyzer:
         min_ax = 1.0
         max_ax = 0.0
         networks_availables = self.df.network.unique()
-        if step == -1:
-            step = max(self.df.step)
+        if epoch == -1:
+            epoch = max(self.df.epoch)
         for net in networks_availables:
-            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
             data = self.df[filter]  # Get only the data to plot
             ax.hist(data[key], bins, alpha=0.5, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))
@@ -1154,19 +1154,19 @@ class MonteCarloAnalyzer:
                    showfig=showfig, savefig=savefig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='val_accuracy', step=-1, showfig=False, savefig=True, title=''):
+    def _plot_histogram_plotly(self, key='val_accuracy', epoch=-1, showfig=False, savefig=True, title=''):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._plot_histogram_plotly.__name__ +
                            " was called but will be omitted")
             return None
         networks_availables = self.df.network.unique()
-        if step == -1:
-            step = max(self.df.step)
+        if epoch == -1:
+            epoch = max(self.df.epoch)
         hist_data = []
         group_labels = []
         for net in networks_availables:
             title += net + ' '
-            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
             data = self.df[filter]  # Get only the data to plot
             hist_data.append(data[key].to_list())
             group_labels.append(net.replace("_", " "))
@@ -1193,7 +1193,7 @@ class MonteCarloAnalyzer:
             fig.show(config=PLOTLY_CONFIG)
         return fig
 
-    def _plot_histogram_seaborn(self, key='val_accuracy', step=-1,
+    def _plot_histogram_seaborn(self, key='val_accuracy', epoch=-1,
                                 showfig=True, savefig=True, title='', extension=".svg"):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._plot_histogram_seaborn.__name__ +
@@ -1206,10 +1206,10 @@ class MonteCarloAnalyzer:
         ax = None
         networks_availables = self.df.network.unique()
         # networks_availables = ['complex network', 'real network', 'polar real network']
-        if step == -1:
-            step = max(self.df.step)
+        if epoch == -1:
+            epoch = max(self.df.epoch)
         for net in networks_availables:
-            filter = [a == net and b == step for a, b in zip(self.df.network, self.df.step)]
+            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
             data = self.df[filter]  # Get only the data to plot
             ax = sns.histplot(data[key], bins=bins, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))

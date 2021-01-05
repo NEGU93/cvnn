@@ -14,8 +14,8 @@ own_model = tf.keras.Sequential([
     layers.ComplexDense(10, dtype=np.float32)
 ], name="own_model")
 own_model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
 
 keras_model = tf.keras.Sequential([
     tf.keras.layers.Flatten(input_shape=(28, 28)),
@@ -23,11 +23,12 @@ keras_model = tf.keras.Sequential([
     tf.keras.layers.Dense(10)
 ], name="keras_model")
 keras_model.compile(optimizer='adam',
-                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                metrics=['accuracy'])
+                    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                    metrics=['accuracy'])
 
 monte_carlo = MonteCarlo()
 monte_carlo.add_model(own_model)
 monte_carlo.add_model(keras_model)
 
 monte_carlo.run(x=train_images, y=train_labels, validation_data=(test_images, test_labels), iterations=2)
+monte_carlo.monte_carlo_analyzer.do_all()

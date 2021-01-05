@@ -40,9 +40,9 @@ __status__ = '{dev_status}'
 
 STRING_FORMATTER = "%(asctime)s — %(levelname)s - %(module)s::%(funcName)s line %(lineno)s — %(message)s"
 
-file_handler = logging.FileHandler(create_folder("./log/logs/") / "logs.log")
-formatter = logging.Formatter(STRING_FORMATTER)
-file_handler.setFormatter(formatter)
+# file_handler = logging.FileHandler(create_folder("./log/logs/") / "logs.log")
+# formatter = logging.Formatter(STRING_FORMATTER)
+# file_handler.setFormatter(formatter)
 
 # https://github.com/borntyping/python-colorlog
 # https://stackoverflow.com/a/23964880/5931672
@@ -52,7 +52,7 @@ console_handler.setFormatter(colorlog.ColoredFormatter('%(log_color)s' + STRING_
 logger = colorlog.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+# logger.addHandler(file_handler)
 
 
 
