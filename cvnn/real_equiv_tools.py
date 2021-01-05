@@ -124,17 +124,17 @@ def _get_alternate_capacity_equivalent(dense_layers, classification: bool = True
     If when both ends meet there's not a coincidence (example: [..., 1, 1, ...]) then
         the code will find a compromise between the two to keep the same real valued trainable parameters.
     """
-    output_multiplier = np.zeros(len(dense_layers) + 2)
+    output_multiplier = np.zeros(len(self.shape) + 2)
     output_multiplier[0] = 2
     output_multiplier[-1] = 1 if classification else 2
     i: int = 1
-    while i <= (len(dense_layers) - i):
+    while i <= (len(self.shape) - i):
         output_multiplier[i] = 2 if output_multiplier[i - 1] == 1 else 1  # From beginning
         output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1  # From the end
-        if i == len(dense_layers) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
-                i + 1 == len(dense_layers) - i and output_multiplier[i] == output_multiplier[i + 1]:
-            m_inf = dense_layers[i - 1].units
-            m_sup = dense_layers[i + 1].units
+        if i == len(self.shape) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
+                i + 1 == len(self.shape) - i and output_multiplier[i] == output_multiplier[i + 1]:
+            m_inf = self.shape[i - 1].output_size
+            m_sup = self.shape[i + 1].output_size
             output_multiplier[i] = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
         i += 1
     return output_multiplier[1:]
