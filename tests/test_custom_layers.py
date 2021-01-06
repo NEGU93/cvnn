@@ -1,6 +1,6 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, ComplexAvgPooling2D
-from cvnn.initializers import GlorotUniform
+from cvnn.initializers import ComplexGlorotUniform
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -129,8 +129,8 @@ def fashion_mnist_example():
     model = tf.keras.Sequential([
         ComplexInput(input_shape=(28, 28)),
         ComplexFlatten(),
-        ComplexDense(128, activation='cart_relu', kernel_initializer=GlorotUniform(seed=0)),
-        ComplexDense(10, activation='convert_to_real_with_abs', kernel_initializer=GlorotUniform(seed=0))
+        ComplexDense(128, activation='cart_relu', kernel_initializer=ComplexGlorotUniform(seed=0)),
+        ComplexDense(10, activation='convert_to_real_with_abs', kernel_initializer=ComplexGlorotUniform(seed=0))
     ])
     model.summary()
     model.compile(optimizer='adam',

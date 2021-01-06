@@ -1,17 +1,40 @@
+from abc import abstractmethod
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
+from tensorflow.keras.initializers import Initializer
 from cvnn import logger
 import sys
 from pdb import set_trace
 # Typing
 from typing import Optional
-# Initializers:
-# https://www.tensorflow.org/api_docs/python/tf/keras/initializers
-# https://keras.io/initializers/
-# TODO: Think about updating using Variance Scaling
-# TODO: https://www.tensorflow.org/api_docs/python/tf/keras/initializers/VarianceScaling
+
+def _compute_fans(shape):
+    """
+    Taken from https://github.com/tensorflow/tensorflow/blob/2b96f3662bd776e277f86997659e61046b56c315/tensorflow/python/ops/init_ops_v2.py#L994
+    Computes the number of input and output units for a weight shape.
+    Args:
+        shape: Integer shape tuple or TF tensor shape.
+    Returns:
+        A tuple of scalars (fan_in, fan_out).
+    """
+    if len(shape) < 1:  # Just to avoid errors for constants.
+        fan_in = fan_out = 1.
+    elif len(shape) == 1:
+        fan_in = fan_out = shape[0]
+    elif len(shape) == 2:
+        fan_in = shape[0]
+        fan_out = shape[1]
+    else:
+        # Assuming convolution kernels (2D, 3D, or more).
+        # kernel shape: (..., input_depth, depth)
+        receptive_field_size = 1.
+        for dim in shape[:-2]:
+            receptive_field_size *= dim
+        fan_in = shape[-2] * receptive_field_size
+        fan_out = shape[-1] * receptive_field_size
+    return fan_in, fan_out
 
 
 class _RandomGenerator(object):
@@ -53,69 +76,15 @@ class _RandomGenerator(object):
         return op(shape=shape, mean=mean, stddev=stddev, dtype=dtype, seed=self.seed)
 
 
-class RandomInitializer:
-    """
-    Random initializer helps generate a random tensor of:
-        - Either complex or real (floating) data type
-        - Either Uniform or Normal distribution
-        - Zero mean
-
-    How to use it:
-        ```
-        # creates a complex tensor of shape (3, 3) distribution with
-        #   Re{random_tensor} ~ U[-2, 2] and Im{random_tensor} ~ U[-3, 3]
-        random_tensor = RandomInitializer(distribution="uniform")(shape=(3, 3), c_limit=[2, 3], dtype=tf.complex)
-        ```
-    """
+class ComplexInitializer(Initializer):
+     
     def __init__(self, distribution: str = "uniform", seed: Optional[int] = None):
-        """
-        :param distribution: It can be either a uniform or a normal distribution.
-        :param seed: A Python integer. Used to create a random seed for the distribution. See tf.random.set_seed.
-        """
         if distribution.lower() not in {"uniform", "normal"}:
             raise ValueError("Invalid `distribution` argument:", distribution)
         else:
             self.distribution = distribution.lower()
-        self._random_generator = _RandomGenerator(seed)     # ATTENTION: I do not check the seed.
-
-    @staticmethod
-    def dtype_cast(c_dtype):
-        """
-        Equivalent to is_floating attribute of `tf.dtypes.Dtype` but casts the input and checks is complex
-        (https://www.tensorflow.org/api_docs/python/tf/dtypes/DType)
-        """
-        c_dtype = tf.as_dtype(c_dtype)
-        if not c_dtype.is_complex:
-            logger.error("Expecting a complex dtype, got " + str(c_dtype))
-            sys.exit(-1)
-        return c_dtype.real_dtype
-
-    @staticmethod
-    def _compute_fans(shape):
-        """
-        Taken from https://github.com/tensorflow/tensorflow/blob/2b96f3662bd776e277f86997659e61046b56c315/tensorflow/python/ops/init_ops_v2.py#L994
-        Computes the number of input and output units for a weight shape.
-        Args:
-            shape: Integer shape tuple or TF tensor shape.
-        Returns:
-            A tuple of scalars (fan_in, fan_out).
-        """
-        if len(shape) < 1:  # Just to avoid errors for constants.
-            fan_in = fan_out = 1.
-        elif len(shape) == 1:
-            fan_in = fan_out = shape[0]
-        elif len(shape) == 2:
-            fan_in = shape[0]
-            fan_out = shape[1]
-        else:
-            # Assuming convolution kernels (2D, 3D, or more).
-            # kernel shape: (..., input_depth, depth)
-            receptive_field_size = 1.
-            for dim in shape[:-2]:
-                receptive_field_size *= dim
-            fan_in = shape[-2] * receptive_field_size
-            fan_out = shape[-1] * receptive_field_size
-        return fan_in, fan_out
+        self._random_generator = _RandomGenerator(seed)
+ 
 
     def _call_random_generator(self, shape, arg, dtype):
         if self.distribution == "uniform":
@@ -124,50 +93,24 @@ class RandomInitializer:
             # I make this magic number division because that's what tf does on this case
             return self._random_generator.truncated_normal(shape=shape, mean=0.0, stddev=arg / .87962566103423978,
                                                            dtype=dtype)
+    
+    @abstractmethod
+    def _compute_limit(fan_in, fan_out):
+        pass
+    
+    def __call__(self, shape, dtype=tf.dtypes.complex64, **kwargs):
+        fan_in, fan_out = _compute_fans(shape)
+        arg = self._compute_limit(fan_in, fan_out)
+        dtype = tf.dtypes.as_dtype(dtype)
+        if dtype.is_complex:
+            arg = arg/tf.math.sqrt(2)
+        return self._call_random_generator(shape=shape, arg=arg, dtype=dtype.real_dtype)
 
-    def get_random_tensor(self, shape, c_arg=None, r_arg=None, dtype=tf.dtypes.complex64):
-        """
-        Outputs random values either uniform or normal according to initialization
-        :param shape: The shape of the output tensor.
-        :param r_arg: Argument.
-            If uniform, the output will be a distribution between [-arg, arg].
-            If Normal, the output will be a zero-mean gaussian distribution with arg stddev
-        :param c_arg: Tuple of the argument for the real and imaginary part respectively.
-            *Note: either c_arg or r_arg will be used according to dtype parameter,
-                the other will be ignored and can be None.
-        :param dtype: The type of the output. Default tf.complex.
-        """
-        dtype = tf.as_dtype(dtype)
-        c_arg, r_arg = self._verify_limits(c_arg, r_arg, dtype)
-        if dtype.is_complex:  # Complex layer
-            r_dtype = self.dtype_cast(dtype)
-            c_arg = tf.cast(c_arg, r_dtype)
-            # TODO: I do not yet understand the random_generator thing. I could use tf.random.uniform once I do
-            return self._call_random_generator(shape=shape, arg=c_arg[0], dtype=r_dtype)
-        elif dtype.is_floating:     # Real Layer
-            # ret = tf.random.uniform(shape=shape, minval=-limit, maxval=limit, dtype=dtype, seed=seed, name=name)
-            r_arg = tf.cast(r_arg, dtype)
-            return self._call_random_generator(shape=shape, arg=r_arg, dtype=dtype)
-        else:
-            logger.error("Input_dtype not supported.", exc_info=True)
-            sys.exit(-1)
-
-    @staticmethod
-    def _verify_limits(c_limit, r_limit, dtype):
-        if c_limit is None and r_limit is None:
-            logger.error("Either one argument must not None")
-            sys.exit(-1)
-        elif dtype.is_complex and c_limit is None:
-            logger.error("complex argument is None but dtype is complex")
-            sys.exit(-1)
-        elif dtype.is_floating and r_limit is None:
-            logger.error("real argument is None but dtype is real")
-            sys.exit(-1)
-        # TODO: For the moment I do no check the c_limit size 2 and c/r_limit dtype.
-        return c_limit, r_limit
+    def get_config(self):  # To support serialization
+        return {"seed": self.seed}
 
 
-class GlorotUniform(RandomInitializer):
+class ComplexGlorotUniform(ComplexInitializer):
     """
     The Glorot uniform initializer, also called Xavier uniform initializer.
     Reference: http://proceedings.mlr.press/v9/glorot10a.html
@@ -179,49 +122,27 @@ class GlorotUniform(RandomInitializer):
     ```
     # Standalone usage:
     import cvnn
-    initializer = cvnn.initializers.GlorotUniform()
+    initializer = cvnn.initializers.ComplexGlorotUniform()
     values = initializer(shape=(2, 2))                  # Returns a complex Glorot Uniform tensor of shape (2, 2)
     ```
 
     ```
     # Usage in a cvnn layer:
     import cvnn
-    initializer = cvnn.initializers.GlorotUniform()
-    layer = cvnn.layers.Dense(input_size=23, output_size=45, weight_initializer=initializer)
+    initializer = cvnn.initializers.ComplexGlorotUniform()
+    layer = cvnn.layers.ComplexDense(units=10, kernel_initializer=initializer)
     ```
     """
+    __name__ = "Complex Glorot Uniform"
 
-    __name__ = "Glorot Uniform"
-
-    def __init__(self, seed=None, scale=1.):
-        """
-        :param seed: A Python integer. An initializer created with a given seed will always produce
-            the same random tensor for a given shape and dtype.
-        :param scale: Default 1. Scales the limit as `limit = scale * limit`
-        """
-        if isinstance(scale, float):
-            assert scale > 0, "scale must be more than 0. Got " + str(scale)
-        else:
-            logger.error("scale must be a float. Got " + str(scale))
-            sys.exit(-1)
-        self.scale = scale
-        super(GlorotUniform, self).__init__(distribution="uniform", seed=seed)
-
-    def __call__(self, shape, dtype=tf.dtypes.complex64):
-        """
-        Returns a tensor object initialized as specified by the initializer.
-        :param shape: Shape of the tensor.
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-        """
-        fan_in, fan_out = self._compute_fans(shape)
-        c_limit = [self.scale * tf.math.sqrt(3. / (fan_in + fan_out)),
-                   self.scale * tf.math.sqrt(3. / (fan_in + fan_out))]
-        # r_limit = self.scale * tf.math.sqrt(6. / (fan_in + fan_out))
-        r_limit = self.scale * tf.math.sqrt(3. / (fan_in + fan_out))
-        return self.get_random_tensor(shape, c_limit, r_limit, dtype)
+    def __init__(self, seed: Optional[int] = None):
+        super(ComplexGlorotUniform, self).__init__(distribution="uniform", seed=seed)
+        
+    def _compute_limit(self, fan_in, fan_out):
+        return tf.math.sqrt(6. / (fan_in + fan_out))
 
 
-class GlorotNormal(RandomInitializer):
+class ComplexGlorotNormal(ComplexInitializer):
     """
     The Glorot normal initializer, also called Xavier normal initializer.
     Reference: http://proceedings.mlr.press/v9/glorot10a.html
@@ -234,119 +155,27 @@ class GlorotNormal(RandomInitializer):
     ```
     # Standalone usage:
     import cvnn
-    initializer = cvnn.initializers.GlorotNormal()
+    initializer = cvnn.initializers.ComplexGlorotNormal()
     values = initializer(shape=(2, 2))                  # Returns a complex Glorot Normal tensor of shape (2, 2)
     ```
 
     ```
     # Usage in a cvnn layer:
     import cvnn
-    initializer = cvnn.initializers.GlorotNormal()
-    layer = cvnn.layers.Dense(input_size=23, output_size=45, weight_initializer=initializer)
+    initializer = cvnn.initializers.ComplexGlorotNormal()
+    layer = cvnn.layers.ComplexDense(units=10, kernel_initializer=initializer)
     ```
     """
-    __name__ = "Glorot Normal"
+    __name__ = "Complex Glorot Normal"
 
-    def __init__(self, seed=None):
-        super(GlorotNormal, self).__init__(distribution="normal", seed=seed)
-
-    def __call__(self, shape, dtype=tf.dtypes.complex64):
-        """
-        Returns a tensor object initialized as specified by the initializer.
-        :param shape: Shape of the tensor.
-        :param dtype: Optinal dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-        """
-        fan_in, fan_out = self._compute_fans(shape)
-        c_limit = [tf.math.sqrt(1. / (fan_in + fan_out)), tf.math.sqrt(1. / (fan_in + fan_out))]
-        # r_limit = tf.math.sqrt(2. / (fan_in + fan_out))
-        r_limit = tf.math.sqrt(1. / (fan_in + fan_out))
-        return self.get_random_tensor(shape, c_limit, r_limit, dtype)
+    def __init__(self, seed: Optional[int] = None):
+        super(ComplexGlorotNormal, self).__init__(distribution="normal", seed=seed)
+        
+    def _compute_limit(self, fan_in, fan_out):
+        return tf.math.sqrt(2. / (fan_in + fan_out))
 
 
-class GlorotUniformCompromise(RandomInitializer):
-    """
-    The Glorot uniform initializer, also called Xavier uniform initializer.
-    Reference: http://proceedings.mlr.press/v9/glorot10a.html
-    Draws samples from a uniform distribution:
-        - Real case: `x ~ U[-limit, limit]` where `limit = sqrt(6 / (fan_in + fan_out))`
-        - Complex case: `z /
-            - Re{z} ~ U[-limit, limit]` where `limit = sqrt(3 / (2 * fan_in ))`
-            - Im{z} ~ U[-limit, limit]` where `limit = sqrt(3 / ( 2 * fan_out))`
-    where `fan_in` is the number of input units in the weight tensor and `fan_out` is the number of output units.
-
-    ```
-    # Standalone usage:
-    import cvnn
-    initializer = cvnn.initializers.GlorotUniformCompromise()
-    values = initializer(shape=(2, 2))                  # Returns a complex Glorot Uniform tensor of shape (2, 2)
-    ```
-
-    ```
-    # Usage in a cvnn layer:
-    import cvnn
-    initializer = cvnn.initializers.GlorotUniformCompromise()
-    layer = cvnn.layers.Dense(input_size=23, output_size=45, weight_initializer=initializer)
-    ```
-    """
-    __name__ = "Glorot Uniform Compromise"
-
-    def __init__(self, seed=None):
-        super(GlorotUniformCompromise, self).__init__(distribution="uniform", seed=seed)
-
-    def __call__(self, shape, dtype=tf.dtypes.complex64):
-        fan_in, fan_out = self._compute_fans(shape)
-        c_limit = [tf.math.sqrt(3. / (2. * fan_in)), tf.math.sqrt(3. / (2. * fan_out))]
-        # r_limit = tf.math.sqrt(6. / (fan_in + fan_out))
-        r_limit = tf.math.sqrt(3. / (fan_in + fan_out))
-        return self.get_random_tensor(shape, c_limit, r_limit, dtype)
-
-
-class HeNormal(RandomInitializer):
-    """
-    He normal initializer.
-    Reference: https://www.cv-foundation.org/openaccess/content_iccv_2015/html/He_Delving_Deep_into_ICCV_2015_paper.html
-    It draws samples from a truncated normal distribution centered on 0 with
-        - Real case: `stddev = sqrt(2 / fan_in)`
-        - Complex case: real part stddev = complex part stddev = `1 / sqrt(fan_in)`
-    where fan_in is the number of input units in the weight tensor.
-
-    ```
-    # Standalone usage:
-    import cvnn
-    initializer = cvnn.initializers.HeNormal()
-    values = initializer(shape=(2, 2))                  # Returns a complex He Normal tensor of shape (2, 2)
-    ```
-
-    ```
-    # Usage in a cvnn layer:
-    import cvnn
-    initializer = cvnn.initializers.HeNormal()
-    layer = cvnn.layers.Dense(input_size=23, output_size=45, weight_initializer=initializer)
-    ```
-    """
-    __name__ = "He Normal"
-
-    def __init__(self, seed=None):
-        """
-        :param seed: A Python integer. An initializer created with a given seed will always
-            produce the same random tensor for a given shape and dtype.
-        """
-        super(HeNormal, self).__init__(distribution="normal", seed=seed)
-
-    def __call__(self, shape, dtype=tf.dtypes.complex64):
-        """
-        Returns a tensor object initialized as specified by the initializer.
-        :param shape: Shape of the tensor.
-        :param dtype: Optional dtype of the tensor. Either floating or complex. ex: tf.complex64 or tf.float32
-        """
-        fan_in, fan_out = self._compute_fans(shape)
-        c_limit = [tf.math.sqrt(1. / fan_in), tf.math.sqrt(1. / fan_in)]
-        # r_limit = tf.math.sqrt(2. / fan_in)
-        r_limit = tf.math.sqrt(1. / fan_in)
-        return self.get_random_tensor(shape, c_limit, r_limit, dtype)
-
-
-class HeUniform(RandomInitializer):
+class ComplexHeUniform(ComplexInitializer):
     """
     The He Uniform initializer.
     Reference: http://proceedings.mlr.press/v9/glorot10a.html
@@ -358,28 +187,55 @@ class HeUniform(RandomInitializer):
     ```
     # Standalone usage:
     import cvnn
-    initializer = cvnn.initializers.HeUniform()
-    values = initializer(shape=(2, 2))                  # Returns a complex He Uniform tensor of shape (2, 2)
+    initializer = cvnn.initializers.ComplexHeUniform()
+    values = initializer(shape=(2, 2))                  # Returns a real He Uniform tensor of shape (2, 2)
     ```
 
     ```
     # Usage in a cvnn layer:
     import cvnn
-    initializer = cvnn.initializers.HeUniform()
-    layer = cvnn.layers.Dense(input_size=23, output_size=45, weight_initializer=initializer)
+    initializer = cvnn.initializers.ComplexHeUniform()
+    layer = cvnn.layers.ComplexDense(units=10, kernel_initializer=initializer)
     ```
     """
-    __name__ = "He Uniform"
+    __name__ = "Complex He Uniform"
+    
+    def __init__(self, seed: Optional[int] = None):
+        super(ComplexHeUniform, self).__init__(distribution="uniform", seed=seed)
+        
+    def _compute_limit(self, fan_in, fan_out):
+        return tf.math.sqrt(6. / fan_in)
+    
+class ComplexHeNormal(ComplexInitializer):
+    """
+    He normal initializer.
+    Reference: https://www.cv-foundation.org/openaccess/content_iccv_2015/html/He_Delving_Deep_into_ICCV_2015_paper.html
+    It draws samples from a truncated normal distribution centered on 0 with
+        - Real case: `stddev = sqrt(2 / fan_in)`
+        - Complex case: real part stddev = complex part stddev = `1 / sqrt(fan_in)`
+    where fan_in is the number of input units in the weight tensor.
 
-    def __init__(self, seed=None):
-        super(HeUniform, self).__init__(distribution="uniform", seed=seed)
+    ```
+    # Standalone usage:
+    import cvnn
+    initializer = cvnn.initializers.ComplexHeNormal()
+    values = initializer(shape=(2, 2))                  # Returns a complex He Normal tensor of shape (2, 2)
+    ```
 
-    def __call__(self, shape, dtype=tf.dtypes.complex64):
-        fan_in, fan_out = self._compute_fans(shape)
-        c_limit = [tf.math.sqrt(3. / fan_in), tf.math.sqrt(3. / fan_in)]
-        # r_limit = tf.math.sqrt(6. / fan_in)
-        r_limit = tf.math.sqrt(3. / fan_in)
-        return self.get_random_tensor(shape, c_limit, r_limit, dtype)
+    ```
+    # Usage in a cvnn layer:
+    import cvnn
+    initializer = cvnn.initializers.ComplexHeNormal()
+    layer = cvnn.layers.ComplexDense(units=10, kernel_initializer=initializer)
+    ```
+    """
+    __name__ = "Complex He Normal"
+    
+    def __init__(self, seed: Optional[int] = None):
+        super(ComplexHeNormal, self).__init__(distribution="normal", seed=seed)
+        
+    def _compute_limit(self, fan_in, fan_out):
+        return tf.math.sqrt(2. / fan_in)
 
 
 class Zeros:
@@ -388,22 +244,22 @@ class Zeros:
 
     ```
     > >> cvnn.initializers.Zeros()(shape=(2,2))
-    <tf.Tensor: shape=(2, 2), dtype=complex64, numpy=
+    <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
     array([[0.+0.j, 0.+0.j],
-          [0.+0.j, 0.+0.j]], dtype=complex64)>
+          [0.+0.j, 0.+0.j]], dtype=float32)>
     ```
 
     ```
     # Usage in a cvnn layer:
     import cvnn
     initializer = cvnn.initializers.Zeros()
-    layer = cvnn.layers.Dense(input_size=23, output_size=45, bias_initializer=initializer)
+    layer = cvnn.layers.ComplexDense(units=10, bias_initializer=initializer)
     ```
     """
     __name__ = "Zeros"
 
     def __call__(self, shape, dtype=tf.dtypes.complex64):
-        return tf.zeros(shape, dtype=dtype)
+        return tf.zeros(shape, dtype=tf.dtypes.as_dtype(dtype).real_dtype)
 
 
 if __name__ == '__main__':

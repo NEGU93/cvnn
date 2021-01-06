@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow import TensorShape, Tensor
-from cvnn.initializers import GlorotUniform, Zeros
+from cvnn.initializers import ComplexGlorotUniform, Zeros
 import numpy as np
 # For Conv
 import six
@@ -71,7 +71,7 @@ class ComplexFlatten(Flatten, ComplexLayer):
 class ComplexDense(Dense, ComplexLayer):
 
     def __init__(self, units, activation=None, use_bias=True,
-                 kernel_initializer=GlorotUniform(),
+                 kernel_initializer=ComplexGlorotUniform(),
                  bias_initializer=Zeros(),
                  dtype=DEFAULT_COMPLEX_TYPE,
                  **kwargs):
@@ -87,17 +87,16 @@ class ComplexDense(Dense, ComplexLayer):
             self.w_r = self.add_weight(
                 shape=(input_shape[-1], self.units),
                 initializer=self.kernel_initializer,
-                trainable=True, dtype=self.my_dtype.real_dtype
+                trainable=True, dtype=self.my_dtype
             )
             self.w_i = self.add_weight(
-
                 shape=(input_shape[-1], self.units),
                 initializer=self.kernel_initializer,
-                trainable=True, dtype=self.my_dtype.real_dtype
+                trainable=True, dtype=self.my_dtype
             )
             self.b_r = self.add_weight(
                 shape=(self.units,), initializer=self.bias_initializer, trainable=True, dtype=self.my_dtype.real_dtype
-            )
+            )   # TODO: Change dtype here
             self.b_i = self.add_weight(
                 shape=(self.units,), initializer=self.bias_initializer, trainable=True, dtype=self.my_dtype.real_dtype
             )
@@ -267,7 +266,7 @@ class ComplexConv(Layer, ComplexLayer):
                 regularizer=self.kernel_regularizer,
                 constraint=self.kernel_constraint,
                 trainable=True,
-                dtype=self.my_dtype.real_dtype)
+                dtype=self.my_dtype)
             self.kernel_i = self.add_weight(
                 name='kernel',
                 shape=kernel_shape,
@@ -275,7 +274,7 @@ class ComplexConv(Layer, ComplexLayer):
                 regularizer=self.kernel_regularizer,
                 constraint=self.kernel_constraint,
                 trainable=True,
-                dtype=self.my_dtype.real_dtype)
+                dtype=self.my_dtype)
             if self.use_bias:
                 self.bias_r = self.add_weight(
                     name='bias',
