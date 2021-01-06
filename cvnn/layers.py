@@ -82,17 +82,14 @@ class ComplexDense(Dense, ComplexLayer):
         self.my_dtype = tf.dtypes.as_dtype(dtype)
 
     def build(self, input_shape):
-        # TODO: For Complex you should probably want to use MY inits, for real keras. DO sth! at least error message
         if self.my_dtype.is_complex:
-            self.w_r = self.add_weight(
-                shape=(input_shape[-1], self.units),
-                initializer=self.kernel_initializer,
-                trainable=True, dtype=self.my_dtype
+            self.w_r = tf.Variable(
+                initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
+                trainable=True
             )
-            self.w_i = self.add_weight(
-                shape=(input_shape[-1], self.units),
-                initializer=self.kernel_initializer,
-                trainable=True, dtype=self.my_dtype
+            self.w_i = tf.Variable(
+                initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
+                trainable=True
             )
             self.b_r = self.add_weight(
                 shape=(self.units,), initializer=self.bias_initializer, trainable=True, dtype=self.my_dtype.real_dtype
@@ -101,6 +98,7 @@ class ComplexDense(Dense, ComplexLayer):
                 shape=(self.units,), initializer=self.bias_initializer, trainable=True, dtype=self.my_dtype.real_dtype
             )
         else:
+            # TODO: For Complex you should probably want to use MY init for real keras. DO sth! at least error message
             self.w = self.add_weight(
                 shape=(input_shape[-1], self.units),
                 dtype=self.my_dtype,

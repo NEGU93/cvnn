@@ -103,7 +103,7 @@ class ComplexInitializer(Initializer):
         arg = self._compute_limit(fan_in, fan_out)
         dtype = tf.dtypes.as_dtype(dtype)
         if dtype.is_complex:
-            arg = arg/tf.math.sqrt(2)
+            arg = arg/np.sqrt(2)
         return self._call_random_generator(shape=shape, arg=arg, dtype=dtype.real_dtype)
 
     def get_config(self):  # To support serialization
@@ -205,6 +205,7 @@ class ComplexHeUniform(ComplexInitializer):
         
     def _compute_limit(self, fan_in, fan_out):
         return tf.math.sqrt(6. / fan_in)
+  
     
 class ComplexHeNormal(ComplexInitializer):
     """
