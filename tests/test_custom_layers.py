@@ -70,8 +70,8 @@ def shape_ad_dtype_of_conv2d():
     input_shape = (4, 28, 28, 3)
     x = tf.cast(tf.random.normal(input_shape), tf.complex64)
     y = ComplexConv2D(2, 3, activation='cart_relu', padding="same", input_shape=input_shape[1:], dtype=x.dtype)(x)
-    print(y.shape)
-    print(y.dtype)
+    assert y.shape==(4, 28, 28, 2)
+    assert y.dtype == tf.complex64
 
 
 def normalize_img(image, label):
@@ -129,8 +129,8 @@ def fashion_mnist_example():
     model = tf.keras.Sequential([
         ComplexInput(input_shape=(28, 28)),
         ComplexFlatten(),
-        ComplexDense(128, activation='cart_relu', kernel_initializer=GlorotUniform()),
-        ComplexDense(10, activation='convert_to_real_with_abs', kernel_initializer=GlorotUniform())
+        ComplexDense(128, activation='cart_relu', kernel_initializer=GlorotUniform(seed=0)),
+        ComplexDense(10, activation='convert_to_real_with_abs', kernel_initializer=GlorotUniform(seed=0))
     ])
     model.summary()
     model.compile(optimizer='adam',
@@ -165,7 +165,20 @@ def complex_max_pool_2d():
     img = np.reshape(img, (2, 3, 3, 1))
     max_pool = ComplexMaxPooling2D(strides=1)
     res = max_pool(img.astype(np.complex64))
-    set_trace()
+    expected_res = np.array([
+        [[
+            [2.+7.j],
+            [2.+9.j]],
+            [[2.+7.j],
+            [2.+9.j]]],
+       [[
+           [7.+2.j],
+           [9.+2.j]],
+        [
+            [5.+8.j],
+            [3.+9.j]]
+        ]])
+    assert (res == expected_res.astype(np.complex64)).numpy().all()
 
 
 def complex_avg_pool():
@@ -194,6 +207,10 @@ def complex_avg_pool():
     expected_res = np.array([[[[0.75+3.5j ], [1.75+6.25j]], [[1.75+4.75j], [4.  +6.j  ]]], [[[3.5 +2.25j], [6.25+3.25j]], [[4.75+4.25j], [6.  +5.25j]]]])
     assert (res == expected_res.astype(np.complex64)).numpy().all()
 
-if __name__ == '__main__':
-    set_trace()
+def test_layers():
+    complex_avg_pool()
+    shape_ad_dtype_of_conv2d()
+    complex_max_pool_2d()
     
+if __name__ == "__main__":
+    test_layers()

@@ -21,9 +21,9 @@ def compare(key, tf_init, my_init):
     my_version = my_init(seed=0)(shape=shape, dtype=dtype)
     comparison = tf_version.numpy() == my_version.numpy()
     if comparison.all():
-        print(key + " initialization works fine")
+        print(f"{key} initialization works fine")
     else:
-        logger.error("ERROR! FAIL! HeUniform initialization does not work!")
+        logger.error(f"ERROR! FAIL! {key} initialization does not work!")
         print(comparison)
         print("tensorflow version: " + str(tf_version))
         print("own version: " + str(my_version))
@@ -31,12 +31,11 @@ def compare(key, tf_init, my_init):
 
 
 tests = {
-    "He Uniform": [tf.initializers.he_uniform, initializers.HeUniform],
+    # "He Uniform": [tf.initializers.he_uniform, initializers.HeUniform],
     "Glorot Uniform": [tf.initializers.GlorotUniform, initializers.GlorotUniform],
-    "He Normal": [tf.initializers.he_normal, initializers.HeNormal],
-    "Glorot Normal": [tf.initializers.GlorotNormal, initializers.GlorotNormal]
+    # "He Normal": [tf.initializers.he_normal, initializers.HeNormal],
+    # "Glorot Normal": [tf.initializers.GlorotNormal, initializers.GlorotNormal]
 }
 
 for key, value in tests.items():
     compare(key, value[0], value[1])
-    set_trace()

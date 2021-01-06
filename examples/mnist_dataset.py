@@ -170,8 +170,6 @@ def test_mnist():
     print(own)
     # set_trace()
     
-def test_fashion_mnist():
-    
 
 if __name__ == "__main__":
     test_mnist()
