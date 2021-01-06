@@ -100,14 +100,14 @@ def _get_ratio_capacity_equivalent(dense_layers, classification: bool = True, bi
     model_out_r = model_out_c if classification else 2 * model_out_c
     # Quadratic equation
     if len(x_c) > 1:
-        quadratic_c = -p_c
-        quadratic_b = model_in_r * x_c[0] + model_out_r
+        quadratic_c = float(-p_c)
+        quadratic_b = float(model_in_r * x_c[0] + model_out_r * x_c[-1])
         if bias_adjust:
             quadratic_b = quadratic_b + np.sum(x_c) + model_out_c
-        quadratic_a = np.sum([x_c[i] * x_c[i + 1] for i in range(len(x_c) - 1)])
+        quadratic_a = float(np.sum([x_c[i] * x_c[i + 1] for i in range(len(x_c) - 1)]))
         # The result MUST be positive so I use the '+' solution
         ratio = (-quadratic_b + np.sqrt(quadratic_b ** 2 - 4 * quadratic_c * quadratic_a)) / (2 * quadratic_a)
-        if not 1 <= ratio <= 2:  # Technically it can't be 2 but I leave it just in case for float num approx
+        if not 1 <= ratio < 2:
             logger.error("Ratio {} has a weird value. This function must have a bug.".format(ratio))
     else:
         ratio = 2 * (model_in_c + model_out_c) / (model_in_r + model_out_r)
@@ -124,17 +124,23 @@ def _get_alternate_capacity_equivalent(dense_layers, classification: bool = True
     If when both ends meet there's not a coincidence (example: [..., 1, 1, ...]) then
         the code will find a compromise between the two to keep the same real valued trainable parameters.
     """
-    output_multiplier = np.zeros(len(self.shape) + 2)
+    output_multiplier = np.zeros(len(dense_layers) + 1)
     output_multiplier[0] = 2
     output_multiplier[-1] = 1 if classification else 2
     i: int = 1
-    while i <= (len(self.shape) - i):
+    while i <= (len(dense_layers) - i):
         output_multiplier[i] = 2 if output_multiplier[i - 1] == 1 else 1  # From beginning
         output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1  # From the end
-        if i == len(self.shape) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
-                i + 1 == len(self.shape) - i and output_multiplier[i] == output_multiplier[i + 1]:
-            m_inf = self.shape[i - 1].output_size
-            m_sup = self.shape[i + 1].output_size
-            output_multiplier[i] = 2 * (m_inf + m_sup) / (m_inf + 2 * m_sup)
+        if i == len(dense_layers) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
+                i + 1 == len(dense_layers) - i and output_multiplier[i] == output_multiplier[i + 1]:
+            m_inf = dense_layers[i - 1].input_shape[-1]     # This is because dense_layers are len(output_multiplier) - 1
+            m_sup = dense_layers[i].units
+            if i == len(dense_layers) - i:
+                coef_sup = output_multiplier[i + 1]
+                coef_inf = output_multiplier[i - 1]
+            else:
+                coef_sup = output_multiplier[i + 1]
+                coef_inf = output_multiplier[i]
+            output_multiplier[i] = 2 * (m_inf + m_sup) / (coef_inf * m_inf + coef_sup * m_sup)
         i += 1
     return output_multiplier[1:]

@@ -7,12 +7,11 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.losses import categorical_crossentropy
 
 
-def test_shape(input_size, output_size, shape_raw, classifier=True, capacity_equivalent=True, expected_result=None):
+def test_shape(input_size, output_size, shape_raw, classifier=True, capacity_equivalent=True, equiv_technique='alternate', expected_result=None):
     shape = [
         layers.ComplexInput(input_shape=input_size, dtype=np.complex64)
     ]
     if len(shape_raw) == 0:
-        print("No hidden layers are used. activation and dropout will be ignored")
         shape.append(
             ComplexDense(units=output_size, activation='softmax_real', dtype=np.complex64)
         )
@@ -25,7 +24,7 @@ def test_shape(input_size, output_size, shape_raw, classifier=True, capacity_equ
     complex_network.compile(optimizer='sgd', loss=categorical_crossentropy, metrics=['accuracy'])
     result = _get_real_equivalent_multiplier(complex_network.layers, classifier=classifier,
                                              capacity_equivalent=capacity_equivalent,
-                                             equiv_technique='alternate')
+                                             equiv_technique=equiv_technique)
     # rvnn = complex_network.get_real_equivalent(classifier, capacity_equivalent)
     # complex_network.training_param_summary()
     # rvnn.training_param_summary()
@@ -36,30 +35,41 @@ def test_shape(input_size, output_size, shape_raw, classifier=True, capacity_equ
 
 
 if __name__ == '__main__':
-    # test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], classifier=True)
-    # sleep(2)
-    # test_shape(100, 2, [100, 30, 50, 60, 50, 30], classifier=True)
-    # sleep(2)
-    # test_shape(100, 2, [100, 30, 50, 60, 50, 30], classifier=False)
-    # sleep(2)
-    # test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], classifier=False)
-    # sleep(2)
-    # test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], capacity_equivalent=False)
+    # Ratio
+    # The bigger the middle, it will tend to sqrt(2) = 1.4142135623730951
+    test_shape(4, 2, [1, 30, 500, 400, 60, 50, 3], classifier=True, equiv_technique='ratio')   
+    sleep(2)
+    test_shape(4, 2, [64], classifier=False, equiv_technique='ratio')   # this is 1 for regression
+    sleep(2)
+    test_shape(4, 2, [64], classifier=True, equiv_technique='ratio')   # this is 2*(in+out)/(2*in+out) = 1.2
+    sleep(2)
+    test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], classifier=True, equiv_technique='ratio')
+    sleep(2)
+    test_shape(100, 2, [100, 30, 50, 60, 50, 30], classifier=True, equiv_technique='ratio')
+    sleep(2)
+    test_shape(100, 2, [100, 30, 50, 60, 50, 30], classifier=False, equiv_technique='ratio')
+    sleep(2)
+    test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], classifier=False, equiv_technique='ratio')
+    sleep(2)
+    test_shape(100, 2, [100, 30, 50, 40, 60, 50, 30], capacity_equivalent=False, equiv_technique='ratio')
+    
+    # Alternate
+    sleep(2)
     test_shape(100, 2, [], expected_result=[1])
     sleep(2)
-    test_shape(100, 2, [64], expected_result=[2, 1])
+    test_shape(100, 2, [64], expected_result=[204/202, 1])
     sleep(2)
     test_shape(100, 2, [100, 64], expected_result=[1, 2, 1])
     sleep(2)
-    test_shape(100, 2, [100, 30, 64], expected_result=[1, 2, 2, 1])
+    test_shape(100, 2, [100, 30, 64], expected_result=[1, 328/228, 2, 1])
     sleep(2)
     test_shape(100, 2, [100, 30, 40, 50], expected_result=[1, 2, 1, 2, 1])
     sleep(2)
-    test_shape(100, 2, [100, 30, 40, 60, 30], expected_result=[1, 2, 2, 1, 2, 1])
+    test_shape(100, 2, [100, 30, 40, 60, 30], expected_result=[1, 2, 180/120, 1, 2, 1])
     sleep(2)
     test_shape(100, 2, [100, 30, 40, 60, 50, 30], expected_result=[1, 2, 1, 2, 1, 2, 1])
     sleep(2)
-    test_shape(100, 2, [100, 30, 40, 60, 50, 30, 60], expected_result=[1, 2, 1, 2, 2, 1, 2, 1])
+    test_shape(100, 2, [100, 30, 40, 60, 50, 30, 60], expected_result=[1, 2, 1, 180/140, 2, 1, 2, 1])
 
     # Not capacity equivalent
     sleep(2)
@@ -78,4 +88,4 @@ if __name__ == '__main__':
     test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False, capacity_equivalent=False,
                expected_result=[2, 2, 2, 2, 2, 2, 2])
     # sleep(2)
-    # test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False)
+    # test_shape(100, 2, [100, 30, 40, 60, 50, 30], classifier=False)"""
