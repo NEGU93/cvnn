@@ -91,11 +91,13 @@ class ComplexDense(Dense, ComplexLayer):
                 initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
                 trainable=True
             )
-            self.b_r = self.add_weight(
-                shape=(self.units,), initializer=self.bias_initializer, trainable=True, dtype=self.my_dtype.real_dtype
-            )   # TODO: Change dtype here
-            self.b_i = self.add_weight(
-                shape=(self.units,), initializer=self.bias_initializer, trainable=True, dtype=self.my_dtype.real_dtype
+            self.b_r = tf.Variable(
+                initial_value=self.bias_initializer(shape=(self.units,), dtype=self.my_dtype),
+                trainable=True
+            )
+            self.b_i = tf.Variable(
+                initial_value=self.bias_initializer(shape=(self.units,), dtype=self.my_dtype),
+                trainable=True
             )
         else:
             # TODO: For Complex you should probably want to use MY init for real keras. DO sth! at least error message
@@ -281,7 +283,7 @@ class ComplexConv(Layer, ComplexLayer):
                     regularizer=self.bias_regularizer,
                     constraint=self.bias_constraint,
                     trainable=True,
-                    dtype=self.my_dtype.real_dtype)
+                    dtype=self.my_dtype)
                 self.bias_i = self.add_weight(
                     name='bias',
                     shape=(self.filters,),
@@ -289,7 +291,7 @@ class ComplexConv(Layer, ComplexLayer):
                     regularizer=self.bias_regularizer,
                     constraint=self.bias_constraint,
                     trainable=True,
-                    dtype=self.my_dtype.real_dtype)
+                    dtype=self.my_dtype)
         else:
             self.kernel = self.add_weight(
                 name='kernel',
