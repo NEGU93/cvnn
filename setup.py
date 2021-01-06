@@ -26,6 +26,8 @@ setup(
     },
     install_requires=requirements,
     keywords='cvnn',
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     classifiers=[
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
@@ -37,4 +39,5 @@ setup(
         'plotter': ['matplotlib', 'seaborn', 'plotly', 'tikzplotlib'],
         'full': ['prettytable', 'matplotlib', 'seaborn', 'plotly', 'tikzplotlib']
     }
+
 )
