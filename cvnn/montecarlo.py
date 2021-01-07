@@ -15,7 +15,7 @@ import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.data_analysis import MonteCarloAnalyzer, Plotter
-from cvnn.layers import ComplexDense
+from cvnn.layers import ComplexDense, ComplexDropout
 from cvnn.utils import transform_to_real, randomize
 from cvnn.real_equiv_tools import get_real_equivalent
 from cvnn.utils import median_error
@@ -48,7 +48,8 @@ class MonteCarlo:
         self.models.append(model)
 
     def run(self, x, y, data_summary: str = '', polar: bool = False, do_conf_mat: bool = True,
-            validation_split: float = 0.2, validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add the tuple of validation data details.
+            validation_split: float = 0.2,
+            validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,    # TODO: Add the tuple of validation data details.
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
             shuffle: bool = True, debug: bool = False, display_freq: int = 1, checkpoints: bool = False):
         """
@@ -409,6 +410,8 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     else:  # len(shape_raw) > 0:
         for s in shape_raw:
             shape.append(ComplexDense(units=s, activation=activation))   # Add dropout!
+            if dropout is not None:
+                shape.append(ComplexDropout(rate=dropout))
         shape.append(ComplexDense(units=output_size, activation='softmax_real'))
 
     complex_network = tf.keras.Sequential(shape, name="complex_network")
@@ -529,4 +532,4 @@ def _save_montecarlo_log(iterations, path, dataset_name, models_names, num_class
 
 if __name__ == "__main__":
     # Base case with one hidden layer size 64 and dropout 0.5
-    run_gaussian_dataset_montecarlo(iterations=10, dropout=None)
+    run_gaussian_dataset_montecarlo(iterations=10, dropout=0.5)

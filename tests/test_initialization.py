@@ -29,9 +29,11 @@ tests = {
     "Glorot Normal": [tf.initializers.GlorotNormal, initializers.ComplexGlorotNormal]
 }
 
+
 def test_inits():
     for key, value in tests.items():
         compare(key, value[0], value[1])
+
 
 if __name__ == "__main__":
     test_inits()

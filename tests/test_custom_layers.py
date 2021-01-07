@@ -1,15 +1,18 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, ComplexAvgPooling2D
-from cvnn.initializers import ComplexGlorotUniform
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
-import tensorflow_datasets as tfds
+
 from pdb import set_trace
 
 """
 This module tests:
     Correct result of Complex AVG and MAX pooling layers.
     Init ComplexConv2D layer and verifies output dtype and shape.
+    Trains using:
+        ComplexDense
+        ComplexFlatten
+        ComplexInput 
 """
 
 
@@ -80,75 +83,7 @@ def shape_ad_dtype_of_conv2d():
     assert y.dtype == tf.complex64
 
 
-def normalize_img(image, label):
-    """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255., label
-
-
-def mnist_example():
-    (ds_train, ds_test), ds_info = tfds.load(
-        'mnist',
-        split=['train', 'test'],
-        shuffle_files=True,
-        as_supervised=True,
-        with_info=True,
-    )
-    ds_train = ds_train.map(
-        normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    ds_train = ds_train.cache()
-    ds_train = ds_train.shuffle(ds_info.splits['train'].num_examples)
-    ds_train = ds_train.batch(128)
-    ds_train = ds_train.prefetch(tf.data.experimental.AUTOTUNE)
-    ds_test = ds_test.map(
-        normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    ds_test = ds_test.batch(128)
-    ds_test = ds_test.cache()
-    ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
-
-    model = tf.keras.models.Sequential([
-        ComplexFlatten(input_shape=(28, 28, 1)),
-        ComplexDense(128, activation='relu', dtype=tf.float32),
-        ComplexDense(10, dtype=tf.float32)
-    ])
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
-    )
-
-    model.fit(
-        ds_train,
-        epochs=6,
-        validation_data=ds_test,
-    )
-
-
-def fashion_mnist_example():
-    dtype_1 = np.complex64
-    fashion_mnist = tf.keras.datasets.fashion_mnist
-    (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
-    train_images = train_images.astype(dtype_1)
-    test_images = test_images.astype(dtype_1)
-    train_labels = train_labels.astype(dtype_1)
-    test_labels = test_labels.astype(dtype_1)
-
-    model = tf.keras.Sequential([
-        ComplexInput(input_shape=(28, 28)),
-        ComplexFlatten(),
-        ComplexDense(128, activation='cart_relu', kernel_initializer=ComplexGlorotUniform(seed=0)),
-        ComplexDense(10, activation='convert_to_real_with_abs', kernel_initializer=ComplexGlorotUniform(seed=0))
-    ])
-    model.summary()
-    model.compile(optimizer='adam',
-                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                  metrics=['accuracy']
-                  )
-    model.fit(train_images, train_labels, epochs=10)
-
-    # import pdb; pdb.set_trace()
-
-
-def complex_max_pool_2d():
+def get_img():
     img_r = np.array([[
         [0, 1, 2],
         [0, 2, 2],
@@ -169,6 +104,11 @@ def complex_max_pool_2d():
     ]]).astype(np.float32)
     img = img_r + 1j * img_i
     img = np.reshape(img, (2, 3, 3, 1))
+    return img
+
+
+def complex_max_pool_2d():
+    img = get_img()
     max_pool = ComplexMaxPooling2D(strides=1)
     res = max_pool(img.astype(np.complex64))
     expected_res = np.array([
@@ -185,32 +125,21 @@ def complex_max_pool_2d():
             [3.+9.j]]
         ]])
     assert (res == expected_res.astype(np.complex64)).numpy().all()
+    x = tf.constant([[1., 2., 3.],
+                     [4., 5., 6.],
+                     [7., 8., 9.]])
+    x = tf.reshape(x, [1, 3, 3, 1])
+    max_pool_2d = tf.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid')
+    complex_max_pool_2d = ComplexMaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid')
+    assert np.all(max_pool_2d(x) == complex_max_pool_2d(x))
 
 
 def complex_avg_pool():
-    img_r = np.array([[
-        [0, 1, 2],
-        [0, 2, 2],
-        [0, 5, 7]
-    ], [
-        [0, 4, 5],
-        [3, 7, 9],
-        [4, 5, 3]
-    ]]).astype(np.float32)
-    img_i = np.array([[
-        [0, 4, 5],
-        [3, 7, 9],
-        [4, 5, 3]
-    ], [
-        [0, 4, 5],
-        [3, 2, 2],
-        [4, 8, 9]
-    ]]).astype(np.float32)
-    img = img_r + 1j * img_i
-    img = np.reshape(img, (2, 3, 3, 1))
+    img = get_img()
     avg_pool = ComplexAvgPooling2D(strides=1)
     res = avg_pool(img.astype(np.complex64))
-    expected_res = np.array([[[[0.75+3.5j ], [1.75+6.25j]], [[1.75+4.75j], [4.  +6.j  ]]], [[[3.5 +2.25j], [6.25+3.25j]], [[4.75+4.25j], [6.  +5.25j]]]])
+    expected_res = np.array([[[[0.75+3.5j], [1.75+6.25j]], [[1.75+4.75j], [4. + 6.j]]],
+                             [[[3.5 + 2.25j], [6.25+3.25j]], [[4.75 + 4.25j], [6. + 5.25j]]]])
     assert (res == expected_res.astype(np.complex64)).numpy().all()
 
 

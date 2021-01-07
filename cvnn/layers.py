@@ -113,7 +113,10 @@ class ComplexDense(Dense, ComplexLayer):
     def call(self, inputs: t_input):
         # tf.print(f"inputs at ComplexDense are {inputs.dtype}")
         if inputs.dtype != self.my_dtype:
-            tf.print(f"Expected input to be {self.my_dtype}, but received {inputs.dtype}.\n")
+            tf.print(f"WARNING: {self.name} - Expected input to be {self.my_dtype}, but received {inputs.dtype}.")
+            if self.my_dtype.is_complex and inputs.dtype.is_floating:
+                tf.print("\tThis is normally fixed using ComplexInput() "
+                         "at the start (tf casts input automatically to real).")
             inputs = tf.cast(inputs, self.my_dtype)
         if self.my_dtype.is_complex:
             w = tf.complex(self.w_r, self.w_i)
@@ -131,6 +134,72 @@ class ComplexDense(Dense, ComplexLayer):
                             activation=self.activation, use_bias=self.use_bias,
                             kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
                             dtype=self.my_dtype.real_dtype)
+
+
+class ComplexDropout(Layer, ComplexLayer):
+    """
+    Applies Dropout to the input.
+    It works also with complex inputs!
+    The Dropout layer randomly sets input units to 0 with a frequency of `rate`
+    at each step during training time, which helps prevent overfitting.
+    Inputs not set to 0 are scaled up by 1/(1 - rate) such that the sum over
+    all inputs is unchanged.
+    Note that the Dropout layer only applies when `training` is set to True
+    such that no values are dropped during inference. When using `model.fit`,
+    `training` will be appropriately set to True automatically, and in other
+    contexts, you can set the kwarg explicitly to True when calling the layer.
+    (This is in contrast to setting `trainable=False` for a Dropout layer.
+    `trainable` does not affect the layer's behavior, as Dropout does
+    not have any variables/weights that can be frozen during training.)
+    >>> tf.random.set_seed(0)
+    >>> layer = tf.keras.layers.Dropout(.2, input_shape=(2,))
+    >>> data = np.arange(10).reshape(5, 2).astype(np.float32)
+    >>> print(data)
+    [[0. 1.]
+    [2. 3.]
+    [4. 5.]
+    [6. 7.]
+    [8. 9.]]
+    >>> outputs = layer(data, training=True)
+    >>> print(outputs)
+    tf.Tensor(
+    [[ 0.    1.25]
+    [ 2.5   3.75]
+    [ 5.    6.25]
+    [ 7.5   8.75]
+    [10.    0.  ]], shape=(5, 2), dtype=float32)
+    Arguments:
+    rate: Float between 0 and 1. Fraction of the input units to drop.
+    noise_shape: 1D integer tensor representing the shape of the
+      binary dropout mask that will be multiplied with the input.
+      For instance, if your inputs have shape
+      `(batch_size, timesteps, features)` and
+      you want the dropout mask to be the same for all timesteps,
+      you can use `noise_shape=(batch_size, 1, features)`.
+    seed: A Python integer to use as random seed.
+    Call arguments:
+    inputs: Input tensor (of any rank).
+    training: Python boolean indicating whether the layer should behave in
+      training mode (adding dropout) or in inference mode (doing nothing).
+    """
+
+    def __init__(self, rate, noise_shape=None, seed=None, **kwargs):
+        super(ComplexDropout, self).__init__(**kwargs)  # trainable=False,
+        self.rate = rate
+        self.seed = seed
+        self.noise_shape = noise_shape
+
+    def call(self, inputs, **kwargs):
+        if inputs.shape[0] is None:     # When testing the shape
+            return inputs
+        drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
+        y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))
+        y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
+        y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=inputs.dtype)
+        return y_out
+
+    def get_real_equivalent(self):
+        return ComplexDropout(rate=self.rate, seed=self.seed, noise_shape=self.noise_shape)
 
 
 class ComplexConv(Layer, ComplexLayer):
@@ -345,8 +414,10 @@ class ComplexConv(Layer, ComplexLayer):
             4. Activation Function
         """
         if inputs.dtype != self.my_dtype:
-            tf.print(f"Expected input to be {self.my_dtype}, but received {inputs.dtype}.\n"
-                     f"You might have forgotten to use tf.keras.Input(shape, dtype=np.complex128).")
+            tf.print(f"WARNING: {self.name} - Expected input to be {self.my_dtype}, but received {inputs.dtype}.")
+            if self.my_dtype.is_complex and inputs.dtype.is_floating:
+                tf.print("\tThis is normally fixed using ComplexInput() "
+                         "at the start (tf casts input automatically to real).")
             inputs = tf.cast(inputs, self.my_dtype)
         if self._is_causal:  # Apply causal padding to inputs for Conv1D.
             inputs = array_ops.pad(inputs, self._compute_causal_padding(inputs))
@@ -864,16 +935,22 @@ class ComplexPooling2D(Layer, ComplexLayer):
 class ComplexMaxPooling2D(ComplexPooling2D):
     
     def pool_function(self, inputs, ksize, strides, padding, data_format):
-        abs_in = tf.math.abs(inputs)    # The max is calculated with the absolute value. This will still work on real values.
-        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides, padding=padding, data_format=data_format)
+        # The max is calculated with the absolute value. This will still work on real values.
+        abs_in = tf.math.abs(inputs)
+        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides,
+                                                    padding=padding, data_format=data_format)
         if inputs.shape[0] is None:
             return output
-        flat_in = tf.reshape(inputs, [tf.shape(inputs)[0], tf.math.reduce_prod(tf.shape(inputs)[1:])])      # Flatten input and argmax to make them equivalent
+        # Flatten input and argmax to make them equivalent
+        flat_in = tf.reshape(inputs, [tf.shape(inputs)[0], tf.math.reduce_prod(tf.shape(inputs)[1:])])
         flat_argmax = tf.reshape(argmax, [tf.shape(argmax)[0], tf.math.reduce_prod(tf.shape(argmax)[1:])])
         # TODO: Using numpy in the next line seems quite inneficient, is there a better way?
-        res = [flat_in.numpy()[i][arg_ind] for i, arg_ind in enumerate(flat_argmax.numpy())]   # Get the max values using the indeces of argmax
+        # Get the max values using the indeces of argmax
+        res = [tf.convert_to_tensor(flat_in.numpy()[i][arg_ind]) for i, arg_ind in enumerate(flat_argmax.numpy())]
+        # for i, arg_ind in enumerate(flat_argmax.numpy()):
         tf_res = tf.reshape(res, output.shape)
         # assert np.all(tf_res == output)             # For debugging when the input is real only!
+        assert tf_res.dtype == inputs.dtype
         return tf_res
 
     def get_real_equivalent(self):
