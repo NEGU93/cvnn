@@ -7,6 +7,7 @@ import numpy as np
 # Normalize pixel values to be between 0 and 1
 train_images, test_images = train_images.astype(dtype=np.float32) / 255.0, test_images.astype(dtype=np.float32) / 255.0
 
+
 def keras_fit(epochs=10):
     init = tf.keras.initializers.GlorotUniform(seed=117)
     model = models.Sequential()
@@ -24,6 +25,7 @@ def keras_fit(epochs=10):
     history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
     return test_loss, test_acc
+
 
 def own_fit(epochs=10):
     init = tf.keras.initializers.GlorotUniform(seed=117)
@@ -44,13 +46,15 @@ def own_fit(epochs=10):
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
     return test_loss, test_acc
 
+
 def test_fashion_mnist():
     epochs = 1
     keras = keras_fit(epochs=epochs)
     keras1 = keras_fit(epochs=epochs)
     own = own_fit(epochs=epochs)
     assert keras == own or keras != keras1, f"{keras} != {own}"
-    
+
+
 if __name__ == "__main__":
     test_fashion_mnist()
     # own_fit(epochs=1)

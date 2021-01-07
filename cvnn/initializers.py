@@ -10,6 +10,7 @@ from pdb import set_trace
 # Typing
 from typing import Optional
 
+
 def _compute_fans(shape):
     """
     Taken from https://github.com/tensorflow/tensorflow/blob/2b96f3662bd776e277f86997659e61046b56c315/tensorflow/python/ops/init_ops_v2.py#L994

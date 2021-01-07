@@ -181,7 +181,9 @@ class ComplexConv(Layer, ComplexLayer):
         bias_initializer: An initializer for the bias vector. If None, the default
           initializer will be used.
         kernel_regularizer: Optional regularizer for the convolution kernel.
+            ATTENTION: Not yet implemented! This parameter will have no effect.
         bias_regularizer: Optional regularizer for the bias vector.
+            ATTENTION: Not yet implemented! This parameter will have no effect.
         activity_regularizer: Optional regularizer function for the output.
         kernel_constraint: Optional projection function to be applied to the
             kernel after being updated by an `Optimizer` (e.g. used to implement
@@ -195,16 +197,20 @@ class ComplexConv(Layer, ComplexLayer):
 
     def __init__(self, rank, filters, kernel_size, dtype, strides=1, padding='valid', data_format=None, dilation_rate=1,
                  groups=1, activation=None, use_bias=True,
-                 kernel_initializer='glorot_uniform', bias_initializer='zeros', kernel_regularizer=None,
-                 bias_regularizer=None, activity_regularizer=None, kernel_constraint=None, bias_constraint=None,
+                 kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
+                 kernel_regularizer=None, bias_regularizer=None,    # TODO: Not yet working
+                 activity_regularizer=None, kernel_constraint=None, bias_constraint=None,
                  trainable=True, name=None, conv_op=None, **kwargs):
+        if kernel_regularizer is not None or bias_regularizer is not None:
+            logger.warning(f"Sorry, regularizers are not implemented yet, this parameter will take no effect")
         super(ComplexConv, self).__init__(
             trainable=trainable,
             name=name,
             activity_regularizer=regularizers.get(activity_regularizer),
             **kwargs)
         self.rank = rank
-        self.my_dtype = tf.dtypes.as_dtype(dtype)  # I use no default dtype to make sure I don't forget to give it to my ComplexConv layers
+        self.my_dtype = tf.dtypes.as_dtype(dtype)
+        # I use no default dtype to make sure I don't forget to give it to my ComplexConv layers
         if isinstance(filters, float):
             filters = int(filters)
         self.filters = filters
@@ -259,39 +265,30 @@ class ComplexConv(Layer, ComplexLayer):
                 f'(full input shape is {input_shape}).')
         kernel_shape = self.kernel_size + (input_channel // self.groups, self.filters)
         if self.my_dtype.is_complex:
-            self.kernel_r = self.add_weight(
-                name='kernel',
-                shape=kernel_shape,
-                initializer=self.kernel_initializer,
-                regularizer=self.kernel_regularizer,
+            self.kernel_r = tf.Variable(
+                initial_value=self.kernel_initializer(shape=kernel_shape, dtype=self.my_dtype),
+                name='kernel_r',
                 constraint=self.kernel_constraint,
-                trainable=True,
-                dtype=self.my_dtype)
-            self.kernel_i = self.add_weight(
-                name='kernel',
-                shape=kernel_shape,
-                initializer=self.kernel_initializer,
-                regularizer=self.kernel_regularizer,
+                trainable=True
+            )   # TODO: regularizer=self.kernel_regularizer,
+            self.kernel_i = tf.Variable(
+                initial_value=self.kernel_initializer(shape=kernel_shape, dtype=self.my_dtype),
+                name='kernel_i',
                 constraint=self.kernel_constraint,
-                trainable=True,
-                dtype=self.my_dtype)
+                trainable=True
+            )   # TODO: regularizer=self.kernel_regularizer
             if self.use_bias:
-                self.bias_r = self.add_weight(
-                    name='bias',
-                    shape=(self.filters,),
-                    initializer=self.bias_initializer,
-                    regularizer=self.bias_regularizer,
+                self.bias_r = tf.Variable(
+                    initial_value=self.bias_initializer(shape=(self.filters,), dtype=self.my_dtype),
+                    name='bias_r',
+                    trainable=True
+                )
+                self.bias_i = tf.Variable(
+                    initial_value=self.bias_initializer(shape=(self.filters,), dtype=self.my_dtype),
+                    name='bias_i',
                     constraint=self.bias_constraint,
-                    trainable=True,
-                    dtype=self.my_dtype)
-                self.bias_i = self.add_weight(
-                    name='bias',
-                    shape=(self.filters,),
-                    initializer=self.bias_initializer,
-                    regularizer=self.bias_regularizer,
-                    constraint=self.bias_constraint,
-                    trainable=True,
-                    dtype=self.my_dtype)
+                    trainable=True
+                )   # TODO: regularizer=self.bias_regularizer
         else:
             self.kernel = self.add_weight(
                 name='kernel',
@@ -359,17 +356,18 @@ class ComplexConv(Layer, ComplexLayer):
         if self.my_dtype.is_complex:
             kernel_r = self.kernel_r
             kernel_i = self.kernel_i
-            bias = tf.complex(self.bias_r, self.bias_i)
+            if self.use_bias:
+                bias = tf.complex(self.bias_r, self.bias_i)
         else:
             kernel_r = tf.math.real(self.kernel)
             kernel_i = tf.math.imag(self.kernel)
-            bias = self.bias
+            if self.use_bias:
+                bias = self.bias
         real_outputs = self._convolution_op(inputs_r, kernel_r) - self._convolution_op(inputs_i, kernel_i)
         imag_outputs = self._convolution_op(inputs_r, kernel_i) + self._convolution_op(inputs_i, kernel_r)
         outputs = tf.cast(tf.complex(real_outputs, imag_outputs), dtype=self.my_dtype)
         # Add bias
         if self.use_bias:
-
             output_rank = outputs.shape.rank
             if self.rank == 1 and self._channels_first:
                 # nn.bias_add does not accept a 1D input tensor.
@@ -517,8 +515,8 @@ class ComplexConv1D(ComplexConv):
                  groups=1,
                  activation=None,
                  use_bias=True,
-                 kernel_initializer='glorot_uniform',
-                 bias_initializer='zeros',
+                 kernel_initializer=ComplexGlorotUniform(),
+                 bias_initializer=Zeros(),
                  kernel_regularizer=None,
                  bias_regularizer=None,
                  activity_regularizer=None,
@@ -626,7 +624,7 @@ class ComplexConv2D(ComplexConv):
 
     def __init__(self, filters, kernel_size, strides=(1, 1), padding='valid', data_format=None, dilation_rate=(1, 1),
                  groups=1, activation=None, use_bias=True, dtype=DEFAULT_COMPLEX_TYPE,
-                 kernel_initializer='glorot_uniform', bias_initializer='zeros',
+                 kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
                  kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                  kernel_constraint=None, bias_constraint=None, **kwargs):
         super(ComplexConv2D, self).__init__(
@@ -752,7 +750,7 @@ class ComplexConv3D(ComplexConv):
     def __init__(self,
                  filters, kernel_size, dtype=DEFAULT_COMPLEX_TYPE, strides=(1, 1, 1), padding='valid', data_format=None,
                  dilation_rate=(1, 1, 1), groups=1, activation=None, use_bias=True,
-                 kernel_initializer='glorot_uniform', bias_initializer='zeros',
+                 kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
                  kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                  kernel_constraint=None, bias_constraint=None, **kwargs):
         super(ComplexConv3D, self).__init__(

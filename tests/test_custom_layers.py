@@ -6,6 +6,12 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from pdb import set_trace
 
+"""
+This module tests:
+    Correct result of Complex AVG and MAX pooling layers.
+    Init ComplexConv2D layer and verifies output dtype and shape.
+"""
+
 
 def small_example():
     img_r = np.array([[
@@ -70,7 +76,7 @@ def shape_ad_dtype_of_conv2d():
     input_shape = (4, 28, 28, 3)
     x = tf.cast(tf.random.normal(input_shape), tf.complex64)
     y = ComplexConv2D(2, 3, activation='cart_relu', padding="same", input_shape=input_shape[1:], dtype=x.dtype)(x)
-    assert y.shape==(4, 28, 28, 2)
+    assert y.shape == (4, 28, 28, 2)
     assert y.dtype == tf.complex64
 
 
@@ -207,10 +213,12 @@ def complex_avg_pool():
     expected_res = np.array([[[[0.75+3.5j ], [1.75+6.25j]], [[1.75+4.75j], [4.  +6.j  ]]], [[[3.5 +2.25j], [6.25+3.25j]], [[4.75+4.25j], [6.  +5.25j]]]])
     assert (res == expected_res.astype(np.complex64)).numpy().all()
 
+
 def test_layers():
     complex_avg_pool()
     shape_ad_dtype_of_conv2d()
     complex_max_pool_2d()
-    
+
+
 if __name__ == "__main__":
     test_layers()
