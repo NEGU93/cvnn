@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,30 +12,28 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -53,7 +52,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cvnn
+            <a href="index.html" class="icon icon-home"> cvnn
           
 
           
@@ -76,7 +75,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -106,7 +104,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -145,7 +142,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Monte Carlo</li>
     
@@ -168,7 +165,7 @@
             
   <div class="section" id="monte-carlo">
 <span id="montecarlo-class"></span><h1>Monte Carlo<a class="headerlink" href="#monte-carlo" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
+<dl class="py class">
 <dt id="MonteCarlo">
 <em class="property">class </em><code class="sig-name descname">MonteCarlo</code><a class="headerlink" href="#MonteCarlo" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class that allows the statistical comparison of several models on the same dataset</p>
@@ -194,15 +191,15 @@
 </div></blockquote>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="add_model">
-<code class="sig-name descname">add_model</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">model: CvnnModel</em><span class="sig-paren">)</span><a class="headerlink" href="#add_model" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">add_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">model</span><span class="p">:</span> <span class="n"><a class="reference internal" href="cvnn.html#CvnnModel" title="CvnnModel">CvnnModel</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#add_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds a <code class="code docutils literal notranslate"><span class="pre">cvnn.CvnnModel</span></code> to the list to then comparate between them</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">data_summary=''</em>, <em class="sig-param">polar=False</em>, <em class="sig-param">do_conf_mat=True</em>, <em class="sig-param">validation_split=0.2</em>, <em class="sig-param">validation_data=None</em>, <em class="sig-param">iterations=100</em>, <em class="sig-param">epochs=10</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">shuffle=False</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">display_freq=1</em>, <em class="sig-param">checkpoints=False</em><span class="sig-paren">)</span><a class="headerlink" href="#run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">data_summary</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">polar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_conf_mat</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">validation_split</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">validation_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">shuffle</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">debug</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">display_freq</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">checkpoints</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#run" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is used to compare all models added with <code class="code docutils literal notranslate"><span class="pre">self.add_model</span></code> method.
 Runs the iteration dataset <code class="code docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y)</span></code>.</p>
 <ol class="arabic simple">
@@ -264,9 +261,9 @@ It can be used by <code class="code docutils literal notranslate"><span class="p
 
 <div class="section" id="real-vs-complex">
 <span id="id1"></span><h2>Real Vs Complex<a class="headerlink" href="#real-vs-complex" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="RealVsComplex">
-<em class="property">class </em><code class="sig-name descname">RealVsComplex</code><span class="sig-paren">(</span><em class="sig-param">MonteCarlo</em><span class="sig-paren">)</span><a class="headerlink" href="#RealVsComplex" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-name descname">RealVsComplex</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">MonteCarlo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RealVsComplex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inherits from MonteCarlo.</p>
 <p>Compares a complex model with it’s real equivalent.</p>
 <p>Example usage:</p>
@@ -278,9 +275,9 @@ It can be used by <code class="code docutils literal notranslate"><span class="p
 </div>
 </dd></dl>
 
-<dl class="method">
-<dt id="__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">complex_model</em>, <em class="sig-param">capacity_equivalent=True</em>, <em class="sig-param">equiv_technique='ratio'</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt id="init__">
+<span id="__init__"></span><code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">complex_model</span></em>, <em class="sig-param"><span class="n">capacity_equivalent</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">equiv_technique</span><span class="o">=</span><span class="default_value">'ratio'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Used to compare a single Complex Model given as a parameter. The Code will generate it’s real equivalent and compre both of them.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -302,9 +299,9 @@ This parameter is ignored if <code class="code docutils literal notranslate"><sp
 </div>
 <div class="section" id="other-helper-function">
 <span id="helper-function"></span><h2>Other Helper function<a class="headerlink" href="#other-helper-function" title="Permalink to this headline">¶</a></h2>
-<dl class="method">
+<dl class="py method">
 <dt id="run_montecarlo">
-<code class="sig-name descname">run_montecarlo</code><span class="sig-paren">(</span><em class="sig-param">models</em>, <em class="sig-param">dataset</em>, <em class="sig-param">open_dataset=None</em>, <em class="sig-param">iterations=500</em>, <em class="sig-param">epochs=150</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">display_freq=1</em>, <em class="sig-param">validation_split=0.2</em>, <em class="sig-param">validation_data=None</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">polar=False</em>, <em class="sig-param">do_all=True</em>, <em class="sig-param">do_conf_mat=True</em><span class="sig-paren">)</span><a class="headerlink" href="#run_montecarlo" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">run_montecarlo</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">models</span></em>, <em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">open_dataset</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">500</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="o">=</span><span class="default_value">150</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">display_freq</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">validation_split</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">validation_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">debug</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">polar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_all</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">do_conf_mat</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#run_montecarlo" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is used to compare different neural networks performance.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -361,9 +358,9 @@ It can be used by <code class="code docutils literal notranslate"><span class="p
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="mlp_run_real_comparison_montecarlo">
-<code class="sig-name descname">mlp_run_real_comparison_montecarlo</code><span class="sig-paren">(</span><em class="sig-param">dataset: cvnn.dataset.Dataset</em>, <em class="sig-param">open_dataset=None</em>, <em class="sig-param">iterations=1000</em>, <em class="sig-param">epochs=150</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">display_freq=1</em>, <em class="sig-param">optimizer='sgd'</em>, <em class="sig-param">shape_raw=None</em>, <em class="sig-param">activation='cart_relu'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">polar=False</em>, <em class="sig-param">do_all=True</em>, <em class="sig-param">dropout=0.5</em>, <em class="sig-param">validation_split=0.2</em>, <em class="sig-param">validation_data=None</em>, <em class="sig-param">capacity_equivalent=True</em>, <em class="sig-param">equiv_technique='ratio'</em>, <em class="sig-param">do_conf_mat=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mlp_run_real_comparison_montecarlo" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">mlp_run_real_comparison_montecarlo</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span><span class="p">:</span> <span class="n">cvnn.dataset.Dataset</span></em>, <em class="sig-param"><span class="n">open_dataset</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="o">=</span><span class="default_value">150</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">display_freq</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">optimizer</span><span class="o">=</span><span class="default_value">'sgd'</span></em>, <em class="sig-param"><span class="n">shape_raw</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">activation</span><span class="o">=</span><span class="default_value">'cart_relu'</span></em>, <em class="sig-param"><span class="n">debug</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">polar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_all</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dropout</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">validation_split</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">validation_data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">capacity_equivalent</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">equiv_technique</span><span class="o">=</span><span class="default_value">'ratio'</span></em>, <em class="sig-param"><span class="n">do_conf_mat</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mlp_run_real_comparison_montecarlo" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is used to compare CVNN vs RVNN performance over any dataset.</p>
 <ol class="arabic simple">
 <li><p>Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.</p></li>
@@ -447,9 +444,9 @@ It can be used by <code class="code docutils literal notranslate"><span class="p
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="run_gaussian_dataset_montecarlo">
-<code class="sig-name descname">run_gaussian_dataset_montecarlo</code><span class="sig-paren">(</span><em class="sig-param">iterations=1000</em>, <em class="sig-param">m=10000</em>, <em class="sig-param">n=128</em>, <em class="sig-param">param_list=None</em>, <em class="sig-param">epochs=150</em>, <em class="sig-param">batch_size=100</em>, <em class="sig-param">display_freq=1</em>, <em class="sig-param">optimizer='sgd'</em>, <em class="sig-param">shape_raw=None</em>, <em class="sig-param">activation='cart_relu'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">polar=False</em>, <em class="sig-param">do_all=True</em>, <em class="sig-param">dropout=None</em><span class="sig-paren">)</span><a class="headerlink" href="#run_gaussian_dataset_montecarlo" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">run_gaussian_dataset_montecarlo</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">1000</span></em>, <em class="sig-param"><span class="n">m</span><span class="o">=</span><span class="default_value">10000</span></em>, <em class="sig-param"><span class="n">n</span><span class="o">=</span><span class="default_value">128</span></em>, <em class="sig-param"><span class="n">param_list</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">epochs</span><span class="o">=</span><span class="default_value">150</span></em>, <em class="sig-param"><span class="n">batch_size</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">display_freq</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">optimizer</span><span class="o">=</span><span class="default_value">'sgd'</span></em>, <em class="sig-param"><span class="n">shape_raw</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">activation</span><span class="o">=</span><span class="default_value">'cart_relu'</span></em>, <em class="sig-param"><span class="n">debug</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">polar</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">do_all</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dropout</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#run_gaussian_dataset_montecarlo" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function is used to compare CVNN vs RVNN performance over statistical non-circular data.</p>
 <ol class="arabic simple">
 <li><p>Generates a complex-valued gaussian correlated noise with the characteristics given by the inputs.</p></li>
@@ -533,19 +530,11 @@ It can be used by <code class="code docutils literal notranslate"><span class="p
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, J Agustin BARRACHINA
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -556,6 +545,7 @@ It can be used by <code class="code docutils literal notranslate"><span class="p
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

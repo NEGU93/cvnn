@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,30 +12,28 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -53,7 +52,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cvnn
+            <a href="index.html" class="icon icon-home"> cvnn
           
 
           
@@ -76,7 +75,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -105,7 +103,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -144,7 +141,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Complex Layers</li>
     
@@ -167,15 +164,15 @@
             
   <div class="section" id="complex-layers">
 <h1>Complex Layers<a class="headerlink" href="#complex-layers" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
+<dl class="py class">
 <dt id="ComplexLayer">
 <em class="property">class </em><code class="sig-name descname">ComplexLayer</code><span class="sig-paren">(</span><em class="sig-param">layers.Layer</em>, <em class="sig-param">ABC</em><span class="sig-paren">)</span><a class="headerlink" href="#ComplexLayer" title="Permalink to this definition">¶</a></dt>
 <dd><p>All the complex layers defined here inherit from <code class="code docutils literal notranslate"><span class="pre">ComplexLayer</span></code></p>
 </dd></dl>
 
-<dl class="method">
-<dt id="__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">output_size</em>, <em class="sig-param">input_size=None</em>, <em class="sig-param">input_dtype=None</em><span class="sig-paren">)</span><a class="headerlink" href="#__init__" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt id="init__">
+<span id="__init__"></span><code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">output_size</span></em>, <em class="sig-param"><span class="n">input_size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_dtype</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base constructor for a complex layer. The first layer will need a input_dtype and input_size.</p>
 <p>For the other classes is optional, if input_size or input_dtype does not match last layer it will throw a warning</p>
 <dl class="field-list simple">
@@ -199,9 +196,9 @@
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="call">
-<code class="sig-name descname">call</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">inputs</em><span class="sig-paren">)</span><a class="headerlink" href="#call" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">call</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">inputs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#call" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies the layer to an input</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -213,9 +210,9 @@
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="get_real_equivalent">
-<code class="sig-name descname">get_real_equivalent</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#get_real_equivalent" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_real_equivalent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#get_real_equivalent" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Gets a real-valued COPY of the Complex Layer.</p>
@@ -223,9 +220,9 @@
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="get_description">
-<code class="sig-name descname">get_description</code><span class="sig-paren">(</span><em class="sig-param">self</em><span class="sig-paren">)</span><a class="headerlink" href="#get_description" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_description</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#get_description" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>A string containing all the information of the layer</p>
@@ -235,7 +232,7 @@
 
 <div class="section" id="complex-dense">
 <h2>Complex Dense<a class="headerlink" href="#complex-dense" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
+<dl class="py class">
 <dt id="ComplexDense">
 <em class="property">class </em><code class="sig-name descname">ComplexDense</code><a class="headerlink" href="#ComplexDense" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fully connected complex-valued layer</p>
@@ -251,9 +248,9 @@
 </ul>
 </dd></dl>
 
-<dl class="method">
-<dt>
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">output_size</em>, <em class="sig-param">input_size=None</em>, <em class="sig-param">activation=None</em>, <em class="sig-param">input_dtype=None</em>, <em class="sig-param">weight_initializer=tf.keras.initializers.GlorotUniform</em>, <em class="sig-param">bias_initializer=tf.keras.initializers.Zeros</em>, <em class="sig-param">dropout=None</em><span class="sig-paren">)</span></dt>
+<dl class="py method">
+<dt id="id0">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">output_size</span></em>, <em class="sig-param"><span class="n">input_size</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">activation</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weight_initializer</span><span class="o">=</span><span class="default_value">tf.keras.initializers.GlorotUniform</span></em>, <em class="sig-param"><span class="n">bias_initializer</span><span class="o">=</span><span class="default_value">tf.keras.initializers.Zeros</span></em>, <em class="sig-param"><span class="n">dropout</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initializer of the Dense layer</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -276,9 +273,9 @@ Default: <code class="code docutils literal notranslate"><span class="pre">tenso
 </dl>
 </dd></dl>
 
-<dl class="method">
-<dt>
-<code class="sig-name descname">get_real_equivalent</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">output_multiplier=2</em><span class="sig-paren">)</span></dt>
+<dl class="py method">
+<dt id="id1">
+<code class="sig-name descname">get_real_equivalent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">output_multiplier</span><span class="o">=</span><span class="default_value">2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id1" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>output_multiplier</strong> – Multiplier of output and input size (normally by 2). Can be used 1 for the output layer of a classifier.</p>
@@ -289,16 +286,16 @@ Default: <code class="code docutils literal notranslate"><span class="pre">tenso
 </dl>
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="ComplexDropout">
 <em class="property">class </em><code class="sig-name descname">ComplexDropout</code><a class="headerlink" href="#ComplexDropout" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes dropout: randomly sets elements to zero to prevent overfitting.</p>
-<p>Dropout <a class="reference internal" href="#cit2014-srivastava" id="id1"><span>[CIT2014-SRIVASTAVA]</span></a> consists in randomly setting a fraction <code class="code docutils literal notranslate"><span class="pre">rate</span></code> of input units to 0 at each update during training time, which helps prevent overfitting.</p>
+<p>Dropout <a class="reference internal" href="#cit2014-srivastava" id="id2"><span>[CIT2014-SRIVASTAVA]</span></a> consists in randomly setting a fraction <code class="code docutils literal notranslate"><span class="pre">rate</span></code> of input units to 0 at each update during training time, which helps prevent overfitting.</p>
 </dd></dl>
 
-<dl class="method">
-<dt>
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">rate</em>, <em class="sig-param">noise_shape=None</em>, <em class="sig-param">seed=None</em><span class="sig-paren">)</span></dt>
+<dl class="py method">
+<dt id="id3">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">rate</span></em>, <em class="sig-param"><span class="n">noise_shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -313,7 +310,7 @@ For example, setting rate=0.1 would drop 10% of input elements.</p></li>
 </dd></dl>
 
 <dl class="citation">
-<dt class="label" id="cit2014-srivastava"><span class="brackets"><a class="fn-backref" href="#id1">CIT2014-SRIVASTAVA</a></span></dt>
+<dt class="label" id="cit2014-srivastava"><span class="brackets"><a class="fn-backref" href="#id2">CIT2014-SRIVASTAVA</a></span></dt>
 <dd><ol class="upperalpha simple" start="14">
 <li><p>Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and R. Salakhutdinov, “Dropout: a simple way to prevent neural networks from overfitting,” J. Mach. Learn. Res., vol. 15, no. 1, pp. 1929–1958, Jan. 2014</p></li>
 </ol>
@@ -342,19 +339,11 @@ For example, setting rate=0.1 would drop 10% of input elements.</p></li>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, J Agustin BARRACHINA
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -365,6 +354,7 @@ For example, setting rate=0.1 would drop 10% of input elements.</p></li>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

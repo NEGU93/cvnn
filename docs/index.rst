@@ -14,8 +14,6 @@ Content
 
 	installation
 	getting_started
-	cvnn
-	optimizers
 	layers
 	act_fun
 	initializers

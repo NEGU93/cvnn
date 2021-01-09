@@ -1,8 +1,10 @@
 Installation
 ============
 
-Using `Anaconda <https://anaconda.org/NEGU93/cvnn>`_::
+Using `Anaconda <https://anaconda.org/NEGU93/cvnn>`_
 ----------------------------------------------------
+
+Only vanilla version available for the moment::
 
     conda install -c negu93 cvnn
 
