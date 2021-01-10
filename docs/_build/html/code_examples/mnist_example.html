@@ -38,7 +38,7 @@
     <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="PolSAR Oberpfaffenhofen example" href="oberpfaffenhofen.html" />
+    <link rel="next" title="CIFAR 10" href="cifar10.html" />
     <link rel="prev" title="Code Examples" href="../code_examples.html" /> 
 </head>
 
@@ -93,7 +93,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../code_examples.html">Code Examples</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">MNIST Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="oberpfaffenhofen.html">PolSAR Oberpfaffenhofen example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cifar10.html">CIFAR 10</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fashion_mnist.html">Fashion MNIST</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../results.html">Results</a></li>
@@ -195,7 +196,6 @@
 <p>First lets import whats needed:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensorflow.compat.v2</span> <span class="k">as</span> <span class="nn">tf</span>
 <span class="kn">import</span> <span class="nn">tensorflow_datasets</span> <span class="k">as</span> <span class="nn">tfds</span>
-<span class="kn">from</span> <span class="nn">cvnn.cvnn_model</span> <span class="kn">import</span> <span class="n">CvnnModel</span>
 <span class="kn">from</span> <span class="nn">cvnn</span> <span class="kn">import</span> <span class="n">layers</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -221,14 +221,15 @@
 </pre></div>
 </div>
 <p>Create and train the model:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">shape</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">layers</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">input_dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
-    <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">,</span> <span class="n">input_dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span>
-    <span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">output_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">)</span>
-<span class="p">]</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">CvnnModel</span><span class="p">(</span><span class="s2">&quot;Testing with MNIST&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">sparse_categorical_crossentropy</span><span class="p">,</span>
-                  <span class="n">tensorboard</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">ds_train</span><span class="p">,</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">ds_test</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Sequential</span><span class="p">([</span>    <span class="c1"># Remember to cast the dtype to float32</span>
+    <span class="n">layers</span><span class="o">.</span><span class="n">ComplexFlatten</span><span class="p">(</span><span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+    <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+    <span class="n">layers</span><span class="o">.</span><span class="n">ComplexDense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax_real&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="p">])</span>
+<span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="s1">&#39;sparse_categorical_crossentropy&#39;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="mf">0.001</span><span class="p">),</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ds_train</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">ds_test</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Finally, this code will render the following output:</p>
@@ -246,12 +247,12 @@
 <span class="mi">469</span><span class="o">/</span><span class="mi">469</span> <span class="p">[</span><span class="o">==============================</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="n">s</span> <span class="mi">10</span><span class="n">ms</span><span class="o">/</span><span class="n">step</span> <span class="o">-</span> <span class="n">loss</span><span class="p">:</span> <span class="mf">0.3488</span> <span class="o">-</span> <span class="n">accuracy</span><span class="p">:</span> <span class="mf">0.9024</span> <span class="o">-</span> <span class="n">val_loss</span><span class="p">:</span> <span class="mf">0.3267</span> <span class="o">-</span> <span class="n">val_accuracy</span><span class="p">:</span> <span class="mf">0.9112</span>
 </pre></div>
 </div>
+<p><strong>Statistical Results</strong></p>
+<p>To assert the code works correctly, we have done 1000 iterations of both cvnn model and Keras model. The following box plot shows the results.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>ATTENTION: Accuracy is lower than in <a class="reference external" href="https://www.tensorflow.org/datasets/keras_example">Training a neural network on MNIST with Keras</a> because the optimizer used here is SGD and not Adam. Should we use SGD on the Keras example it will arrive to the same result.</p>
 </div>
-<p><strong>Statistical Results</strong></p>
-<p>To assert the code works correctly, we have done 1000 iterations of both cvnn model and Keras model. The following box plot shows the results.</p>
 
 <!-- saved from url=(0078)file:///home/barrachina/Documents/cvnn/docs/source/_static/SGD_mnist_test.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style id="plotly.js-style-global"></style><style id="plotly.js-style-modebar-ac6499"></style></head>
@@ -347,7 +348,7 @@ var n,a=t("./lib/build-log"),i=t("./lib/epsilon"),o=t("./lib/intersecter"),s=t("
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="oberpfaffenhofen.html" class="btn btn-neutral float-right" title="PolSAR Oberpfaffenhofen example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="cifar10.html" class="btn btn-neutral float-right" title="CIFAR 10" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../code_examples.html" class="btn btn-neutral float-left" title="Code Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

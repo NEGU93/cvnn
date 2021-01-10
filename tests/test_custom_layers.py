@@ -124,6 +124,7 @@ def complex_max_pool_2d():
             [5.+8.j],
             [3.+9.j]]
         ]])
+    set_trace()
     assert (res == expected_res.astype(np.complex64)).numpy().all()
     x = tf.constant([[1., 2., 3.],
                      [4., 5., 6.],

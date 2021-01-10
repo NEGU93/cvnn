@@ -22,7 +22,7 @@ from tensorflow.python.keras import backend
 from cvnn import logger
 from pdb import set_trace
 # Typing
-from typing import Union, List
+from typing import Union, List, Optional, Tuple
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
@@ -848,30 +848,26 @@ class ComplexConv3D(ComplexConv):
 class ComplexPooling2D(Layer, ComplexLayer):
     """
     Pooling layer for arbitrary pooling functions, for 2D inputs (e.g. images).
-    Abstract class. This class only exists for code reuse. It will never be an exposed API.
-      Arguments:
-        pool_function: The pooling function to apply, e.g. `tf.nn.max_pool2d`.
-        pool_size: An integer or tuple/list of 2 integers: (pool_height, pool_width)
-          specifying the size of the pooling window.
-          Can be a single integer to specify the same value for
-          all spatial dimensions.
-        strides: An integer or tuple/list of 2 integers,
-          specifying the strides of the pooling operation.
-          Can be a single integer to specify the same value for
-          all spatial dimensions.
-        padding: A string. The padding method, either 'valid' or 'same'.
-          Case-insensitive.
-        data_format: A string, one of `channels_last` (default) or `channels_first`.
-          The ordering of the dimensions in the inputs.
-          `channels_last` corresponds to inputs with shape
-          `(batch, height, width, channels)` while `channels_first` corresponds to
-          inputs with shape `(batch, channels, height, width)`.
-        name: A string, the name of the layer.
+    Abstract class. This class only exists for code reuse. It will never be an exposed API.       
     """
 
-    def __init__(self, pool_size=(2, 2), strides=None,
-                 padding='valid', data_format=None,
-                 name=None, **kwargs):
+    def __init__(self, pool_size: Union[int, Tuple[int, int]] = (2, 2), 
+                 strides: Optional[Union[int, Tuple[int, int]]] = None,
+                 padding: str = 'valid', data_format: Optional[str] = None,
+                 name: Optional[str] = None, **kwargs):
+        """
+        :param pool_size: An integer or tuple/list of 2 integers: (pool_height, pool_width)
+            specifying the size of the pooling window.
+            Can be a single integer to specify the same value for all spatial dimensions.
+        :param strides: An integer or tuple/list of 2 integers, specifying the strides of the pooling operation.
+            Can be a single integer to specify the same value for all spatial dimensions.
+        :param padding: A string. The padding method, either 'valid' or 'same'. Case-insensitive.
+        :param data_format: A string, one of `channels_last` (default) or `channels_first`.
+            The ordering of the dimensions in the inputs.
+            `channels_last` corresponds to inputs with shape
+            `(batch, height, width, channels)` while `channels_first` corresponds to inputs with shape `(batch, channels, height, width)`.
+        :param name: A string, the name of the layer.
+        """
         super(ComplexPooling2D, self).__init__(name=name, **kwargs)
         if data_format is None:
             data_format = backend.image_data_format()
@@ -933,6 +929,10 @@ class ComplexPooling2D(Layer, ComplexLayer):
 
 
 class ComplexMaxPooling2D(ComplexPooling2D):
+    """
+    Max pooling operation for 2D spatial data.
+    Works for complex dtype using the absolute value to get the max.
+    """
     
     def pool_function(self, inputs, ksize, strides, padding, data_format):
         # The max is calculated with the absolute value. This will still work on real values.

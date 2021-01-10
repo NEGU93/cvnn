@@ -9,7 +9,6 @@ First lets import whats needed::
 
     import tensorflow.compat.v2 as tf
     import tensorflow_datasets as tfds
-    from cvnn.cvnn_model import CvnnModel
     from cvnn import layers
     import numpy as np
 
@@ -35,14 +34,15 @@ Load MNIST dataset::
 
 Create and train the model::
 
-    shape = [
-        layers.Flatten(input_size=(28, 28, 1), input_dtype=np.float32),
-        layers.Dense(output_size=128, activation='cart_relu', input_dtype=np.float32, dropout=None),
-        layers.Dense(output_size=10, activation='softmax_real')
-    ]
-    model = CvnnModel("Testing with MNIST", shape, tf.keras.losses.sparse_categorical_crossentropy,
-                      tensorboard=False, verbose=False)
-    model.fit(x=ds_train, validation_data=ds_test, batch_size=128, epochs=6, verbose=1)
+    model = tf.keras.models.Sequential([    # Remember to cast the dtype to float32
+        layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
+        layers.ComplexDense(128, activation='cart_relu', dtype=np.float32),
+        layers.ComplexDense(10, activation='softmax_real', dtype=np.float32)
+    ])
+    model.compile(loss='sparse_categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(0.001),
+        metrics=['accuracy'],
+    )
+    model.fit(ds_train, epochs=6, validation_data=ds_test, verbose=verbose, shuffle=False)
 
 Finally, this code will render the following output::
 
@@ -59,13 +59,12 @@ Finally, this code will render the following output::
     Epoch 6/6
     469/469 [==============================] - 5s 10ms/step - loss: 0.3488 - accuracy: 0.9024 - val_loss: 0.3267 - val_accuracy: 0.9112
 
-.. warning:: 
-    ATTENTION: Accuracy is lower than in `Training a neural network on MNIST with Keras <https://www.tensorflow.org/datasets/keras_example>`_ because the optimizer used here is SGD and not Adam. Should we use SGD on the Keras example it will arrive to the same result.
-
-
 **Statistical Results**
 
 To assert the code works correctly, we have done 1000 iterations of both cvnn model and Keras model. The following box plot shows the results.
+
+.. warning:: 
+    ATTENTION: Accuracy is lower than in `Training a neural network on MNIST with Keras <https://www.tensorflow.org/datasets/keras_example>`_ because the optimizer used here is SGD and not Adam. Should we use SGD on the Keras example it will arrive to the same result.
 
 .. raw:: html
    :file: ../source/_static/SGD_mnist_test.html

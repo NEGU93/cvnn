@@ -5,4 +5,5 @@ Code Examples
 	:maxdepth: 2
 
     code_examples/mnist_example
-    code_examples/oberpfaffenhofen.ipynb
+    code_examples/cifar10.ipynb
+    code_examples/fashion_mnist.ipynb
