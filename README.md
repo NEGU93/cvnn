@@ -7,7 +7,7 @@ https://anaconda.org/negu93/cvnn/badges/version.svg)](https://anaconda.org/negu9
 This is a library that uses [Tensorflow](https://www.tensorflow.org) as a back-end to do complex-valued neural networks as CVNNs are barely supported by Tensorflow and not even supported yet for [pytorch](https://github.com/pytorch/pytorch/issues/755) (reason why I decided to use Tensorflow for this library).
 
 Update:
-  - Since [v1.6](https://pytorch.org/blog/pytorch-1.6-released/#beta-complex-numbers) (28 July 2020), pytorch now supports complex vectors and complex gradient as BETA. But still have the same issues that Tensorflow has, so no reason to migrte yet.
+  - Since [v1.6](https://pytorch.org/blog/pytorch-1.6-released/#beta-complex-numbers) (28 July 2020), pytorch now supports complex vectors and complex gradient as BETA. But still have the same issues that Tensorflow has, so no reason to migrate yet.
 
 ## Documentation
 
