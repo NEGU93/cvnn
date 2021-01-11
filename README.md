@@ -52,7 +52,7 @@ import tensorflow as tf
 model = models.Sequential()
 model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))
 model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
-model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
+model.add(complex_layers.ComplexAvgPooling2D((2, 2)))
 model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
 model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
 model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
