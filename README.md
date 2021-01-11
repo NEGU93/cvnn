@@ -43,18 +43,28 @@ pip install cvnn[full]
 
 ```
 import numpy as np
-from cvnn.layers import ComplexDense
-from cvnn.cvnn_model import CvnnModel
-from tensorflow.keras.losses import categorical_crossentropy
+import cvnn.layers as complex_layers
+import tensorflow as tf
 
 # Assume you already have complex data 'x' with its labels 'y'...
-x, y = get_dataset()        # to be done by each user
+(train_images, train_labels), (test_images, test_labels) = get_dataset()        # to be done by each user
 
-shape = [ComplexDense(output_size=100, input_size=np.shape(x)[1], activation='cart_relu'),
-        ComplexDense(output_size=40, activation='cart_relu'),
-        ComplexDense(output_size=np.shape(y)[1], activation='softmax_real')]
-model = CvnnModel("cvnn_example", shape, categorical_crossentropy)
-model.fit(x, y, batch_size=100, epochs=150)
+model = models.Sequential()
+model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))
+model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
+model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
+model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
+model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
+model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
+model.add(complex_layers.ComplexFlatten())
+model.add(complex_layers.ComplexDense(64, activation='cart_relu'))
+model.add(complex_layers.ComplexDense(10))
+model.compile(optimizer='adam', 
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+model.summary()
+history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
+test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 ```
 
 ## About me & Motivation
