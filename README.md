@@ -62,7 +62,9 @@ model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
 model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
 model.add(complex_layers.ComplexFlatten())
 model.add(complex_layers.ComplexDense(64, activation='cart_relu'))
-model.add(complex_layers.ComplexDense(10, activation='convert_to_real_with_abs'))   # An activation that casts to real must be used
+model.add(complex_layers.ComplexDense(10, activation='convert_to_real_with_abs'))   
+# An activation that casts to real must be used at the last layer. 
+# The loss function cannot minimize a complex number
 
 # Compile it
 model.compile(optimizer='adam', 
