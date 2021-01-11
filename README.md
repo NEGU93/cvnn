@@ -49,7 +49,7 @@ import numpy as np
 import cvnn.layers as complex_layers
 import tensorflow as tf
 
-# Assume you already have complex data...
+# Assume you already have complex data... actually arrays of dtype np.complex64 for example.
 (train_images, train_labels), (test_images, test_labels) = get_dataset()        # to be done by each user
 
 # Create your model
