@@ -3,7 +3,7 @@ Complex Dense
 
 .. py:class:: ComplexDense
 
-    Fully connected complex-valued layer
+    Fully connected complex-valued layer.
 
     Implements the operation:
 
@@ -15,45 +15,94 @@ Complex Dense
     * activation (:math:`\sigma`) is the element-wise activation function passed as the activation argument, 
     * weights is a matrix created by the layer
     * bias is a bias vector created by the layer
-    * dropout can be applied as well after the activation function if specified
 
-.. py:method:: __init__(self, output_size, input_size=None, activation=None, input_dtype=None, weight_initializer=tf.keras.initializers.GlorotUniform, bias_initializer=tf.keras.initializers.Zeros, dropout=None)
+.. py:method:: __init__(self, units, activation=None, use_bias=True, kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(), dtype=DEFAULT_COMPLEX_TYPE, **kwargs)
 
         Initializer of the Dense layer
 
-        :param output_size: Output size of the layer
-        :param input_size: Input size of the layer (if :code:`None` it will automatically be defined)
-        :param activation: Activation function to be used.
-            Can be either the function from :ref:`activation_functions` or `tensorflow.python.keras.activations <https://www.tensorflow.org/api_docs/python/tf/keras/activations>`_
-            or a string as listed in :code:`act_dispatcher`
-        :param input_dtype: data type of the input. If :code:`None` (default) it will be defined automatically. 
-        :param weight_initializer: Initializer for the weights. 
-            Default: `tensorflow.keras.initializers.GlorotUniform <https://www.tensorflow.org/api_docs/python/tf/keras/initializers/GlorotUniform>`_
-        :param bias_initializer: Initializer fot the bias. 
-            Default: :code:`tensorflow.keras.initializers.Zeros`
-        :param dropout: Either None (default) and no dropout will be applied or a scalar that will be the probability that each element is dropped.
+        :param units: Positive integer, dimensionality of the output space.
+        :param activation: Activation function to use. 
+            Either from keras.activations or cvnn.activation_functions. For complex dtype, only cvnn.activation_functions module supported.
+            If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
+        :param use_bias: Boolean, whether the layer uses a bias vector.
+        :param kernel_initializer: Initializer for the kernel weights matrix.
+            Recomended to use a :code:`ComplexInitializer` such as :code:`cvnn.initializers.ComplexGlorotUniform()` (default)
+        :param bias_initializer: Initializer for the bias vector.
+            Recomended to use a :code:`ComplexInitializer` such as :code:`cvnn.initializers.Zeros()` (default)
+        :param dtype: Dtype of the input and layer.
 
-            Example: setting rate=0.1 would drop 10% of input elements.
+**Code example**
 
-.. py:method:: get_real_equivalent(self, output_multiplier=2)
-        
-        :param output_multiplier: Multiplier of output and input size (normally by 2). Can be used 1 for the output layer of a classifier.
-        :return: real-valued copy of self
+Let's first get some data to test
 
+.. code-block:: python
 
-.. py:class:: ComplexDropout
+    img_r = np.array([[
+        [0, 1, 2],
+        [0, 2, 2],
+        [0, 5, 7]
+    ], [
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ]]).astype(np.float32)
+    img_i = np.array([[
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ], [
+        [0, 4, 5],
+        [3, 7, 9],
+        [4, 5, 3]
+    ]]).astype(np.float32)
+    img = img_r + 1j * img_i
 
-    Computes dropout: randomly sets elements to zero to prevent overfitting.
+Ok, we are now ready to run it through a :code:`ComplexDense` layer (with a :code:`ComplexFlatten` first of couse)
 
-    Dropout [CIT2014-SRIVASTAVA]_ consists in randomly setting a fraction :code:`rate` of input units to 0 at each update during training time, which helps prevent overfitting.
+.. code-block:: python
 
-.. py:method:: __init__(self, rate, noise_shape=None, seed=None)
-        
-        :param rate: A scalar Tensor with the same type as x.
-            The probability that each element is dropped.
-            For example, setting rate=0.1 would drop 10% of input elements.
-        :param noise_shape: A 1-D Tensor of type int32, representing the shape for randomly generated keep/drop flags.
-        :param seed:  A Python integer. Used to create random seeds. See tf.random.set_seed for behavior.
+    c_flat = ComplexFlatten()
+    c_dense = ComplexDense(units=10)
+    res = c_dense(c_flat(img.astype(np.complex64)))
+    assert res.shape == [2, 10]
+    assert res.dtype == tf.complex64 
 
+Now, to do this in a :code:`Sequential` model we can do it like:
 
-.. [CIT2014-SRIVASTAVA] N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and R. Salakhutdinov, “Dropout: a simple way to prevent neural networks from overfitting,” J. Mach. Learn. Res., vol. 15, no. 1, pp. 1929–1958, Jan. 2014
+.. code-block:: python
+
+    model = tf.keras.models.Sequential()
+    model.add(ComplexInput(input_shape=(3, 3)))
+    model.add(ComplexFlatten())
+    model.add(ComplexDense(32, activation='cart_relu'))
+    model.add(ComplexDense(32))
+    model.output_shape
+
+This will output :code:`(None, 32)`. You can run the data created previously with
+
+.. code-block:: python
+
+    res = model(img.astype(np.complex64))
+    assert res.dtype == tf.complex64
+    
+Doing now :code:`model.summary()` will output
+
+.. code-block:: python
+
+    _________________________________________________________________
+    Layer (type)                 Output Shape              Param #
+    =================================================================
+    complex_flatten_1 (ComplexFl (None, 9)                 0
+    _________________________________________________________________
+    complex_dense_1 (ComplexDens (None, 32)                640
+    _________________________________________________________________
+    complex_dense_2 (ComplexDens (None, 32)                2112
+    =================================================================
+    Total params: 2,752
+    Trainable params: 2,752
+    Non-trainable params: 0
+    _________________________________________________________________
+
+.. note::
+
+    If the input to the layer has a rank greater than 2, then Dense computes the dot product between the inputs and the kernel along the last axis of the inputs and axis 1 of the kernel (using :code:`tf.tensordot`). For example, if input has dimensions :code:`(batch_size, d0, d1)`, then we create a kernel with shape :code:`(d1, units)`, and the kernel operates along axis 2 of the input, on every sub-tensor of shape :code:`(1, 1, d1)` (there are batch_size * d0 such sub-tensors). The output in this case will have shape :code:`(batch_size, d0, units)`.

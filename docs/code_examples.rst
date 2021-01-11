@@ -1,6 +1,8 @@
 Code Examples
 =============
 
+There are more results in :doc:`results <results>` section.
+
 .. toctree::
 	:maxdepth: 2
 

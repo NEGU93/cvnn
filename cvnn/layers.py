@@ -23,6 +23,7 @@ from cvnn import logger
 from pdb import set_trace
 # Typing
 from typing import Union, List, Optional, Tuple
+from cvnn.activation_functions import t_activation
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
@@ -69,12 +70,36 @@ class ComplexFlatten(Flatten, ComplexLayer):
 
 
 class ComplexDense(Dense, ComplexLayer):
+    """
+    Fully connected complex-valued layer.
 
-    def __init__(self, units, activation=None, use_bias=True,
+    Implements the operation:
+        activation(input * weights + bias) 
+
+    * where data types can be either complex or real.
+    * activation is the element-wise activation function passed as the activation argument, 
+    * weights is a matrix created by the layer
+    * bias is a bias vector created by the layer
+    """
+
+    def __init__(self, units: int, activation: t_activation = None, use_bias: bool = True,
                  kernel_initializer=ComplexGlorotUniform(),
                  bias_initializer=Zeros(),
-                 dtype=DEFAULT_COMPLEX_TYPE,
+                 dtype=DEFAULT_COMPLEX_TYPE,    # TODO: Check typing of this.
                  **kwargs):
+        """
+        :param units: Positive integer, dimensionality of the output space.
+        :param activation: Activation function to use. 
+            Either from keras.activations or cvnn.activation_functions. For complex dtype, only cvnn.activation_functions module supported.
+            If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
+        :param use_bias: Boolean, whether the layer uses a bias vector.
+        :param kernel_initializer: Initializer for the kernel weights matrix.
+            Recomended to use a `ComplexInitializer` such as `cvnn.initializers.ComplexGlorotUniform()` (default)
+        :param bias_initializer: Initializer for the bias vector.
+            Recomended to use a `ComplexInitializer` such as `cvnn.initializers.Zeros()` (default)
+        :param dtype: Dtype of the input and layer.
+        """
+        # TODO: verify the initializers? and that dtype complex has cvnn.activation_functions.
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                            kernel_initializer=kernel_initializer,
                                            bias_initializer=bias_initializer, **kwargs)
@@ -412,6 +437,7 @@ class ComplexConv(Layer, ComplexLayer):
             2. Convolution
             3. Bias
             4. Activation Function
+        :returns: A tensor of rank 4+ representing `activation(conv2d(inputs, kernel) + bias)`.
         """
         if inputs.dtype != self.my_dtype:
             tf.print(f"WARNING: {self.name} - Expected input to be {self.my_dtype}, but received {inputs.dtype}.")
@@ -618,63 +644,12 @@ class ComplexConv1D(ComplexConv):
 class ComplexConv2D(ComplexConv):
     """2D convolution layer (e.g. spatial convolution over images).
       This layer creates a convolution kernel that is convolved
-      with the layer input to produce a tensor of
-      outputs. If `use_bias` is True,
-      a bias vector is created and added to the outputs. Finally, if
-      `activation` is not `None`, it is applied to the outputs as well.
-      When using this layer as the first layer in a model,
-      provide the keyword argument `input_shape`
+      with the layer input to produce a tensor of outputs. 
+      If `use_bias` is True, a bias vector is created and added to the outputs. 
+      Finally, if `activation` is not `None`, it is applied to the outputs as well.
+      When using this layer as the first layer in a model, provide the keyword argument `input_shape`
       (tuple of integers, does not include the sample axis),
-      e.g. `input_shape=(128, 128, 3)` for 128x128 RGB pictures
-      in `data_format="channels_last"`.
-      Arguments:
-        filters: Integer, the dimensionality of the output space (i.e. the number of
-          output filters in the convolution).
-        kernel_size: An integer or tuple/list of 2 integers, specifying the height
-          and width of the 2D convolution window. Can be a single integer to specify
-          the same value for all spatial dimensions.
-        strides: An integer or tuple/list of 2 integers, specifying the strides of
-          the convolution along the height and width. Can be a single integer to
-          specify the same value for all spatial dimensions. Specifying any stride
-          value != 1 is incompatible with specifying any `dilation_rate` value != 1.
-        padding: one of `"valid"` or `"same"` (case-insensitive).
-          `"valid"` means no padding. `"same"` results in padding evenly to
-          the left/right or up/down of the input such that output has the same
-          height/width dimension as the input.
-        data_format: A string, one of `channels_last` (default) or `channels_first`.
-          The ordering of the dimensions in the inputs. `channels_last` corresponds
-          to inputs with shape `(batch_size, height, width, channels)` while
-          `channels_first` corresponds to inputs with shape `(batch_size, channels,
-          height, width)`. It defaults to the `image_data_format` value found in
-          your Keras config file at `~/.keras/keras.json`. If you never set it, then
-          it will be `channels_last`.
-        dilation_rate: an integer or tuple/list of 2 integers, specifying the
-          dilation rate to use for dilated convolution. Can be a single integer to
-          specify the same value for all spatial dimensions. Currently, specifying
-          any `dilation_rate` value != 1 is incompatible with specifying any stride
-          value != 1.
-        groups: A positive integer specifying the number of groups in which the
-          input is split along the channel axis. Each group is convolved separately
-          with `filters / groups` filters. The output is the concatenation of all
-          the `groups` results along the channel axis. Input channels and `filters`
-          must both be divisible by `groups`.
-        activation: Activation function to use. If you don't specify anything, no
-          activation is applied (see `keras.activations`).
-        use_bias: Boolean, whether the layer uses a bias vector.
-        kernel_initializer: Initializer for the `kernel` weights matrix (see
-          `keras.initializers`).
-        bias_initializer: Initializer for the bias vector (see
-          `keras.initializers`).
-        kernel_regularizer: Regularizer function applied to the `kernel` weights
-          matrix (see `keras.regularizers`).
-        bias_regularizer: Regularizer function applied to the bias vector (see
-          `keras.regularizers`).
-        activity_regularizer: Regularizer function applied to the output of the
-          layer (its "activation") (see `keras.regularizers`).
-        kernel_constraint: Constraint function applied to the kernel matrix (see
-          `keras.constraints`).
-        bias_constraint: Constraint function applied to the bias vector (see
-          `keras.constraints`).
+      e.g. `input_shape=(128, 128, 3)` for 128x128 RGB pictures in `data_format="channels_last"`.
       Input shape:
         4+D tensor with shape: `batch_shape + (channels, rows, cols)` if
           `data_format='channels_first'`
@@ -698,6 +673,47 @@ class ComplexConv2D(ComplexConv):
                  kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
                  kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                  kernel_constraint=None, bias_constraint=None, **kwargs):
+        """
+        :param filters: Integer, the dimensionality of the output space (i.e. the number of output filters in the convolution).
+        :param kernel_size: An integer or tuple/list of 2 integers, specifying the height 
+            and width of the 2D convolution window. Can be a single integer to specify
+            the same value for all spatial dimensions.
+        :param strides: An integer or tuple/list of 2 integers, specifying the strides of
+            the convolution along the height and width. Can be a single integer to
+            specify the same value for all spatial dimensions. Specifying any stride
+            value != 1 is incompatible with specifying any `dilation_rate` value != 1.
+        :param padding: one of `"valid"` or `"same"` (case-insensitive).
+            `"valid"` means no padding. `"same"` results in padding evenly to
+            the left/right or up/down of the input such that output has the same
+            height/width dimension as the input.
+        :param data_format: A string, one of `channels_last` (default) or `channels_first`.
+            The ordering of the dimensions in the inputs. `channels_last` corresponds
+            to inputs with shape `(batch_size, height, width, channels)` while
+            `channels_first` corresponds to inputs with shape `(batch_size, channels,
+            height, width)`. It defaults to the `image_data_format` value found in
+            your Keras config file at `~/.keras/keras.json`. If you never set it, then
+            it will be `channels_last`.
+        :param dilation_rate: an integer or tuple/list of 2 integers, specifying the
+            dilation rate to use for dilated convolution. Can be a single integer to
+            specify the same value for all spatial dimensions. Currently, specifying
+            any `dilation_rate` value != 1 is incompatible with specifying any stride
+            value != 1.
+        :param groups: A positive integer specifying the number of groups in which the
+            input is split along the channel axis. Each group is convolved separately
+            with `filters / groups` filters. The output is the concatenation of all
+            the `groups` results along the channel axis. Input channels and `filters`
+            must both be divisible by `groups`.
+        :param activation: Activation function to use. If you don't specify anything, no activation is applied.
+            For complex :code:`dtype`, this must be a :code:`cvnn.activation_functions` module.
+        :param use_bias: Boolean, whether the layer uses a bias vector.
+        :param kernel_initializer: Initializer for the `kernel` weights matrix (see `keras.initializers`).
+        :param bias_initializer: Initializer for the bias vector (see `keras.initializers`).
+        :param kernel_regularizer: Regularizer function applied to the `kernel` weights matrix (see `keras.regularizers`).
+        :param bias_regularizer: Regularizer function applied to the bias vector (see `keras.regularizers`).
+        :param activity_regularizer: Regularizer function applied to the output of the layer (its "activation") (see `keras.regularizers`).
+        :param kernel_constraint: Constraint function applied to the kernel matrix (see `keras.constraints`).
+        :param bias_constraint: Constraint function applied to the bias vector (see `keras.constraints`).
+        """
         super(ComplexConv2D, self).__init__(
             rank=2, dtype=dtype,
             filters=filters,

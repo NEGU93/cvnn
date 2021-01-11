@@ -56,38 +56,38 @@ Results Graphs
 **Box Plots**
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_box_plot.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_box_plot.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_box_plot.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_box_plot.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy_box_plot.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy_box_plot.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_box_plot.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_box_plot.html
 
 **Confidence lines**
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy.html
 
 **Histograms**
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_histogram.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_histogram.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_histogram.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_histogram.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_histogram.html
+   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_histogram.html

@@ -162,11 +162,8 @@
  | <a href="#A"><strong>A</strong></a>
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
- | <a href="#E"><strong>E</strong></a>
- | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
- | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#O"><strong>O</strong></a>
@@ -183,7 +180,7 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#init__">__init__()</a>, <a href="initializers.html#id0">[1]</a>, <a href="initializers.html#init__">[2]</a>, <a href="layers/complex_dense.html#id0">[3]</a>, <a href="layers/complex_dense.html#init__">[4]</a>, <a href="layers/complex_pooling_2d.html#init__">[5]</a>, <a href="montecarlo.html#init__">[6]</a>, <a href="optimizers.html#id0">[7]</a>, <a href="optimizers.html#id3">[8]</a>, <a href="optimizers.html#init__">[9]</a>
+      <li><a href="initializers.html#id0">__init__()</a>, <a href="initializers.html#init__">[1]</a>, <a href="layers/complex_conv.html#init__">[2]</a>, <a href="layers/complex_dense.html#init__">[3]</a>, <a href="layers/complex_pooling_2d.html#init__">[4]</a>, <a href="layers/others.html#init__">[5]</a>, <a href="montecarlo.html#init__">[6]</a>, <a href="optimizers.html#id0">[7]</a>, <a href="optimizers.html#id3">[8]</a>, <a href="optimizers.html#init__">[9]</a>
 </li>
   </ul></td>
 </tr></table>
@@ -222,7 +219,7 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#call">call()</a>
+      <li><a href="layers/complex_conv.html#call">call()</a>
 </li>
       <li><a href="act_fun.html#cart_elu">cart_elu()</a>
 </li>
@@ -238,15 +235,19 @@
 </li>
       <li><a href="act_fun.html#cart_sigmoid">cart_sigmoid()</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="act_fun.html#cart_softmax">cart_softmax()</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="act_fun.html#cart_tanh">cart_tanh()</a>
+</li>
+      <li><a href="layers/complex_pooling_2d.html#ComplexAvgPooling2D">ComplexAvgPooling2D (built-in class)</a>
+</li>
+      <li><a href="layers/complex_conv.html#ComplexConv2D">ComplexConv2D (built-in class)</a>
 </li>
       <li><a href="layers/complex_dense.html#ComplexDense">ComplexDense (built-in class)</a>
 </li>
-      <li><a href="layers/complex_dense.html#ComplexDropout">ComplexDropout (built-in class)</a>
+      <li><a href="layers/others.html#ComplexDropout">ComplexDropout (built-in class)</a>
 </li>
       <li><a href="layers/complex_pooling_2d.html#ComplexMaxPooling2D">ComplexMaxPooling2D (built-in class)</a>
 </li>
@@ -259,38 +260,12 @@
         <li><a href="utils.html#create_folder">built-in function</a>
 </li>
       </ul></li>
-      <li><a href="cvnn.html#CvnnModel">CvnnModel (built-in class)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="E">E</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#evaluate">evaluate()</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#evaluate_accuracy">evaluate_accuracy()</a>
-</li>
-      <li><a href="cvnn.html#evaluate_loss">evaluate_loss()</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="F">F</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#fit">fit()</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#get_confusion_matrix">get_confusion_matrix()</a>
-</li>
       <li>
     get_func_name()
 
@@ -301,8 +276,6 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="initializers.html#get_random_tensor">get_random_tensor()</a>
-</li>
-      <li><a href="cvnn.html#get_real_equivalent">get_real_equivalent()</a>, <a href="layers/complex_dense.html#get_real_equivalent">[1]</a>
 </li>
       <li><a href="initializers.html#GlorotNormal">GlorotNormal (built-in class)</a>
 </li>
@@ -319,14 +292,6 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="initializers.html#HeUniform">HeUniform (built-in class)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="I">I</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#is_complex">is_complex()</a>
 </li>
   </ul></td>
 </tr></table>
@@ -365,10 +330,6 @@
       <li><a href="act_fun.html#pol_selu">pol_selu()</a>
 </li>
   </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="cvnn.html#predict">predict()</a>
-</li>
-  </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
@@ -400,7 +361,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="act_fun.html#softmax_real">softmax_real()</a>
 </li>
-      <li><a href="cvnn.html#summary">summary()</a>, <a href="optimizers.html#summary">[1]</a>
+      <li><a href="optimizers.html#summary">summary()</a>
 </li>
   </ul></td>
 </tr></table>

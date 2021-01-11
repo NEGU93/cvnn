@@ -16,7 +16,7 @@ This module tests:
 """
 
 
-def small_example():
+def dense_example():
     img_r = np.array([[
         [0, 1, 2],
         [0, 2, 2],
@@ -39,7 +39,16 @@ def small_example():
     c_flat = ComplexFlatten()
     c_dense = ComplexDense(units=10)
     res = c_dense(c_flat(img.astype(np.complex64)))
-
+    assert res.shape == [2, 10]
+    assert res.dtype == tf.complex64 
+    model = tf.keras.models.Sequential()
+    model.add(ComplexInput(input_shape=(3, 3)))
+    model.add(ComplexFlatten())
+    model.add(ComplexDense(32, activation='cart_relu'))
+    model.add(ComplexDense(32))
+    assert model.output_shape == (None, 32)
+    res = model(img.astype(np.complex64))
+    
 
 def serial_layers():
     model = Sequential()
@@ -124,7 +133,6 @@ def complex_max_pool_2d():
             [5.+8.j],
             [3.+9.j]]
         ]])
-    set_trace()
     assert (res == expected_res.astype(np.complex64)).numpy().all()
     x = tf.constant([[1., 2., 3.],
                      [4., 5., 6.],
@@ -148,6 +156,7 @@ def test_layers():
     complex_avg_pool()
     shape_ad_dtype_of_conv2d()
     complex_max_pool_2d()
+    dense_example()
 
 
 if __name__ == "__main__":

@@ -184,6 +184,15 @@
 </style>
 <div class="section" id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to my library! <a class="reference internal" href="installation.html#cit2019-barrachina-code" id="id1"><span>[CIT2019-BARRACHINA-CODE]</span></a></p>
+<p><strong>Ideology</strong></p>
+<p>The idea of this library is just to implement <a class="reference internal" href="layers.html"><span class="doc">Complex layers</span></a> (<code class="code docutils literal notranslate"><span class="pre">ComplexLayer</span></code>) so that everything else stays the same as any Tensorflow code.</p>
+<p>The only difference with a Tensorflow code is that you should use <code class="code docutils literal notranslate"><span class="pre">cvnn.ComplexLayers</span></code> module instead of <code class="code docutils literal notranslate"><span class="pre">tf.keras.layers</span></code>.</p>
+<p>Although <code class="code docutils literal notranslate"><span class="pre">tf.activation</span></code> and <code class="code docutils literal notranslate"><span class="pre">tf.initializers</span></code> could be used, it is HIGHLY recommended (and some times compulsory) to use the <cite>cvnn</cite> module options.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>For a reason I ignore, TensorFlow casts the input automatically to floating. To avoid this, always create first a <code class="code docutils literal notranslate"><span class="pre">ComplexInput</span></code> layer in all your models.</p>
+</div>
 <p>If you are here is because you want to train a Complex-Valued Neural Network (CVNN).
 However, your situation may vary, this will help you find your use case and guide you how to use the library.
 The recommended way to go would be 1.2. as the other may easily be done from that.</p>
@@ -204,12 +213,16 @@ The recommended way to go would be 1.2. as the other may easily be done from tha
 </ol>
 <p><a class="reference internal" href="experiments/correlation_noise.html"><span class="doc">2. You don’t have a specific dataset, you just want to play with this library</span></a></p>
 </div></blockquote>
+<p><strong>Real-valued case</strong></p>
+<p>Although this library is intended to work with complex data type, it also supports real dtype by just using the <code class="code docutils literal notranslate"><span class="pre">dtype</span></code> parameter in each <code class="code docutils literal notranslate"><span class="pre">ComplexLayer</span></code> constructor.</p>
+<p>All <code class="code docutils literal notranslate"><span class="pre">cvnn</span></code> activation functions and initializers already work Ok for real and complex inputs, so nothing should change.</p>
+<p>This allows me to debug the code (comparing it’s result with keras on real data) but also to easily implement a comparison between a complex and a real network minimizing the error.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Please, remember to <a class="reference external" href="https://github.com/NEGU93/cvnn#cite-me">cite me</a> accordingly <a class="reference internal" href="installation.html#cit2019-barrachina-code" id="id1"><span>[CIT2019-BARRACHINA-CODE]</span></a></p>
+<p>Please, remember to <a class="reference external" href="https://github.com/NEGU93/cvnn#cite-me">cite me</a> accordingly <a class="reference internal" href="installation.html#cit2019-barrachina-code" id="id2"><span>[CIT2019-BARRACHINA-CODE]</span></a></p>
 </div>
 <dl class="citation">
-<dt class="label" id="cit2019-barrachina-code"><span class="brackets"><a class="fn-backref" href="#id1">CIT2019-BARRACHINA-CODE</a></span></dt>
+<dt class="label" id="cit2019-barrachina-code"><span class="brackets">CIT2019-BARRACHINA-CODE</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>)</span></dt>
 <dd><p>Jose Agustin Barrachina. “Complex-Valued Neural Networks (CVNN)”. GitHub repository.</p>
 </dd>
 </dl>

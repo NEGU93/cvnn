@@ -54,7 +54,7 @@ Results Graphs
 """"""""""""""
 
 .. raw:: html
-   :file: ../source/_static/circularity/base_case_type_A_1HL_test_accuracy_box_plot.html
+   :file: ../_static/circularity/base_case_type_A_1HL_test_accuracy_box_plot.html
 
 .. raw:: html
-   :file: ../source/_static/circularity/base_case_type_A_1HL_test_accuracy_histogram.html
+   :file: ../_static/circularity/base_case_type_A_1HL_test_accuracy_histogram.html
