@@ -46,9 +46,10 @@ import numpy as np
 import cvnn.layers as complex_layers
 import tensorflow as tf
 
-# Assume you already have complex data 'x' with its labels 'y'...
+# Assume you already have complex data...
 (train_images, train_labels), (test_images, test_labels) = get_dataset()        # to be done by each user
 
+# Create your model
 model = models.Sequential()
 model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))
 model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
@@ -59,10 +60,14 @@ model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
 model.add(complex_layers.ComplexFlatten())
 model.add(complex_layers.ComplexDense(64, activation='cart_relu'))
 model.add(complex_layers.ComplexDense(10))
+
+# Compile it
 model.compile(optimizer='adam', 
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
 model.summary()
+
+# Train and evaluate
 history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
 test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 ```
