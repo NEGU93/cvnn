@@ -3,7 +3,7 @@ Complex-Valued Neural Network (CVNN)
 ====================================
 
 :Author:  J. Agustin Barrachina
-:Version: 0.3.49 of 01/05/2021
+:Version: 1.0.0 of 01/05/2021
 
 
 Content
