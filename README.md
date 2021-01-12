@@ -52,7 +52,7 @@ import tensorflow as tf
 (train_images, train_labels), (test_images, test_labels) = get_dataset()        # to be done by each user
 
 # Create your model
-model = models.Sequential()
+model = tf.keras.models.Sequential()
 model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))                     # Always use ComplexInput at the start
 model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
 model.add(complex_layers.ComplexAvgPooling2D((2, 2)))
