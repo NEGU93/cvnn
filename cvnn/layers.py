@@ -23,7 +23,7 @@ from cvnn import logger
 from pdb import set_trace
 # Typing
 from typing import Union, List, Optional, Tuple
-from cvnn.activation_functions import t_activation
+from cvnn.activations import t_activation
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
@@ -90,7 +90,7 @@ class ComplexDense(Dense, ComplexLayer):
         """
         :param units: Positive integer, dimensionality of the output space.
         :param activation: Activation function to use. 
-            Either from keras.activations or cvnn.activation_functions. For complex dtype, only cvnn.activation_functions module supported.
+            Either from keras.activations or cvnn.activations. For complex dtype, only cvnn.activations module supported.
             If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
         :param use_bias: Boolean, whether the layer uses a bias vector.
         :param kernel_initializer: Initializer for the kernel weights matrix.
@@ -99,7 +99,7 @@ class ComplexDense(Dense, ComplexLayer):
             Recomended to use a `ComplexInitializer` such as `cvnn.initializers.Zeros()` (default)
         :param dtype: Dtype of the input and layer.
         """
-        # TODO: verify the initializers? and that dtype complex has cvnn.activation_functions.
+        # TODO: verify the initializers? and that dtype complex has cvnn.activations.
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                            kernel_initializer=kernel_initializer,
                                            bias_initializer=bias_initializer, **kwargs)
@@ -704,7 +704,7 @@ class ComplexConv2D(ComplexConv):
             the `groups` results along the channel axis. Input channels and `filters`
             must both be divisible by `groups`.
         :param activation: Activation function to use. If you don't specify anything, no activation is applied.
-            For complex :code:`dtype`, this must be a :code:`cvnn.activation_functions` module.
+            For complex :code:`dtype`, this must be a :code:`cvnn.activations` module.
         :param use_bias: Boolean, whether the layer uses a bias vector.
         :param kernel_initializer: Initializer for the `kernel` weights matrix (see `keras.initializers`).
         :param bias_initializer: Initializer for the bias vector (see `keras.initializers`).

@@ -22,7 +22,7 @@ from cvnn.utils import median_error
 # typing
 from pathlib import Path
 from typing import Union, Optional, List, Tuple
-from cvnn.activation_functions import t_activation
+from cvnn.activations import t_activation
 from tensorflow import data
 from typing import Type
 

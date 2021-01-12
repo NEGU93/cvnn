@@ -22,7 +22,7 @@ Complex Dense
 
         :param units: Positive integer, dimensionality of the output space.
         :param activation: Activation function to use. 
-            Either from keras.activations or cvnn.activation_functions. For complex dtype, only cvnn.activation_functions module supported.
+            Either from :code:`keras.activations` or :code:`cvnn.activations`. For complex dtype, only :code:`cvnn.activations` module supported.
             If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
         :param use_bias: Boolean, whether the layer uses a bias vector.
         :param kernel_initializer: Initializer for the kernel weights matrix.

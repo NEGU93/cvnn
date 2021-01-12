@@ -42,8 +42,8 @@ Complex Conv 2D
         Currently, specifying any :code:`dilation_rate` value != 1 is incompatible with specifying any stride value != 1.
     :param groups: A positive integer specifying the number of groups in which the input is split along the channel axis. Each group is convolved separately
         with :code:`filters / groups` filters. The output is the concatenation of all the :code:`groups` results along the channel axis. Input channels and :code:`filters` must both be divisible by :code:`groups`.
-    :param activation: Activation function to use. If you don't specify anything, no activation is applied (see :code:`keras.activations` or :code:`cvnn.activation_functions`).
-        For complex :code:`dtype`, this must be a :code:`cvnn.activation_functions` module.
+    :param activation: Activation function to use. If you don't specify anything, no activation is applied (see :code:`keras.activations` or :code:`cvnn.activations`).
+        For complex :code:`dtype`, this must be a :code:`cvnn.activations` module.
     :param use_bias: Boolean, whether the layer uses a bias vector.
     :param kernel_initializer: Initializer for the :code:`kernel` weights matrix (see :code:`cvnn.initializers`).
     :param bias_initializer: Initializer for the bias vector (see :code:`cvnn.initializers`).

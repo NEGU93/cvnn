@@ -25,12 +25,12 @@ def apply_activation(act_fun: t_activation, out: Tensor) -> Tensor:
     if act_fun is None:  # No activation function declared
         return out
     elif callable(act_fun):
-        if act_fun.__module__ == 'activation_functions' or \
+        if act_fun.__module__ == 'activations' or \
                 act_fun.__module__ == 'tensorflow.python.keras.activations':
             return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
         else:
             logger.error("apply_activation Unknown activation function.\n\t"
-                         "Can only use activations declared on activation_functions.py or keras.activations")
+                         "Can only use activations declared on activations.py or keras.activations")
             sys.exit(-1)
     elif isinstance(act_fun, str):
         try:

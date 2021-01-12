@@ -4,7 +4,7 @@ import re
 import os
 from cvnn.utils import create_folder
 from tensorflow.keras.utils import get_custom_objects
-from cvnn.activation_functions import act_dispatcher
+from cvnn.activations import act_dispatcher
 
 get_custom_objects().update(act_dispatcher)
 

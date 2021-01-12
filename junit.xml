@@ -1,1 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite errors="0" failures="0" hostname="DESKTOP-RA5I5L7" name="pytest" skipped="0" tests="4" time="524.033" timestamp="2021-01-08T11:18:25.640846"><testcase classname="tests.test_capacity_real_equivalent" name="test_shape" time="44.429" /><testcase classname="tests.test_custom_layers" name="test_layers" time="3.132" /><testcase classname="tests.test_initialization" name="test_inits" time="0.013" /><testcase classname="tests.test_several_datasets" name="test_datasets" time="453.719" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite errors="4" failures="0" hostname="barrachina-SONDRA" name="pytest" skipped="0" tests="4" time="24.305" timestamp="2021-01-12T10:51:59.854752"><testcase classname="" name="tests.test_capacity_real_equivalent" time="0.000"><error message="collection failure">ImportError while importing test module '/home/barrachina/Documents/cvnn/tests/test_capacity_real_equivalent.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../anaconda3/lib/python3.7/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_capacity_real_equivalent.py:2: in &lt;module&gt;
+    import cvnn.layers as layers
+E   ModuleNotFoundError: No module named 'cvnn'</error></testcase><testcase classname="" name="tests.test_custom_layers" time="0.000"><error message="collection failure">ImportError while importing test module '/home/barrachina/Documents/cvnn/tests/test_custom_layers.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../anaconda3/lib/python3.7/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_custom_layers.py:2: in &lt;module&gt;
+    from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, ComplexAvgPooling2D
+E   ModuleNotFoundError: No module named 'cvnn'</error></testcase><testcase classname="" name="tests.test_initialization" time="0.000"><error message="collection failure">ImportError while importing test module '/home/barrachina/Documents/cvnn/tests/test_initialization.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../anaconda3/lib/python3.7/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_initialization.py:1: in &lt;module&gt;
+    import tensorflow as tf
+E   ModuleNotFoundError: No module named 'tensorflow'</error></testcase><testcase classname="" name="tests.test_several_datasets" time="0.000"><error message="collection failure">ImportError while importing test module '/home/barrachina/Documents/cvnn/tests/test_several_datasets.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../anaconda3/lib/python3.7/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_several_datasets.py:1: in &lt;module&gt;
+    import tensorflow as tf
+E   ModuleNotFoundError: No module named 'tensorflow'</error></testcase></testsuite></testsuites>

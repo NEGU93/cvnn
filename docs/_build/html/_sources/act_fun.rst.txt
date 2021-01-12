@@ -1,7 +1,7 @@
 ﻿Activation Functions
 ====================
 
-.. _activation_functions:
+.. _activations:
 
 It is recommended to only use the activation functions using::
 
