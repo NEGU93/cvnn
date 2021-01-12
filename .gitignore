@@ -6,6 +6,10 @@ data/
 results/
 montecarlo/
 cvnn.egg-info/
+docs/_build/html/.doctrees/
+docs/_build/html/.buildinfo/
+docs/_build/
+
 
 # python cache
 __pycache__/

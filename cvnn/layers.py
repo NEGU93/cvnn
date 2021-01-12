@@ -4,6 +4,7 @@ from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow import TensorShape, Tensor
 from cvnn.initializers import ComplexGlorotUniform, Zeros
 import numpy as np
+from tensorflow.python.keras import backend as K
 # For Conv
 import six
 import functools
@@ -214,8 +215,13 @@ class ComplexDropout(Layer, ComplexLayer):
         self.seed = seed
         self.noise_shape = noise_shape
 
-    def call(self, inputs, **kwargs):
-        if inputs.shape[0] is None:     # When testing the shape
+    def call(self, inputs, training=None):
+        if training is None:
+            training = K.learning_phase()
+            tf.print(f"Training was None and now is {training}")    # This is used for debugging
+        if not training:
+            return inputs
+        elif inputs.shape[0] is None:     # When testing the shape
             return inputs
         drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
         y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))

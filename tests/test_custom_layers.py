@@ -1,7 +1,10 @@
 import numpy as np
-from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, ComplexAvgPooling2D
+from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
+    ComplexAvgPooling2D
+import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
+import tensorflow_datasets as tfds
 
 from pdb import set_trace
 
@@ -40,7 +43,7 @@ def dense_example():
     c_dense = ComplexDense(units=10)
     res = c_dense(c_flat(img.astype(np.complex64)))
     assert res.shape == [2, 10]
-    assert res.dtype == tf.complex64 
+    assert res.dtype == tf.complex64
     model = tf.keras.models.Sequential()
     model.add(ComplexInput(input_shape=(3, 3)))
     model.add(ComplexFlatten())
@@ -48,7 +51,7 @@ def dense_example():
     model.add(ComplexDense(32))
     assert model.output_shape == (None, 32)
     res = model(img.astype(np.complex64))
-    
+
 
 def serial_layers():
     model = Sequential()
@@ -92,6 +95,64 @@ def shape_ad_dtype_of_conv2d():
     assert y.dtype == tf.complex64
 
 
+def normalize_img(image, label):
+    """Normalizes images: `uint8` -> `float32`."""
+    return tf.cast(image, tf.float32) / 255., label
+
+
+def get_dataset():
+    (ds_train, ds_test), ds_info = tfds.load(
+        'mnist',
+        split=['train', 'test'],
+        shuffle_files=False,
+        as_supervised=True,
+        with_info=True,
+    )
+
+    ds_train = ds_train.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    ds_train = ds_train.cache()
+    # ds_train = ds_train.shuffle(ds_info.splits['train'].num_examples)
+    ds_train = ds_train.batch(128)
+    ds_train = ds_train.prefetch(tf.data.experimental.AUTOTUNE)
+
+    ds_test = ds_test.map(normalize_img, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    ds_test = ds_test.batch(128)
+    ds_test = ds_test.cache()
+    ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
+
+    return ds_train, ds_test
+
+
+def dropout():
+    tf.random.set_seed(0)
+    layer = complex_layers.ComplexDropout(.2, input_shape=(2,))
+    data = np.arange(10).reshape(5, 2).astype(np.float32)
+    data = tf.complex(data, data)
+    outputs = layer(data, training=True)
+    expected_out = np.array([[0. + 0.j, 1.25 + 1.25j],
+                             [2.5 + 2.5j, 3.75 + 3.75j],
+                             [5. + 5.j, 6.25 + 6.25j],
+                             [7.5 + 7.5j, 8.75 + 8.75j],
+                             [10. + 10.j, 0. + 0.j]]
+                            )
+    assert np.all(data == layer(data, training=False))
+    assert np.all(outputs == expected_out)
+    ds_train, ds_test = get_dataset()
+    model = tf.keras.models.Sequential([
+        complex_layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
+        complex_layers.ComplexDense(128, activation='cart_relu', dtype=np.float32),
+        complex_layers.ComplexDropout(rate=0.5),
+        complex_layers.ComplexDense(10, activation='softmax_real', dtype=np.float32)
+    ])
+    model.compile(
+        loss='sparse_categorical_crossentropy',
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        metrics=['accuracy'],
+    )
+    model.fit(ds_train, epochs=1, validation_data=ds_test, verbose=False, shuffle=False)
+    model.evaluate(ds_test, verbose=False)
+
+
 def get_img():
     img_r = np.array([[
         [0, 1, 2],
@@ -122,16 +183,16 @@ def complex_max_pool_2d():
     res = max_pool(img.astype(np.complex64))
     expected_res = np.array([
         [[
-            [2.+7.j],
-            [2.+9.j]],
-            [[2.+7.j],
-            [2.+9.j]]],
-       [[
-           [7.+2.j],
-           [9.+2.j]],
-        [
-            [5.+8.j],
-            [3.+9.j]]
+            [2. + 7.j],
+            [2. + 9.j]],
+            [[2. + 7.j],
+             [2. + 9.j]]],
+        [[
+            [7. + 2.j],
+            [9. + 2.j]],
+            [
+                [5. + 8.j],
+                [3. + 9.j]]
         ]])
     assert (res == expected_res.astype(np.complex64)).numpy().all()
     x = tf.constant([[1., 2., 3.],
@@ -147,12 +208,13 @@ def complex_avg_pool():
     img = get_img()
     avg_pool = ComplexAvgPooling2D(strides=1)
     res = avg_pool(img.astype(np.complex64))
-    expected_res = np.array([[[[0.75+3.5j], [1.75+6.25j]], [[1.75+4.75j], [4. + 6.j]]],
-                             [[[3.5 + 2.25j], [6.25+3.25j]], [[4.75 + 4.25j], [6. + 5.25j]]]])
+    expected_res = np.array([[[[0.75 + 3.5j], [1.75 + 6.25j]], [[1.75 + 4.75j], [4. + 6.j]]],
+                             [[[3.5 + 2.25j], [6.25 + 3.25j]], [[4.75 + 4.25j], [6. + 5.25j]]]])
     assert (res == expected_res.astype(np.complex64)).numpy().all()
 
 
 def test_layers():
+    dropout()
     complex_avg_pool()
     shape_ad_dtype_of_conv2d()
     complex_max_pool_2d()
