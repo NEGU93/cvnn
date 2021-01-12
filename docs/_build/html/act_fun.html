@@ -91,6 +91,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="layers.html">Complex Layers</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Activation Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#complex-input-real-output">Complex input, real output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#type-a-cartesian-form">TYPE A: Cartesian form</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#classification">Classification</a></li>
 </ul>
@@ -195,37 +196,68 @@
 </style>
 <div class="section" id="activation-functions">
 <h1>Activation Functions<a class="headerlink" href="#activation-functions" title="Permalink to this headline">¶</a></h1>
-<p id="id1">It is recommended to only use the activation functions using:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apply_activation</span><span class="p">(</span><span class="n">act_fun</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+<p id="activations">There are two ways to use an activation function</p>
+<p>Option 1: Using the string as in <code class="code docutils literal notranslate"><span class="pre">act_dispatcher</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ComplexDense</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_sigmoid&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Option 2: Using the function directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">cvnn.activations</span> <span class="kn">import</span> <span class="n">cart_sigmoid</span>
+
+<span class="n">ComplexDense</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">cart_sigmoid</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You can define your own activation function, just create it inside the <code class="code docutils literal notranslate"><span class="pre">activation_function.py</span></code> and add it to <code class="code docutils literal notranslate"><span class="pre">act_dispatcher</span></code></p>
+<p>Unless explicitedly said otherwise, these activation functions does not change the input dtype.</p>
+</div>
+<p>List of activation functions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">act_dispatcher</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;linear&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">linear</span><span class="p">),</span>
+    <span class="c1"># Complex input, Real output</span>
+    <span class="s1">&#39;convert_to_real_with_abs&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">convert_to_real_with_abs</span><span class="p">),</span>
+    <span class="s1">&#39;softmax_real&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">softmax_real</span><span class="p">),</span>
+    <span class="c1"># Cartesian form</span>
+    <span class="s1">&#39;cart_sigmoid&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_sigmoid</span><span class="p">),</span>
+    <span class="s1">&#39;cart_elu&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_elu</span><span class="p">),</span>
+    <span class="s1">&#39;cart_exponential&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_exponential</span><span class="p">),</span>
+    <span class="s1">&#39;cart_hard_sigmoid&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_hard_sigmoid</span><span class="p">),</span>
+    <span class="s1">&#39;cart_relu&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_relu</span><span class="p">),</span>
+    <span class="s1">&#39;cart_leaky_relu&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_leaky_relu</span><span class="p">),</span>
+    <span class="s1">&#39;cart_selu&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_selu</span><span class="p">),</span>
+    <span class="s1">&#39;cart_softplus&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_softplus</span><span class="p">),</span>
+    <span class="s1">&#39;cart_softsign&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_softsign</span><span class="p">),</span>
+    <span class="s1">&#39;cart_tanh&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_tanh</span><span class="p">),</span>
+    <span class="s1">&#39;cart_softmax&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">cart_softmax</span><span class="p">),</span>
+    <span class="c1"># Polar form</span>
+    <span class="s1">&#39;pol_tanh&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">pol_tanh</span><span class="p">),</span>
+    <span class="s1">&#39;pol_sigmoid&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">pol_sigmoid</span><span class="p">),</span>
+    <span class="s1">&#39;pol_selu&#39;</span><span class="p">:</span> <span class="n">Activation</span><span class="p">(</span><span class="n">pol_selu</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The following <code class="code docutils literal notranslate"><span class="pre">cart</span></code> or <code class="code docutils literal notranslate"><span class="pre">pol</span></code> means either type A (cartesian) or type B (polar) according to <a class="reference internal" href="#cit2003-kuroe" id="id2"><span>[CIT2003-KUROE]</span></a> notation.</p>
+<p>To define your own activation function, just create it inside the <code class="code docutils literal notranslate"><span class="pre">activations.py</span></code> and add it to <code class="code docutils literal notranslate"><span class="pre">act_dispatcher</span></code> dictionary at the end</p>
 </div>
 <dl class="py method">
-<dt id="apply_activation">
-<code class="sig-name descname">apply_activation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">act_fun</span></em>, <em class="sig-param"><span class="n">out</span></em><span class="sig-paren">)</span><a class="headerlink" href="#apply_activation" title="Permalink to this definition">¶</a></dt>
+<dt id="linear">
+<code class="sig-name descname">linear</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#linear" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>Applies activation function <code class="code docutils literal notranslate"><span class="pre">act</span></code> to variable <code class="code docutils literal notranslate"><span class="pre">out</span></code></p>
+<div><p>Does not apply any activation function. It just outputs the input.</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>out</strong> – Tensor to whom the activation function will be applied</p></li>
-<li><p><strong>act_fun</strong> – function to be applied to out.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor variable</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Tensor with the applied activation function</p>
+<dd class="field-even"><p>z</p>
 </dd>
 </dl>
 </dd></dl>
 
+<div class="section" id="complex-input-real-output">
+<h2>Complex input, real output<a class="headerlink" href="#complex-input-real-output" title="Permalink to this headline">¶</a></h2>
 <dl class="py method">
 <dt id="softmax_real">
 <code class="sig-name descname">softmax_real</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#softmax_real" title="Permalink to this definition">¶</a></dt>
@@ -247,21 +279,24 @@ The softmax of x is calculated by:</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="linear">
-<code class="sig-name descname">linear</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#linear" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Does not apply any activation function. It just outputs the input.</p>
-</div></blockquote>
+<dt id="convert_to_real_with_abs">
+<code class="sig-name descname">convert_to_real_with_abs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#convert_to_real_with_abs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies the absolute value and returns a real-valued output.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>z</strong> – Input tensor variable</p>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>z</p>
+<dd class="field-even"><p>Real-valued tensor of the applied activation function</p>
 </dd>
 </dl>
 </dd></dl>
 
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following <code class="code docutils literal notranslate"><span class="pre">cart</span></code> or <code class="code docutils literal notranslate"><span class="pre">pol</span></code> means either type A (cartesian) or type B (polar) according to <a class="reference internal" href="#cit2003-kuroe" id="id1"><span>[CIT2003-KUROE]</span></a> notation.</p>
+</div>
+</div>
 <div class="section" id="type-a-cartesian-form">
 <h2>TYPE A: Cartesian form<a class="headerlink" href="#type-a-cartesian-form" title="Permalink to this headline">¶</a></h2>
 <dl class="py method">
@@ -377,7 +412,7 @@ f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}
 <dt id="cart_leaky_relu">
 <code class="sig-name descname">cart_leaky_relu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_leaky_relu" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
-<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu">Leaky Rectified Linear Unit</a> <a class="reference internal" href="#cit2013-maas" id="id3"><span>[CIT2013-MAAS]</span></a> (<a class="reference external" href="http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf">source</a>) to both the real and imag part of z.</p>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu">Leaky Rectified Linear Unit</a> <a class="reference internal" href="#cit2013-maas" id="id2"><span>[CIT2013-MAAS]</span></a> (<a class="reference external" href="http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf">source</a>) to both the real and imag part of z.</p>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -396,7 +431,7 @@ f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}
 <dl class="py method">
 <dt id="cart_selu">
 <code class="sig-name descname">cart_selu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_selu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id4"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to both the real and imag part of z.</p>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id3"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to both the real and imag part of z.</p>
 <p>The scaled exponential unit activation:</p>
 <div class="math notranslate nohighlight">
 \[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
@@ -499,7 +534,7 @@ The softmax of x is calculated by:</p>
 <dl class="py method">
 <dt id="pol_selu">
 <code class="sig-name descname">pol_selu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pol_selu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id7"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to the absolute value of z, keeping the phase unchanged.</p>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id6"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to the absolute value of z, keeping the phase unchanged.</p>
 <p>The scaled exponential unit activation:</p>
 <div class="math notranslate nohighlight">
 \[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
@@ -514,10 +549,10 @@ The softmax of x is calculated by:</p>
 </dd></dl>
 
 <dl class="citation">
-<dt class="label" id="cit2003-kuroe"><span class="brackets"><a class="fn-backref" href="#id2">CIT2003-KUROE</a></span></dt>
+<dt class="label" id="cit2003-kuroe"><span class="brackets"><a class="fn-backref" href="#id1">CIT2003-KUROE</a></span></dt>
 <dd><p>Kuroe, Yasuaki, Mitsuo Yoshid, and Takehiro Mori. “On activation functions for complex-valued neural networks—existence of energy functions—.” Artificial Neural Networks and Neural Information Processing—ICANN/ICONIP 2003. Springer, Berlin, Heidelberg, 2003. 985-992.</p>
 </dd>
-<dt class="label" id="cit2013-maas"><span class="brackets"><a class="fn-backref" href="#id3">CIT2013-MAAS</a></span></dt>
+<dt class="label" id="cit2013-maas"><span class="brackets"><a class="fn-backref" href="#id2">CIT2013-MAAS</a></span></dt>
 <dd><ol class="upperalpha simple">
 <li><ol class="upperalpha simple" start="12">
 <li><p>Maas, A. Y. Hannun, and A. Y. Ng, “Rectifier Nonlinearities Improve Neural Network Acoustic Models,” 2013.</p></li>
@@ -525,7 +560,7 @@ The softmax of x is calculated by:</p>
 </li>
 </ol>
 </dd>
-<dt class="label" id="cit2017-klambauer"><span class="brackets">CIT2017-KLAMBAUER</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id7">2</a>)</span></dt>
+<dt class="label" id="cit2017-klambauer"><span class="brackets">CIT2017-KLAMBAUER</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id6">2</a>)</span></dt>
 <dd><ol class="upperalpha simple" start="7">
 <li><p>Klambauer, T. Unterthiner, A. Mayr, and S. Hochreiter, “Self-Normalizing Neural Networks,” ArXiv170602515 Cs Stat, Sep. 2017. Available: <a class="reference external" href="http://arxiv.org/abs/1706.02515">http://arxiv.org/abs/1706.02515</a>.</p></li>
 </ol>

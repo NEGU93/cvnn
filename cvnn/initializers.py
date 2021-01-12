@@ -78,14 +78,13 @@ class _RandomGenerator(object):
 
 
 class ComplexInitializer(Initializer):
-     
+
     def __init__(self, distribution: str = "uniform", seed: Optional[int] = None):
         if distribution.lower() not in {"uniform", "normal"}:
             raise ValueError("Invalid `distribution` argument:", distribution)
         else:
             self.distribution = distribution.lower()
         self._random_generator = _RandomGenerator(seed)
- 
 
     def _call_random_generator(self, shape, arg, dtype):
         if self.distribution == "uniform":
@@ -94,17 +93,17 @@ class ComplexInitializer(Initializer):
             # I make this magic number division because that's what tf does on this case
             return self._random_generator.truncated_normal(shape=shape, mean=0.0, stddev=arg / .87962566103423978,
                                                            dtype=dtype)
-    
+
     @abstractmethod
-    def _compute_limit(fan_in, fan_out):
+    def _compute_limit(self, fan_in, fan_out):
         pass
-    
+
     def __call__(self, shape, dtype=tf.dtypes.complex64, **kwargs):
         fan_in, fan_out = _compute_fans(shape)
         arg = self._compute_limit(fan_in, fan_out)
         dtype = tf.dtypes.as_dtype(dtype)
         if dtype.is_complex:
-            arg = arg/np.sqrt(2)
+            arg = arg / np.sqrt(2)
         return self._call_random_generator(shape=shape, arg=arg, dtype=dtype.real_dtype)
 
     def get_config(self):  # To support serialization
@@ -138,7 +137,7 @@ class ComplexGlorotUniform(ComplexInitializer):
 
     def __init__(self, seed: Optional[int] = None):
         super(ComplexGlorotUniform, self).__init__(distribution="uniform", seed=seed)
-        
+
     def _compute_limit(self, fan_in, fan_out):
         return tf.math.sqrt(6. / (fan_in + fan_out))
 
@@ -171,7 +170,7 @@ class ComplexGlorotNormal(ComplexInitializer):
 
     def __init__(self, seed: Optional[int] = None):
         super(ComplexGlorotNormal, self).__init__(distribution="normal", seed=seed)
-        
+
     def _compute_limit(self, fan_in, fan_out):
         return tf.math.sqrt(2. / (fan_in + fan_out))
 
@@ -200,14 +199,14 @@ class ComplexHeUniform(ComplexInitializer):
     ```
     """
     __name__ = "Complex He Uniform"
-    
+
     def __init__(self, seed: Optional[int] = None):
         super(ComplexHeUniform, self).__init__(distribution="uniform", seed=seed)
-        
+
     def _compute_limit(self, fan_in, fan_out):
         return tf.math.sqrt(6. / fan_in)
-  
-    
+
+
 class ComplexHeNormal(ComplexInitializer):
     """
     He normal initializer.
@@ -232,10 +231,10 @@ class ComplexHeNormal(ComplexInitializer):
     ```
     """
     __name__ = "Complex He Normal"
-    
+
     def __init__(self, seed: Optional[int] = None):
         super(ComplexHeNormal, self).__init__(distribution="normal", seed=seed)
-        
+
     def _compute_limit(self, fan_in, fan_out):
         return tf.math.sqrt(2. / fan_in)
 

@@ -14,30 +14,19 @@ logger = logging.getLogger(cvnn.__name__)
 t_activation = Union[str, Callable]  # TODO: define better
 
 
-def apply_activation(act_fun: t_activation, out: Tensor) -> Tensor:
+# Regression
+def linear(z: Tensor) -> Tensor:
     """
-    Applies activation function `act` to variable `out`
-    :param out: Tensor to whom the activation function will be applied
-    :param act_fun: function to be applied to out. See the list fo possible activation functions on:
-        https://complex-valued-neural-networks.readthedocs.io/en/latest/act_fun.html
-    :return: Tensor with the applied activation function
+    Does not apply any activation function. It just outputs the input.
+    :param z: Input tensor variable
+    :return: z
     """
-    if act_fun is None:  # No activation function declared
-        return out
-    elif callable(act_fun):
-        if act_fun.__module__ == 'activations' or \
-                act_fun.__module__ == 'tensorflow.python.keras.activations':
-            return act_fun(out)  # TODO: for the moment is not be possible to give parameters like alpha
-        else:
-            logger.error("apply_activation Unknown activation function.\n\t"
-                         "Can only use activations declared on activations.py or keras.activations")
-            sys.exit(-1)
-    elif isinstance(act_fun, str):
-        try:
-            return act_dispatcher[act_fun.lower()](out)
-        except KeyError:
-            logger.warning(str(act_fun) + " is not callable, ignoring it")
-        return out
+    return z
+
+
+"""
+Complex input, real output
+"""
 
 
 def softmax_real(z: Tensor, axis=-1) -> Tensor:
@@ -54,25 +43,18 @@ def softmax_real(z: Tensor, axis=-1) -> Tensor:
     return tf.keras.activations.softmax(tf.math.abs(z), axis)
 
 
-# Regression
-def linear(z: Tensor) -> Tensor:
-    """
-    Does not apply any activation function. It just outputs the input.
-    :param z: Input tensor variable
-    :return: z
-    """
-    return z
-
-
 def convert_to_real_with_abs(z: Tensor) -> Tensor:
+    """
+    Applies the absolute value and returns a real-valued output.
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
     return tf.math.abs(z)
 
 
 """
 TYPE A: Cartesian form.
 """
-
-
 # TODO: shall I use tf.nn or tf.keras.activation modules?
 # https://stackoverflow.com/questions/54761088/tf-nn-relu-vs-tf-keras-activations-relu
 # nn has leaky relu, activation doesn't
@@ -231,9 +213,8 @@ def cart_softmax(z: Tensor, axis=-1) -> Tensor:
 """
 TYPE B: Polar form.
 """
+# For all ReLU functions, the polar form makes no real sense. If we keep the phase because abs(z) > 0
 
-
-# TODO: for all ReLU functions, the polar form makes no real sense. If we keep the phase because abs(z) > 0
 
 def _apply_pol(z: Tensor, amp_fun: Callable[[Tensor], Tensor],
                pha_fun: Optional[Callable[[Tensor], Tensor]] = None) -> Tensor:

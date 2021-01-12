@@ -3,21 +3,63 @@
 
 .. _activations:
 
-It is recommended to only use the activation functions using::
 
-	apply_activation(act_fun, out)
+There are two ways to use an activation function
 
-.. note:: You can define your own activation function, just create it inside the :code:`activation_function.py` and add it to :code:`act_dispatcher`
+Option 1: Using the string as in :code:`act_dispatcher`::
 
-.. note:: The following :code:`cart` or :code:`pol` means either type A (cartesian) or type B (polar) according to [CIT2003-KUROE]_ notation.
+    ComplexDense(units=x, activation='cart_sigmoid')
 
-.. py:method:: apply_activation(act_fun, out)
+Option 2: Using the function directly::
 
-	Applies activation function :code:`act` to variable :code:`out`
+    from cvnn.activations import cart_sigmoid
 
-    :param out: Tensor to whom the activation function will be applied
-    :param act_fun: function to be applied to out. 
-    :return: Tensor with the applied activation function
+    ComplexDense(units=x, activation=cart_sigmoid)
+
+.. note:: 
+    Unless explicitedly said otherwise, these activation functions does not change the input dtype.
+
+List of activation functions::
+
+    act_dispatcher = {
+        'linear': Activation(linear),
+        # Complex input, Real output
+        'convert_to_real_with_abs': Activation(convert_to_real_with_abs),
+        'softmax_real': Activation(softmax_real),
+        # Cartesian form
+        'cart_sigmoid': Activation(cart_sigmoid),
+        'cart_elu': Activation(cart_elu),
+        'cart_exponential': Activation(cart_exponential),
+        'cart_hard_sigmoid': Activation(cart_hard_sigmoid),
+        'cart_relu': Activation(cart_relu),
+        'cart_leaky_relu': Activation(cart_leaky_relu),
+        'cart_selu': Activation(cart_selu),
+        'cart_softplus': Activation(cart_softplus),
+        'cart_softsign': Activation(cart_softsign),
+        'cart_tanh': Activation(cart_tanh),
+        'cart_softmax': Activation(cart_softmax),
+        # Polar form
+        'pol_tanh': Activation(pol_tanh),
+        'pol_sigmoid': Activation(pol_sigmoid),
+        'pol_selu': Activation(pol_selu)
+    }
+
+
+
+
+.. note:: To define your own activation function, just create it inside the :code:`activations.py` and add it to :code:`act_dispatcher` dictionary at the end
+
+
+.. py:method:: linear(z)
+
+	Does not apply any activation function. It just outputs the input.
+	
+    :param z: Input tensor variable
+    :return: z
+
+
+Complex input, real output
+--------------------------
 
 .. py:method:: softmax_real(z, axis=-1)
 
@@ -34,13 +76,18 @@ It is recommended to only use the activation functions using::
 
     :param z: Input tensor.
     :return: Real-valued tensor of the applied activation function
-   
-.. py:method:: linear(z)
 
-	Does not apply any activation function. It just outputs the input.
-	
-    :param z: Input tensor variable
-    :return: z
+
+.. py:method:: convert_to_real_with_abs(z)
+
+    Applies the absolute value and returns a real-valued output.
+
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+
+
+.. note:: The following :code:`cart` or :code:`pol` means either type A (cartesian) or type B (polar) according to [CIT2003-KUROE]_ notation.
+
 
 TYPE A: Cartesian form
 ----------------------
