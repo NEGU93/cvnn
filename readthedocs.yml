@@ -20,7 +20,7 @@ submodules:
 python:
   version: 3
   install:
-    - requirements: doc/requirements.txt
+    - requirements: docs/requirements.txt
   system_packages: true
 
 # https://nbsphinx.readthedocs.io/en/0.3.3/usage.html#Automatic-Creation-of-HTML-and-PDF-output-on-readthedocs.org
