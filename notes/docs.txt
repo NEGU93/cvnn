@@ -7,3 +7,11 @@ https://devguide.python.org/documenting/#sections
 
 How to compile:
 make html
+
+Install:
+	conda install -c anaconda sphinx
+	conda install -c conda-forge nbsphinx recommonmark
+	
+Select conda env vscode:
+	1. Ctrl+Shift+P
+	2. python: Select Interpreter	

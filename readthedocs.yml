@@ -15,7 +15,14 @@ sphinx:
 # don't use submodules for documentation (readthedocs fails when using submodules)
 submodules:
   exclude: all
+  
+# https://nbsphinx.readthedocs.io/en/0.8.0/usage.html#Automatic-Creation-of-HTML-and-PDF-output-on-readthedocs.org
+python:
+  version: 3
+  install:
+    - requirements: doc/requirements.txt
+  system_packages: true
 
 # https://nbsphinx.readthedocs.io/en/0.3.3/usage.html#Automatic-Creation-of-HTML-and-PDF-output-on-readthedocs.org
-conda:
-  file: docs/environment.yml
+# conda:
+#   file: docs/environment.yml

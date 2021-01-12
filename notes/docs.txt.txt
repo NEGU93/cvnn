@@ -1,2 +1,0 @@
-For jupyter notebooks:
-	conda install -c conda-forge nbsphinx
