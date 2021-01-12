@@ -16,6 +16,7 @@ This module tests:
         ComplexDense
         ComplexFlatten
         ComplexInput 
+        ComplexDropout
 """
 
 
@@ -135,6 +136,7 @@ def dropout():
                              [7.5 + 7.5j, 8.75 + 8.75j],
                              [10. + 10.j, 0. + 0.j]]
                             )
+    set_trace()
     assert np.all(data == layer(data, training=False))
     assert np.all(outputs == expected_out)
     ds_train, ds_test = get_dataset()

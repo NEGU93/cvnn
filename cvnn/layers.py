@@ -177,48 +177,33 @@ class ComplexDropout(Layer, ComplexLayer):
     (This is in contrast to setting `trainable=False` for a Dropout layer.
     `trainable` does not affect the layer's behavior, as Dropout does
     not have any variables/weights that can be frozen during training.)
-    >>> tf.random.set_seed(0)
-    >>> layer = tf.keras.layers.Dropout(.2, input_shape=(2,))
-    >>> data = np.arange(10).reshape(5, 2).astype(np.float32)
-    >>> print(data)
-    [[0. 1.]
-    [2. 3.]
-    [4. 5.]
-    [6. 7.]
-    [8. 9.]]
-    >>> outputs = layer(data, training=True)
-    >>> print(outputs)
-    tf.Tensor(
-    [[ 0.    1.25]
-    [ 2.5   3.75]
-    [ 5.    6.25]
-    [ 7.5   8.75]
-    [10.    0.  ]], shape=(5, 2), dtype=float32)
-    Arguments:
-    rate: Float between 0 and 1. Fraction of the input units to drop.
-    noise_shape: 1D integer tensor representing the shape of the
-      binary dropout mask that will be multiplied with the input.
-      For instance, if your inputs have shape
-      `(batch_size, timesteps, features)` and
-      you want the dropout mask to be the same for all timesteps,
-      you can use `noise_shape=(batch_size, 1, features)`.
-    seed: A Python integer to use as random seed.
-    Call arguments:
-    inputs: Input tensor (of any rank).
-    training: Python boolean indicating whether the layer should behave in
-      training mode (adding dropout) or in inference mode (doing nothing).
     """
 
-    def __init__(self, rate, noise_shape=None, seed=None, **kwargs):
+    def __init__(self, rate: float, noise_shape=None, seed: Optional[int] = None, **kwargs):
+        """
+        :param rate: Float between 0 and 1. Fraction of the input units to drop.
+        :param noise_shape: 1D integer tensor representing the shape of the binary dropout mask that
+            will be multiplied with the input.
+            For instance, if your inputs have shape `(batch_size, timesteps, features)` and you want the dropout
+            mask to be the same for all timesteps, you can use `noise_shape=(batch_size, 1, features)`.
+        :param seed: A Python integer to use as random seed.
+        """
         super(ComplexDropout, self).__init__(**kwargs)  # trainable=False,
         self.rate = rate
         self.seed = seed
         self.noise_shape = noise_shape
 
     def call(self, inputs, training=None):
+        """
+        :param inputs: Input tensor (of any rank).
+        :param training: Python boolean indicating whether the layer should behave in training mode (adding dropout)
+            or in inference mode (doing nothing).
+        """
         if training is None:
             training = K.learning_phase()
-            tf.print(f"Training was None and now is {training}")    # This is used for debugging
+            tf.print(f"Training was None and now is {training}")
+            # This is used for my own debugging, I don't know WHEN this happens,
+            # I trust K.learning_phase() returns a correct boolean.
         if not training:
             return inputs
         elif inputs.shape[0] is None:     # When testing the shape
