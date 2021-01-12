@@ -3,6 +3,8 @@ Done by @NEGU93 - J. Agustin Barrachina
 
 [![Documentation Status](https://readthedocs.org/projects/complex-valued-neural-networks/badge/?version=latest)](https://complex-valued-neural-networks.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/cvnn.svg)](https://badge.fury.io/py/cvnn) [![Anaconda cvnn version](https://img.shields.io/conda/v/NEGU93/cvnn.svg)](https://anaconda.org/negu93/cvnn) [![DOI](https://zenodo.org/badge/296050056.svg)](https://zenodo.org/badge/latestdoi/296050056)
 
+Using this library, the only difference with a Tensorflow code is that you should use `cvnn.layers` module instead of `tf.keras.layers`.
+
 This is a library that uses [Tensorflow](https://www.tensorflow.org) as a back-end to do complex-valued neural networks as CVNNs are barely supported by Tensorflow and not even supported yet for [pytorch](https://github.com/pytorch/pytorch/issues/755) (reason why I decided to use Tensorflow for this library).
 
 Update:
@@ -52,7 +54,7 @@ import tensorflow as tf
 (train_images, train_labels), (test_images, test_labels) = get_dataset()        # to be done by each user
 
 # Create your model
-model = models.Sequential()
+model = tf.keras.models.Sequential()
 model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))                     # Always use ComplexInput at the start
 model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
 model.add(complex_layers.ComplexAvgPooling2D((2, 2)))
