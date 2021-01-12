@@ -7,9 +7,9 @@ Welcome to my library! [CIT2019-BARRACHINA-CODE]_
 
 The idea of this library is just to implement :doc:`Complex layers <layers>` (:code:`ComplexLayer`) so that everything else stays the same as any Tensorflow code.
 
-The only difference with a Tensorflow code is that you should use :code:`cvnn.ComplexLayers` module instead of :code:`tf.keras.layers`.
+The only difference with a Tensorflow code is that you should use :code:`cvnn.layers` module instead of :code:`tf.keras.layers`.
 
-Although :code:`tf.activation` and :code:`tf.initializers` could be used, it is HIGHLY recommended (and some times compulsory) to use the `cvnn` module options.
+Although :code:`tf.activation` and :code:`tf.initializers` could be used, it is HIGHLY recommended (and some times compulsory) to use the :code:`cvnn` module options.
 
 .. warning::
         For a reason I ignore, TensorFlow casts the input automatically to floating. To avoid this, always create first a :code:`ComplexInput` layer in all your models.
@@ -35,6 +35,8 @@ Although this library is intended to work with complex data type, it also suppor
 All :code:`cvnn` activation functions and initializers already work Ok for real and complex inputs, so nothing should change.
 
 This allows me to debug the code (comparing it's result with keras on real data) but also to easily implement a comparison between a complex and a real network minimizing the error.
+
+You have some examples of this as for example :doc:`MNIST <code_examples/mnist_example>`.
 
 .. note:: 
     Please, remember to `cite me <https://github.com/NEGU93/cvnn#cite-me>`_ accordingly [CIT2019-BARRACHINA-CODE]_
