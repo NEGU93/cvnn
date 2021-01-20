@@ -947,9 +947,7 @@ class ComplexMaxPooling2D(ComplexPooling2D):
         output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides,
                                                     padding=padding, data_format=data_format,
                                                     include_batch_in_index=True)
-        if inputs.shape[0] is None:
-            return output
-        shape = output.shape
+        shape = tf.shape(output)
         tf_res = tf.reshape(tf.gather(tf.reshape(inputs, [-1]), argmax), shape)
         # assert np.all(tf_res == output)             # For debugging when the input is real only!
         assert tf_res.dtype == inputs.dtype
@@ -984,7 +982,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

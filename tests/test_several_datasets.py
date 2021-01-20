@@ -6,6 +6,7 @@ from cvnn.initializers import ComplexGlorotUniform
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput
 import cvnn.layers as complex_layers
 from cvnn import layers
+from pdb import set_trace
 from cvnn.montecarlo import run_gaussian_dataset_montecarlo
 
 
@@ -130,17 +131,16 @@ def random_dataset():
                   # run_eagerly=True
                   )
     model.summary()
-
     # Train and evaluate
-    history = model.fit(x_train, y_train, epochs=100, validation_data=(x_test, y_test))
+    history = model.fit(x_train, y_train, epochs=2, validation_data=(x_test, y_test))
     test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
 
 
 def test_datasets():
-    cifar10_test()
     random_dataset()
-    # fashion_mnist_example()
-    # mnist_example()
+    cifar10_test()
+    fashion_mnist_example()
+    mnist_example()
     # run_gaussian_dataset_montecarlo(epochs=2, iterations=1)
 
 
