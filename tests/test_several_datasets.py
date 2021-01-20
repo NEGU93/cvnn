@@ -4,6 +4,7 @@ import tensorflow_datasets as tfds
 from tensorflow.keras import datasets, models
 from cvnn.initializers import ComplexGlorotUniform
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput
+import cvnn.layers as complex_layers
 from cvnn import layers
 from cvnn.montecarlo import run_gaussian_dataset_montecarlo
 
@@ -84,12 +85,13 @@ def cifar10_test():
     test_images = test_images.astype(dtype_1)
     train_labels = train_labels.astype(dtype_1)
     test_labels = test_labels.astype(dtype_1)
+
     model = models.Sequential()
     model.add(layers.ComplexInput(input_shape=(32, 32, 3), dtype=dtype_1))     # Never forget this!!!
     model.add(layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
-    model.add(layers.ComplexAvgPooling2D((2, 2)))
+    model.add(layers.ComplexMaxPooling2D((2, 2)))   # TODO: This is changing the dtype!
     model.add(layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
-    model.add(layers.ComplexMaxPooling2D((2, 2)))       # TODO: This is changing the dtype!
+    model.add(layers.ComplexAvgPooling2D((2, 2)))
     model.add(layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
     model.add(layers.ComplexFlatten())
     model.add(layers.ComplexDense(64, activation='cart_relu'))
@@ -101,11 +103,45 @@ def cifar10_test():
     history = model.fit(train_images, train_labels, epochs=2, validation_data=(test_images, test_labels))
 
 
+def random_dataset():
+    x_train = np.complex64(tf.complex(tf.random.uniform([640, 65, 82, 1]), tf.random.uniform([640, 65, 82, 1])))
+    x_test = np.complex64(tf.complex(tf.random.uniform([200, 65, 82, 1]), tf.random.uniform([200, 65, 82, 1])))
+    y_train = np.uint8(np.random.randint(5, size=(640, 1)))
+    y_test = np.uint8(np.random.randint(5, size=(200, 1)))
+
+    model = tf.keras.models.Sequential()
+    model.add(complex_layers.ComplexInput(input_shape=(65, 82, 1)))  # Always use ComplexInput at the start
+    model.add(complex_layers.ComplexConv2D(8, (5, 5), activation='cart_relu'))
+    model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
+    model.add(complex_layers.ComplexConv2D(16, (5, 5), activation='cart_relu'))
+    model.add(complex_layers.ComplexFlatten())
+    model.add(complex_layers.ComplexDense(256, activation='cart_relu'))
+    model.add(complex_layers.ComplexDropout(0.1))
+    model.add(complex_layers.ComplexDense(64, activation='cart_relu'))
+    model.add(complex_layers.ComplexDropout(0.1))
+    model.add(complex_layers.ComplexDense(5, activation='convert_to_real_with_abs'))
+    # An activation that casts to real must be used at the last layer.
+    # The loss function cannot minimize a complex number
+
+    # Compile it
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'],
+                  # run_eagerly=True
+                  )
+    model.summary()
+
+    # Train and evaluate
+    history = model.fit(x_train, y_train, epochs=100, validation_data=(x_test, y_test))
+    test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+
+
 def test_datasets():
     cifar10_test()
-    fashion_mnist_example()
-    mnist_example()
-    run_gaussian_dataset_montecarlo(epochs=2, iterations=1)
+    random_dataset()
+    # fashion_mnist_example()
+    # mnist_example()
+    # run_gaussian_dataset_montecarlo(epochs=2, iterations=1)
 
 
 if __name__ == '__main__':

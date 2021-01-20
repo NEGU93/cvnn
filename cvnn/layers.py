@@ -945,17 +945,12 @@ class ComplexMaxPooling2D(ComplexPooling2D):
         # The max is calculated with the absolute value. This will still work on real values.
         abs_in = tf.math.abs(inputs)
         output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides,
-                                                    padding=padding, data_format=data_format)
+                                                    padding=padding, data_format=data_format,
+                                                    include_batch_in_index=True)
         if inputs.shape[0] is None:
             return output
-        # Flatten input and argmax to make them equivalent
-        flat_in = tf.reshape(inputs, [tf.shape(inputs)[0], tf.math.reduce_prod(tf.shape(inputs)[1:])])
-        flat_argmax = tf.reshape(argmax, [tf.shape(argmax)[0], tf.math.reduce_prod(tf.shape(argmax)[1:])])
-        # TODO: Using numpy in the next line seems quite inneficient, is there a better way?
-        # Get the max values using the indeces of argmax
-        res = [tf.convert_to_tensor(flat_in.numpy()[i][arg_ind]) for i, arg_ind in enumerate(flat_argmax.numpy())]
-        # for i, arg_ind in enumerate(flat_argmax.numpy()):
-        tf_res = tf.reshape(res, output.shape)
+        shape = output.shape
+        tf_res = tf.reshape(tf.gather(tf.reshape(inputs, [-1]), argmax), shape)
         # assert np.all(tf_res == output)             # For debugging when the input is real only!
         assert tf_res.dtype == inputs.dtype
         return tf_res
@@ -989,7 +984,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

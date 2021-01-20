@@ -136,7 +136,6 @@ def dropout():
                              [7.5 + 7.5j, 8.75 + 8.75j],
                              [10. + 10.j, 0. + 0.j]]
                             )
-    set_trace()
     assert np.all(data == layer(data, training=False))
     assert np.all(outputs == expected_out)
     ds_train, ds_test = get_dataset()
@@ -161,7 +160,7 @@ def get_img():
         [0, 2, 2],
         [0, 5, 7]
     ], [
-        [0, 4, 5],
+        [0, 7, 5],
         [3, 7, 9],
         [4, 5, 3]
     ]]).astype(np.float32)
@@ -181,7 +180,7 @@ def get_img():
 
 def complex_max_pool_2d():
     img = get_img()
-    max_pool = ComplexMaxPooling2D(strides=1)
+    max_pool = ComplexMaxPooling2D(strides=1, data_format="channels_last")
     res = max_pool(img.astype(np.complex64))
     expected_res = np.array([
         [[
@@ -190,13 +189,13 @@ def complex_max_pool_2d():
             [[2. + 7.j],
              [2. + 9.j]]],
         [[
-            [7. + 2.j],
+            [7. + 4.j],
             [9. + 2.j]],
             [
-                [5. + 8.j],
-                [3. + 9.j]]
-        ]])
-    assert (res == expected_res.astype(np.complex64)).numpy().all()
+            [5. + 8.j],
+            [3. + 9.j]]]
+        ])
+    assert (res.numpy() == expected_res.astype(np.complex64)).all()
     x = tf.constant([[1., 2., 3.],
                      [4., 5., 6.],
                      [7., 8., 9.]])
@@ -211,15 +210,15 @@ def complex_avg_pool():
     avg_pool = ComplexAvgPooling2D(strides=1)
     res = avg_pool(img.astype(np.complex64))
     expected_res = np.array([[[[0.75 + 3.5j], [1.75 + 6.25j]], [[1.75 + 4.75j], [4. + 6.j]]],
-                             [[[3.5 + 2.25j], [6.25 + 3.25j]], [[4.75 + 4.25j], [6. + 5.25j]]]])
-    assert (res == expected_res.astype(np.complex64)).numpy().all()
+                             [[[4.25+2.25j], [7 + 3.25j]], [[4.75 + 4.25j], [6. + 5.25j]]]])
+    assert (res.numpy() == expected_res.astype(np.complex64)).all()
 
 
 def test_layers():
+    complex_max_pool_2d()
     dropout()
     complex_avg_pool()
     shape_ad_dtype_of_conv2d()
-    complex_max_pool_2d()
     dense_example()
 
 
