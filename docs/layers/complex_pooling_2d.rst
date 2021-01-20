@@ -28,9 +28,6 @@ Complex Max Pooling 2D
     Max pooling operation for 2D spatial data.
     Works for complex dtype using the absolute value to get the max.
 
-.. warning:: 
-    ATTENTION: This layer seams to be doing a strange casting to real when implemented in a Sequential model. It is therefore not correctly working for the moment.
-
 **Complex dtype example**
 
 First, let's create a complex image

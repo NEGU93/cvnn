@@ -137,11 +137,11 @@ def random_dataset():
 
 
 def test_datasets():
+    run_gaussian_dataset_montecarlo(epochs=2, iterations=1)
     random_dataset()
     cifar10_test()
     fashion_mnist_example()
     mnist_example()
-    # run_gaussian_dataset_montecarlo(epochs=2, iterations=1)
 
 
 if __name__ == '__main__':
