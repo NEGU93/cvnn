@@ -30,7 +30,8 @@ He Uniform
 
 .. py:method:: __call__(self, shape, dtype=tf.dtypes.complex64)
 
-    Returns a tensor object initialized as specified by the initializer.
+    Returns a real-valued tensor object initialized as specified by the initializer. 
+        The complex dtype input will only be used to know the limits to be used. This result must be used for the real and imaginary part separately.
 
     :param shape: Shape of the tensor.
     :param dtype: Optinal dtype of the tensor. Either floating or complex. ex: :code:`tf.complex64` or :code:`tf.float32`

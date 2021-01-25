@@ -25,14 +25,14 @@ Glorot Uniform
         initializer = cvnn.initializers.GlorotUniform()
         layer = cvnn.layers.Dense(input_size=23, output_size=45, weight_initializer=initializer)
 
-.. py:method:: __init__(self, seed=None, scale=1.)
+.. py:method:: __init__(self, seed=None)
     
     :param seed: Integer. An initializer created with a given seed will always produce the same random tensor for a given shape and dtype.
-    :param scale: Default 1. Scales the limit as :code:`limit = scale * limit`
 
 .. py:method:: __call__(self, shape, dtype=tf.dtypes.complex64)
         
-    Returns a tensor object initialized as specified by the initializer.
+    Returns a real-valued tensor object initialized as specified by the initializer. 
+        The complex dtype input will only be used to know the limits to be used. This result must be used for the real and imaginary part separately.
 
     :param shape: Shape of the tensor.
     :param dtype: Optional dtype of the tensor. Either floating or complex. ex: :code:`tf.complex64` or :code:`tf.float32`
