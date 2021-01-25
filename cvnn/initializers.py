@@ -107,7 +107,7 @@ class ComplexInitializer(Initializer):
         return self._call_random_generator(shape=shape, arg=arg, dtype=dtype.real_dtype)
 
     def get_config(self):  # To support serialization
-        return {"seed": self.seed}
+        return {"seed": self._random_generator.seed}
 
 
 class ComplexGlorotUniform(ComplexInitializer):
