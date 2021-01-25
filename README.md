@@ -5,7 +5,7 @@ Done by @NEGU93 - J. Agustin Barrachina
 
 Using this library, the only difference with a Tensorflow code is that you should use `cvnn.layers` module instead of `tf.keras.layers`.
 
-This is a library that uses [Tensorflow](https://www.tensorflow.org) as a back-end to do complex-valued neural networks as CVNNs are barely supported by Tensorflow and not even supported yet for [pytorch](https://github.com/pytorch/pytorch/issues/755) (reason why I decided to use Tensorflow for this library).
+This is a library that uses [Tensorflow](https://www.tensorflow.org) as a back-end to do complex-valued neural networks as CVNNs are barely supported by Tensorflow and not even supported yet for [pytorch](https://github.com/pytorch/pytorch/issues/755) (reason why I decided to use Tensorflow for this library). To the authors knowledge, **this is the first and**, for the moment, **only library that actually works with complex data types** instead of real value vectors that are interpreted as real and imaginary part.
 
 Update:
   - Since [v1.6](https://pytorch.org/blog/pytorch-1.6-released/#beta-complex-numbers) (28 July 2020), pytorch now supports complex vectors and complex gradient as BETA. But still have the same issues that Tensorflow has, so no reason to migrate yet.
@@ -90,41 +90,19 @@ In the need of making my coding more dynamic I build a library not to have to re
 
 ## Cite Me
 
-Code:
-```
-@MISC {NEGU93-CVNN,
-    author       = {J. Agustin Barrachina},
-    title        = {Complex-Valued Neural Networks (CVNN)},
-    howpublished = {\url{https://github.com/NEGU93/cvnn}},
-    doi          = {10.5281/zenodo.4140245},
-    journal      = {GitHub repository},
-    year         = {2019}
-}
-```
-I recommend changing the year and adding a `version` item with the one you used.
+Alway prefer the [Zenodo](https://zenodo.org/record/4452131/export/hx#.YAkuw-j0mUl) citation. 
 
-Or cite the Zenodo version:
+Next you have a model but beware to change the version and date accordingly.
+
 ```
-@software{j_agustin_barrachina_2020_4140245,
+@software{j_agustin_barrachina_2021_4452131,
   author       = {J Agustin Barrachina},
-  title        = {NEGU93/cvnn: First official release},
-  month        = oct,
-  year         = 2020,
+  title        = {Complex-Valued Neural Networks (CVNN)},
+  month        = jan,
+  year         = 2021,
   publisher    = {Zenodo},
-  version      = {v0.3.40},
-  doi          = {10.5281/zenodo.4140245},
-  url          = {https://doi.org/10.5281/zenodo.4140245}
-}
-```
-
-Paper:
-```
-@misc{barrachina2020complexvalued,
-    title={Complex-Valued vs. Real-Valued Neural Networks for Classification Perspectives: An Example on Non-Circular Data},
-    author={Jose Agustin Barrachina and Chenfang Ren and Christele Morisseau and Gilles Vieillard and Jean-Philippe Ovarlez},
-    year={2020},
-    eprint={2009.08340},
-    archivePrefix={arXiv},
-    primaryClass={stat.ML}
+  version      = {v1.0.3},
+  doi          = {10.5281/zenodo.4452131},
+  url          = {https://doi.org/10.5281/zenodo.4452131}
 }
 ```
