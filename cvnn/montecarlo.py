@@ -148,15 +148,30 @@ class MonteCarlo:
             num_classes = str(y.shape[1])
         except IndexError:
             num_classes = max(y) - min(y)
-        _save_montecarlo_log(iterations=iterations, path=str(self.monte_carlo_analyzer.path),
-                             models_names=[str(model.name) for model in self.models], dataset_name=data_summary,
-                             num_classes=num_classes,
-                             polar_mode='Yes' if polar else 'No',
-                             dataset_size=str(x.shape[0]), features_size=str(x.shape[1:]),
-                             epochs=epochs, batch_size=batch_size
-                             )
+        self._save_montecarlo_log(iterations=iterations,
+                                  dataset_name=data_summary,
+                                  num_classes=num_classes, polar_mode='Yes' if polar else 'No',
+                                  dataset_size=str(x.shape[0]), features_size=str(x.shape[1:]),
+                                  epochs=epochs, batch_size=batch_size
+                                  )
         if plot_all:
             self.monte_carlo_analyzer.do_all()
+
+    def _save_montecarlo_log(self, iterations, dataset_name,  num_classes, polar_mode, dataset_size,
+                             features_size, epochs, batch_size):
+        fieldnames = [
+            'iterations',
+            'dataset', '# Classes', "Dataset Size", 'Feature Size',     # Dataset information
+            'models', 'epochs', 'batch size', "Polar Mode",             # Models information
+            'path', "cvnn version"                                      # Library information
+        ]
+        row_data = [
+            iterations,
+            dataset_name, num_classes, dataset_size, features_size,
+            '-'.join([str(model.name) for model in self.models]), epochs, batch_size, polar_mode,
+            str(self.monte_carlo_analyzer.path), cvnn.__version__
+        ]
+        _create_excel_file(fieldnames, row_data, './log/monte_carlo_summary.xlsx')
 
 
     @staticmethod
@@ -227,6 +242,43 @@ class RealVsComplex(MonteCarlo):
         self.add_model(complex_model)
         self.add_model(get_real_equivalent(complex_model, capacity_equivalent=capacity_equivalent,
                                            equiv_technique=equiv_technique, name="real_network"))
+
+    def _save_montecarlo_log(self, iterations, dataset_name, num_classes, polar_mode, dataset_size,
+                             features_size, epochs, batch_size):
+        max_epoch = self.pandas_full_data['epoch'].max()
+        epoch_filter = self.pandas_full_data['epoch'] == max_epoch
+        complex_filter = self.pandas_full_data['network'] == self.models[0]
+        real_filter = self.pandas_full_data['network'] == self.models[1]
+        complex_last_epochs = self.pandas_full_data[epoch_filter & complex_filter]
+        real_last_epochs = self.pandas_full_data[epoch_filter & real_filter]
+        complex_median = complex_last_epochs['accuracy'].median()
+        real_median = real_last_epochs['accuracy'].median()
+        complex_median_train = complex_last_epochs['val_accuracy'].median()
+        real_median_train = real_last_epochs['val_accuracy'].median()
+        complex_err = median_error(complex_last_epochs['accuracy'].quantile(.75),
+                                   complex_last_epochs['accuracy'].quantile(.25), iterations),
+        real_err = median_error(real_last_epochs['val_accuracy'].quantile(.75),
+                                real_last_epochs['val_accuracy'].quantile(.25), iterations),
+        fieldnames = ['iterations', 'dataset', '# Classes', "Dataset Size", 'Feature Size', "Polar Mode", "Optimizer",
+                      "Loss",
+                      'HL', 'Shape', 'Dropout', "Activation Function", 'epochs', 'batch size',
+                      "Winner", "CVNN median", "RVNN median", 'CVNN err', 'RVNN err',
+                      "CVNN train median", "RVNN train median",
+                      'path', "cvnn version"
+                      ]
+        row_data = [iterations, dataset_name, num_classes, dataset_size, features_size, polar_mode,
+                    # Dataset information
+                    tf.keras.losses.serialize(self.models[0].loss),
+                    tf.keras.optimizers.serialize(self.models[0].optimizer),
+                    epochs, batch_size,  # Model information
+                    'CVNN' if complex_median > real_median else 'RVNN',
+                    complex_median, real_median, complex_err, real_err,  # Preliminary results
+                    complex_median_train, real_median_train,
+                    str(self.monte_carlo_analyzer.path), cvnn.__version__
+                    ]
+        percentage_cols = ['P', 'Q', 'R', 'S', 'T', 'U']
+        _create_excel_file(fieldnames, row_data, './log/rvnn_vs_cvnn_monte_carlo_summary.xlsx',
+                           percentage_cols=percentage_cols)
 
 
 # ====================================
