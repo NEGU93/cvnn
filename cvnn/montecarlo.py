@@ -144,9 +144,14 @@ class MonteCarlo:
             pbar.close()
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
         self.monte_carlo_analyzer.set_df(self.pandas_full_data)
+        try:        # TODO: Think this better
+            num_classes = str(y.shape[1])
+        except IndexError:
+            num_classes = max(y) - min(y)
         _save_montecarlo_log(iterations=iterations, path=str(self.monte_carlo_analyzer.path),
                              models_names=[str(model.name) for model in self.models], dataset_name=data_summary,
-                             num_classes=str(y.shape[1]), polar_mode='Yes' if polar else 'No',
+                             num_classes=num_classes,
+                             polar_mode='Yes' if polar else 'No',
                              dataset_size=str(x.shape[0]), features_size=str(x.shape[1:]),
                              epochs=epochs, batch_size=batch_size
                              )
