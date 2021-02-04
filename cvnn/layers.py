@@ -217,6 +217,15 @@ class ComplexDropout(Layer, ComplexLayer):
     def get_real_equivalent(self):
         return ComplexDropout(rate=self.rate, seed=self.seed, noise_shape=self.noise_shape)
 
+    def get_config(self):
+        config = {
+            'rate': self.rate,
+            'noise_shape': self.noise_shape,
+            'seed': self.seed
+        }
+        base_config = super(ComplexDropout, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
 
 class ComplexConv(Layer, ComplexLayer):
     """
