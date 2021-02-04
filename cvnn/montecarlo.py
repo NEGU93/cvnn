@@ -180,7 +180,7 @@ class MonteCarlo:
             for model in self.models:
                 model.summary(print_fn=lambda x: file.write(x + '\n'))
         json_dict = {}
-        for i, model in self.models:
+        for i, model in enumerate(self.models):
             json_dict[str(i)] = {
                 'name': model.name,
                 'loss': tf.keras.losses.serialize(model.loss),
