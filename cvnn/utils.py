@@ -117,7 +117,7 @@ def transform_to_real(x_complex, polar=False):
     else:
         x_real[:, :n] = np.abs(flat_x_complex)
         x_real[:, n:] = np.angle(flat_x_complex)
-    return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*2))
+    return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*2,))
 
 
 def cart2polar(z):
@@ -181,6 +181,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
