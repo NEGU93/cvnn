@@ -247,8 +247,8 @@ class RealVsComplex(MonteCarlo):
                              features_size, epochs, batch_size):
         max_epoch = self.pandas_full_data['epoch'].max()
         epoch_filter = self.pandas_full_data['epoch'] == max_epoch
-        complex_filter = self.pandas_full_data['network'] == self.models[0]
-        real_filter = self.pandas_full_data['network'] == self.models[1]
+        complex_filter = self.pandas_full_data['network'] == self.models[0].name
+        real_filter = self.pandas_full_data['network'] == self.models[1].name
         complex_last_epochs = self.pandas_full_data[epoch_filter & complex_filter]
         real_last_epochs = self.pandas_full_data[epoch_filter & real_filter]
         complex_median = complex_last_epochs['accuracy'].median()
@@ -256,20 +256,20 @@ class RealVsComplex(MonteCarlo):
         complex_median_train = complex_last_epochs['val_accuracy'].median()
         real_median_train = real_last_epochs['val_accuracy'].median()
         complex_err = median_error(complex_last_epochs['accuracy'].quantile(.75),
-                                   complex_last_epochs['accuracy'].quantile(.25), iterations),
+                                   complex_last_epochs['accuracy'].quantile(.25), iterations)
         real_err = median_error(real_last_epochs['val_accuracy'].quantile(.75),
-                                real_last_epochs['val_accuracy'].quantile(.25), iterations),
-        fieldnames = ['iterations', 'dataset', '# Classes', "Dataset Size", 'Feature Size', "Polar Mode", "Optimizer",
-                      "Loss",
-                      'HL', 'Shape', 'Dropout', "Activation Function", 'epochs', 'batch size',
+                                real_last_epochs['val_accuracy'].quantile(.25), iterations)
+        fieldnames = ['iterations', 'dataset', '# Classes', "Dataset Size", 'Feature Size', "Polar Mode",
+                      "Optimizer", "Loss",
+                      'epochs', 'batch size',
                       "Winner", "CVNN median", "RVNN median", 'CVNN err', 'RVNN err',
                       "CVNN train median", "RVNN train median",
                       'path', "cvnn version"
                       ]
         row_data = [iterations, dataset_name, num_classes, dataset_size, features_size, polar_mode,
                     # Dataset information
-                    tf.keras.losses.serialize(self.models[0].loss),
-                    tf.keras.optimizers.serialize(self.models[0].optimizer),
+                    str(tf.keras.losses.serialize(self.models[0].loss)),
+                    str(tf.keras.optimizers.serialize(self.models[0].optimizer)),
                     epochs, batch_size,  # Model information
                     'CVNN' if complex_median > real_median else 'RVNN',
                     complex_median, real_median, complex_err, real_err,  # Preliminary results
