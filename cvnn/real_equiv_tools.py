@@ -52,8 +52,9 @@ def get_real_equivalent(complex_model: Type[Sequential], classifier: bool = True
         logger.error("Invalid `equivalent_technique` argument: " + equiv_technique)
         sys.exit(-1)
     # assert len(self.shape) != 0
-    real_shape = [layers.ComplexInput(input_shape=tuple(2*inp for inp in complex_model.layers[0].input_shape
-                                                        if inp is not None),
+    real_input_shape = [inp for inp in complex_model.layers[0].input_shape if inp is not None]
+    real_input_shape[-1] = real_input_shape[-1]*2
+    real_shape = [layers.ComplexInput(input_shape=real_input_shape,
                                       dtype=complex_model.layers[0].input.dtype.real_dtype)]
     output_multiplier = _get_real_equivalent_multiplier(complex_model.layers,
                                                         classifier, capacity_equivalent, equiv_technique)

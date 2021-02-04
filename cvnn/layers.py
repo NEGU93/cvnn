@@ -52,9 +52,9 @@ class ComplexInput(InputLayer, ComplexLayer):
                                            )
 
     def get_real_equivalent(self):
-        real_input_shape = self.input_shape[:-1] + (self.input_shape[-1]*2,)
+        real_input_shape = self.input_shape[:-1] + (self.input_shape[-1] * 2,)
         return ComplexInput(input_shape=real_input_shape, batch_size=self.batch_size, dtype=self.dtype,
-                            input_tensor=self.input_tensor, sparse=self.sparse, name=f'real_{self.name}',
+                            input_tensor=self.input_tensor, sparse=self.sparse, name=self.name + "_real_equiv",
                             ragged=self.ragged)
 
 
@@ -68,7 +68,7 @@ class ComplexFlatten(Flatten, ComplexLayer):
 
     def get_real_equivalent(self):
         # Dtype agnostic so just init one.
-        return ComplexFlatten()
+        return ComplexFlatten(name=self.name + "_real_equiv")
 
 
 class ComplexDense(Dense, ComplexLayer):
@@ -76,10 +76,10 @@ class ComplexDense(Dense, ComplexLayer):
     Fully connected complex-valued layer.
 
     Implements the operation:
-        activation(input * weights + bias) 
+        activation(input * weights + bias)
 
     * where data types can be either complex or real.
-    * activation is the element-wise activation function passed as the activation argument, 
+    * activation is the element-wise activation function passed as the activation argument,
     * weights is a matrix created by the layer
     * bias is a bias vector created by the layer
     """
@@ -87,11 +87,11 @@ class ComplexDense(Dense, ComplexLayer):
     def __init__(self, units: int, activation: t_activation = None, use_bias: bool = True,
                  kernel_initializer=ComplexGlorotUniform(),
                  bias_initializer=Zeros(),
-                 dtype=DEFAULT_COMPLEX_TYPE,    # TODO: Check typing of this.
+                 dtype=DEFAULT_COMPLEX_TYPE,  # TODO: Check typing of this.
                  **kwargs):
         """
         :param units: Positive integer, dimensionality of the output space.
-        :param activation: Activation function to use. 
+        :param activation: Activation function to use.
             Either from keras.activations or cvnn.activations. For complex dtype, only cvnn.activations module supported.
             If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
         :param use_bias: Boolean, whether the layer uses a bias vector.
@@ -160,7 +160,7 @@ class ComplexDense(Dense, ComplexLayer):
         return ComplexDense(units=int(round(self.units * output_multiplier)),
                             activation=self.activation, use_bias=self.use_bias,
                             kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
-                            dtype=self.my_dtype.real_dtype)
+                            dtype=self.my_dtype.real_dtype, name=self.name + "_real_equiv")
 
 
 class ComplexDropout(Layer, ComplexLayer):
@@ -207,7 +207,7 @@ class ComplexDropout(Layer, ComplexLayer):
             # I trust K.learning_phase() returns a correct boolean.
         if not training:
             return inputs
-        elif inputs.shape[0] is None:     # When testing the shape
+        elif inputs.shape[0] is None:  # When testing the shape
             return inputs
         drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
         y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))
@@ -216,7 +216,8 @@ class ComplexDropout(Layer, ComplexLayer):
         return y_out
 
     def get_real_equivalent(self):
-        return ComplexDropout(rate=self.rate, seed=self.seed, noise_shape=self.noise_shape)
+        return ComplexDropout(rate=self.rate, seed=self.seed, noise_shape=self.noise_shape,
+                              name=self.name + "_real_equiv")
 
     def get_config(self):
         config = {
@@ -293,7 +294,7 @@ class ComplexConv(Layer, ComplexLayer):
     def __init__(self, rank, filters, kernel_size, dtype, strides=1, padding='valid', data_format=None, dilation_rate=1,
                  groups=1, activation=None, use_bias=True,
                  kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
-                 kernel_regularizer=None, bias_regularizer=None,    # TODO: Not yet working
+                 kernel_regularizer=None, bias_regularizer=None,  # TODO: Not yet working
                  activity_regularizer=None, kernel_constraint=None, bias_constraint=None,
                  trainable=True, name=None, conv_op=None, **kwargs):
         if kernel_regularizer is not None or bias_regularizer is not None:
@@ -365,13 +366,13 @@ class ComplexConv(Layer, ComplexLayer):
                 name='kernel_r',
                 constraint=self.kernel_constraint,
                 trainable=True
-            )   # TODO: regularizer=self.kernel_regularizer,
+            )  # TODO: regularizer=self.kernel_regularizer,
             self.kernel_i = tf.Variable(
                 initial_value=self.kernel_initializer(shape=kernel_shape, dtype=self.my_dtype),
                 name='kernel_i',
                 constraint=self.kernel_constraint,
                 trainable=True
-            )   # TODO: regularizer=self.kernel_regularizer
+            )  # TODO: regularizer=self.kernel_regularizer
             if self.use_bias:
                 self.bias_r = tf.Variable(
                     initial_value=self.bias_initializer(shape=(self.filters,), dtype=self.my_dtype),
@@ -383,7 +384,7 @@ class ComplexConv(Layer, ComplexLayer):
                     name='bias_i',
                     constraint=self.bias_constraint,
                     trainable=True
-                )   # TODO: regularizer=self.bias_regularizer
+                )  # TODO: regularizer=self.bias_regularizer
         else:
             self.kernel = self.add_weight(
                 name='kernel',
@@ -598,7 +599,8 @@ class ComplexConv(Layer, ComplexLayer):
                            kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
                            kernel_regularizer=self.kernel_regularizer, bias_regularizer=self.bias_regularizer,
                            activity_regularizer=self.activity_regularizer, kernel_constraint=self.kernel_constraint,
-                           bias_constraint=self.bias_constraint, trainable=self.trainable, name=self.name+"_real_equiv")
+                           bias_constraint=self.bias_constraint, trainable=self.trainable,
+                           name=self.name + "_real_equiv")
 
 
 class ComplexConv1D(ComplexConv):
@@ -644,8 +646,8 @@ class ComplexConv1D(ComplexConv):
 class ComplexConv2D(ComplexConv):
     """2D convolution layer (e.g. spatial convolution over images).
       This layer creates a convolution kernel that is convolved
-      with the layer input to produce a tensor of outputs. 
-      If `use_bias` is True, a bias vector is created and added to the outputs. 
+      with the layer input to produce a tensor of outputs.
+      If `use_bias` is True, a bias vector is created and added to the outputs.
       Finally, if `activation` is not `None`, it is applied to the outputs as well.
       When using this layer as the first layer in a model, provide the keyword argument `input_shape`
       (tuple of integers, does not include the sample axis),
@@ -675,7 +677,7 @@ class ComplexConv2D(ComplexConv):
                  kernel_constraint=None, bias_constraint=None, **kwargs):
         """
         :param filters: Integer, the dimensionality of the output space (i.e. the number of output filters in the convolution).
-        :param kernel_size: An integer or tuple/list of 2 integers, specifying the height 
+        :param kernel_size: An integer or tuple/list of 2 integers, specifying the height
             and width of the 2D convolution window. Can be a single integer to specify
             the same value for all spatial dimensions.
         :param strides: An integer or tuple/list of 2 integers, specifying the strides of
@@ -864,10 +866,10 @@ class ComplexConv3D(ComplexConv):
 class ComplexPooling2D(Layer, ComplexLayer):
     """
     Pooling layer for arbitrary pooling functions, for 2D inputs (e.g. images).
-    Abstract class. This class only exists for code reuse. It will never be an exposed API.       
+    Abstract class. This class only exists for code reuse. It will never be an exposed API.
     """
 
-    def __init__(self, pool_size: Union[int, Tuple[int, int]] = (2, 2), 
+    def __init__(self, pool_size: Union[int, Tuple[int, int]] = (2, 2),
                  strides: Optional[Union[int, Tuple[int, int]]] = None,
                  padding: str = 'valid', data_format: Optional[str] = None,
                  name: Optional[str] = None, **kwargs):
@@ -889,7 +891,8 @@ class ComplexPooling2D(Layer, ComplexLayer):
             data_format = backend.image_data_format()
         if strides is None:
             strides = pool_size
-        self.pool_size = conv_utils.normalize_tuple(pool_size, 2, 'pool_size')      # Values are checked here. No need to check them latter.
+        self.pool_size = conv_utils.normalize_tuple(pool_size, 2,
+                                                    'pool_size')  # Values are checked here. No need to check them latter.
         self.strides = conv_utils.normalize_tuple(strides, 2, 'strides')
         self.padding = conv_utils.normalize_padding(padding)
         self.data_format = conv_utils.normalize_data_format(data_format)
@@ -949,7 +952,7 @@ class ComplexMaxPooling2D(ComplexPooling2D):
     Max pooling operation for 2D spatial data.
     Works for complex dtype using the absolute value to get the max.
     """
-    
+
     def pool_function(self, inputs, ksize, strides, padding, data_format):
         # The max is calculated with the absolute value. This will still work on real values.
         abs_in = tf.math.abs(inputs)
@@ -964,11 +967,11 @@ class ComplexMaxPooling2D(ComplexPooling2D):
 
     def get_real_equivalent(self):
         return ComplexMaxPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
-                                   data_format=self.data_format, name=f'real_{self.name}')
-    
+                                   data_format=self.data_format, name=self.name + "_real_equiv")
+
 
 class ComplexAvgPooling2D(ComplexPooling2D):
-    
+
     def pool_function(self, inputs, ksize, strides, padding, data_format):
         inputs_r = tf.math.real(inputs)
         inputs_i = tf.math.imag(inputs)
@@ -984,14 +987,14 @@ class ComplexAvgPooling2D(ComplexPooling2D):
 
     def get_real_equivalent(self):
         return ComplexAvgPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
-                                   data_format=self.data_format, name=f'real_{self.name}')
+                                   data_format=self.data_format, name=self.name + "_real_equiv")
 
 
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

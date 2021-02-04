@@ -119,6 +119,7 @@ class MonteCarlo:
                 if validation_data is not None:
                     validation_split = 0.0
                 model.set_weights(w_save[i])
+                set_trace()
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq)
