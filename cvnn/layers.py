@@ -597,8 +597,7 @@ class ComplexConv(Layer, ComplexLayer):
                            kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
                            kernel_regularizer=self.kernel_regularizer, bias_regularizer=self.bias_regularizer,
                            activity_regularizer=self.activity_regularizer, kernel_constraint=self.kernel_constraint,
-                           bias_constraint=self.bias_constraint, trainable=self.trainable, name=self.name,
-                           conv_op=self.conv_op)
+                           bias_constraint=self.bias_constraint, trainable=self.trainable, name=self.name+"_real_equiv")
 
 
 class ComplexConv1D(ComplexConv):
@@ -991,7 +990,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

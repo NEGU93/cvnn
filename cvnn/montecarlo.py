@@ -93,7 +93,7 @@ class MonteCarlo:
         """
         x, y = randomize(x, y)
         w_save = []
-        for model in self.models:       # ATTENTION: This will omake all models have the SAME weights, not ideal
+        for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
             w_save.append(model.get_weights())     # Save model weights
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
@@ -123,7 +123,6 @@ class MonteCarlo:
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq)
                 # TODO: Must have save_csv_history to do the montecarlo results latter
-                # 
                 # Save all results
                 temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
                 os.makedirs(temp_path, exist_ok=True)
