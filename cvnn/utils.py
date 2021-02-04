@@ -109,13 +109,14 @@ def transform_to_real(x_complex, polar=False):
         return x_complex
     m = np.shape(x_complex)[0]
     n = np.prod(np.shape(x_complex)[1:])
+    flat_x_complex = np.reshape(x_complex, (m, n))
     x_real = np.ones((m, 2*n))
     if not polar:
-        x_real[:, :n] = np.real(x_complex)
-        x_real[:, n:] = np.imag(x_complex)
+        x_real[:, :n] = np.real(flat_x_complex)
+        x_real[:, n:] = np.imag(flat_x_complex)
     else:
-        x_real[:, :n] = np.abs(x_complex)
-        x_real[:, n:] = np.angle(x_complex)
+        x_real[:, :n] = np.abs(flat_x_complex)
+        x_real[:, n:] = np.angle(flat_x_complex)
     return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*2))
 
 
@@ -180,6 +181,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.18'
+__version__ = '0.0.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -52,7 +52,8 @@ class ComplexInput(InputLayer, ComplexLayer):
                                            )
 
     def get_real_equivalent(self):
-        return ComplexInput(input_shape=self.input_shape, batch_size=self.batch_size, dtype=self.dtype,
+        real_input_shape = self.input_shape[:-1] + self.input_shape[-1]*2
+        return ComplexInput(input_shape=real_input_shape, batch_size=self.batch_size, dtype=self.dtype,
                             input_tensor=self.input_tensor, sparse=self.sparse, name=f'real_{self.name}',
                             ragged=self.ragged)
 
@@ -990,7 +991,7 @@ __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'
