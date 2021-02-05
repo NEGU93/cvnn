@@ -42,8 +42,8 @@ class MonteCarlo:
         self.pandas_full_data = pd.DataFrame()
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
         self.output_config = {
-            'plot_all': True,
-            'confusion_matrix': True,
+            'plot_all': False,
+            'confusion_matrix': False,
             'excel_summary': True,
             'debug': False,
             'summary_of_run': True,
