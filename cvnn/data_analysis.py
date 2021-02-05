@@ -231,19 +231,20 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
                 fig.show()
 
 
-def confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
-    # TODO: Assert matrices are not empty
-    categorical = (len(np.shape(y_label_np)) > 1)
-    if categorical:
+def get_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
+    assert len(np.shape(y_pred_np)) != 0, "y_pred_np was empty"
+    assert len(np.shape(y_label_np)) != 0, "y_label_np was empty"
+    if len(np.shape(y_pred_np)) > 1:
         y_pred_np = np.argmax(y_pred_np, axis=1)
+    if len(np.shape(y_label_np)) > 1:
         y_label_np = np.argmax(y_label_np, axis=1)
     y_pred_pd = pd.Series(y_pred_np, name='Predicted')
     y_label_pd = pd.Series(y_label_np, name='Actual')
-    df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True)
+    df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True, dropna=False)
     if filename is not None:
         df.to_csv(filename)
     # plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
-    return df
+    return df.fillna(0)
 
 
 # ----------------
@@ -1252,6 +1253,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.34'
+__version__ = '0.1.35'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

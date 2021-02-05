@@ -15,7 +15,7 @@ from tensorflow.keras import Model
 import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
-from cvnn.data_analysis import MonteCarloAnalyzer, Plotter
+from cvnn.data_analysis import MonteCarloAnalyzer, Plotter, get_confusion_matrix
 from cvnn.layers import ComplexDense, ComplexDropout
 from cvnn.utils import transform_to_real, randomize
 from cvnn.real_equiv_tools import get_real_equivalent
@@ -41,6 +41,13 @@ class MonteCarlo:
         self.models = []
         self.pandas_full_data = pd.DataFrame()
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
+        self.output_config = {
+            'plot_all': True,
+            'confusion_matrix': True,
+            'excel_summary': True,
+            'summary_of_run': True,
+            'safety_checkpoints': False
+        }
 
     def add_model(self, model: Type[Model]):
         """
@@ -98,7 +105,11 @@ class MonteCarlo:
         x, y = randomize(x, y)
         w_save = []
         for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
-            w_save.append(model.get_weights())     # Save model weights
+            w_save.append(model.get_weights())     # Save model weight
+        if do_conf_mat:
+            confusion_matrix = []
+            for mdl in self.models:
+                confusion_matrix.append({"name": mdl.name, "matrix": pd.DataFrame()})
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
         self.save_summary_of_run(self._run_summary(iterations, epochs, batch_size, shuffle),
@@ -135,6 +146,20 @@ class MonteCarlo:
                                                   sort=False)
                 # with open(temp_path / f'{model.name}_metadata.txt', 'w') as fh:
                 #    model.summary(print_fn=lambda x: fh.write(x + '\n'))
+                if do_conf_mat:
+                    if validation_data is not None:  # TODO: Haven't yet done all cases here!
+                        if model.inputs[0].dtype.is_complex:
+                            x_test, y_test = validation_data
+                        else:
+                            x_test, y_test = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
+                        try:
+                            confusion_matrix[i]["matrix"] = pd.concat((confusion_matrix[i]["matrix"],
+                                                                       get_confusion_matrix(model.predict(x_test),
+                                                                                            y_test)))
+                        except ValueError:
+                            logger.warning("ValueError: Could not do confusion matrix. No objects to concatenate.")
+                    else:
+                        print("Confusion matrix only available for validation_data")
             if not debug:
                 pbar.update()
             if checkpoints:
@@ -154,6 +179,16 @@ class MonteCarlo:
                                   dataset_size=str(x.shape[0]), features_size=str(x.shape[1:]),
                                   epochs=epochs, batch_size=batch_size
                                   )
+        if do_conf_mat:
+            for model_cm in confusion_matrix:
+                # If the first prediction does not predict a given class, the order will be wrong, so I sort it.
+                cm = model_cm['matrix']
+                cols = cm.columns.tolist()
+                strs = list(filter(lambda x: type(x) == str, cols)).sort()
+                ints = list(filter(lambda x: type(x) == int, cols)).sort()
+                cm_sorted = cm.fillna(0)[ints + strs]  # Sorted confusion matrix
+                model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
+                model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
         if plot_all:
             self.monte_carlo_analyzer.do_all()
 
@@ -172,7 +207,6 @@ class MonteCarlo:
             str(self.monte_carlo_analyzer.path), cvnn.__version__
         ]
         _create_excel_file(fieldnames, row_data, './log/monte_carlo_summary.xlsx')
-
 
     @staticmethod
     def _run_summary(iterations: int, epochs: int, batch_size: int, shuffle: bool) -> str:
@@ -262,7 +296,7 @@ class RealVsComplex(MonteCarlo):
         fieldnames = ['iterations', 'dataset', '# Classes', "Dataset Size", 'Feature Size', "Polar Mode",
                       "Optimizer", "Loss",
                       'epochs', 'batch size',
-                      "Winner", "CVNN median", "RVNN median", 'CVNN err', 'RVNN err',
+                      "Winner", "CVNN val median", "RVNN val median", 'CVNN err', 'RVNN err',
                       "CVNN train median", "RVNN train median",
                       'path', "cvnn version"
                       ]
@@ -276,7 +310,7 @@ class RealVsComplex(MonteCarlo):
                     complex_median_train, real_median_train,
                     str(self.monte_carlo_analyzer.path), cvnn.__version__
                     ]
-        percentage_cols = ['P', 'Q', 'R', 'S', 'T', 'U']
+        percentage_cols = ['P', 'Q', 'L', 'M']
         _create_excel_file(fieldnames, row_data, './log/rvnn_vs_cvnn_monte_carlo_summary.xlsx',
                            percentage_cols=percentage_cols)
 
