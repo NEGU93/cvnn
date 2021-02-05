@@ -184,8 +184,10 @@ class MonteCarlo:
                 # If the first prediction does not predict a given class, the order will be wrong, so I sort it.
                 cm = model_cm['matrix']
                 cols = cm.columns.tolist()
-                strs = list(filter(lambda x: type(x) == str, cols)).sort()
-                ints = list(filter(lambda x: type(x) == int, cols)).sort()
+                strs = list(filter(lambda x: type(x) == str, cols))
+                ints = list(filter(lambda x: type(x) == int, cols))
+                ints.sort()
+                strs.sort()
                 cm_sorted = cm.fillna(0)[ints + strs]  # Sorted confusion matrix
                 model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
                 model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
