@@ -177,6 +177,19 @@ def get_trailing_number(s):
     return int(os.path.splitext(m.group())[0]) if m else None
 
 
+def get_data_files_list(root_path):
+    """
+    Reads all files inside the root file (and sub-folders) and returns the list of those that end with TODO
+    :return: The list of all files
+    """
+    data_files = []
+    for path, subdirs, files in os.walk(root_path):
+        for name in files:
+            if name.endswith("run_data.csv"):
+                data_files.append(os.path.join(path, name))
+    return data_files
+
+
 # ----------------
 # Confusion Matrix
 # ----------------
@@ -491,17 +504,20 @@ class Plotter:
         Also saves the name of the file where it got the pandas frame as a label.
         This function is called by the constructor.
         """
-        self.pandas_list = []
-        self.labels = []
-        files = os.listdir(self.path)
-        files.sort()  # Respect the colors for the plot of Monte Carlo.
+        self.pandas_dict = {}
+        # files = os.listdir(self.path)  
         # For ComplexVsReal Monte Carlo it has first the Complex model and SECOND the real one.
         # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
         # TODO: Think a better way without loosing generality (This sort is all done because of the ComplexVsReal case)
-        for file in files:
-            if file.endswith(self.file_suffix):
-                self.pandas_list.append(pd.read_csv(self.path / file))
-                self.labels.append(re.sub(self.file_suffix + '$', '', file).replace('_', ' '))
+        for path, subdirs, files in os.walk(self.path):
+            files.sort()  # Respect the colors for the plot of Monte Carlo.
+            for file in files:
+                if file.endswith(self.file_suffix):
+                    label = re.sub(self.file_suffix + '$', '', file).replace('_', ' ')
+                    if self.pandas_dict.get(label) is None:
+                        self.pandas_dict[label] = pd.read_csv(Path(path) / file)
+                    else:
+                        self.pandas_dict[label] = pd.concat([self.pandas_dict[label] , pd.read_csv(Path(path) / file)], ignore_index=True)
 
     def reload_data(self):
         """
@@ -559,7 +575,7 @@ class Plotter:
                         extension=".svg"):
         if reload:
             self._csv_to_pandas()
-        if not len(self.pandas_list) != 0:
+        if not len(self.pandas_dict) != 0:
             logger.error("Empty pandas list to plot")
             return None
         for key in ["loss", "accuracy"]:
@@ -585,11 +601,11 @@ class Plotter:
         fig, ax = plt.subplots()
         ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         title = None
-        for i, data in enumerate(self.pandas_list):
+        for label, data in self.pandas_dict.items():
             if title is not None:
-                title += " vs. " + self.labels[i]
+                title += " vs. " + label
             else:
-                title = self.labels[i]
+                title = label
             for k in data:
                 if key in k:
                     if index_loc is not None:
@@ -597,7 +613,7 @@ class Plotter:
                             data = data[data['stats'] == 'mean']
                         else:
                             logger.warning("Warning: Trying to index an array without index")
-                    ax.plot(data[k], 'o-', label=(k.replace(key, '') + self.labels[i]).replace('_', ' '))
+                    ax.plot(data[k], 'o-', label=(k.replace(key, '') + label).replace('_', ' '))
         title += " " + key
         fig.legend(loc="upper right")
         ax.set_ylabel(key)
@@ -616,11 +632,13 @@ class Plotter:
         fig = go.Figure()
         annotations = []
         title = None
-        for i, data in enumerate(self.pandas_list):
+        i = 0
+        for label, data in self.pandas_dict.items():
+            i += 1
             if title is not None:
-                title += " vs. " + self.labels[i]
+                title += " vs. " + label
             else:
-                title = self.labels[i]
+                title = label
             j = 0
             for k in data:
                 if key in k:
@@ -633,7 +651,7 @@ class Plotter:
                             logger.warning("Trying to index an array without index")
                     x = list(range(len(data[k])))
                     fig.add_trace(go.Scatter(x=x, y=data[k], mode='lines',
-                                             name=(k.replace(key, '') + self.labels[i]).replace('_', ' '),
+                                             name=(k.replace(key, '') + label).replace('_', ' '),
                                              line_color=color))
                     # Add points
                     fig.add_trace(go.Scatter(x=[x[-1]],
@@ -715,23 +733,40 @@ class MonteCarloPlotter(Plotter):
                            self._plot_line_confidence_interval_matplotlib.__name__ + " was called but will be omitted")
             return None
         fig, ax = plt.subplots()
-        for i, data in enumerate(self.pandas_list):
+        for i, (label, data) in enumerate(self.pandas_dict.items()):
             x = data[x_axis].unique().tolist()
             data_mean = data[data['stats'] == 'mean'][key].tolist()
-            data_max = data[data['stats'] == 'max'][key].tolist()
-            data_min = data[data['stats'] == 'min'][key].tolist()
-            data_50 = data[data['stats'] == '50%'][key].tolist()
-            data_25 = data[data['stats'] == '25%'][key].tolist()
-            data_75 = data[data['stats'] == '75%'][key].tolist()
+            if len(x) == len(data_mean):
+                data_max = data[data['stats'] == 'max'][key].tolist()
+                data_min = data[data['stats'] == 'min'][key].tolist()
+                data_50 = data[data['stats'] == '50%'][key].tolist()
+                data_25 = data[data['stats'] == '25%'][key].tolist()
+                data_75 = data[data['stats'] == '75%'][key].tolist()
+            else:
+                data_mean = []
+                data_max = []
+                data_min = []
+                data_50 = []
+                data_25 = []
+                data_75 = []
+                for ep in x:
+                    filter = [a == ep for a in data.epoch]
+                    stats = data[filter][key].describe()
+                    data_mean.append(stats['mean'])
+                    data_max.append(stats['max'])
+                    data_min.append(stats['min'])
+                    data_50.append(stats['50%'])
+                    data_25.append(stats['25%'])
+                    data_75.append(stats['75%'])
             ax.plot(x, data_mean, color=DEFAULT_MATPLOTLIB_COLORS[i],
-                    label=self.labels[i].replace('_', ' ') + ' mean')
+                    label=label.replace('_', ' ') + ' mean')
             ax.plot(x, data_50, '--', color=DEFAULT_MATPLOTLIB_COLORS[i],
-                    label=self.labels[i].replace('_', ' ') + ' median')
+                    label=label.replace('_', ' ') + ' median')
             ax.fill_between(x, data_25, data_75, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.4,
-                            label=self.labels[i].replace('_', ' ') + ' interquartile')
+                            label=label.replace('_', ' ') + ' interquartile')
             ax.fill_between(x, data_min, data_max, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.15,
-                            label=self.labels[i].replace('_', ' ') + ' border')
-        for label in self.labels:
+                            label=label.replace('_', ' ') + ' border')
+        for label in self.pandas_dict.keys():
             title += label.replace('_', ' ') + ' vs '
         title = title[:-3] + key
 
@@ -762,16 +797,34 @@ class MonteCarloPlotter(Plotter):
                            " was called but will be omitted")
             return None
         fig = go.Figure()
-        for i, data in enumerate(self.pandas_list):
+        for i, (label, data) in enumerate(self.pandas_dict.items()):
             # set_trace()
             x = data[x_axis].unique().tolist()
             x_rev = x[::-1]
             data_mean = data[data['stats'] == 'mean'][key].tolist()
-            data_max = data[data['stats'] == 'max'][key].tolist()
-            data_min = data[data['stats'] == 'min'][key][::-1].tolist()
-            data_50 = data[data['stats'] == '50%'][key].tolist()
-            data_25 = data[data['stats'] == '25%'][key][::-1].tolist()
-            data_75 = data[data['stats'] == '75%'][key].tolist()
+            if len(x) == len(data_mean):
+                data_max = data[data['stats'] == 'max'][key].tolist()
+                data_min = data[data['stats'] == 'min'][key][::-1].tolist()
+                data_50 = data[data['stats'] == '50%'][key].tolist()
+                data_25 = data[data['stats'] == '25%'][key][::-1].tolist()
+                data_75 = data[data['stats'] == '75%'][key].tolist()
+            else:
+                data_mean = []
+                data_max = []
+                data_min = []
+                data_50 = []
+                data_25 = []
+                data_75 = []
+                for ep in x:
+                    filter = [a == ep for a in data.epoch]
+                    stats = data[filter][key].describe()
+                    data_mean.append(stats['mean'])
+                    data_max.append(stats['max'])
+                    data_min.append(stats['min'])
+                    data_50.append(stats['50%'])
+                    data_25.append(stats['25%'])
+                    data_75.append(stats['75%'])
+  
             # set_trace()
             if full_border:
                 fig.add_trace(go.Scatter(
@@ -781,7 +834,7 @@ class MonteCarloPlotter(Plotter):
                     fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.1),
                     line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
                     showlegend=True,
-                    name=self.labels[i].replace('_', ' ') + " borders",
+                    name=label.replace('_', ' ') + " borders",
                 ))
             fig.add_trace(go.Scatter(
                 x=x + x_rev,
@@ -790,17 +843,17 @@ class MonteCarloPlotter(Plotter):
                 fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.2),
                 line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
                 showlegend=True,
-                name=self.labels[i].replace('_', ' ') + " interquartile",
+                name=label.replace('_', ' ') + " interquartile",
             ))
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean,
                 line_color=DEFAULT_PLOTLY_COLORS[i],
-                name=self.labels[i].replace('_', ' ') + " mean",
+                name=label.replace('_', ' ') + " mean",
             ))
             fig.add_trace(go.Scatter(
                 x=x, y=data_50,
                 line=dict(color=DEFAULT_PLOTLY_COLORS[i], dash='dash'),
-                name=self.labels[i].replace('_', ' ') + " median",
+                name=label.replace('_', ' ') + " median",
             ))
         for label in self.labels:
             title += label.replace('_', ' ') + ' vs '
@@ -826,24 +879,24 @@ class MonteCarloPlotter(Plotter):
             return None
         fig = go.Figure()
         # test plots
-        label = 'mean'
+        filter_label = 'mean'
         if median:
-            label = '50%'
-        for i, data in enumerate(self.pandas_list):
+            filter_label = '50%'
+        for i, (label, data) in enumerate(self.pandas_dict.items()):
             x = data[x_axis].unique().tolist()
-            data_mean_test = data[data['stats'] == label]["test " + key].tolist()
+            data_mean_test = data[data['stats'] == filter_label]["val_" + key].tolist()
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean_test,
                 line_color=DEFAULT_PLOTLY_COLORS[i],
-                name=self.labels[i] + " test",
+                name=label + " test",
             ))
-            data_mean_train = data[data['stats'] == label]["train " + key].tolist()
+            data_mean_train = data[data['stats'] == filter_label][key].tolist()
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean_train,
                 line_color=DEFAULT_PLOTLY_COLORS[i + len(self.pandas_list)],
-                name=self.labels[i].replace("_", " ") + " train ",
+                name=label.replace("_", " ") + " train ",
             ))
-        title = "train and test " + key + " " + label.replace("50%", "median")
+        title = "train and test " + key + " " + filter_label.replace("50%", "median")
         fig.update_traces(mode='lines')
         fig.update_layout(title=title, xaxis_title=x_axis, yaxis_title=key)
 
@@ -851,7 +904,7 @@ class MonteCarloPlotter(Plotter):
             os.makedirs(self.path / "plots/lines/", exist_ok=True)
             plotly.offline.plot(fig,
                                 filename=str(self.path / ("plots/lines/montecarlo_" + key.replace(" ", "_")))
-                                         + "_" + label.replace("50%", "median") + ".html",
+                                         + "_" + filter_label.replace("50%", "median") + ".html",
                                 config=PLOTLY_CONFIG, auto_open=showfig)
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
@@ -866,10 +919,17 @@ class MonteCarloAnalyzer:
             self.path = Path(path)
             self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
         elif path is not None and df is None:  # Load df from Path
-            if not path.endswith('.csv'):
-                path += '.csv'
-            self.df = pd.read_csv(Path(path))  # Path(__file__).parents[1].absolute() /
-            self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
+            if not path.endswith("run_data.csv") or not path.endswith("run_data"): 
+                self.df = pd.DataFrame()
+                data_files = get_data_files_list(path)
+                for file in data_files:
+                    self.df = pd.concat([self.df, pd.read_csv(Path(file))])
+                self.path = Path(path)
+            else:
+                if not path.endswith('.csv'):
+                    path += '.csv'
+                self.df = pd.read_csv(Path(path))  # Path(__file__).parents[1].absolute() /
+                self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
         elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./log/montecarlo/")
             self.df = df  # DataFrame with all the data
@@ -931,6 +991,7 @@ class MonteCarloAnalyzer:
                     self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
                 except:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
+                    set_trace()
                 try:
                     self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
                 except np.linalg.LinAlgError:
@@ -938,12 +999,14 @@ class MonteCarloAnalyzer:
                                    exc_info=True)
                 except:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
+                    set_trace()
                 try:
                     self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib,
                                                                            showfig=showfig, savefig=savefig)
                 except:
                     logger.warning("Could not plot " + key + " line_confidence_interval with " + str(lib),
                                    exc_info=True)
+                    set_trace()
 
     def box_plot(self, epoch=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
@@ -1233,12 +1296,17 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    path = "/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/06Tuesday/run-16h58m53/run_data.csv"
+    path = "C:\\Users\\NEGU93\\Desktop\\02février"
     monte = MonteCarloAnalyzer(path=path)
-    monte.do_all(showfig=False, savefig=False)
-    monte.plot_histogram(library='matplotlib', showfig=False, savefig=False)
-    monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=False)
-    monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=False)
+    # monte.do_all(showfig=False, savefig=True)
+    # set_trace()
+    # monte.plot_histogram(library='matplotlib', showfig=False, savefig=True)
+    # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True)
+    # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True, key='loss', median=True)
+    # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True, key='accuracy')
+    # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True, key='accuracy', median=True)
+    # set_trace()
+    monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=True)
     """
     paths = [
         '/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/06Tuesday/run-16h58m53/run_data',
