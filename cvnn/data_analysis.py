@@ -488,9 +488,8 @@ class Plotter:
         if not file_suffix.endswith(".csv"):
             file_suffix += ".csv"
         self.file_suffix = file_suffix
-        self.pandas_list = []
-        self.labels = []
         self.model_name = model_name
+        self.pandas_dict = {}
         
         if data_results_dict:
             result_pandas = pd.DataFrame.from_dict(data_results_dict)
@@ -514,10 +513,16 @@ class Plotter:
             for file in files:
                 if file.endswith(self.file_suffix):
                     label = re.sub(self.file_suffix + '$', '', file).replace('_', ' ')
-                    if self.pandas_dict.get(label) is None:
-                        self.pandas_dict[label] = pd.read_csv(Path(path) / file)
+                    tmp_df = pd.read_csv(Path(path) / file)
+                    filter = [e == max(tmp_df.epoch) and s == 'mean' for e, s in zip(tmp_df.epoch, tmp_df.stats)]
+                    th = 0.3
+                    if (tmp_df[filter].val_accuracy > th).all():
+                        if self.pandas_dict.get(label) is None:
+                            self.pandas_dict[label] = tmp_df
+                        else:
+                            self.pandas_dict[label] = pd.concat([self.pandas_dict[label] , tmp_df], ignore_index=True)
                     else:
-                        self.pandas_dict[label] = pd.concat([self.pandas_dict[label] , pd.read_csv(Path(path) / file)], ignore_index=True)
+                        print(tmp_df[filter].val_accuracy)
 
     def reload_data(self):
         """
@@ -537,13 +542,14 @@ class Plotter:
         """
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
         self._csv_to_pandas()
-        if len(self.pandas_list) == 0:
+        if bool(self.pandas_dict):
             logger.error("Error: There was no csv logs to open")
             sys.exit(-1)
-        length = len(self.pandas_list[0])
-        for data_frame in self.pandas_list:  # TODO: Check if.
+        """
+        length = len(self.pandas_dict.values()[0])
+        for data_frame in self.pandas_dict.values():  # TODO: Check if.
             if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?
-                logger.error("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))
+                logger.error("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))"""
 
         result = pd.DataFrame({
             'network': [self.get_net_name()] * length,
@@ -551,7 +557,7 @@ class Plotter:
             'path': [self.path] * length
         })
 
-        for data_frame, data_label in zip(self.pandas_list, self.labels):
+        for data_label, data_frame in self.pandas_dict.items():
             # data_frame.columns = [data_label + " " + str(col) for col in data_frame.columns]
             # concatenated = pd.concat(self.pandas_list, keys=self.labels)
             result = pd.concat([result, data_frame], axis=1, sort=False)
@@ -642,7 +648,7 @@ class Plotter:
             j = 0
             for k in data:
                 if key in k:
-                    color = DEFAULT_PLOTLY_COLORS[j * len(self.pandas_list) + i]
+                    color = DEFAULT_PLOTLY_COLORS[j * len(self.pandas_dict.values()) + i]
                     j += 1
                     if index_loc is not None:
                         if 'stats' in data.keys():
@@ -824,7 +830,8 @@ class MonteCarloPlotter(Plotter):
                     data_50.append(stats['50%'])
                     data_25.append(stats['25%'])
                     data_75.append(stats['75%'])
-  
+                data_min.reverse()
+                data_25.reverse()
             # set_trace()
             if full_border:
                 fig.add_trace(go.Scatter(
@@ -855,7 +862,7 @@ class MonteCarloPlotter(Plotter):
                 line=dict(color=DEFAULT_PLOTLY_COLORS[i], dash='dash'),
                 name=label.replace('_', ' ') + " median",
             ))
-        for label in self.labels:
+        for label in self.pandas_dict.keys():
             title += label.replace('_', ' ') + ' vs '
         title = title[:-3] + key
 
@@ -893,7 +900,7 @@ class MonteCarloPlotter(Plotter):
             data_mean_train = data[data['stats'] == filter_label][key].tolist()
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean_train,
-                line_color=DEFAULT_PLOTLY_COLORS[i + len(self.pandas_list)],
+                line_color=DEFAULT_PLOTLY_COLORS[i + len(self.pandas_dict.keys())],
                 name=label.replace("_", " ") + " train ",
             ))
         title = "train and test " + key + " " + filter_label.replace("50%", "median")
@@ -923,7 +930,11 @@ class MonteCarloAnalyzer:
                 self.df = pd.DataFrame()
                 data_files = get_data_files_list(path)
                 for file in data_files:
-                    self.df = pd.concat([self.df, pd.read_csv(Path(file))])
+                    tmp_df = pd.read_csv(Path(file))
+                    filter = [e == max(tmp_df.epoch) and n == 'complex_model' for e, n in zip(tmp_df.epoch, tmp_df.network)]
+                    th = 0.3
+                    if (tmp_df[filter].val_accuracy > th).all():
+                        self.df = pd.concat([self.df, tmp_df])
                 self.path = Path(path)
             else:
                 if not path.endswith('.csv'):
@@ -991,22 +1002,17 @@ class MonteCarloAnalyzer:
                     self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
                 except:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
-                    set_trace()
                 try:
                     self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
                 except np.linalg.LinAlgError:
-                    logger.warning("Could not plot Histogram with " + str(lib) + " because matrix was singular",
-                                   exc_info=True)
+                    logger.warning(f"Could not plot Histogram with {lib} because matrix was singular", exc_info=True)
                 except:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
-                    set_trace()
                 try:
                     self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib,
                                                                            showfig=showfig, savefig=savefig)
                 except:
-                    logger.warning("Could not plot " + key + " line_confidence_interval with " + str(lib),
-                                   exc_info=True)
-                    set_trace()
+                    logger.warning(f"Could not plot {key} line_confidence_interval with {lib}", exc_info=True)
 
     def box_plot(self, epoch=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
         if library == 'plotly':
@@ -1263,7 +1269,8 @@ class MonteCarloAnalyzer:
             logger.warning("No Seaborn installed, function " + self._plot_histogram_seaborn.__name__ +
                            " was called but will be omitted")
             return None
-        fig = plt.figure()
+        fig, ax = plt.subplots()
+        ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
@@ -1298,7 +1305,7 @@ class MonteCarloAnalyzer:
 if __name__ == "__main__":
     path = "C:\\Users\\NEGU93\\Desktop\\02février"
     monte = MonteCarloAnalyzer(path=path)
-    # monte.do_all(showfig=False, savefig=True)
+    monte.do_all(showfig=False, savefig=True)
     # set_trace()
     # monte.plot_histogram(library='matplotlib', showfig=False, savefig=True)
     # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True)
@@ -1306,7 +1313,7 @@ if __name__ == "__main__":
     # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True, key='accuracy')
     # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True, key='accuracy', median=True)
     # set_trace()
-    monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=True)
+    # monte.monte_carlo_plotter.plot_everything(showfig=False, savefig=True)
     """
     paths = [
         '/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2020/10October/06Tuesday/run-16h58m53/run_data',
