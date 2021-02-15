@@ -36,7 +36,7 @@ Monte Carlo Analyzer
 
 .. py:method:: box_plot(self, epoch=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg')
 
-    Saves/shows a box plot of the results.
+    Saves/shows a box plot of the results. [BOX-PLOT]_
 
     :param epoch: Which epoch to use for the box plot. If :code:`-1` (default) it will use the last epoch.
     :param library: string stating the library to be used to generate the box plot. Either `plotly <https://plotly.com/python/>`_ or `seaborn <https://seaborn.pydata.org/>`_
@@ -72,3 +72,6 @@ Monte Carlo Analyzer
 
 .. raw:: html
    :file: ../_static/data_analysis_examples/montecarlo_test_accuracy_histogram.html
+
+
+.. [BOX-PLOT] Williamson, David F., Robert A. Parker, and Juliette S. Kendrick. "The box plot: a simple visual method to interpret data." Annals of internal medicine 110.11 (1989): 916-921.
