@@ -913,7 +913,29 @@ class MonteCarloPlotter(Plotter):
 
 class MonteCarloAnalyzer:
 
+    """
+    This class helps organizing Monte Carlo class results and plotting them.
+    This class works with the run_data.csv generated with cvnn.montecarlo.MonteCarlo class
+    """
+
     def __init__(self, df=None, path=None):
+        """
+        There are 2 ways to use this class:
+            1. Either give the data as a pandas DataFrame.
+            2. Or give a file path to the `run_data.csv` file generated with `cvnn.montecarlo.MonteCarlo` class.
+        The class will generate the corresponding csv file (if option 1)
+            or obtain the dataframe from the csv file (option 2).
+        :param df: pandas DataFrame with the data to be plotted.
+        :param path: Optional
+            1. If df was given, this can be the a path for MonteCarloAnalyzer to save a `run_data.csv` file.
+                If path is not given, it will use the default path `./log/montecarlo/<year>/<month>/<day>/run_<time>/`
+            2. If df is not given, path should be:
+                - The full path and filename for the run_data.csv to be plotted
+                - A path to search of ALL `run_data.csv` that it can find (even within subfolders).
+                    This is useful when you want to plot together different MonteCarlo.run() results.
+                    This enables to run two simulations of 50 iterations each and plot them as if
+                        it was a single run of 100 iterations.
+        """
         self.confusion_matrix = []
         if path is not None and df is not None:  # I have data and the place where I want to save it
             self.df = df  # DataFrame with all the data
@@ -984,10 +1006,16 @@ class MonteCarloAnalyzer:
     # ------------
 
     def do_all(self, extension=".svg", showfig=False, savefig=True):
-        """self.monte_carlo_plotter.plot_train_vs_test(key='loss')
-        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy')
-        self.monte_carlo_plotter.plot_train_vs_test(key='loss', median=True)
-        self.monte_carlo_plotter.plot_train_vs_test(key='accuracy', median=True)"""
+        """
+        Plots box plot, histogram and confidence interval (using :code:`MonteCarloPlotter`) for both
+            1. plotly
+            2. seaborn
+        And for keys:
+            1. val_accuracy
+            2. val_loss
+            3. accuracy
+            4. loss
+        """
 
         key_list = ['accuracy', 'loss', 'val_accuracy', 'val_loss']
         for key in key_list:
@@ -1009,7 +1037,20 @@ class MonteCarloAnalyzer:
                 except:
                     logger.warning(f"Could not plot {key} line_confidence_interval with {lib}", exc_info=True)
 
-    def box_plot(self, epoch=-1, library='plotly', key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
+    def box_plot(self, epoch: int = -1, library: str = 'plotly', key: str = 'val_accuracy',
+                 showfig: bool = False, savefig: bool = True, extension: str = '.svg'):
+        """
+        Saves/shows a box plot of the results.
+        :param epoch: Which epoch to use for the box plot. If -1 (default) it will use the last epoch.
+        :param library: string stating the library to be used to generate the box plot.
+            - `plotly <https://plotly.com/python/>`_
+            - `seaborn <https://seaborn.pydata.org/>`_
+        :param key: String stating what to plot using tf.keras.History labels. ex. `val_accuracy` for the validation acc
+        :param showfig: If True, it will show the grated box plot
+        :param savefig: If True, it saves the figure at: self.path / "plots/box_plot/"
+        :param extension: file extensions (default svg) to be used when saving the file
+            (only used when library is seaborn).
+        """
         if library == 'plotly':
             self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig)
         elif library == 'seaborn':
@@ -1177,8 +1218,23 @@ class MonteCarloAnalyzer:
                                     "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_3d_histogram.html")),
                             config=PLOTLY_CONFIG, auto_open=False)
 
-    def plot_histogram(self, key='val_accuracy', epoch=-1, library='seaborn', showfig=False, savefig=True, title='',
-                       extension=".svg"):
+    def plot_histogram(self, key: str = 'val_accuracy', epoch: int = -1, library: str = 'seaborn',
+                       showfig: bool = False, savefig: bool = True, title: str = '', extension: str = ".svg"):
+        """
+        Saves/shows a histogram of the results.
+
+        :param epoch: Which epoch to use for the box plot. If -1 (default) it will use the last epoch.
+        :param library: string stating the library to be used to generate the box plot.
+            - `matplotlib <https://matplotlib.org/stable/index.html>`_
+            - `plotly <https://plotly.com/python/>`_
+            - `seaborn <https://seaborn.pydata.org/>`_
+        :param key: String stating what to plot using tf.keras.History labels. ex. `val_accuracy` for the validation acc
+        :param showfig: If True, it will show the grated box plot
+        :param savefig: If True, it saves the figure at: self.path / "plots/box_plot/"
+        :param title: Figure title
+        :param extension: file extensions (default svg) to be used when saving the file
+            (ignored if library is plotly).
+        """
         if library == 'matplotlib':
             self._plot_histogram_matplotlib(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title,
                                             extension=extension)
@@ -1323,6 +1379,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.37'
+__version__ = '0.1.38'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -1,7 +1,7 @@
-Results
-=======
+Publication results
+===================
 
-This sections shows results of simulations already done, mainly comparing RVNN with CVNN.
+This sections shows how to recreate the code of already published articles.
 
 .. toctree::
 	:maxdepth: 2
