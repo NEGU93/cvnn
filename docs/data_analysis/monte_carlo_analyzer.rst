@@ -1,5 +1,9 @@
+.. _monte-carlo-analyzer:
+
 Monte Carlo Analyzer
 --------------------
+
+.. note:: All seaborn and matplotlib saved figures also generates a tikz figure (.tex) for LaTeX reports.
 
 **Small code example**
 
@@ -60,7 +64,7 @@ Monte Carlo Analyzer
 
     Saves/shows a histogram of the results.
 
-    :param epoch: Which epoch to use for the box plot. If :code:`-1` (default) it will use the last epoch.
+    :param epoch: Which epoch to use for the histogram. If :code:`-1` (default) it will use the last epoch.
     :param library: string stating the library to be used to generate the box plot. Either `plotly <https://plotly.com/python/>`_ or `seaborn <https://seaborn.pydata.org/>`_
     :param key: String stating what to plot using :code:`tf.keras.History` labels. ex. :code:`val_accuracy`, :code:`val_loss`, :code:`accuracy` or :code:`loss`.
     :param showfig: If True, it will show the grated box plot
