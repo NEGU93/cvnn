@@ -73,7 +73,7 @@ def get_real_equivalent(complex_model: Type[Sequential], classifier: bool = True
     if name is None:
         name = f"{complex_model.name}_real_equiv"
     real_equiv = Sequential(real_shape, name=name)
-    real_equiv.compile(optimizer=complex_model.optimizer.__class__(), loss=complex_model.loss.__class__(),
+    real_equiv.compile(optimizer=complex_model.optimizer.__class__(), loss=complex_model.loss,
                        metrics=['accuracy'])
     return real_equiv
 

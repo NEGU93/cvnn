@@ -494,7 +494,6 @@ class Plotter:
         if data_results_dict:
             result_pandas = pd.DataFrame.from_dict(data_results_dict)
             result_pandas.to_csv(self.path / f"{model_name}{file_suffix}", index=False)
-        
         self._csv_to_pandas()
 
     def _csv_to_pandas(self):
@@ -503,7 +502,7 @@ class Plotter:
         Also saves the name of the file where it got the pandas frame as a label.
         This function is called by the constructor.
         """
-        self.pandas_dict = {}
+        # self.pandas_dict = {}
         # files = os.listdir(self.path)  
         # For ComplexVsReal Monte Carlo it has first the Complex model and SECOND the real one.
         # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
@@ -514,13 +513,11 @@ class Plotter:
                 if file.endswith(self.file_suffix):
                     label = re.sub(self.file_suffix + '$', '', file).replace('_', ' ')
                     tmp_df = pd.read_csv(Path(path) / file)
-                    # filter = [e == max(tmp_df.epoch) and s == 'mean' for e, s in zip(tmp_df.epoch, tmp_df.stats)]
-                    # th = 0.3
-                    # if (tmp_df[filter].val_accuracy > th).all():
                     if self.pandas_dict.get(label) is None:
                         self.pandas_dict[label] = tmp_df
                     else:
                         self.pandas_dict[label] = pd.concat([self.pandas_dict[label], tmp_df], ignore_index=True)
+        # set_trace()
 
     def reload_data(self):
         """
@@ -539,15 +536,15 @@ class Plotter:
         :retun: pd.Dataframe
         """
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
+        print("get full pandas df")
         self._csv_to_pandas()
-        if bool(self.pandas_dict):
-            logger.error("Error: There was no csv logs to open")
-            sys.exit(-1)
-
-        length = len(self.pandas_dict.values()[0])  # TODO: Debug
+        if not bool(self.pandas_dict):
+            # logger.error("Error: There was no csv logs to open")
+            raise IOError("There was no csv logs to open")
+        length = len(next(iter(self.pandas_dict.values())))
         for data_frame in self.pandas_dict.values():  # TODO: Check if.
             if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?
-                logger.error("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))
+                raise ValueError("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))
 
         result = pd.DataFrame({
             'network': [self.get_net_name()] * length,
@@ -1327,6 +1324,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.35'
+__version__ = '0.1.36'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

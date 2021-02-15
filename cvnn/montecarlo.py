@@ -186,6 +186,7 @@ class MonteCarlo:
         # Save all results
         temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{model_index}_{model.name}"
         os.makedirs(temp_path, exist_ok=True)
+        print("Creating plotter from results")
         plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
         self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
         if self.output_config['confusion_matrix']:
@@ -279,7 +280,7 @@ class RealVsComplex(MonteCarlo):
 
     def __init__(self, complex_model: Type[Model], capacity_equivalent: bool = True, equiv_technique: str = 'ratio'):
         """
-        :param complex_model: cvnn.CvnnModel
+        :param complex_model: Complex keras model (ex: sequential)
         :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
                         trainable parameters (capacity equivalent according to: https://arxiv.org/abs/1811.12351)
             - True, it creates a capacity-equivalent model in terms of trainable parameters
