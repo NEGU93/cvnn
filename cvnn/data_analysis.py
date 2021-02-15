@@ -514,15 +514,13 @@ class Plotter:
                 if file.endswith(self.file_suffix):
                     label = re.sub(self.file_suffix + '$', '', file).replace('_', ' ')
                     tmp_df = pd.read_csv(Path(path) / file)
-                    filter = [e == max(tmp_df.epoch) and s == 'mean' for e, s in zip(tmp_df.epoch, tmp_df.stats)]
-                    th = 0.3
-                    if (tmp_df[filter].val_accuracy > th).all():
-                        if self.pandas_dict.get(label) is None:
-                            self.pandas_dict[label] = tmp_df
-                        else:
-                            self.pandas_dict[label] = pd.concat([self.pandas_dict[label] , tmp_df], ignore_index=True)
+                    # filter = [e == max(tmp_df.epoch) and s == 'mean' for e, s in zip(tmp_df.epoch, tmp_df.stats)]
+                    # th = 0.3
+                    # if (tmp_df[filter].val_accuracy > th).all():
+                    if self.pandas_dict.get(label) is None:
+                        self.pandas_dict[label] = tmp_df
                     else:
-                        print(tmp_df[filter].val_accuracy)
+                        self.pandas_dict[label] = pd.concat([self.pandas_dict[label], tmp_df], ignore_index=True)
 
     def reload_data(self):
         """
@@ -545,11 +543,11 @@ class Plotter:
         if bool(self.pandas_dict):
             logger.error("Error: There was no csv logs to open")
             sys.exit(-1)
-        """
-        length = len(self.pandas_dict.values()[0])
+
+        length = len(self.pandas_dict.values()[0])  # TODO: Debug
         for data_frame in self.pandas_dict.values():  # TODO: Check if.
             if not length == len(data_frame):  # What happens if NaN? Can I cope not having same len?
-                logger.error("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))"""
+                logger.error("Data frame length should have been {0} and was {1}".format(length, len(data_frame)))
 
         result = pd.DataFrame({
             'network': [self.get_net_name()] * length,
@@ -931,10 +929,11 @@ class MonteCarloAnalyzer:
                 data_files = get_data_files_list(path)
                 for file in data_files:
                     tmp_df = pd.read_csv(Path(file))
-                    filter = [e == max(tmp_df.epoch) and n == 'complex_model' for e, n in zip(tmp_df.epoch, tmp_df.network)]
-                    th = 0.3
-                    if (tmp_df[filter].val_accuracy > th).all():
-                        self.df = pd.concat([self.df, tmp_df])
+                    # filter = [e == max(tmp_df.epoch) and n == 'complex_model' for e, n in
+                    #           zip(tmp_df.epoch, tmp_df.network)]
+                    # th = 0.3
+                    # if (tmp_df[filter].val_accuracy > th).all():
+                    self.df = pd.concat([self.df, tmp_df])
                 self.path = Path(path)
             else:
                 if not path.endswith('.csv'):

@@ -52,7 +52,7 @@ class MonteCarlo:
 
     def add_model(self, model: Type[Model]):
         """
-        Adds a cvnn.CvnnModel to the list to then comparate between them
+        Adds a cvnn.CvnnModel to the list to then compare between them
         """
         self.models.append(model)
 
