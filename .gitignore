@@ -4,7 +4,6 @@ log/
 out/
 data/
 results/
-montecarlo/
 cvnn.egg-info/
 docs/_build/html/.doctrees/
 docs/_build/html/.buildinfo/
