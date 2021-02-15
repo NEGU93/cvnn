@@ -536,7 +536,6 @@ class Plotter:
         :retun: pd.Dataframe
         """
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/merging.html
-        print("get full pandas df")
         self._csv_to_pandas()
         if not bool(self.pandas_dict):
             # logger.error("Error: There was no csv logs to open")
@@ -1324,6 +1323,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.36'
+__version__ = '0.1.37'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

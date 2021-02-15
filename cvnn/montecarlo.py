@@ -186,7 +186,6 @@ class MonteCarlo:
         # Save all results
         temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{model_index}_{model.name}"
         os.makedirs(temp_path, exist_ok=True)
-        print("Creating plotter from results")
         plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
         self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
         if self.output_config['confusion_matrix']:
