@@ -9,6 +9,7 @@ from pdb import set_trace
 from cvnn.utils import create_folder
 import logging
 import cvnn
+from typing import Optional
 
 logger = logging.getLogger(cvnn.__name__)
 AVAILABLE_LIBRARIES = set()
@@ -266,34 +267,37 @@ def get_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None
 
 
 class SeveralMonteCarloComparison:
+    """
+    This class is used to compare several monte carlo runs done with cvnn.montecarlo.MonteCarlo class.
+    MonteCarlo let's you compare different models between them but let's you not change other values like epochs.
+    You can run as several MonteCarlo runs and then use SeveralMonteCarloComparison class to compare the results.
+
+    Example of usage:
+
+    ```
+    paths = []
+    # Run several Monte Carlo's
+    for learning_rate in learning_rates:
+        monte_carlo = RealVsComplex(complex_network)
+        result_path = monte_carlo.run(x, y, iterations=iterations, learning_rate=learning_rate,
+                        epochs=epochs, batch_size=batch_size, display_freq=display_freq,
+                        shuffle=True, debug=debug, data_summary=dataset.summary())
+        paths.append(result_path)
+    # paths will look something like ["path/to/1st/run/run_data",
+    #                                 "path/to/2nd/run/run_data",
+    #                                 "path/to/3rd/run/run_data",
+    #                                 "path/to/4th/run/run_data"]
+    # Run self
+    several = SeveralMonteCarloComparison('learning rate', x = learning_rates, paths =paths)
+    several.box_plot(showfig=True)
+    ```
+    """
 
     def __init__(self, label, x, paths, round=2):
         """
-        This class is used to compare several monte carlo runs done with cvnn.montecarlo.MonteCarlo class.
-        MonteCarlo let's you compare different models between them but let's you not change other values like epochs.
-        You can run as several MonteCarlo runs and then use SeveralMonteCarloComparison class to compare the results.
-
-        Example of usage:
-
-        ```
-        # Run several Monte Carlo's
-        for learning_rate in learning_rates:
-            monte_carlo = RealVsComplex(complex_network)
-            monte_carlo.run(x, y, iterations=iterations, learning_rate=learning_rate,
-                            epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                            shuffle=True, debug=debug, data_summary=dataset.summary())
-        # Run self
-        several = SeveralMonteCarloComparison('learning rate', x = learning_rates,
-                                              paths = ["path/to/1st/run/run_data",
-                                                       "path/to/2nd/run/run_data",
-                                                       "path/to/3rd/run/run_data",
-                                                       "path/to/4th/run/run_data"]
-        several.box_plot(showfig=True)
-        ```
-
-        :label: string that describes what changed between each montecarlo run
-        :x: List of the value for each monte carlo run wrt :label:.
-        :paths: Full path to each monte carlo run_data saved file (Must end with run_data)
+        :param label: string that describes what changed between each montecarlo run
+        :param x: List of the value for each monte carlo run wrt :label:.
+        :param paths: Full path to each monte carlo run_data saved file (Must end with run_data)
             NOTE: x and paths must be the same size
         """
         self.x_label = label
@@ -317,7 +321,18 @@ class SeveralMonteCarloComparison:
         self.df = pd.concat(frames)
         self.monte_carlo_analyzer = MonteCarloAnalyzer(df=self.df)
 
-    def box_plot(self, key='accuracy', library='plotly', epoch=-1, showfig=False, savefile=None):
+    def box_plot(self, key='accuracy', library='plotly', epoch=-1, showfig=False, savefile: Optional[str] = None):
+        """
+        Saves/shows a box plot of the results.
+
+        :param key: String stating what to plot using tf.keras.History labels. ex. `val_accuracy` for the validation acc
+        :param library: string stating the library to be used to generate the box plot.
+            - `plotly <https://plotly.com/python/>`_
+            - `seaborn <https://seaborn.pydata.org/>`_
+        :param epoch: Which epoch to use for the box plot. If -1 (default) it will use the last epoch.
+        :param showfig: If True, it will show the grated box plot
+        :param savefile: String with the path + filename where to save the boxplot. If None (default) no figure is saved
+        """
         if library == 'plotly':
             self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefile=savefile)
         # TODO: https://seaborn.pydata.org/examples/grouped_boxplot.html
@@ -1419,6 +1434,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.40'
+__version__ = '0.1.41'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

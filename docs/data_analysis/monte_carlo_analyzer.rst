@@ -66,7 +66,11 @@ Monte Carlo Analyzer
     Saves/shows a histogram of the results.
 
     :param epoch: Which epoch to use for the histogram. If :code:`-1` (default) it will use the last epoch.
-    :param library: string stating the library to be used to generate the box plot. Either `plotly <https://plotly.com/python/>`_ or `seaborn <https://seaborn.pydata.org/>`_
+    :param library: string stating the library to be used to generate the box plot:
+    
+        - `matplotlib <https://matplotlib.org/stable/index.html>`_ 
+        - `plotly <https://plotly.com/python/>`_
+        - `seaborn <https://seaborn.pydata.org/>`_
     :param key: String stating what to plot using :code:`tf.keras.History` labels. ex. :code:`val_accuracy`, :code:`val_loss`, :code:`accuracy` or :code:`loss`.
     :param showfig: If True, it will show the grated box plot
     :param savefig: If True, it saves the figure at: :code:`self.path / "plots/box_plot/"`
@@ -79,5 +83,16 @@ Monte Carlo Analyzer
 
    <iframe src="../_static/data_analysis_examples/montecarlo_test_accuracy_histogram.html" height="500px" width="100%"></iframe>
 
+**Output example using seaborn**
+
+.. raw:: html
+
+    <object data="../_static/data_analysis_examples/histogram_montecarlo_test_accuracy_seaborn.svg" type="image/svg+xml"></object>
+
+**Output example using matplotlib**
+
+.. raw:: html
+
+    <object data="../_static/data_analysis_examples/montecarlo_te_histogram.svg" type="image/svg+xml"></object>
 
 .. [BOX-PLOT] Williamson, David F., Robert A. Parker, and Juliette S. Kendrick. "The box plot: a simple visual method to interpret data." Annals of internal medicine 110.11 (1989): 916-921.
