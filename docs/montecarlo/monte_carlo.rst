@@ -63,17 +63,13 @@ Monte Carlo
         Percentage of the input data to be used as test set (the rest will be use as train set)
         Default: 0.0 (No validation set).
         This input is ignored if validation_data is given.
-    :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
+    :param validation_data: A tuple :code:`(x_val, y_val)` of Numpy arrays or tensors. Preferred data type (less overhead).
+        Data on which to evaluate the loss and any model metrics at the end of each epoch.
         The model will not be trained on this data. This parameter takes precedence over :code:`validation_split`.
-        It can be:
-        - tuple :code:`(x_val, y_val)` of Numpy arrays or tensors. Preferred data type (less overhead).
-        - A tf.data dataset.
-    :param test_data: Data on which to evaluate the loss and any model metrics at the end of a model training. 
+    :param test_data: (Optional) tuple :code:`(x_test, y_test)` of Numpy arrays or tensors.
+        Data on which to evaluate the loss and any model metrics at the end of a model training. 
         The model will not be trained on this data. 
         If test data is not None (default) it will generate a file called :code:`test_results.csv` with the statistical results from the test data.
-        It can be:
-        - tuple :code:`(x_test, y_test)` of Numpy arrays or tensors. Preferred data type (less overhead).
-        - A tf.data dataset.
     :param iterations: Number of iterations to be done for each model
     :param epochs: Number of epochs for each iteration
     :param batch_size: Batch size at each iteration
