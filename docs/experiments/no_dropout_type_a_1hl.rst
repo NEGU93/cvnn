@@ -56,38 +56,49 @@ Results Graphs
 **Box Plots**
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_box_plot.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_box_plot.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_box_plot.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_box_plot.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy_box_plot.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy_box_plot.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_box_plot.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_box_plot.html" height="500px" width="100%"></iframe>
 
 **Confidence lines**
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy.html" height="500px" width="100%"></iframe>
 
 **Histograms**
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_histogram.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_histogram.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_histogram.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_histogram.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_histogram.html
+
+   <iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_histogram.html" height="500px" width="100%"></iframe>

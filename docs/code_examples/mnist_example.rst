@@ -67,4 +67,5 @@ To assert the code works correctly, we have done 1000 iterations of both cvnn mo
     ATTENTION: Accuracy is lower than in `Training a neural network on MNIST with Keras <https://www.tensorflow.org/datasets/keras_example>`_ because the optimizer used here is SGD and not Adam. Should we use SGD on the Keras example it will arrive to the same result.
 
 .. raw:: html
-   :file: ../_static/SGD_mnist_test.html
+
+   <iframe src="../_static/SGD_mnist_test.html" height="500px" width="100%"></iframe>

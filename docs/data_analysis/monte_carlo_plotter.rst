@@ -40,7 +40,8 @@ Monte Carlo Plotter
 **Output example using pyplot**
 
 .. raw:: html
-   :file: ../_static/data_analysis_examples/montecarlo_test_accuracy.html
+
+    <iframe src="../_static/data_analysis_examples/montecarlo_test_accuracy.html" height="500px" width="100%"></iframe>
 
 **Output example using seaborn**
 
@@ -49,4 +50,15 @@ Monte Carlo Plotter
     <object data="../_static/data_analysis_examples/montecarlo_test_accuracy_matplotlib.svg" type="image/svg+xml"></object>
 
 .. py:method:: plot_key(self, key='accuracy', reload=False, library='plotly', showfig=False, savefig=True, index_loc='mean', extension=".svg")
+
+    :param library: String stating the library to be used to generate the box plot.
+
+        - `matplotlib <https://matplotlib.org/stable/index.html>`_
+        - `plotly <https://plotly.com/python/>`_
+    :param key: String stating what to plot using tf.keras.History labels. ex. `val_accuracy` for the validation acc
+    :param showfig: If True, it will show the grated box plot
+    :param savefig: If True, it saves the figure at `self.path/key_library.extension`
+    :param reload: If True it will reload data from the csv file in case it has changed.
+    :param index_loc:
+    :param extension: file extensions (default svg) to be used when saving the file (ignored if library is plotly).
 

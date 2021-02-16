@@ -585,6 +585,17 @@ class Plotter:
 
     def plot_key(self, key='loss', reload=False, library='plotly', showfig=False, savefig=True, index_loc=None,
                  extension=".svg"):
+        """
+        :param library: string stating the library to be used to generate the box plot.
+            - `matplotlib <https://matplotlib.org/stable/index.html>`_
+            - `plotly <https://plotly.com/python/>`_
+        :param key: String stating what to plot using tf.keras.History labels. ex. `val_accuracy` for the validation acc
+        :param showfig: If True, it will show the grated box plot
+        :param savefig: If True, it saves the figure at `self.path/key_library.extension`
+        :param reload: If True it will reload data from the csv file in case it has changed.
+        :param index_loc:
+        :param extension: file extensions (default svg) to be used when saving the file (ignored if library is plotly).
+        """
         if reload:
             self._csv_to_pandas()
         if library == 'matplotlib':
@@ -1262,8 +1273,7 @@ class MonteCarloAnalyzer:
         :param showfig: If True, it will show the grated box plot
         :param savefig: If True, it saves the figure at: self.path / "plots/box_plot/"
         :param title: Figure title
-        :param extension: file extensions (default svg) to be used when saving the file
-            (ignored if library is plotly).
+        :param extension: file extensions (default svg) to be used when saving the file (ignored if library is plotly).
         """
         if library == 'matplotlib':
             self._plot_histogram_matplotlib(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title,
@@ -1409,6 +1419,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.39'
+__version__ = '0.1.40'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -6,4 +6,7 @@ Data Analysis
 .. toctree::
 	:maxdepth: 2
 
+    data_analysis/plotter
     data_analysis/monte_carlo_analyzer
+    data_analysis/monte_carlo_plotter
+    

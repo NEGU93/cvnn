@@ -70,32 +70,41 @@ Results Graphs
 **Box Plots**
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/base_case_type_A_2HL_test_accuracy_box_plot.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/base_case_type_A_2HL_test_accuracy_box_plot.html" height="500px" width="100%"></iframe>
 
 **Confidence lines**
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/base_case_type_A_2HL_test_loss.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/base_case_type_A_2HL_test_loss.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/base_case_type_A_2HL_test_accuracy.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/base_case_type_A_2HL_test_accuracy.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/montecarlo_train_loss.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/montecarlo_train_loss.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/montecarlo_train_accuracy.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/montecarlo_train_accuracy.html" height="500px" width="100%"></iframe>
 
 **Histograms**
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/montecarlo_test_accuracy_histogram.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/montecarlo_test_accuracy_histogram.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/montecarlo_test_loss_histogram.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/montecarlo_test_loss_histogram.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/montecarlo_train_accuracy_histogram.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/montecarlo_train_accuracy_histogram.html" height="500px" width="100%"></iframe>
 
 .. raw:: html
-   :file: ../_static/circularity/base_case_type_a_2hl/montecarlo_train_loss_histogram.html
+
+   <iframe src="../_static/circularity/base_case_type_a_2hl/montecarlo_train_loss_histogram.html" height="500px" width="100%"></iframe>

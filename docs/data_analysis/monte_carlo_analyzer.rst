@@ -52,7 +52,8 @@ Monte Carlo Analyzer
 **Output example using pyplot**
 
 .. raw:: html
-   :file: ../_static/data_analysis_examples/montecarlo_test_accuracy_box_plot.html
+
+   <iframe src="../_static/data_analysis_examples/montecarlo_test_accuracy_box_plot.html" height="500px" width="100%"></iframe>
 
 **Output example using seaborn**
 
@@ -75,7 +76,8 @@ Monte Carlo Analyzer
 **Output example using pyplot**
 
 .. raw:: html
-   :file: ../_static/data_analysis_examples/montecarlo_test_accuracy_histogram.html
+
+   <iframe src="../_static/data_analysis_examples/montecarlo_test_accuracy_histogram.html" height="500px" width="100%"></iframe>
 
 
 .. [BOX-PLOT] Williamson, David F., Robert A. Parker, and Juliette S. Kendrick. "The box plot: a simple visual method to interpret data." Annals of internal medicine 110.11 (1989): 916-921.
