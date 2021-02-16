@@ -36,7 +36,7 @@ Monte Carlo
 
         Adds a :code:`keras.Model` to the list to then comparate between them
 
-.. py:method:: run(self, x, y, data_summary='', polar=False, validation_split=0.2, validation_data=None, iterations=100, epochs=10, batch_size=100, shuffle=False, display_freq=1)
+.. py:method:: run(self, x, y, data_summary='', polar=False, validation_split=0.2, validation_data=None, test_data=None, iterations=100, epochs=10, batch_size=100, shuffle=False, display_freq=1)
 
     This function is used to compare all models added with :code:`self.add_model` method.
     Runs the iteration dataset :code:`(x, y)`.
@@ -66,8 +66,14 @@ Monte Carlo
     :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
         The model will not be trained on this data. This parameter takes precedence over :code:`validation_split`.
         It can be:
-            - tuple :code:`(x_val, y_val)` of Numpy arrays or tensors. Preferred data type (less overhead).
-            - A tf.data dataset.
+        - tuple :code:`(x_val, y_val)` of Numpy arrays or tensors. Preferred data type (less overhead).
+        - A tf.data dataset.
+    :param test_data: Data on which to evaluate the loss and any model metrics at the end of a model training. 
+        The model will not be trained on this data. 
+        If test data is not None (default) it will generate a file called :code:`test_results.csv` with the statistical results from the test data.
+        It can be:
+        - tuple :code:`(x_test, y_test)` of Numpy arrays or tensors. Preferred data type (less overhead).
+        - A tf.data dataset.
     :param iterations: Number of iterations to be done for each model
     :param epochs: Number of epochs for each iteration
     :param batch_size: Batch size at each iteration

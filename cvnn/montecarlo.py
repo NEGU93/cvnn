@@ -58,6 +58,7 @@ class MonteCarlo:
 
     def run(self, x, y, data_summary: str = '', polar: bool = False, validation_split: float = 0.2,
             validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,    # TODO: Add the tuple of validation data details.
+            test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
             shuffle: bool = True, debug: bool = False, display_freq: int = 1):
         """
@@ -88,6 +89,13 @@ class MonteCarlo:
             It can be:
                 - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
                 - A tf.data dataset.
+        :param test_data: Data on which to evaluate the loss and any model metrics at the end of a model training.
+            The model will not be trained on this data.
+            If test data is not None (default) it will generate a file called `test_results.csv` with the
+                statistical results from the test data.
+            It can be:
+                - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
+                - A tf.data dataset.
         :param iterations: Number of iterations to be done for each model
         :param epochs: Number of epochs for each iteration
         :param batch_size: Batch size at each iteration
@@ -99,8 +107,9 @@ class MonteCarlo:
             It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
         """
         self.output_config['debug'] = debug
-        confusion_matrix, pbar = self._beginning_callback(iterations, epochs, batch_size, shuffle, data_summary)
-
+        test_data_cols = [n.get_config()['name'] for n in self.models[0].metrics] if test_data is not None else None
+        confusion_matrix, pbar, test_results = self._beginning_callback(iterations, epochs, batch_size,
+                                                                        shuffle, data_summary, test_data_cols)
         x, y = randomize(x, y)
         w_save = []                     # TODO: Find a better method
         for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
@@ -112,30 +121,34 @@ class MonteCarlo:
             if shuffle:  # shuffle all data at each iteration
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
-                x_fit, val_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x, validation_data, polar)
+                x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
+                                                                           validation_data, test_data, polar)
                 model.set_weights(w_save[i])
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq)
-                self._inner_callback(model, validation_data, confusion_matrix, polar, i, it, run_result)
+                test_results = self._inner_callback(model, validation_data, confusion_matrix, polar, i, it, run_result,
+                                                    test_results, test_data_fit)
             self._outer_callback(pbar)
-        self._end_callback(x, y, iterations, data_summary, polar, epochs, batch_size, confusion_matrix, pbar)
+        return self._end_callback(x, y, iterations, data_summary, polar, epochs, batch_size,
+                                  confusion_matrix, test_results, pbar)
 
     @staticmethod
-    def _get_fit_dataset(is_complex: bool, x, validation_data, polar):
-        val_data_fit = None
+    def _get_fit_dataset(is_complex: bool, x, validation_data, test_data, polar):
         if is_complex:
             x_fit = x
-            if validation_data is not None:
-                val_data_fit = validation_data
+            val_data_fit = validation_data
+            test_data_fit = test_data
         else:
             x_fit = transform_to_real(x, polar=polar)
             if validation_data is not None:
                 val_data_fit = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
-        return x_fit, val_data_fit
+            if test_data is not None:
+                test_data_fit = (transform_to_real(test_data[0], polar=polar), test_data[1])
+        return x_fit, val_data_fit, test_data_fit
 
     # Callbacks
-    def _beginning_callback(self, iterations, epochs, batch_size, shuffle, data_summary):
+    def _beginning_callback(self, iterations, epochs, batch_size, shuffle, data_summary, test_data_cols):
         confusion_matrix = None
         pbar = None
         # Reset data frame
@@ -148,9 +161,14 @@ class MonteCarlo:
                 confusion_matrix.append({"name": mdl.name, "matrix": pd.DataFrame()})
         if self.output_config['summary_of_run']:
             self._save_summary_of_run(self._run_summary(iterations, epochs, batch_size, shuffle), data_summary)
-        return confusion_matrix, pbar
+        test_results = None
+        if test_data_cols is not None:
+            # TODO: Consider making it a tuple so it is unmutable
+            test_results = pd.DataFrame(columns=test_data_cols)
+        return confusion_matrix, pbar, test_results
 
-    def _end_callback(self, x, y, iterations, data_summary, polar, epochs, batch_size, confusion_matrix, pbar):
+    def _end_callback(self, x, y, iterations, data_summary, polar, epochs, batch_size,
+                      confusion_matrix, test_results, pbar):
         if not self.output_config['debug']:
             pbar.close()
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
@@ -178,10 +196,13 @@ class MonteCarlo:
                 cm_sorted = cm.fillna(0)[ints + strs]  # Sorted confusion matrix
                 model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
                 model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
+        if test_results is not None:
+            test_results.describe().to_csv(self.monte_carlo_analyzer.path / ("test_results.csv"))
         if self.output_config['plot_all']:
-            self.monte_carlo_analyzer.do_all()
+            return self.monte_carlo_analyzer.do_all()
 
-    def _inner_callback(self, model, validation_data, confusion_matrix, polar, model_index, it, run_result):
+    def _inner_callback(self, model, validation_data, confusion_matrix, polar, model_index, it,
+                        run_result, test_results, test_data_fit):
         # TODO: Must have save_csv_history to do the montecarlo results latter
         # Save all results
         temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{model_index}_{model.name}"
@@ -202,6 +223,12 @@ class MonteCarlo:
                     logger.warning("ValueError: Could not do confusion matrix. No objects to concatenate.")
             else:
                 print("Confusion matrix only available for validation_data")
+        if test_results is not None:
+            test_results = test_results.append(pd.DataFrame([model.evaluate(x=test_data_fit[0], y=test_data_fit[1],
+                                                                            verbose=0)],
+                                                            columns=[n.get_config()['name'] for n in model.metrics]),
+                                               ignore_index=True)
+        return test_results
 
     def _outer_callback(self, pbar):
         if not self.output_config['debug']:
