@@ -107,7 +107,10 @@ class MonteCarlo:
             It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
         """
         self.output_config['debug'] = debug
-        test_data_cols = [n.get_config()['name'] for n in self.models[0].metrics] if test_data is not None else None
+        test_data_cols = None
+        if test_data is not None:
+            test_data_cols = ['network'] + [n.get_config()['name'] for n in self.models[0].metrics]
+
         confusion_matrix, pbar, test_results = self._beginning_callback(iterations, epochs, batch_size,
                                                                         shuffle, data_summary, test_data_cols)
         x, y = randomize(x, y)
@@ -224,10 +227,9 @@ class MonteCarlo:
             else:
                 print("Confusion matrix only available for validation_data")
         if test_results is not None:
-            test_results = test_results.append(pd.DataFrame([model.evaluate(x=test_data_fit[0], y=test_data_fit[1],
-                                                                            verbose=0)],
-                                                            columns=[n.get_config()['name'] for n in model.metrics]),
-                                               ignore_index=True)
+            tmp_result = [model.name] + model.evaluate(x=test_data_fit[0], y=test_data_fit[1], verbose=0)
+            cols = ['network'] + [n.get_config()['name'] for n in self.models[0].metrics]
+            test_results = test_results.append(pd.DataFrame([tmp_result], columns=cols), ignore_index=True)
         return test_results
 
     def _outer_callback(self, pbar):
