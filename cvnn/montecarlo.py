@@ -200,7 +200,7 @@ class MonteCarlo:
                 model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
                 model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
         if test_results is not None:
-            test_results.describe().to_csv(self.monte_carlo_analyzer.path / ("test_results.csv"))
+            test_results.groupby('network').describe().to_csv(self.monte_carlo_analyzer.path / ("test_results.csv"))
         if self.output_config['plot_all']:
             return self.monte_carlo_analyzer.do_all()
 
