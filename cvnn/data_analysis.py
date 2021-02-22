@@ -24,7 +24,7 @@ except ImportError as e:
 try:
     import matplotlib.pyplot as plt
     AVAILABLE_LIBRARIES.add('matplotlib')
-    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']  # [1:] Uncomment to remove blue color
+    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][1:] # Uncomment to remove blue color
 except ImportError as e:
     logger.info("Matplotlib not installed, consider installing it to get more plotting capabilities")
 if 'matplotlib' in AVAILABLE_LIBRARIES:
@@ -1375,25 +1375,22 @@ class MonteCarloAnalyzer:
                            " was called but will be omitted")
             return None
         fig, ax = plt.subplots()
-        ax.set_prop_cycle('color', DEFAULT_MATPLOTLIB_COLORS)
+        ax.set_prop_cycle(color=DEFAULT_MATPLOTLIB_COLORS)
         bins = np.linspace(0, 1, 501)
         min_ax = 1.0
         max_ax = 0.0
-        ax = None
+        # ax = None
         networks_availables = self.df.network.unique()
-        # networks_availables = ['complex network', 'real network', 'polar real network']
         if epoch == -1:
             epoch = max(self.df.epoch)
-        for net in networks_availables:
-            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
-            data = self.df[filter]  # Get only the data to plot
-            ax = sns.histplot(data[key], bins=bins, label=net.replace("_", " "))
-            min_ax = min(min_ax, min(data[key]))
-            max_ax = max(max_ax, max(data[key]))
+        filter = [e == epoch for e in self.df.epoch]
+        data = self.df[filter]
+        ax = sns.histplot(data, x=key, hue='network', bins=bins, legend=True)
+        min_ax = min(min_ax, min(data[key]))
+        max_ax = max(max_ax, max(data[key]))
         title += " " + key + " histogram"
-        # set_trace()
         ax.set_xlim((min_ax - 0.01, max_ax + 0.01))
-        fig.legend(loc='upper left')  # , bbox_to_anchor=(0., 0.3, 0.5, 0.5))
+        # ax.legend(loc='upper left')
         add_params(fig, ax, x_label=key.capitalize(), y_label="Occurrences",  # loc='upper left',
                    filename=self.path / (
                            "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + extension),
@@ -1410,7 +1407,8 @@ class MonteCarloAnalyzer:
 if __name__ == "__main__":
     path = "/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2021/02February/21Sunday/run-13h36m02"
     monte = MonteCarloAnalyzer(path=path)
-    monte.monte_carlo_plotter.plot_line_confidence_interval(showfig=True, library="plotly")
+    # monte.monte_carlo_plotter.plot_line_confidence_interval(showfig=True, library="plotly")
+    monte.plot_histogram(library="seaborn", showfig=True)
     # monte.do_all(showfig=False, savefig=True)
     # set_trace()
     # monte.plot_histogram(library='matplotlib', showfig=False, savefig=True)
