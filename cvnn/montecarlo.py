@@ -210,6 +210,7 @@ class MonteCarlo:
         # Save all results
         temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{model_index}_{model.name}"
         os.makedirs(temp_path, exist_ok=True)
+        set_trace()
         plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
         self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
         if self.output_config['confusion_matrix']:
@@ -591,8 +592,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=shuffle, debug=debug, data_summary=dataset.summary(), polar=polar,
-                    validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat,
-                    checkpoints=checkpoints)
+                    validation_split=validation_split, validation_data=validation_data)
     if do_all:
         monte_carlo.monte_carlo_analyzer.do_all()
 

@@ -518,7 +518,7 @@ class Plotter:
         Also saves the name of the file where it got the pandas frame as a label.
         This function is called by the constructor.
         """
-        # self.pandas_dict = {}
+        self.pandas_dict = {}
         # files = os.listdir(self.path)  
         # For ComplexVsReal Monte Carlo it has first the Complex model and SECOND the real one.
         # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
@@ -882,7 +882,6 @@ class MonteCarloPlotter(Plotter):
                     data_75.append(stats['75%'])
                 data_min.reverse()
                 data_25.reverse()
-            # set_trace()
             if full_border:
                 fig.add_trace(go.Scatter(
                     x=x + x_rev,
@@ -1409,9 +1408,10 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    path = "C:\\Users\\NEGU93\\Desktop\\02février"
+    path = "/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2021/02February/21Sunday/run-13h36m02"
     monte = MonteCarloAnalyzer(path=path)
-    monte.do_all(showfig=False, savefig=True)
+    monte.monte_carlo_plotter.plot_line_confidence_interval(showfig=True, library="plotly")
+    # monte.do_all(showfig=False, savefig=True)
     # set_trace()
     # monte.plot_histogram(library='matplotlib', showfig=False, savefig=True)
     # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True)
