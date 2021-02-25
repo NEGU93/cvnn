@@ -13,10 +13,10 @@ from tensorflow.python.keras.engine.input_spec import InputSpec
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import nn_ops
 # Own modules
-from cvnn.layers.misc import ComplexLayer
+from cvnn.layers.core import ComplexLayer
 from cvnn.initializers import ComplexGlorotUniform, Zeros
 from cvnn import logger
-from cvnn.layers import DEFAULT_COMPLEX_TYPE
+from cvnn.layers.core import DEFAULT_COMPLEX_TYPE
 
 
 class ComplexConv(Layer, ComplexLayer):

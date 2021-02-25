@@ -1,14 +1,19 @@
 from abc import ABC, abstractmethod
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow.python.keras import backend as K
+from tensorflow import TensorShape, Tensor
 # typing
-from typing import Optional
+from typing import Optional, Union, List
 # Own modules
-from cvnn.layers import DEFAULT_COMPLEX_TYPE, t_input
 from cvnn.activations import t_activation
 from cvnn.initializers import ComplexGlorotUniform, Zeros
 
+t_input = Union[Tensor, tuple, list]
+t_input_shape = Union[TensorShape, List[TensorShape]]
+
+DEFAULT_COMPLEX_TYPE = np.complex64
 
 class ComplexLayer(ABC):
 

@@ -8,7 +8,7 @@ from abc import abstractmethod
 # Typing
 from typing import Union, Optional, Tuple
 # Own models
-from cvnn.layers.misc import ComplexLayer
+from cvnn.layers.core import ComplexLayer
 
 
 class ComplexPooling2D(Layer, ComplexLayer):

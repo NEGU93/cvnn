@@ -1,5 +1,8 @@
 TESTING module pytest
 
+Install
+	conda install pytest, pytest-cov
+
 Good practices: 
 	https://docs.pytest.org/en/stable/goodpractices.html
 Installation and getting started:
