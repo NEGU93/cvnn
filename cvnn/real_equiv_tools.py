@@ -4,6 +4,7 @@ from tensorflow.keras import Sequential
 from pdb import set_trace
 from cvnn import logger
 import cvnn.layers as layers
+from cvnn.layers.core import ComplexLayer
 from typing import Type
 from typing import Optional
 
@@ -60,7 +61,7 @@ def get_real_equivalent(complex_model: Type[Sequential], classifier: bool = True
                                                         classifier, capacity_equivalent, equiv_technique)
     counter = 0
     for layer in complex_model.layers:
-        if isinstance(layer, layers.ComplexLayer):
+        if isinstance(layer, ComplexLayer):
             if isinstance(layer, layers.ComplexDense):  # TODO: Check if I can do this with kargs or sth
                 real_shape.append(layer.get_real_equivalent(
                     output_multiplier=output_multiplier[counter]))
@@ -134,7 +135,7 @@ def _get_alternate_capacity_equivalent(dense_layers, classification: bool = True
         output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1  # From the end
         if i == len(dense_layers) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
                 i + 1 == len(dense_layers) - i and output_multiplier[i] == output_multiplier[i + 1]:
-            m_inf = dense_layers[i - 1].input_shape[-1]     # This is because dense_layers are len(output_multiplier) - 1
+            m_inf = dense_layers[i - 1].input_shape[-1]    # This is because dense_layers are len(output_multiplier) - 1
             m_sup = dense_layers[i].units
             if i == len(dense_layers) - i:
                 coef_sup = output_multiplier[i + 1]

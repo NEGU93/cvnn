@@ -1,3 +1,5 @@
+Manually change version at file cvnn/_version.py
+
 **PIP:**
 
 python setup.py sdist
