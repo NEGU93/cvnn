@@ -1,12 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="128.377" timestamp="2021-02-25T18:42:40.455872" hostname="barrachina-SONDRA"><testcase classname="tests.test_capacity_real_equivalent" name="test_shape" time="35.273" /><testcase classname="tests.test_custom_layers" name="test_layers" time="2.130" /><testcase classname="tests.test_doc_cvnn_example" name="test_cifar" time="62.239" /><testcase classname="tests.test_doc_cvnn_example" name="test_regression" time="0.040" /><testcase classname="tests.test_initialization" name="test_inits" time="0.002" /><testcase classname="tests.test_several_datasets" name="test_datasets" time="5.928"><failure message="AttributeError: module 'cvnn.layers' has no attribute 'ComplexLayer'">Traceback (most recent call last):
-  File "/home/barrachina/Documents/cvnn/tests/test_several_datasets.py", line 140, in test_datasets
-    run_gaussian_dataset_montecarlo(epochs=2, iterations=1)
-  File "/home/barrachina/Documents/cvnn/cvnn/montecarlo.py", line 497, in run_gaussian_dataset_montecarlo
-    return mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq,
-  File "/home/barrachina/Documents/cvnn/cvnn/montecarlo.py", line 589, in mlp_run_real_comparison_montecarlo
-    monte_carlo = RealVsComplex(complex_network,
-  File "/home/barrachina/Documents/cvnn/cvnn/montecarlo.py", line 326, in __init__
-    self.add_model(get_real_equivalent(complex_model, capacity_equivalent=capacity_equivalent,
-  File "/home/barrachina/Documents/cvnn/cvnn/real_equiv_tools.py", line 63, in get_real_equivalent
-    if isinstance(layer, layers.ComplexLayer):
-AttributeError: module 'cvnn.layers' has no attribute 'ComplexLayer'</failure></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="6" time="263.026" timestamp="2021-02-25T18:55:29.477145" hostname="barrachina-SONDRA"><testcase classname="tests.test_capacity_real_equivalent" name="test_shape" time="35.515" /><testcase classname="tests.test_custom_layers" name="test_layers" time="2.196" /><testcase classname="tests.test_doc_cvnn_example" name="test_cifar" time="65.847" /><testcase classname="tests.test_doc_cvnn_example" name="test_regression" time="0.033" /><testcase classname="tests.test_initialization" name="test_inits" time="0.001" /><testcase classname="tests.test_several_datasets" name="test_datasets" time="135.778" /></testsuite></testsuites>

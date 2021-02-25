@@ -138,6 +138,8 @@ class MonteCarlo:
 
     @staticmethod
     def _get_fit_dataset(is_complex: bool, x, validation_data, test_data, polar):
+        val_data_fit = None
+        test_data_fit = None
         if is_complex:
             x_fit = x
             val_data_fit = validation_data
@@ -210,7 +212,6 @@ class MonteCarlo:
         # Save all results
         temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{model_index}_{model.name}"
         os.makedirs(temp_path, exist_ok=True)
-        set_trace()
         plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
         self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
         if self.output_config['confusion_matrix']:
