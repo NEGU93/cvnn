@@ -4,7 +4,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import datasets
-from cvnn.layers import ComplexDense, ComplexFlatten
+from layers.__init__ import ComplexDense, ComplexFlatten
 from pdb import set_trace
 
 (train_images, train_labels), (test_images, test_labels) = datasets.mnist.load_data()

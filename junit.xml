@@ -1,4 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite errors="1" failures="0" hostname="barrachina-SONDRA" name="pytest" skipped="0" tests="1" time="9.575" timestamp="2021-01-25T19:55:19.565076"><testcase classname="" name="" time="0.000"><error message="collection failure">Traceback (most recent call last):
-  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.7/site-packages/py/_path/common.py", line 273, in relto
-    strself = self.strpath
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="15.919" timestamp="2021-02-25T18:30:25.606436" hostname="barrachina-SONDRA"><testcase classname="" name="" time="0.000"><error message="collection failure">Traceback (most recent call last):
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/pluggy/hooks.py", line 286, in __call__
+    return self._hookexec(self, self.get_hookimpls(), kwargs)
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/pluggy/manager.py", line 93, in _hookexec
+    return self._inner_hookexec(hook, methods, kwargs)
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/pluggy/manager.py", line 84, in &lt;lambda&gt;
+    self._inner_hookexec = lambda hook, methods, kwargs: hook.multicall(
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/pluggy/callers.py", line 208, in _multicall
+    return outcome.get_result()
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/pluggy/callers.py", line 80, in get_result
+    raise ex[1].with_traceback(ex[2])
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/pluggy/callers.py", line 187, in _multicall
+    res = hook_impl.function(*args)
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/_pytest/doctest.py", line 125, in pytest_collect_file
+    if path.ext == ".py":
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/py/_path/common.py", line 156, in ext
+    return self._getbyspec('ext')[0]
+  File "/home/barrachina/anaconda3/envs/tf-2-gpu/lib/python3.8/site-packages/py/_path/local.py", line 293, in _getbyspec
+    parts = self.strpath.split(self.sep)
 KeyboardInterrupt</error></testcase></testsuite></testsuites>

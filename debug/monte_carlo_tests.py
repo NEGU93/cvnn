@@ -1,6 +1,6 @@
 from cvnn.montecarlo import MonteCarlo
 import tensorflow as tf
-import cvnn.layers as layers
+import layers.__init__ as layers
 import numpy as np
 
 

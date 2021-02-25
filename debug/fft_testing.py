@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from cvnn.layers import Convolutional
+from layers.__init__ import Convolutional
 from pdb import set_trace
 import sys
 from scipy import signal

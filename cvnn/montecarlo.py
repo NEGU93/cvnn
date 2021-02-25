@@ -12,7 +12,6 @@ from openpyxl.worksheet.table import Table
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras import Model
 # Own modules
-import cvnn
 import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.data_analysis import MonteCarloAnalyzer, Plotter, get_confusion_matrix
