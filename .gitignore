@@ -9,6 +9,8 @@ docs/_build/html/.doctrees/
 docs/_build/html/.buildinfo/
 docs/_build/
 .eggs/
+dist/
+junit.xml
 
 
 # python cache
