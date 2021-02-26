@@ -1,10 +1,9 @@
-import tensorflow as tf
-import sys
-import cvnn
 import logging
+import tensorflow as tf
 from tensorflow.keras.layers import Activation
 from typing import Union, Callable, Optional
 from tensorflow import Tensor
+import cvnn
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
@@ -40,7 +39,10 @@ def softmax_real(z: Tensor, axis=-1) -> Tensor:
     :param z: Input tensor.
     :return: Real-valued tensor of the applied activation function
     """
-    return tf.keras.activations.softmax(tf.math.abs(z), axis)
+    if z.dtype.is_complex:
+        return tf.keras.activations.softmax(tf.math.abs(z), axis)
+    else:
+        return tf.keras.activations.softmax(z, axis)
 
 
 def convert_to_real_with_abs(z: Tensor) -> Tensor:
@@ -49,7 +51,10 @@ def convert_to_real_with_abs(z: Tensor) -> Tensor:
     :param z: Input tensor.
     :return: Real-valued tensor of the applied activation function
     """
-    return tf.math.abs(z)
+    if z.dtype.is_complex:
+        return tf.math.abs(z)
+    else:
+        return z
 
 
 """
@@ -285,7 +290,8 @@ act_dispatcher = {
     'pol_selu': Activation(pol_selu)
 }
 
+
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.9'
+__version__ = '0.0.10'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -7,6 +7,10 @@ def test_tf_vs_cvnn():
     """
     This modules compares cvnn when working with float numbers so that it gives the exact same value as tensorflow.
     """
-    test_cifar10()
-    test_fashion_mnist()
     test_mnist()
+    test_fashion_mnist()
+    test_cifar10()
+
+
+if __name__ == '__main__':
+    test_tf_vs_cvnn()

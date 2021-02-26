@@ -58,7 +58,7 @@ def test_fashion_mnist():
     keras = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     # keras1 = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     own = own_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
-    assert keras == own, f"{keras} != {own}"
+    assert keras.history == own.history, f"{keras.history } != {own.history }"
 
 
 if __name__ == "__main__":

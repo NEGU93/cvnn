@@ -51,7 +51,7 @@ def own_fit(epochs=10):
 
 
 def test_cifar10():
-    epochs = 10
+    epochs = 3
     keras = keras_fit(epochs=epochs)
     # keras1 = keras_fit(epochs=epochs)
     own = own_fit(epochs=epochs)

@@ -2,8 +2,6 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from cvnn import layers
 import numpy as np
-from tqdm import tqdm
-from pdb import set_trace
 import timeit
 try:
     import plotly.graph_objects as go
@@ -97,15 +95,11 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
 
 
 def test_mnist():
-    seed = 117
-    init = tf.keras.initializers.GlorotUniform(seed=seed)
-    init1 = tf.constant_initializer(init((784, 128)).numpy())
-    init2 = tf.constant_initializer(init((128, 10)).numpy())
     ds_train, ds_test = get_dataset()
-    keras_hist, keras_time = keras_fit(ds_train, ds_test, init1=init1, init2=init2)
-    # keras2 = keras_fit(ds_train, ds_test, init1=init1, init2=init2)
-    own_hist, own_time = own_fit(ds_train, ds_test, init1=init1, init2=init2)
-    assert keras_hist == own_hist
+    keras_hist, keras_time = keras_fit(ds_train, ds_test)
+    # keras2_hist, keras2_time = keras_fit(ds_train, ds_test)
+    own_hist, own_time = own_fit(ds_train, ds_test)
+    assert keras_hist.history == own_hist.history, f"{keras_hist.history}\n !=\n {own_hist.history}"
     
 
 if __name__ == "__main__":
