@@ -50,6 +50,7 @@ def get_dataset():
 
 
 def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
+    tf.random.set_seed(1)
     # https://www.tensorflow.org/datasets/keras_example
     model = tf.keras.models.Sequential([
       tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
@@ -62,17 +63,18 @@ def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='gl
         metrics=['accuracy'],
     )
     start = timeit.default_timer()
-    model.fit(
+    history = model.fit(
         ds_train,
         epochs=6,
         validation_data=ds_test,
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return model.evaluate(ds_test, verbose=verbose), stop - start
+    return history, stop - start
 
 
 def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
+    tf.random.set_seed(1)
     model = tf.keras.models.Sequential([
         layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
         layers.ComplexDense(128, activation='cart_relu', dtype=np.float32, kernel_initializer=init1),
@@ -84,76 +86,14 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
         metrics=['accuracy'],
     )
     start = timeit.default_timer()
-    model.fit(
+    history = model.fit(
         ds_train,
         epochs=6,
         validation_data=ds_test,
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return model.evaluate(ds_test, verbose=verbose), stop - start
-
-
-def test_mnist_montecarlo():
-    # Parameters
-    KERAS_DEBUG = True
-    OWN_MODEL = True
-    iterations = 1000
-    verbose = 1 if iterations == 1 else 0
-
-    # Training
-    ds_train, ds_test = get_dataset()
-    keras_results = []
-    own_results = []
-    keras_fit_time = []
-    own_fit_time = []
-    if PLOTLY:
-        fig = go.Figure()
-        fig_time = go.Figure()
-
-    if OWN_MODEL:
-        tf.print("Cvnn simulation")
-        for _ in tqdm(range(iterations)):
-            result = own_fit(ds_train, ds_test, verbose=verbose)
-            own_results.append(result[0][1])
-            own_fit_time.append(result[-1])
-        if PLOTLY:
-            fig.add_trace(go.Box(y=own_results, name='Cvnn'))
-            fig_time.add_trace(go.Box(y=own_fit_time, name='Cvnn'))
-    if KERAS_DEBUG:
-        tf.print("Keras simulation")
-        for _ in tqdm(range(iterations)):
-            result = keras_fit(ds_train, ds_test, verbose=verbose)
-            keras_results.append(result[0][1])
-            keras_fit_time.append(result[-1])
-        if PLOTLY:  
-            fig.add_trace(go.Box(y=keras_results, name='Keras'))
-            fig_time.add_trace(go.Box(y=keras_fit_time, name='Keras'))
-    if PLOTLY:
-        plotly.offline.plot(fig, filename="./results/mnist_test.html",
-                            config=PLOTLY_CONFIG, auto_open=True)
-        plotly.offline.plot(fig_time, filename="./results/mnist_test_fit_time.html",
-                            config=PLOTLY_CONFIG, auto_open=True)
-    own_results = np.array(own_results)
-    keras_results = np.array(keras_results)
-    np.save("./results/keras_mnist_test.npy", keras_results)
-    np.save("./results/own_mnist_test.npy", own_results)
-    own_err = own_results.std() * 2.576 / np.sqrt(50)
-    own_mean = own_results.mean()
-    keras_err = keras_results.std() * 2.576 / np.sqrt(50)
-    keras_mean = keras_results.mean()
-    q75, q25 = np.percentile(own_results, [75, 25])
-    own_median_err = 1.57 * (q75 - q25) / np.sqrt(50)
-    own_median = np.median(own_results)
-    q75, q25 = np.percentile(keras_results, [75, 25])
-    keras_median_err = 1.57 * (q75 - q25) / np.sqrt(50)
-    keras_median = np.median(keras_results)
-    mean_str = f"Own Mean: {own_mean * 100} +- {own_err * 100}\nKeras Mean: {keras_mean * 100} +- {keras_err * 100}\n"
-    median_str = f"Own Median: {own_median * 100} +- {own_median_err * 100}\nKeras Median: {keras_median * 100} +- {keras_median_err * 100}\n"
-    f = open("rmsprop_results.txt", "w+")
-    f.write(mean_str)
-    f.write(median_str)
-    f.close()
+    return history, stop - start
 
 
 def test_mnist():
@@ -162,13 +102,10 @@ def test_mnist():
     init1 = tf.constant_initializer(init((784, 128)).numpy())
     init2 = tf.constant_initializer(init((128, 10)).numpy())
     ds_train, ds_test = get_dataset()
-    keras1 = keras_fit(ds_train, ds_test, init1=init1, init2=init2)
-    keras2 = keras_fit(ds_train, ds_test, init1=init1, init2=init2)
-    own = own_fit(ds_train, ds_test, init1=init1, init2=init2)
-    print(keras1)
-    print(keras2)
-    print(own)
-    # set_trace()
+    keras_hist, keras_time = keras_fit(ds_train, ds_test, init1=init1, init2=init2)
+    # keras2 = keras_fit(ds_train, ds_test, init1=init1, init2=init2)
+    own_hist, own_time = own_fit(ds_train, ds_test, init1=init1, init2=init2)
+    assert keras_hist == own_hist
     
 
 if __name__ == "__main__":

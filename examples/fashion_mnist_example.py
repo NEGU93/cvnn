@@ -16,6 +16,7 @@ def get_fashion_mnist_dataset():
 
 def keras_fit(train_images, train_labels, test_images,  test_labels, 
               init1='glorot_uniform', init2='glorot_uniform', epochs=10):
+    tf.random.set_seed(1)
     model = tf.keras.Sequential([
         tf.keras.layers.Flatten(input_shape=(28, 28)),
         tf.keras.layers.Dense(128, activation='relu', kernel_initializer=init1),
@@ -24,14 +25,15 @@ def keras_fit(train_images, train_labels, test_images,  test_labels,
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
-    model.fit(train_images, train_labels, epochs=epochs, shuffle=False)
+    history = model.fit(train_images, train_labels, epochs=epochs, shuffle=False)
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
     print('\nTest accuracy:', test_acc)
-    return test_loss, test_acc
+    return history
 
 
 def own_fit(train_images, train_labels, test_images,  test_labels, 
             init1='glorot_uniform', init2='glorot_uniform', epochs=10):
+    tf.random.set_seed(1)
     model = tf.keras.Sequential([
         layers.ComplexFlatten(input_shape=(28, 28)),
         layers.ComplexDense(128, activation='cart_relu', dtype=np.float32, kernel_initializer=init1),
@@ -40,10 +42,10 @@ def own_fit(train_images, train_labels, test_images,  test_labels,
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
-    model.fit(train_images, train_labels, epochs=epochs, shuffle=False)
+    history = model.fit(train_images, train_labels, epochs=epochs, shuffle=False)
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
     print('\nTest accuracy:', test_acc)
-    return test_loss, test_acc
+    return history
 
 
 def test_fashion_mnist():
@@ -54,9 +56,9 @@ def test_fashion_mnist():
     init2 = tf.constant_initializer(init((128, 10)).numpy())
     (train_images, train_labels), (test_images, test_labels) = get_fashion_mnist_dataset()
     keras = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
-    keras1 = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
+    # keras1 = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     own = own_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
-    assert keras == own or keras != keras1, f"{keras} != {own}"
+    assert keras == own, f"{keras} != {own}"
 
 
 if __name__ == "__main__":
