@@ -15,6 +15,7 @@ t_input_shape = Union[TensorShape, List[TensorShape]]
 
 DEFAULT_COMPLEX_TYPE = np.complex64
 
+
 class ComplexLayer(ABC):
 
     @abstractmethod

@@ -78,7 +78,7 @@ def fashion_mnist_example():
 
 
 def cifar10_test():
-    dtype_1 = np.complex64
+    dtype_1 = 'complex64'
     (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
     # Normalize pixel values to be between 0 and 1
     train_images, test_images = train_images / 255.0, test_images / 255.0
@@ -87,10 +87,20 @@ def cifar10_test():
     train_labels = train_labels.astype(dtype_1)
     test_labels = test_labels.astype(dtype_1)
 
+    tf.random.set_seed(1)
+    hist1 = cifar10_test_model_1(train_images, train_labels, test_images, test_labels, dtype_1)
+
+    tf.random.set_seed(1)
+    hist2 = cifar10_test_model_2(train_images, train_labels, test_images, test_labels, dtype_1)
+
+    assert hist1.history == hist2.history
+
+
+def cifar10_test_model_1(train_images, train_labels, test_images, test_labels, dtype_1='complex64'):
     model = models.Sequential()
-    model.add(layers.ComplexInput(input_shape=(32, 32, 3), dtype=dtype_1))     # Never forget this!!!
+    model.add(layers.ComplexInput(input_shape=(32, 32, 3), dtype=dtype_1))  # Never forget this!!!
     model.add(layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
-    model.add(layers.ComplexMaxPooling2D((2, 2)))   # TODO: This is changing the dtype!
+    model.add(layers.ComplexMaxPooling2D((2, 2)))
     model.add(layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
     model.add(layers.ComplexAvgPooling2D((2, 2)))
     model.add(layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
@@ -101,7 +111,26 @@ def cifar10_test():
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
-    history = model.fit(train_images, train_labels, epochs=2, validation_data=(test_images, test_labels))
+    return model.fit(train_images, train_labels, epochs=2, validation_data=(test_images, test_labels), shuffle=False)
+
+
+def cifar10_test_model_2(train_images, train_labels, test_images, test_labels, dtype_1='complex64'):
+    x = layers.complex_input(shape=(32, 32, 3), dtype=dtype_1)
+    conv1 = layers.ComplexConv2D(32, (3, 3), activation='cart_relu')(x)
+    pool1 = layers.ComplexMaxPooling2D((2, 2))(conv1)
+    conv2 = layers.ComplexConv2D(64, (3, 3), activation='cart_relu')(pool1)
+    pool2 = layers.ComplexAvgPooling2D((2, 2))(conv2)
+    conv3 = layers.ComplexConv2D(64, (3, 3), activation='cart_relu')(pool2)
+    flat = layers.ComplexFlatten()(conv3)
+    dense1 = layers.ComplexDense(64, activation='cart_relu')(flat)
+    y = layers.ComplexDense(10, activation='convert_to_real_with_abs')(dense1)
+
+    model = models.Model(inputs=[x], outputs=[y])
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
+    model.summary()
+    return model.fit(train_images, train_labels, epochs=2, validation_data=(test_images, test_labels), shuffle=False)
 
 
 def random_dataset():
@@ -128,7 +157,7 @@ def random_dataset():
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'],
-                  # run_eagerly=True
+                  # run_eagerly=Trutest_regressione
                   )
     model.summary()
     # Train and evaluate
