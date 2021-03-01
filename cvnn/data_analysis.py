@@ -506,7 +506,7 @@ class Plotter:
         self.file_suffix = file_suffix
         self.model_name = model_name
         self.pandas_dict = {}
-        
+
         if data_results_dict:
             result_pandas = pd.DataFrame.from_dict(data_results_dict)
             result_pandas.to_csv(self.path / f"{model_name}{file_suffix}", index=False)

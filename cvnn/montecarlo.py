@@ -604,10 +604,10 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     real_filter = monte_carlo.pandas_full_data['network'] == "real_network"
     complex_last_epochs = monte_carlo.pandas_full_data[epoch_filter & complex_filter]
     real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
-    complex_median = complex_last_epochs['accuracy'].median()
-    real_median = real_last_epochs['accuracy'].median()
-    complex_median_train = complex_last_epochs['val_accuracy'].median()
-    real_median_train = real_last_epochs['val_accuracy'].median()
+    complex_median_train = complex_last_epochs['accuracy'].median()
+    real_median_train = real_last_epochs['accuracy'].median()
+    complex_median = complex_last_epochs['val_accuracy'].median()
+    real_median = real_last_epochs['val_accuracy'].median()
     _save_rvnn_vs_cvnn_montecarlo_log(
         iterations=iterations,
         path=str(monte_carlo.monte_carlo_analyzer.path),
