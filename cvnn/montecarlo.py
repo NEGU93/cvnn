@@ -335,10 +335,10 @@ class RealVsComplex(MonteCarlo):
         real_filter = self.pandas_full_data['network'] == self.models[1].name
         complex_last_epochs = self.pandas_full_data[epoch_filter & complex_filter]
         real_last_epochs = self.pandas_full_data[epoch_filter & real_filter]
-        complex_median = complex_last_epochs['accuracy'].median()
-        real_median = real_last_epochs['accuracy'].median()
-        complex_median_train = complex_last_epochs['val_accuracy'].median()
-        real_median_train = real_last_epochs['val_accuracy'].median()
+        complex_median_train = complex_last_epochs['accuracy'].median()
+        real_median_train = real_last_epochs['accuracy'].median()
+        complex_median = complex_last_epochs['val_accuracy'].median()
+        real_median = real_last_epochs['val_accuracy'].median()
         complex_err = median_error(complex_last_epochs['accuracy'].quantile(.75),
                                    complex_last_epochs['accuracy'].quantile(.25), iterations)
         real_err = median_error(real_last_epochs['val_accuracy'].quantile(.75),
