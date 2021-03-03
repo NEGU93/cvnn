@@ -421,8 +421,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                     validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
-    if do_all:
-        monte_carlo.monte_carlo_analyzer.do_all()
+    monte_carlo.output_config['excel_summary'] = False
 
     # Save data to remember later what I did.
     _save_montecarlo_log(iterations=iterations,
@@ -594,8 +593,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=shuffle, debug=debug, data_summary=dataset.summary(), polar=polar,
                     validation_split=validation_split, validation_data=validation_data)
-    if do_all:
-        monte_carlo.monte_carlo_analyzer.do_all()
+    monte_carlo.output_config['excel_summary'] = False
 
     # Save data to remember later what I did.
     max_epoch = monte_carlo.pandas_full_data['epoch'].max()

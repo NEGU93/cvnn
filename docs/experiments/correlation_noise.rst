@@ -13,6 +13,11 @@ This results can be replicated by running the following code (changing the input
                                         polar=False, do_all=True, dropout=None)
 
 
+.. note:: Results will be differents to those published on the report because of the following items
+
+    - Since version 0.2.89 the default real mlp model changed.
+    - Default optimizer was sgd and not adam.
+
 **Simulation Results**
 
 .. toctree::
