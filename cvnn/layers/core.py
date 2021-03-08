@@ -190,30 +190,34 @@ class ComplexDense(Dense, ComplexLayer):
     def build(self, input_shape):
         if self.my_dtype.is_complex:
             self.w_r = tf.Variable(
+                name='kernel_r',
                 initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
                 trainable=True
             )
             self.w_i = tf.Variable(
+                name='kernel_i',
                 initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
                 trainable=True
             )
             self.b_r = tf.Variable(
+                name='bias_r',
                 initial_value=self.bias_initializer(shape=(self.units,), dtype=self.my_dtype),
                 trainable=True
             )
             self.b_i = tf.Variable(
+                name='bias_i',
                 initial_value=self.bias_initializer(shape=(self.units,), dtype=self.my_dtype),
                 trainable=True
             )
         else:
             # TODO: For Complex you should probably want to use MY init for real keras. DO sth! at least error message
-            self.w = self.add_weight(
+            self.w = self.add_weight('kernel',
                 shape=(input_shape[-1], self.units),
                 dtype=self.my_dtype,
                 initializer=self.kernel_initializer,
                 trainable=True,
             )
-            self.b = self.add_weight(shape=(self.units,), dtype=self.my_dtype,
+            self.b = self.add_weight('bias', shape=(self.units,), dtype=self.my_dtype,
                                      initializer=self.bias_initializer, trainable=True)
 
     def call(self, inputs: t_input):

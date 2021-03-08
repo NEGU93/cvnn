@@ -5,6 +5,7 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+import datetime
 from pdb import set_trace
 from time import sleep
 from openpyxl import load_workbook, Workbook
@@ -47,6 +48,7 @@ class MonteCarlo:
             'excel_summary': True,
             'debug': False,
             'summary_of_run': True,
+            'tensorboard': False,
             'safety_checkpoints': False
         }
 
@@ -127,11 +129,18 @@ class MonteCarlo:
                 x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
                                                                            validation_data, test_data, polar)
                 model.set_weights(w_save[i])
+                temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
+                os.makedirs(temp_path, exist_ok=True)
+                tensorboard_callback = None
+                if self.output_config['tensorboard']:
+                    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=temp_path / 'tensorboard',
+                                                                          histogram_freq=1)
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
-                                       verbose=debug, validation_freq=display_freq)
-                test_results = self._inner_callback(model, validation_data, confusion_matrix, polar, i, it, run_result,
-                                                    test_results, test_data_fit)
+                                       verbose=debug, validation_freq=display_freq,
+                                       callbacks=[tensorboard_callback])
+                test_results = self._inner_callback(model, validation_data, confusion_matrix, polar, i, run_result,
+                                                    test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
         return self._end_callback(x, y, iterations, data_summary, polar, epochs, batch_size,
                                   confusion_matrix, test_results, pbar)
@@ -206,12 +215,11 @@ class MonteCarlo:
         if self.output_config['plot_all']:
             return self.monte_carlo_analyzer.do_all()
 
-    def _inner_callback(self, model, validation_data, confusion_matrix, polar, model_index, it,
-                        run_result, test_results, test_data_fit):
+    def _inner_callback(self, model, validation_data, confusion_matrix, polar, model_index,
+                        run_result, test_results, test_data_fit, temp_path):
         # TODO: Must have save_csv_history to do the montecarlo results latter
         # Save all results
-        temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{model_index}_{model.name}"
-        os.makedirs(temp_path, exist_ok=True)
+
         plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
         self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
         if self.output_config['confusion_matrix']:
@@ -373,7 +381,8 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
-                   debug: bool = False, polar: bool = False, do_all: bool = True, do_conf_mat: bool = True) -> str:
+                   debug: bool = False, polar: bool = False, do_conf_mat: bool = True, do_all: bool = True,
+                   tensorboard: bool = False) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -417,11 +426,14 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
         monte_carlo.add_model(model)
     if not open_dataset:
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
+    monte_carlo.output_config['excel_summary'] = False
+    monte_carlo.output_config['tensorboard'] = tensorboard
+    monte_carlo.output_config['confusion_matrix'] = do_conf_mat
+    monte_carlo.output_config['plot_all'] = do_all
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
-                    validation_split=validation_split, validation_data=validation_data, do_conf_mat=do_conf_mat,
+                    validation_split=validation_split, validation_data=validation_data,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
-    monte_carlo.output_config['excel_summary'] = False
 
     # Save data to remember later what I did.
     _save_montecarlo_log(iterations=iterations,
@@ -441,6 +453,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
                                     optimizer='sgd',       # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
                                     debug: bool = False, polar: bool = False, do_all: bool = True,
+                                    tensorboard: bool = False,
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
@@ -492,10 +505,11 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
         return run_montecarlo(models=models, dataset=dataset, open_dataset=None,
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                               validation_split=0.2, validation_data=None,
-                              debug=debug, polar=polar, do_all=do_all, do_conf_mat=True)
+                              debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=True)
     else:
         return mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq,
                                                   optimizer, shape_raw, activation, debug, polar, do_all,
+                                                  tensorboard=tensorboard,
                                                   dropout=dropout)
 
 
@@ -508,8 +522,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        dropout: float = 0.5, validation_split: float = 0.2,
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
-                                       do_conf_mat: bool = True, checkpoints: bool = False,
-                                       shuffle: bool = False) -> str:
+                                       shuffle: bool = False, tensorboard: bool = False) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over any dataset.
     1. Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.
@@ -556,7 +569,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         - 'ratio': neurons_real_valued_layer[i] = r * neurons_complex_valued_layer[i], 'r' constant for all 'i'
         - 'alternate': Method described in https://arxiv.org/abs/1811.12351 where one alternates between
                 multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.
-    :param do_conf_mat: Generate a confusion matrix based on results.
+    :param shuffle: TODO
     :return: (string) Full path to the run_data.csv generated file.
         It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
     """
@@ -588,12 +601,16 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network,
                                 capacity_equivalent=capacity_equivalent, equiv_technique=equiv_technique)
+    monte_carlo.output_config['tensorboard'] = tensorboard
+    # monte_carlo.output_config['confusion_matrix'] = do_conf_mat
+    monte_carlo.output_config['plot_all'] = do_all
+    monte_carlo.output_config['excel_summary'] = False
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                     shuffle=shuffle, debug=debug, data_summary=dataset.summary(), polar=polar,
                     validation_split=validation_split, validation_data=validation_data)
-    monte_carlo.output_config['excel_summary'] = False
+
 
     # Save data to remember later what I did.
     max_epoch = monte_carlo.pandas_full_data['epoch'].max()
