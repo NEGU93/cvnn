@@ -120,6 +120,7 @@ class MonteCarlo:
         w_save = []                     # TODO: Find a better method
         for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
             w_save.append(model.get_weights())     # Save model weight
+        np.save(self.monte_carlo_analyzer.path / "initial_debug_weights.npy", np.array(w_save))     # TODO
 
         for it in range(iterations):
             if debug:
@@ -136,6 +137,11 @@ class MonteCarlo:
                 if self.output_config['tensorboard']:
                     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=temp_path / 'tensorboard',
                                                                           histogram_freq=1)
+                with tf.GradientTape() as g:
+                    y_pred = model(x_fit)
+                    loss = model.compiled_loss(y_pred, y)
+                    gradients = g.gradient(loss, model.trainable_weights)
+                np.save(temp_path / "gradients.npy", np.array(gradients))
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
@@ -222,7 +228,6 @@ class MonteCarlo:
                         run_result, test_results, test_data_fit, temp_path):
         # TODO: Must have save_csv_history to do the montecarlo results latter
         # Save all results
-
         plotter = Plotter(path=temp_path, data_results_dict=run_result.history, model_name=model.name)
         self.pandas_full_data = pd.concat([self.pandas_full_data, plotter.get_full_pandas_dataframe()], sort=False)
         if self.output_config['confusion_matrix']:
