@@ -52,4 +52,3 @@ if __name__ == "__main__":
     for i_w, f_w, gr in zip(results["init_weights"], results["final_weights"], results["gradients"]):
         gr = gr.numpy()
         print(np.allclose(gr, (i_w - f_w) * BATCH_SIZE / 0.01))
-    set_trace()

@@ -133,14 +133,15 @@ class MonteCarlo:
                 model.set_weights(w_save[i])
                 temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
                 os.makedirs(temp_path, exist_ok=True)
-                tensorboard_callback = None
+                callbacks = None
                 if self.output_config['tensorboard']:
                     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=temp_path / 'tensorboard',
                                                                           histogram_freq=1)
+                    callbacks = [tensorboard_callback]
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
-                                       callbacks=[tensorboard_callback])
+                                       callbacks=callbacks)
                 test_results = self._inner_callback(model, validation_data, confusion_matrix, polar, i, run_result,
                                                     test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
@@ -460,6 +461,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
                                     debug: bool = False, polar: bool = False, do_all: bool = True,
                                     tensorboard: bool = False,
+                                    capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
@@ -522,6 +524,8 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
         return mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq,
                                                   optimizer, shape_raw, activation, debug, polar, do_all,
                                                   tensorboard=tensorboard,
+                                                  capacity_equivalent=capacity_equivalent,
+                                                  equiv_technique=equiv_technique,
                                                   dropout=dropout, validation_split=validation_split)
 
 
