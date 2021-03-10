@@ -1066,13 +1066,12 @@ class MonteCarloAnalyzer:
             1. plotly
             2. seaborn
         And for keys:
-            1. val_accuracy
-            2. val_loss
+            1. val_accuracy (if available)
+            2. val_loss     (if available)
             3. accuracy
             4. loss
         """
-
-        key_list = ['accuracy', 'loss', 'val_accuracy', 'val_loss']
+        key_list = [c for c in self.df.columns.values.tolist() if c not in ['network', 'epoch', 'path']]
         for key in key_list:
             # self.plot_3d_hist(key=key)
             for lib in ['seaborn', 'plotly']:
@@ -1432,6 +1431,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.42'
+__version__ = '0.1.43'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
