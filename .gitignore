@@ -4,6 +4,7 @@ log/
 out/
 data/
 results/
+debug/*.npy
 cvnn.egg-info/
 docs/_build/html/.doctrees/
 docs/_build/html/.buildinfo/

@@ -139,7 +139,7 @@ class MonteCarlo:
                                                                           histogram_freq=1)
                 with tf.GradientTape() as g:
                     y_pred = model(x_fit)
-                    loss = model.compiled_loss(y_pred, y)
+                    loss = tf.keras.losses.categorical_crossentropy(y_pred=y_pred, y_true=y)
                     gradients = g.gradient(loss, model.trainable_weights)
                 np.save(temp_path / "gradients.npy", np.array(gradients))
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,

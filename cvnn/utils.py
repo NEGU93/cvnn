@@ -16,7 +16,6 @@ from typing import Type
 logger = logging.getLogger(cvnn.__name__)
 
 
-
 def reset_weights(model: Type[Model]):
     # https://github.com/keras-team/keras/issues/341#issuecomment-539198392
     for layer in model.layers:

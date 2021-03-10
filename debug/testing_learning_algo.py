@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 from pdb import set_trace
 
-path = Path("/home/barrachina/Documents/cvnn/log/montecarlo/2021/03March/10Wednesday/run-11h09m27")
+path = Path("/home/barrachina/Documents/cvnn/log/montecarlo/2021/03March/10Wednesday/run-15h12m52")
 # init_weight = np.load(path / "initial_weights.npy", allow_pickle=True)
 init_debug_weight = np.load(path / "initial_debug_weights.npy", allow_pickle=True)
 
