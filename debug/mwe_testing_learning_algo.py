@@ -2,6 +2,8 @@ import tensorflow as tf
 import numpy as np
 from pdb import set_trace
 
+BATCH_SIZE = 10
+
 
 def get_dataset():
     fashion_mnist = tf.keras.datasets.fashion_mnist
@@ -30,17 +32,17 @@ def train(model, x_fit, y_fit):
         np.save("loss.npy", np.array(loss))
         gradients = g.gradient(loss, model.trainable_weights)
     np.save("gradients.npy", np.array(gradients))
-    model.fit(x_fit, y_fit, epochs=1, batch_size=100)
+    model.fit(x_fit, y_fit, epochs=1, batch_size=BATCH_SIZE)
     np.save("final_weights.npy", np.array(model.get_weights()))
 
 
 if __name__ == "__main__":
     (train_images, train_labels), (test_images, test_labels) = get_dataset()
     model = get_model()
-    y_fit = np.zeros((100, 10))
-    for i, val in enumerate(train_labels[:100]):
+    y_fit = np.zeros((BATCH_SIZE, 10))
+    for i, val in enumerate(train_labels[:BATCH_SIZE]):
         y_fit[i][val] = 1.
-    train(model, train_images[:100], y_fit)
+    train(model, train_images[:BATCH_SIZE], y_fit)
     results = {
         "loss": np.load("loss.npy", allow_pickle=True),
         "init_weights": np.load("initial_weights.npy", allow_pickle=True),
@@ -49,5 +51,5 @@ if __name__ == "__main__":
     }
     for i_w, f_w, gr in zip(results["init_weights"], results["final_weights"], results["gradients"]):
         gr = gr.numpy()
-        print(np.allclose(gr, (i_w - f_w) / 0.0001))
-    # set_trace()
+        print(np.allclose(gr, (i_w - f_w) * BATCH_SIZE / 0.01))
+    set_trace()
