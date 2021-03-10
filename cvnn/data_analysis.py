@@ -1041,7 +1041,7 @@ class MonteCarloAnalyzer:
         networks_availables = self.df.network.unique()
         for net in networks_availables:
             data = self.df[self.df.network == net]
-            cols = ['loss', 'val_loss', 'accuracy', 'val_accuracy']
+            cols = [c for c in data.columns.values.tolist() if c not in ['network', 'epoch', 'path']]
             frames = []
             keys = []
             for epoch in data.epoch.unique():
@@ -1432,6 +1432,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.41'
+__version__ = '0.1.42'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

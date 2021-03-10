@@ -623,7 +623,6 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                     shuffle=shuffle, debug=debug, data_summary=dataset.summary(), polar=polar,
                     validation_split=validation_split, validation_data=validation_data)
 
-
     # Save data to remember later what I did.
     max_epoch = monte_carlo.pandas_full_data['epoch'].max()
     epoch_filter = monte_carlo.pandas_full_data['epoch'] == max_epoch
@@ -633,8 +632,27 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     real_last_epochs = monte_carlo.pandas_full_data[epoch_filter & real_filter]
     complex_median_train = complex_last_epochs['accuracy'].median()
     real_median_train = real_last_epochs['accuracy'].median()
-    complex_median = complex_last_epochs['val_accuracy'].median()
-    real_median = real_last_epochs['val_accuracy'].median()
+    try:
+        complex_median = complex_last_epochs['val_accuracy'].median()
+        real_median = real_last_epochs['val_accuracy'].median()
+        complex_err = median_error(complex_last_epochs['val_accuracy'].quantile(.75),
+                                   complex_last_epochs['val_accuracy'].quantile(.25), iterations)
+        real_err = median_error(real_last_epochs['val_accuracy'].quantile(.75),
+                                real_last_epochs['val_accuracy'].quantile(.25), iterations)
+        winner = 'CVNN' if complex_median > real_median else 'RVNN'
+    except KeyError:
+        complex_median = None
+        real_median = None
+        complex_err = median_error(complex_last_epochs['accuracy'].quantile(.75),
+                                   complex_last_epochs['accuracy'].quantile(.25), iterations)
+        real_err = median_error(real_last_epochs['accuracy'].quantile(.75),
+                                real_last_epochs['accuracy'].quantile(.25), iterations)
+        if complex_median_train > real_median_train:
+            winner = 'CVNN'
+        elif complex_median_train == real_median_train:
+            winner = None
+        else:
+            winner = 'RVNN'
     _save_rvnn_vs_cvnn_montecarlo_log(
         iterations=iterations,
         path=str(monte_carlo.monte_carlo_analyzer.path),
@@ -647,13 +665,10 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         activation=activation,
         dataset_size=str(dataset.x.shape[0]), feature_size=str(dataset.x.shape[1]),
         epochs=epochs, batch_size=batch_size,
-        winner='CVNN' if complex_median > real_median else 'RVNN',
+        winner=winner,
         complex_median=complex_median, real_median=real_median,
         complex_median_train=complex_median_train, real_median_train=real_median_train,
-        complex_err=median_error(complex_last_epochs['accuracy'].quantile(.75),
-                                 complex_last_epochs['accuracy'].quantile(.25), iterations),
-        real_err=median_error(real_last_epochs['val_accuracy'].quantile(.75),
-                              real_last_epochs['val_accuracy'].quantile(.25), iterations),
+        complex_err=complex_err, real_err=real_err,
         filename='./log/mlp_montecarlo_summary.xlsx'
     )
     return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")
