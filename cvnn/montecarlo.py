@@ -461,7 +461,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
 
 def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: int = 128, param_list=None,
                                     epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
-                                    optimizer='sgd',       # TODO: Add typing here
+                                    optimizer='sgd', validation_split: float = 0.2,      # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
                                     debug: bool = False, polar: bool = False, do_all: bool = True,
                                     tensorboard: bool = False,
@@ -516,13 +516,13 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
     if models is not None:
         return run_montecarlo(models=models, dataset=dataset, open_dataset=None,
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                              validation_split=0.2, validation_data=None,
+                              validation_split=validation_split, validation_data=None,
                               debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=True)
     else:
         return mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq,
                                                   optimizer, shape_raw, activation, debug, polar, do_all,
                                                   tensorboard=tensorboard,
-                                                  dropout=dropout)
+                                                  dropout=dropout, validation_split=validation_split)
 
 
 def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
