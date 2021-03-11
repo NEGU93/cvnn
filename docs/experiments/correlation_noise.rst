@@ -13,10 +13,13 @@ This results can be replicated by running the following code (changing the input
                                         polar=False, do_all=True, dropout=None)
 
 
-.. note:: Results will be differents to those published on the report because of the following items
+.. note:: Results will be differents to those published on the report because of the following reasons
     
-    - Since version 0.2.89 the default real mlp model changed.
-    - Default optimizer was sgd and not adam.
+    - Since version 0.2.89 the default real mlp model changed using a new definition that will be published in a new article.
+    - Default optimizer changed to adam.
+    - As the dataset is generated randomly. This means two independent runs of :code:`run_gaussian_dataset_montecarlo` may not have the same confidence intervals and results.
+        - The error reported on the paper is for the specific dataset generated. 
+        - Disclaimer: All comparisons with a parameter variation was done with the same dataset.
     - Since version 0.3.48 cvnn started using TensorFlow optimizer which averages gradients by it's batch size according to `this post <https://stackoverflow.com/questions/66566905/debugging-tensorflow-fit-not-making-sense/>`_
 
 **Simulation Results**
