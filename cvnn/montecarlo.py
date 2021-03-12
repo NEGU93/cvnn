@@ -120,7 +120,7 @@ class MonteCarlo:
         w_save = []                     # TODO: Find a better method
         for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
             w_save.append(model.get_weights())     # Save model weight
-        np.save(self.monte_carlo_analyzer.path / "initial_debug_weights.npy", np.array(w_save))     # TODO
+        # np.save(self.monte_carlo_analyzer.path / "initial_debug_weights.npy", np.array(w_save))     # TODO
 
         for it in range(iterations):
             if debug:
