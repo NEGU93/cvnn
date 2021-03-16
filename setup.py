@@ -18,7 +18,7 @@ setup(
     author="J Agustin BARRACHINA",
     author_email='joseagustin.barra@gmail.com',
     url='https://github.com/NEGU93/cvnn',
-    packages=['cvnn'],
+    packages=['cvnn', 'cvnn.layers'],
     entry_points={
         'console_scripts': [
             'cvnn=cvnn.cli:cli'
