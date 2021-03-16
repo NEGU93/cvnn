@@ -115,10 +115,10 @@ def transform_to_real(x_complex, mode=False):
     m = np.shape(x_complex)[0]
     n = np.prod(np.shape(x_complex)[1:])
     flat_x_complex = np.reshape(x_complex, (m, n))
-    if mode != 'amplitude_only':
-        x_real = np.ones((m, 2*n))
-    else:
-        x_real = np.ones((m, 2 * n))
+    multiplier = 2
+    if mode == 'amplitude_only':
+        multiplier = 1
+    x_real = np.ones((m, multiplier * n))
     if mode == 'real_imag':
         x_real[:, :n] = np.real(flat_x_complex)
         x_real[:, n:] = np.imag(flat_x_complex)
@@ -129,7 +129,7 @@ def transform_to_real(x_complex, mode=False):
         x_real = np.abs(flat_x_complex)
     else:
         raise KeyError(f"Real cast mode {mode} not implemented")
-    return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*2,))
+    return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*multiplier,))
 
 
 def cart2polar(z):
