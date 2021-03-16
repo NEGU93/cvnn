@@ -15,6 +15,10 @@ from typing import Type
 
 logger = logging.getLogger(cvnn.__name__)
 
+REAL_CAST_MODES = {
+    'real_imag', 'amplitude_phase', 'amplitude_only'
+}
+
 
 def reset_weights(model: Type[Model]):
     # https://github.com/keras-team/keras/issues/341#issuecomment-539198392
@@ -94,11 +98,11 @@ def get_func_name(fun):
         sys.exit(-1)
 
 
-def transform_to_real(x_complex, polar=False):
+def transform_to_real(x_complex, mode=False):
     """
     Transforms a complex input matrix into a real value matrix (double size)
     :param x_complex: Complex-valued matrix of size mxn
-    :param polar: If True, the data returned will be the amplitude and phase instead of real an imaginary part
+    :param mode: If True, the data returned will be the amplitude and phase instead of real an imaginary part
         (Default: False)
     :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
     """
@@ -106,16 +110,25 @@ def transform_to_real(x_complex, polar=False):
     if not tf.dtypes.as_dtype(x_complex.dtype).is_complex:
         # Intput was not complex, nothing to do
         return x_complex
+    if mode not in REAL_CAST_MODES:
+        raise KeyError(f"Unknown real cast mode {mode}")
     m = np.shape(x_complex)[0]
     n = np.prod(np.shape(x_complex)[1:])
     flat_x_complex = np.reshape(x_complex, (m, n))
-    x_real = np.ones((m, 2*n))
-    if not polar:
+    if mode != 'amplitude_only':
+        x_real = np.ones((m, 2*n))
+    else:
+        x_real = np.ones((m, 2 * n))
+    if mode == 'real_imag':
         x_real[:, :n] = np.real(flat_x_complex)
         x_real[:, n:] = np.imag(flat_x_complex)
-    else:
+    elif mode == 'amplitude_phase':
         x_real[:, :n] = np.abs(flat_x_complex)
         x_real[:, n:] = np.angle(flat_x_complex)
+    elif mode == 'amplitude_only':
+        x_real = np.abs(flat_x_complex)
+    else:
+        raise KeyError(f"Real cast mode {mode} not implemented")
     return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*2,))
 
 
@@ -180,6 +193,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.21'
+__version__ = '0.0.22'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

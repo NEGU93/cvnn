@@ -301,6 +301,7 @@ class SeveralMonteCarloComparison:
             NOTE: x and paths must be the same size
         """
         self.x_label = label
+        x = [str(x_tmp) for x_tmp in x]
         if all([item.isdigit() for item in x]):
             self.x = list(map(int, x))
         elif all([item.replace(".", "", 1).isdigit() for item in x]):
@@ -1431,6 +1432,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.43'
+__version__ = '0.1.44'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

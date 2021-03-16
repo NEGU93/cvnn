@@ -59,8 +59,10 @@ class MonteCarlo:
         """
         self.models.append(model)
 
-    def run(self, x, y, data_summary: str = '', polar: bool = False, validation_split: float = 0.2,
-            validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,    # TODO: Add the tuple of validation data details.
+    def run(self, x, y, data_summary: str = '',
+            real_cast_modes: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
+            validation_split: float = 0.2,
+            validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,  # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
             shuffle: bool = True, debug: bool = False, display_freq: int = 1):
@@ -81,7 +83,7 @@ class MonteCarlo:
         :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
             If f x is a dataset then y will be ignored (default None)
         :param data_summary:  (String) Dataset name to keep track of it
-        :param polar: (Boolean) If the model is real.
+        :param real_cast_modes: TODO
             Separate the complex data into real and imaginary part (polar = False) or amplitude and phase (polar = True)
         :param validation_split: Float between 0 and 1.
             Percentage of the input data to be used as test set (the rest will be use as train set)
@@ -113,7 +115,12 @@ class MonteCarlo:
         test_data_cols = None
         if test_data is not None:
             test_data_cols = ['network'] + [n.get_config()['name'] for n in self.models[0].metrics]
-
+        if real_cast_modes is None:
+            real_cast_modes = "real_imag"
+        if isinstance(real_cast_modes, str):
+            real_cast_modes = [real_cast_modes for _ in self.models]
+        # TODO: I can check the real models input size corresponds to the real_cast_mode. And change it with a warning?
+        # I suppose then real_cast_modes is a list or tuple. Not checked TODO
         confusion_matrix, pbar, test_results = self._beginning_callback(iterations, epochs, batch_size,
                                                                         shuffle, data_summary, test_data_cols)
         x, y = randomize(x, y)
@@ -129,7 +136,8 @@ class MonteCarlo:
                 x, y = randomize(x, y)
             for i, model in enumerate(self.models):
                 x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
-                                                                           validation_data, test_data, polar)
+                                                                           validation_data, test_data,
+                                                                           real_cast_modes[i])
                 model.set_weights(w_save[i])
                 temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
                 os.makedirs(temp_path, exist_ok=True)
@@ -142,10 +150,10 @@ class MonteCarlo:
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
                                        callbacks=callbacks)
-                test_results = self._inner_callback(model, validation_data, confusion_matrix, polar, i, run_result,
+                test_results = self._inner_callback(model, validation_data, confusion_matrix, real_cast_modes, i, run_result,
                                                     test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
-        return self._end_callback(x, y, iterations, data_summary, polar, epochs, batch_size,
+        return self._end_callback(x, y, iterations, data_summary, real_cast_modes, epochs, batch_size,
                                   confusion_matrix, test_results, pbar, w_save)
 
     @staticmethod
@@ -157,11 +165,11 @@ class MonteCarlo:
             val_data_fit = validation_data
             test_data_fit = test_data
         else:
-            x_fit = transform_to_real(x, polar=polar)
+            x_fit = transform_to_real(x, mode=polar)
             if validation_data is not None:
-                val_data_fit = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
+                val_data_fit = (transform_to_real(validation_data[0], mode=polar), validation_data[1])
             if test_data is not None:
-                test_data_fit = (transform_to_real(test_data[0], polar=polar), test_data[1])
+                test_data_fit = (transform_to_real(test_data[0], mode=polar), test_data[1])
         return x_fit, val_data_fit, test_data_fit
 
     # Callbacks
@@ -231,7 +239,7 @@ class MonteCarlo:
                 if model.inputs[0].dtype.is_complex:
                     x_test, y_test = validation_data
                 else:
-                    x_test, y_test = (transform_to_real(validation_data[0], polar=polar), validation_data[1])
+                    x_test, y_test = (transform_to_real(validation_data[0], mode=polar), validation_data[1])
                 try:
                     confusion_matrix[model_index]["matrix"] = pd.concat((confusion_matrix[model_index]["matrix"],
                                                                          get_confusion_matrix(model.predict(x_test),
@@ -388,8 +396,8 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
-                   debug: bool = False, polar: bool = False, do_conf_mat: bool = True, do_all: bool = True,
-                   tensorboard: bool = False) -> str:
+                   debug: bool = False, do_conf_mat: bool = True, do_all: bool = True, tensorboard: bool = False,
+                   polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -440,7 +448,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     validation_split=validation_split, validation_data=validation_data,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=False, debug=debug, data_summary=dataset.summary(), polar=polar)
+                    shuffle=False, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar)
 
     # Save data to remember later what I did.
     _save_montecarlo_log(iterations=iterations,
@@ -459,8 +467,8 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
                                     epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
                                     optimizer='sgd', validation_split: float = 0.2,      # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
-                                    debug: bool = False, polar: bool = False, do_all: bool = True,
-                                    tensorboard: bool = False,
+                                    debug: bool = False, do_all: bool = True, tensorboard: bool = False,
+                                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                     capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None) -> str:
     """
@@ -534,7 +542,8 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
                                        optimizer='sgd',     # TODO: Typing
                                        shape_raw=None, activation: t_activation = 'cart_relu',
-                                       debug:  bool = False, polar: bool = False, do_all: bool = True,
+                                       debug:  bool = False, do_all: bool = True,
+                                       polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                        dropout: float = 0.5, validation_split: float = 0.2,
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
@@ -624,7 +633,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=shuffle, debug=debug, data_summary=dataset.summary(), polar=polar,
+                    shuffle=shuffle, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar,
                     validation_split=validation_split, validation_data=validation_data)
 
     # Save data to remember later what I did.
