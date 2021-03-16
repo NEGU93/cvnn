@@ -529,8 +529,10 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
                               validation_split=validation_split, validation_data=None,
                               debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=True)
     else:
-        return mlp_run_real_comparison_montecarlo(dataset, None, iterations, epochs, batch_size, display_freq,
-                                                  optimizer, shape_raw, activation, debug, polar, do_all,
+        return mlp_run_real_comparison_montecarlo(dataset=dataset, open_dataset=None, iterations=iterations,
+                                                  epochs=epochs, batch_size=batch_size, display_freq=display_freq,
+                                                  optimizer=optimizer, shape_raw=shape_raw, activation=activation,
+                                                  debug=debug, polar=polar, do_all=do_all,
                                                   tensorboard=tensorboard,
                                                   capacity_equivalent=capacity_equivalent,
                                                   equiv_technique=equiv_technique,
