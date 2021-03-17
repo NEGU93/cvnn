@@ -3,6 +3,7 @@ import tensorflow_datasets as tfds
 from cvnn import layers
 import numpy as np
 import timeit
+from pdb import set_trace
 try:
     import plotly.graph_objects as go
     import plotly
@@ -48,18 +49,19 @@ def get_dataset():
 
 
 def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
-    tf.random.set_seed(1)
+    tf.random.set_seed(24)
     # https://www.tensorflow.org/datasets/keras_example
     model = tf.keras.models.Sequential([
-      tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
-      tf.keras.layers.Dense(128, activation='relu', kernel_initializer=init1),
-      tf.keras.layers.Dense(10, activation='softmax', kernel_initializer=init2)
+      tf.keras.layers.Flatten(input_shape=(28, 28, 1), dtype=np.float32),
+      tf.keras.layers.Dense(128, activation='relu', kernel_initializer=init1, dtype=np.float32),
+      tf.keras.layers.Dense(10, activation='softmax', kernel_initializer=init2, dtype=np.float32)
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
         optimizer=tf.keras.optimizers.Adam(0.001),
         metrics=['accuracy'],
     )
+    weigths = model.get_weights()
     start = timeit.default_timer()
     history = model.fit(
         ds_train,
@@ -68,11 +70,11 @@ def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='gl
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return history, stop - start
+    return history, stop - start, weigths
 
 
 def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
-    tf.random.set_seed(1)
+    tf.random.set_seed(24)
     model = tf.keras.models.Sequential([
         layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
         layers.ComplexDense(128, activation='cart_relu', dtype=np.float32, kernel_initializer=init1),
@@ -83,6 +85,7 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
         optimizer=tf.keras.optimizers.Adam(0.001),
         metrics=['accuracy'],
     )
+    weigths = model.get_weights()
     start = timeit.default_timer()
     history = model.fit(
         ds_train,
@@ -91,15 +94,20 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return history, stop - start
+    return history, stop - start, weigths
 
 
 def test_mnist():
+    assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
     ds_train, ds_test = get_dataset()
-    keras_hist, keras_time = keras_fit(ds_train, ds_test)
-    # keras2_hist, keras2_time = keras_fit(ds_train, ds_test)
-    own_hist, own_time = own_fit(ds_train, ds_test)
-    assert keras_hist.history == own_hist.history, f"{keras_hist.history}\n !=\n {own_hist.history}"
+    keras_hist, keras_time, keras_weigths = keras_fit(ds_train, ds_test)
+    # keras2_hist, keras2_time, k2_weights = keras_fit(ds_train, ds_test)
+    own_hist, own_time, own_weigths = own_fit(ds_train, ds_test)
+    assert [np.all(k_w == o_w) for k_w, o_w in zip(keras_weigths, own_weigths)]
+    assert keras_hist.history == own_hist.history, f"\n{keras_hist.history}\n !=\n{own_hist.history}"
+    # for k, k2, o in zip(keras_hist.history.values(), keras2_hist.history.values(), own_hist.history.values()):
+    #     if np.all(np.array(k) == np.array(k2)):
+    #         assert np.all(np.array(k) == np.array(o)), f"\n{keras_hist.history}\n !=\n{own_hist.history}"
     
 
 if __name__ == "__main__":

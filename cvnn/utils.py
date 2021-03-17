@@ -98,13 +98,15 @@ def get_func_name(fun):
         sys.exit(-1)
 
 
-def transform_to_real(x_complex, mode=False):
+def transform_to_real(x_complex, mode: str = "real_imag"):
     """
     Transforms a complex input matrix into a real value matrix (double size)
     :param x_complex: Complex-valued matrix of size mxn
-    :param mode: If True, the data returned will be the amplitude and phase instead of real an imaginary part
-        (Default: False)
-    :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
+    :param mode: Mode on how to transform to real. One of the following:
+        - real_imag: Separate x_complex into real and imaginary making the size of the return double x_complex
+        - amplitude_phase: Separate x_complex into amplitude and phase making the size of the return double x_complex
+        - amplitude_only: Apply the absolute value to x_complex. Shape remains the same.
+    :return: real-valued matrix of real valued cast of x_complex
     """
     # import pdb; pdb.set_trace()
     if not tf.dtypes.as_dtype(x_complex.dtype).is_complex:
@@ -193,6 +195,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.22'
+__version__ = '0.0.23'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

@@ -52,10 +52,14 @@ def own_fit(epochs=10):
 
 def test_cifar10():
     epochs = 3
+    assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
     keras = keras_fit(epochs=epochs)
     # keras1 = keras_fit(epochs=epochs)
     own = own_fit(epochs=epochs)
-    assert keras.history == own.history, f"{keras} != {own}"
+    assert keras.history == own.history, f"\n{keras.history}\n !=\n{own.history}"
+    # for k, k2, o in zip(keras.history.values(), keras1.history.values(), own.history.values()):
+    #     if np.all(np.array(k) == np.array(k2)):
+    #         assert np.all(np.array(k) == np.array(o)), f"\n{keras.history}\n !=\n{own.history}"
 
 
 if __name__ == "__main__":

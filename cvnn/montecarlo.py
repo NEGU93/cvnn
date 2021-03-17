@@ -83,8 +83,13 @@ class MonteCarlo:
         :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
             If f x is a dataset then y will be ignored (default None)
         :param data_summary:  (String) Dataset name to keep track of it
-        :param real_cast_modes: TODO
-            Separate the complex data into real and imaginary part or amplitude and phase.
+        :param real_cast_modes: mode parameter used by cvnn.utils.transform_to_real to be used when the model to
+            train is real-valued. One of the following:
+            - String with the mode listed in cvnn.utils.transform_to_real to be used by all the real-valued models to
+                cast complex data to real.
+            - List or Tuple of strings: Same size of self.models. mode on how to cast complex data to real for each
+                model in self.model.
+                real_cast_modes[i] will indicate how to cast data for self.models[i] (ignored when model is complex).
         :param validation_split: Float between 0 and 1.
             Percentage of the input data to be used as test set (the rest will be use as train set)
             Default: 0.0 (No validation set).
@@ -157,6 +162,7 @@ class MonteCarlo:
         if isinstance(real_cast_modes, str):
             real_cast_modes = [real_cast_modes for _ in self.models]
         # I suppose then real_cast_modes is a list or tuple. Not checked TODO
+        assert len(real_cast_modes) == len(self.models), "Size of real_cast_modes should be equal to the total models"
         return real_cast_modes
 
     @staticmethod

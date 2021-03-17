@@ -36,7 +36,7 @@ Monte Carlo
 
         Adds a :code:`keras.Model` to the list to then comparate between them
 
-.. py:method:: run(self, x, y, data_summary='', polar=False, validation_split=0.2, validation_data=None, test_data=None, iterations=100, epochs=10, batch_size=100, shuffle=False, display_freq=1)
+.. py:method:: run(self, x, y, data_summary='', real_cast_modes=None, validation_split=0.2, validation_data=None, test_data=None, iterations=100, epochs=10, batch_size=100, shuffle=False, display_freq=1)
 
     This function is used to compare all models added with :code:`self.add_model` method.
     Runs the iteration dataset :code:`(x, y)`.
@@ -57,8 +57,11 @@ Monte Carlo
     :param y: Labels/Target data. Like the input data x, it could be either Numpy array(s) or TensorFlow tensor(s).
         If x is a dataset then y will be ignored.
     :param data_summary:  (String) Dataset name to keep track of it
-    :param polar: (Boolean) If the model is real.
-        Separate the complex data into real and imaginary part (:code:`polar = False`) or amplitude and phase (:code:`polar = True`)
+    :param real_cast_modes: :code:`mode` parameter used by :ref:`transform-to-real-label` to be used when the model to train is real-valued. One of the following:
+            
+        - String with the :code:`mode` listed in :code:`cvnn.utils.transform_to_real` to be used by all the real-valued models to cast complex data to real.
+        - List or Tuple of strings: Same size of :code:`self.models`. Mode to cast complex data to real for each model in :code:`self.model`. :code:`real_cast_modes[i]` will indicate how to cast data for :code:`self.models[i]` (ignored when model is complex)
+    
     :param validation_split: Float between 0 and 1.
         Percentage of the input data to be used as test set (the rest will be use as train set)
         Default: 0.0 (No validation set).

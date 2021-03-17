@@ -23,14 +23,18 @@ Utils
     :return: the created path in pathlib format (compatible across different OS)
 
 
-.. py:function:: transform_to_real(x_complex, polar=False)
+.. _transform-to-real-label:
+.. py:function:: transform_to_real(x_complex, mode="real_imag")
 
 	Transforms a complex input matrix into a real value matrix (double size)
 
     :param x_complex: Complex-valued matrix of size mxn
-    :param polar: If :code:`True`, the data returned will be the amplitude and phase instead of real an imaginary part
-        (Default: :code:`False`)
-    :return: real-valued matrix of size mx(2*n) unwrapping the real and imag part of the complex-valued input matrix
+    :param mode: Mode on how to transform to real. One of the following.
+
+        - :code:`real_imag` (default): Separate x_complex into real and imaginary making the size of the return double :code:`x_complex`
+        - :code:`amplitude_phase`: Separate :code:`x_complex` into amplitude and phase making the size of the return double :code:`x_complex`
+        - :code:`amplitude_only`: Apply the absolute value to :code:`x_complex`. Shape remains the same.
+    :return: real-valued matrix of real valued cast of :code:`x_complex`
 
 
 .. py:function:: randomize(x, y):

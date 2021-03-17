@@ -49,6 +49,7 @@ def own_fit(train_images, train_labels, test_images,  test_labels,
 
 
 def test_fashion_mnist():
+    assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
     seed = 117
     epochs = 3
     init = tf.keras.initializers.GlorotUniform(seed=seed)
@@ -58,6 +59,7 @@ def test_fashion_mnist():
     keras = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     # keras1 = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     own = own_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
+    # if keras.history == keras1.history:
     assert keras.history == own.history, f"{keras.history } != {own.history }"
 
 
