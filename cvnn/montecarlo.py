@@ -115,7 +115,6 @@ class MonteCarlo:
         test_data_cols = None
         if test_data is not None:
             test_data_cols = ['network'] + [n.get_config()['name'] for n in self.models[0].metrics]
-        set_trace()
         real_cast_modes = self._check_real_cast_modes(real_cast_modes)
         confusion_matrix, pbar, test_results = self._beginning_callback(iterations, epochs, batch_size,
                                                                         shuffle, data_summary, test_data_cols)

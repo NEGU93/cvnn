@@ -655,7 +655,7 @@ class ComplexConv3D(ComplexConv):
             **kwargs)
 
 
-class ComplexConv2DTranspose(ComplexConv):
+class ComplexConv2DTranspose(ComplexConv2D):
     """
     Transposed convolution layer. Sometimes (wrongly) called Deconvolution.
     The need for transposed convolutions generally arises
@@ -769,8 +769,8 @@ class ComplexConv2DTranspose(ComplexConv):
                  dilation_rate=(1, 1),
                  activation=None,
                  use_bias=True,
-                 kernel_initializer='glorot_uniform',
-                 bias_initializer='zeros',
+                 kernel_initializer=ComplexGlorotUniform(),
+                 bias_initializer=Zeros(),
                  kernel_regularizer=None,
                  bias_regularizer=None,
                  activity_regularizer=None,
@@ -913,7 +913,7 @@ class ComplexConv2DTranspose(ComplexConv):
                 bias = tf.complex(self.bias_r, self.bias_i)
         else:
             kernel_r = tf.math.real(self.kernel)
-            kernel_i = tf.math.imag(self.kernel)    # TODO: Check they are all zero
+            kernel_i = tf.math.imag(self.kernel)
             if self.use_bias:
                 bias = self.bias
         real_outputs_ri_rk = backend.conv2d_transpose(
@@ -958,10 +958,7 @@ class ComplexConv2DTranspose(ComplexConv):
             outputs.set_shape(out_shape)
         # Apply bias
         if self.use_bias:
-            outputs = nn.bias_add(
-                outputs,
-                self.bias,
-                data_format=conv_utils.convert_data_format(self.data_format, ndim=4))
+            outputs = nn.bias_add(outputs, bias, data_format=conv_utils.convert_data_format(self.data_format, ndim=4))
         # Apply activation function
         if self.activation is not None:
             return self.activation(outputs)

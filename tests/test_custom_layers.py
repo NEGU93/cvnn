@@ -1,6 +1,6 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
-    ComplexAvgPooling2D
+    ComplexAvgPooling2D, ComplexConv2DTranspose
 import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -214,7 +214,34 @@ def complex_avg_pool():
     assert (res.numpy() == expected_res.astype(np.complex64)).all()
 
 
+def complex_conv_2d_transpose():
+    value = [[1, 2, 1], [2, 1, 2], [1, 1, 2]]
+    init = tf.constant_initializer(value)
+    transpose_2 = ComplexConv2DTranspose(1, kernel_size=3, kernel_initializer=init, dtype=np.float32)
+    input = np.array([[55, 52], [57, 50]]).astype(np.float32).reshape((1, 2, 2, 1))
+    expected = np.array([
+        [55., 162., 159.,  52.],
+        [167., 323., 319., 154.],
+        [169., 264., 326., 204.],
+        [57., 107., 164., 100.]
+    ], dtype=np.float32)
+    assert np.allclose(transpose_2(input).numpy().reshape((4, 4)), expected)    # TODO: Check why the difference
+    value = [[1, 2], [2, 1]]
+    init = tf.constant_initializer(value)
+    transpose_3 = ComplexConv2DTranspose(1, kernel_size=2, kernel_initializer=init, dtype=np.float32)
+    expected = np.array([
+        [55., 162., 104],
+        [167., 323., 152],
+        [114., 157, 50]
+    ], dtype=np.float32)
+    assert np.allclose(transpose_3(input).numpy().reshape((3, 3)), expected)
+    complex_transpose = ComplexConv2DTranspose(1, kernel_size=2, dtype=np.complex64)
+    complex_input = (input + 1j * np.zeros(input.shape)).astype(np.complex64)
+    assert complex_transpose(complex_input).dtype == tf.complex64
+
+
 def test_layers():
+    complex_conv_2d_transpose()
     complex_max_pool_2d()
     dropout()
     complex_avg_pool()

@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import cvnn.layers as complex_layers
+from pdb import set_trace
 
 
 def all_layers_model():
@@ -17,6 +18,7 @@ def all_layers_model():
     model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_sigmoid'))
     model.add(complex_layers.ComplexDropout(0.5))
     model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
+    model.add(complex_layers.ComplexConv2DTranspose(32, (2, 2)))
     model.add(complex_layers.ComplexFlatten())
     model.add(complex_layers.ComplexDense(64, activation='cart_tanh'))
     model.compile(loss=tf.keras.losses.MeanAbsoluteError(), optimizer='adam', metrics=['accuracy'])
