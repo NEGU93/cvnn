@@ -83,7 +83,7 @@ class ComplexConv(Layer, ComplexLayer):
             bias after being updated by an `Optimizer`.
       """
 
-    def __init__(self, rank, filters, kernel_size, dtype, strides=1, padding='valid', data_format=None, dilation_rate=1,
+    def __init__(self, rank, filters, kernel_size, dtype=DEFAULT_COMPLEX_TYPE, strides=1, padding='valid', data_format=None, dilation_rate=1,
                  groups=1, activation=None, use_bias=True,
                  kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
                  kernel_regularizer=None, bias_regularizer=None,  # TODO: Not yet working
