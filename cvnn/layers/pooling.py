@@ -161,61 +161,31 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         super(ComplexUnPooling2D, self).__init__(trainable=trainable, name=name, dtype=self.my_dtype.real_dtype,
                                                dynamic=dynamic, **kwargs)
 
-    def call(self, inputs, output_shape, unpool_mat=None, data_format='channels_last', **kwargs):
+    def call(self, inputs, output_shape, unpool_mat, **kwargs):
+        """
+        Performs unpooling, as explained in:
+        https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml
+        :param inputs: Input Tensor.
+        :param output_shape: Desired output shape.
+        :param unpool_mat: Result argmax from tf.nn.max_pool_with_argmax
+            https://www.tensorflow.org/api_docs/python/tf/nn/max_pool_with_argmax
+        """
         # https://stackoverflow.com/a/42549265/5931672
+        # https://github.com/tensorflow/addons/issues/632#issuecomment-482580850
         # TODO:
         #   1. Verify output_shape first element.
         #   2. Verify None shape tensor for inputs.
-        flatten_inputs = tf.reshape(inputs, [-1])
-        output_flatten_size = tf.cast(tf.math.reduce_prod(output_shape), tf.int64)
-        argmax_flatten = tf.reshape(unpool_mat, [-1])
-        indices = tf.convert_to_tensor([[0, a] for a in argmax_flatten])
-        assert flatten_inputs.shape == argmax_flatten.shape, f"Flatten input shape {flatten_inputs.shape} was not " \
-                                                             f"equal to flatten argmax shape {argmax_flatten.shape}"
-        # set_trace()
-        output_flatten = tf.sparse.SparseTensor(indices=indices, values=flatten_inputs, dense_shape=(1, output_flatten_size.numpy()))
-        output_flatten = tf.sparse.to_dense(output_flatten)
-        set_trace()
-        # for value, index in zip(flatten_inputs, argmax_flatten):
-        #     output_flatten = output_flatten[index].assign(value)
-        output = tf.reshape(output_flatten, shape=output_shape)
-        return output
+        flat_output_shape = tf.cast(tf.reduce_prod(output_shape), tf.int64)
+        updates = tf.reshape(inputs, [-1])
+        # TODO: I could make an automatic unpool mat if it is not given.
+        # if unpool_mat is None:
+        #     unpool_mat = np.linspace(0, flat_output_shape, updates.shape[0])
+        indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
+
+        ret = tf.scatter_nd(indices, updates, shape=[flat_output_shape])
+        ret = tf.reshape(ret, output_shape)
+        return ret
 
     def get_real_equivalent(self):
         return ComplexUnPooling2D(trainable=self.trainable, name=self.name, dtype=self.my_dtype.real_dtype,
                                   dynamic=self.dtype)
-
-
-if __name__ == "__main__":
-    import numpy as np
-    from pdb import set_trace
-
-    img_r = np.array([[
-        [0, 1, 2],
-        [0, 2, 2],
-        [0, 5, 7]
-    ], [
-        [0, 7, 5],
-        [3, 7, 9],
-        [4, 5, 3]
-    ]]).astype(np.float32)
-    img_i = np.array([[
-        [0, 4, 5],
-        [3, 7, 9],
-        [4, 5, 3]
-    ], [
-        [0, 4, 5],
-        [3, 2, 2],
-        [4, 8, 9]
-    ]]).astype(np.float32)
-    img = img_r + 1j * img_i
-    img = np.reshape(img, (2, 3, 3, 1))
-    max_pool = ComplexMaxPooling2D(strides=1, data_format="channels_last")
-    res = max_pool(img.astype(np.complex64))
-    print(img.reshape(2, 3, 3))
-    print(res.numpy().reshape(2, 2, 2))
-    print(max_pool.get_max_index().numpy().reshape(2, 2, 2))
-    # max_pool.input_shape -> *** AttributeError: The layer has never been called and thus has no defined input shape.
-    max_unpooling = ComplexUnPooling2D()
-    unpooled = max_unpooling(res, unpool_mat=max_pool.get_max_index(), output_shape=img.shape)
-    set_trace()
