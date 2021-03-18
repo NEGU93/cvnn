@@ -161,19 +161,20 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         super(ComplexUnPooling2D, self).__init__(trainable=trainable, name=name, dtype=self.my_dtype.real_dtype,
                                                dynamic=dynamic, **kwargs)
 
-    def call(self, inputs, argmax_indeces, output_shape, **kwargs):
+    def call(self, inputs, output_shape, unpool_mat=None, data_format='channels_last', **kwargs):
+        # https://stackoverflow.com/a/42549265/5931672
         # TODO:
         #   1. Verify output_shape first element.
         #   2. Verify None shape tensor for inputs.
         flatten_inputs = tf.reshape(inputs, [-1])
         output_flatten_size = tf.cast(tf.math.reduce_prod(output_shape), tf.int64)
-        output_flatten = tf.zeros(shape=(output_flatten_size,), dtype=self.my_dtype)
-        argmax_flatten = tf.reshape(argmax_indeces, [-1])
+        argmax_flatten = tf.reshape(unpool_mat, [-1])
         indices = tf.convert_to_tensor([[0, a] for a in argmax_flatten])
         assert flatten_inputs.shape == argmax_flatten.shape, f"Flatten input shape {flatten_inputs.shape} was not " \
                                                              f"equal to flatten argmax shape {argmax_flatten.shape}"
         # set_trace()
-        tf.sparse.SparseTensor(indices=indices, values=flatten_inputs, dense_shape=(output_flatten_size.numpy(),))
+        output_flatten = tf.sparse.SparseTensor(indices=indices, values=flatten_inputs, dense_shape=(1, output_flatten_size.numpy()))
+        output_flatten = tf.sparse.to_dense(output_flatten)
         set_trace()
         # for value, index in zip(flatten_inputs, argmax_flatten):
         #     output_flatten = output_flatten[index].assign(value)
@@ -216,5 +217,5 @@ if __name__ == "__main__":
     print(max_pool.get_max_index().numpy().reshape(2, 2, 2))
     # max_pool.input_shape -> *** AttributeError: The layer has never been called and thus has no defined input shape.
     max_unpooling = ComplexUnPooling2D()
-    unpooled = max_unpooling(res, max_pool.get_max_index(), img.shape)
+    unpooled = max_unpooling(res, unpool_mat=max_pool.get_max_index(), output_shape=img.shape)
     set_trace()
