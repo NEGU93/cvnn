@@ -124,6 +124,7 @@ def get_dataset():
     return ds_train, ds_test
 
 
+@tf.autograph.experimental.do_not_convert
 def dropout():
     tf.random.set_seed(0)
     layer = complex_layers.ComplexDropout(.2, input_shape=(2,))
@@ -178,7 +179,7 @@ def get_img():
     return img
 
 
-def complex_max_pool_2d():
+def complex_max_pool_2d(test_unpool=True):
     img = get_img()
     max_pool = ComplexMaxPooling2D(strides=1, data_format="channels_last")
     res = max_pool(img.astype(np.complex64))
@@ -196,15 +197,16 @@ def complex_max_pool_2d():
                 [3. + 9.j]]]
     ])
     assert (res.numpy() == expected_res.astype(np.complex64)).all()
-    max_unpooling = ComplexUnPooling2D()
-    unpooled = max_unpooling(res, output_shape=img.shape, unpool_mat=max_pool.get_max_index())
-    expected_unpooled = np.array([[[0. + 0.j, 0. + 0.j, 0. + 0.j],
-                                   [0. + 0.j, 4. + 14.j, 4. + 18.j],
-                                   [0. + 0.j, 0. + 0.j, 0. + 0.j]],
-                                  [[0. + 0.j, 7. + 4.j, 0. + 0.j],
-                                   [0. + 0.j, 0. + 0.j, 9. + 2.j],
-                                   [0. + 0.j, 5. + 8.j, 3. + 9.j]]]).reshape(2, 3, 3, 1)
-    assert np.all(unpooled.numpy() == expected_unpooled)
+    if test_unpool:
+        max_unpooling = ComplexUnPooling2D(img.shape[1:])
+        unpooled = max_unpooling(res, unpool_mat=max_pool.get_max_index())
+        expected_unpooled = np.array([[[0. + 0.j, 0. + 0.j, 0. + 0.j],
+                                       [0. + 0.j, 4. + 14.j, 4. + 18.j],
+                                       [0. + 0.j, 0. + 0.j, 0. + 0.j]],
+                                      [[0. + 0.j, 7. + 4.j, 0. + 0.j],
+                                       [0. + 0.j, 0. + 0.j, 9. + 2.j],
+                                       [0. + 0.j, 5. + 8.j, 3. + 9.j]]]).reshape(2, 3, 3, 1)
+        assert np.all(unpooled.numpy() == expected_unpooled)
 
     x = tf.constant([[1., 2., 3.],
                      [4., 5., 6.],
@@ -250,6 +252,7 @@ def complex_conv_2d_transpose():
     assert complex_transpose(complex_input).dtype == tf.complex64
 
 
+@tf.autograph.experimental.do_not_convert
 def test_layers():
     complex_conv_2d_transpose()
     complex_max_pool_2d()

@@ -156,36 +156,35 @@ class ComplexAvgPooling2D(ComplexPooling2D):
 
 class ComplexUnPooling2D(Layer, ComplexLayer):
 
-    def __init__(self, trainable=True, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
+    def __init__(self, desired_output_shape, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
         self.my_dtype = tf.dtypes.as_dtype(dtype)
-        super(ComplexUnPooling2D, self).__init__(trainable=trainable, name=name, dtype=self.my_dtype.real_dtype,
-                                               dynamic=dynamic, **kwargs)
+        self.desired_output_shape = desired_output_shape
+        super(ComplexUnPooling2D, self).__init__(trainable=False, name=name, dtype=self.my_dtype.real_dtype,
+                                                 dynamic=dynamic, **kwargs)
 
-    def call(self, inputs, output_shape, unpool_mat, **kwargs):
+    def call(self, inputs, unpool_mat, **kwargs):
         """
         Performs unpooling, as explained in:
         https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml
         :param inputs: Input Tensor.
-        :param output_shape: Desired output shape.
         :param unpool_mat: Result argmax from tf.nn.max_pool_with_argmax
             https://www.tensorflow.org/api_docs/python/tf/nn/max_pool_with_argmax
+            # TODO: I could make an automatic unpool mat if it is not given.
         """
         # https://stackoverflow.com/a/42549265/5931672
         # https://github.com/tensorflow/addons/issues/632#issuecomment-482580850
-        # TODO:
-        #   1. Verify output_shape first element.
-        #   2. Verify None shape tensor for inputs.
-        flat_output_shape = tf.cast(tf.reduce_prod(output_shape), tf.int64)
+        flat_output_shape = tf.reduce_prod(self.desired_output_shape)
+
         updates = tf.reshape(inputs, [-1])
-        # TODO: I could make an automatic unpool mat if it is not given.
-        # if unpool_mat is None:
-        #     unpool_mat = np.linspace(0, flat_output_shape, updates.shape[0])
         indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
 
-        ret = tf.scatter_nd(indices, updates, shape=[flat_output_shape])
-        ret = tf.reshape(ret, output_shape)
+        # import pdb; pdb.set_trace()
+        ret = tf.scatter_nd(indices, updates, shape=(tf.shape(inputs)[0]*flat_output_shape,))
+        desired_output_shape_with_batch = tf.concat([[tf.shape(inputs)[0]], self.desired_output_shape], axis=0)
+        ret = tf.reshape(ret, shape=desired_output_shape_with_batch)
         return ret
 
     def get_real_equivalent(self):
-        return ComplexUnPooling2D(trainable=self.trainable, name=self.name, dtype=self.my_dtype.real_dtype,
-                                  dynamic=self.dtype)
+        return ComplexUnPooling2D(desired_output_shape=self.desired_output_shape, name=self.name,
+                                  dtype=self.my_dtype.real_dtype, dynamic=self.dtype)
+

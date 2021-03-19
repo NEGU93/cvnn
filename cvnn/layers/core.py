@@ -13,7 +13,7 @@ from cvnn.initializers import ComplexGlorotUniform, Zeros
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
 
-DEFAULT_COMPLEX_TYPE = np.complex64
+DEFAULT_COMPLEX_TYPE = tf.as_dtype(np.complex64)
 
 
 class ComplexLayer(ABC):
@@ -88,7 +88,7 @@ def complex_input(shape=None, batch_size=None, name=None, dtype=DEFAULT_COMPLEX_
         raise ValueError(
             'Cannot set both sparse and ragged to True in a Keras input.')
 
-    input_layer_config = {'name': name, 'dtype': str(dtype), 'sparse': sparse,
+    input_layer_config = {'name': name, 'dtype': dtype.name, 'sparse': sparse,
                           'ragged': ragged, 'input_tensor': tensor}
 
     batch_input_shape = kwargs.pop('batch_input_shape',
@@ -110,6 +110,7 @@ def complex_input(shape=None, batch_size=None, name=None, dtype=DEFAULT_COMPLEX_
     else:
         input_layer_config.update(
             {'batch_size': batch_size, 'input_shape': shape})
+    # import pdb; pdb.set_trace()
     input_layer = ComplexInput(**input_layer_config)
 
     # Return tensor including `_keras_history`.
