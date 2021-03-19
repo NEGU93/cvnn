@@ -21,6 +21,8 @@ There are many other optional files that can be controled using the `output_conf
             'excel_summary': True,
             'debug': False,
             'summary_of_run': True,
+            'tensorboard': False,
+            'save_weights': False,
             'safety_checkpoints': False
         }
 

@@ -19,6 +19,7 @@ Complex Pooling 2D
         - `(batch, height, width, channels)` while `channels_first` corresponds to inputs with shape `(batch, channels, height, width)`.
     :param name: A string, the name of the layer.
 
+.. _complex-max-pooling-label:
 
 Complex Max Pooling 2D
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -175,3 +176,23 @@ The results is then
         [3.5 +2.25j 6.25+3.25j]
         [4.75+4.25j 6.  +5.25j]
     ]], shape=(2, 2, 2), dtype=complex64)
+
+
+Complex Max Pooling 2D With Argmax
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. py:class:: ComplexMaxPooling2DWithArgmax
+
+    Max pooling operation for 2D spatial data and outputs both max values and indices.
+    This class is equivalent to :ref:`ComplexMaxPooling2D <complex-max-pooling-label>` but that also outputs indices.
+    Useful to perform Max Unpooling using ComplexUnPooling2D.
+    Works for complex dtype using the absolute value to get the max.
+
+.. py:method:: call(self, inputs, **kwargs)
+
+    :param inputs: A Tensor. Input to pool over.
+    :return: A tuple of Tensor objects :code:`(output, argmax)`.
+
+        - output	A Tensor. Has the same type as input.
+        - argmax	A Tensor. The indices in argmax are flattened (Complains directly to TensorFlow)

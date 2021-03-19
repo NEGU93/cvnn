@@ -135,8 +135,27 @@ class ComplexMaxPooling2D(ComplexPooling2D):
 
 
 class ComplexMaxPooling2DWithArgmax(ComplexMaxPooling2D):
+    """
+    Max pooling operation for 2D spatial data and outputs both max values and indices.
+    This class is equivalent to ComplexMaxPooling2D but that also outputs indices.
+    Useful to perform Max Unpooling using ComplexUnPooling2D.
+    Works for complex dtype using the absolute value to get the max.
+    """
 
     def pool_function(self, inputs, ksize, strides, padding, data_format):
+        """
+        :param inputs: A Tensor. Input to pool over.
+        :param ksize: An int or list of ints that has length 1, 2 or 4.
+            The size of the window for each dimension of the input tensor.
+        :param strides: An int or list of ints that has length 1, 2 or 4.
+            The stride of the sliding window for each dimension of the input tensor.
+        :param padding: A string from: "SAME", "VALID". The type of padding algorithm to use.
+        :param data_format: An optional string, must be set to "NHWC". Defaults to "NHWC".
+            Specify the data format of the input and output data.
+        :return: A tuple of Tensor objects (output, argmax).
+            - output	A Tensor. Has the same type as input.
+            - argmax	A Tensor. The indices in argmax are flattened (Complains directly to TensorFlow)
+        """
         # The max is calculated with the absolute value. This will still work on real values.
         abs_in = tf.math.abs(inputs)
         output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides,
@@ -170,20 +189,33 @@ class ComplexAvgPooling2D(ComplexPooling2D):
 
 
 class ComplexUnPooling2D(Layer, ComplexLayer):
+    """
+    Performs UnPooling as explained in:
+    https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml
+    This class was inspired to recreate the CV-FCN model of https://www.mdpi.com/2072-4292/11/22/2653
+    As far as I am concerned this class should work for any dimensional input but I have not tested it
+        (and you need the argmax which I only implemented the 2D case).
+    """
 
     def __init__(self, desired_output_shape, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
+        """
+        :param desired_output_shape: tf.TensorShape (or equivalent like tuple or list).
+            The expected output shape without the batch size.
+            Meaning that for a 2D image to be enlarged, this is size 3 of the form HxWxC or CxHxW
+        """
         self.my_dtype = tf.dtypes.as_dtype(dtype)
+        if len(desired_output_shape) != 3:
+            raise ValueError(f"desired_output_shape expected to be size 3 and got size {len(desired_output_shape)}")
         self.desired_output_shape = desired_output_shape
         super(ComplexUnPooling2D, self).__init__(trainable=False, name=name, dtype=self.my_dtype.real_dtype,
                                                  dynamic=dynamic, **kwargs)
 
     def call(self, inputs, **kwargs):
         """
-        Performs unpooling, as explained in:
-        https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml
-        :param inputs: Input Tensor.
-        :param unpool_mat: Result argmax from tf.nn.max_pool_with_argmax
-            https://www.tensorflow.org/api_docs/python/tf/nn/max_pool_with_argmax
+        TODO: Still has a bug, if argmax has coincident indexes. Don't think this is desired (but might).
+        :param inputs: A tuple of Tensor objects (input, argmax).
+            - input 	A Tensor.
+            - argmax	A Tensor. The indices in argmax are flattened (Complains directly to TensorFlow)
             # TODO: I could make an automatic unpool mat if it is not given.
         """
         if not isinstance(inputs, list):
@@ -202,7 +234,6 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         ret = tf.scatter_nd(indices, updates, shape=(tf.shape(inputs_values)[0]*flat_output_shape,))
         desired_output_shape_with_batch = tf.concat([[tf.shape(inputs_values)[0]], self.desired_output_shape], axis=0)
         ret = tf.reshape(ret, shape=desired_output_shape_with_batch)
-        # import pdb; pdb.set_trace()
         return ret
 
     def get_real_equivalent(self):

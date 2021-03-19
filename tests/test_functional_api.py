@@ -1,4 +1,4 @@
-from cvnn.layers import ComplexUnPooling2D, ComplexMaxPooling2D, complex_input, ComplexMaxPooling2DWithArgmax
+from cvnn.layers import ComplexUnPooling2D, complex_input, ComplexMaxPooling2DWithArgmax
 import tensorflow as tf
 import numpy as np
 from pdb import set_trace
