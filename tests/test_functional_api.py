@@ -1,4 +1,4 @@
-from cvnn.layers import ComplexUnPooling2D, ComplexMaxPooling2D, complex_input
+from cvnn.layers import ComplexUnPooling2D, ComplexMaxPooling2D, complex_input, ComplexMaxPooling2DWithArgmax
 import tensorflow as tf
 import numpy as np
 from pdb import set_trace
@@ -31,13 +31,15 @@ def get_img():
 def unpooling_example():
     x = get_img()
     inputs = complex_input(shape=x.shape[1:])
-    max_pool = ComplexMaxPooling2D()
-    max_pool_o = max_pool(inputs)
+    max_pool_o, max_arg = ComplexMaxPooling2DWithArgmax(strides=1, data_format="channels_last", name="argmax")(inputs)
+    # max_pool_o = ComplexMaxPooling2D(strides=1, data_format="channels_last")(inputs)
     max_unpool = ComplexUnPooling2D(x.shape[1:])
-    outputs = max_unpool(max_pool_o, unpool_mat=max_pool.get_max_index())
+    outputs = max_unpool([max_pool_o, max_arg])
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="pooling_model")
     model.summary()
-    set_trace()
+    model(x)
+    print(model(x)[..., 0])
+    # set_trace()
     return model
 
 

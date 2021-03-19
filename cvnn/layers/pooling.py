@@ -134,6 +134,21 @@ class ComplexMaxPooling2D(ComplexPooling2D):
         return self.argmax  # TODO: Shall I check this is use only once?
 
 
+class ComplexMaxPooling2DWithArgmax(ComplexMaxPooling2D):
+
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        # The max is calculated with the absolute value. This will still work on real values.
+        abs_in = tf.math.abs(inputs)
+        output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides,
+                                                    padding=padding, data_format=data_format,
+                                                    include_batch_in_index=True)
+        shape = tf.shape(output)
+        tf_res = tf.reshape(tf.gather(tf.reshape(inputs, [-1]), argmax), shape)
+        # assert np.all(tf_res == output)             # For debugging when the input is real only!
+        assert tf_res.dtype == inputs.dtype
+        return tf_res, argmax
+
+
 class ComplexAvgPooling2D(ComplexPooling2D):
 
     def pool_function(self, inputs, ksize, strides, padding, data_format):
@@ -162,7 +177,7 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         super(ComplexUnPooling2D, self).__init__(trainable=False, name=name, dtype=self.my_dtype.real_dtype,
                                                  dynamic=dynamic, **kwargs)
 
-    def call(self, inputs, unpool_mat, **kwargs):
+    def call(self, inputs, **kwargs):
         """
         Performs unpooling, as explained in:
         https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml
@@ -171,17 +186,23 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
             https://www.tensorflow.org/api_docs/python/tf/nn/max_pool_with_argmax
             # TODO: I could make an automatic unpool mat if it is not given.
         """
+        if not isinstance(inputs, list):
+            raise ValueError('This layer should be called on a list of inputs.')
+        elif len(inputs) != 2:
+            raise ValueError(f'inputs = {inputs} must have size 2 and had size {len(inputs)}')
+
+        inputs_values, unpool_mat = inputs
         # https://stackoverflow.com/a/42549265/5931672
         # https://github.com/tensorflow/addons/issues/632#issuecomment-482580850
         flat_output_shape = tf.reduce_prod(self.desired_output_shape)
 
-        updates = tf.reshape(inputs, [-1])
+        updates = tf.reshape(inputs_values, [-1])
         indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
 
-        # import pdb; pdb.set_trace()
-        ret = tf.scatter_nd(indices, updates, shape=(tf.shape(inputs)[0]*flat_output_shape,))
-        desired_output_shape_with_batch = tf.concat([[tf.shape(inputs)[0]], self.desired_output_shape], axis=0)
+        ret = tf.scatter_nd(indices, updates, shape=(tf.shape(inputs_values)[0]*flat_output_shape,))
+        desired_output_shape_with_batch = tf.concat([[tf.shape(inputs_values)[0]], self.desired_output_shape], axis=0)
         ret = tf.reshape(ret, shape=desired_output_shape_with_batch)
+        # import pdb; pdb.set_trace()
         return ret
 
     def get_real_equivalent(self):
