@@ -1,6 +1,6 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
-    ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D
+    ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax
 import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -178,11 +178,13 @@ def get_img():
     img = np.reshape(img, (2, 3, 3, 1))
     return img
 
-
+@tf.autograph.experimental.do_not_convert
 def complex_max_pool_2d(test_unpool=True):
     img = get_img()
-    max_pool = ComplexMaxPooling2D(strides=1, data_format="channels_last")
-    res = max_pool(img.astype(np.complex64))
+    max_pool = ComplexMaxPooling2DWithArgmax(strides=1, data_format="channels_last")
+    max_pool_2 = ComplexMaxPooling2D(strides=1, data_format="channels_last")
+    res, argmax = max_pool(img.astype(np.complex64))
+    res2 = max_pool_2(img.astype(np.complex64))
     expected_res = np.array([
         [[
             [2. + 7.j],
@@ -196,10 +198,11 @@ def complex_max_pool_2d(test_unpool=True):
                 [5. + 8.j],
                 [3. + 9.j]]]
     ])
+    assert np.all(res.numpy() == res2.numpy())
     assert (res.numpy() == expected_res.astype(np.complex64)).all()
     if test_unpool:
         max_unpooling = ComplexUnPooling2D(img.shape[1:])
-        unpooled = max_unpooling(res, unpool_mat=max_pool.get_max_index())
+        unpooled = max_unpooling([res, argmax])
         expected_unpooled = np.array([[[0. + 0.j, 0. + 0.j, 0. + 0.j],
                                        [0. + 0.j, 4. + 14.j, 4. + 18.j],
                                        [0. + 0.j, 0. + 0.j, 0. + 0.j]],
@@ -217,6 +220,7 @@ def complex_max_pool_2d(test_unpool=True):
     assert np.all(max_pool_2d(x) == complex_max_pool_2d(x))
 
 
+@tf.autograph.experimental.do_not_convert
 def complex_avg_pool():
     img = get_img()
     avg_pool = ComplexAvgPooling2D(strides=1)
@@ -226,6 +230,7 @@ def complex_avg_pool():
     assert (res.numpy() == expected_res.astype(np.complex64)).all()
 
 
+@tf.autograph.experimental.do_not_convert
 def complex_conv_2d_transpose():
     value = [[1, 2, 1], [2, 1, 2], [1, 1, 2]]
     init = tf.constant_initializer(value)
