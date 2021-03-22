@@ -13,9 +13,9 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
         super(ComplexUpSampling2D, self).__init__(dtype=self.my_dtype.real_dtype, **kwargs)
 
         if isinstance(size, int):
-            self.factor_upsample = (self.factor_upsample,) * 2
+            self.factor_upsample = (size,) * 2
         else:
-            self.factor_upsample = tuple(size)      # Python will tell me if this is not possible
+            self.factor_upsample = tuple(size)  # Python will tell me if this is not possible
         self.interpolation = interpolation.lower()
         if self.interpolation not in {'nearest', 'bilinear'}:
             raise ValueError('`interpolation` argument should be one of `"nearest"` or `"bilinear"`.')
@@ -29,16 +29,15 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
     def call(self, inputs, **kwargs):
         if self.data_format == 'channels_last':
             inputs = tf.transpose(inputs, perm=[1, 2, 0, 3])
-        elif self.data_format == 'channels_first':   # I checked it at init, shall I check again?
+        elif self.data_format == 'channels_first':  # I checked it at init, shall I check again?
             inputs = tf.transpose(inputs, perm=[2, 3, 0, 1])
         else:
             raise ValueError(f'The `data_format` argument must be one of "channels_first", "channels_last". '
                              f'Received: {self.data_format}')
-        desired_output_shape = [i*o for i, o in zip(inputs.shape, self.factor_upsample)]
-        assert len(desired_output_shape) == 2       # The for will do only for the shortest so I should be Ok.
+        desired_output_shape = [i * o for i, o in zip(inputs.shape, self.factor_upsample)]
+        assert len(desired_output_shape) == 2  # The for will do only for the shortest so I should be Ok.
         if self.interpolation == 'nearest':
             # TODO: Could we make this with tf.repeat?
-            # import pdb; pdb.set_trace()
             # output = tf.repeat(input=tf.repeat(input=inputs, repeats=(self.factor_upsample[0],)*inputs.shape[0],
             #                                    axis=0),
             #                    repeats=(self.factor_upsample[1],)*inputs.shape[1], axis=1)
@@ -49,7 +48,7 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
             raise ValueError(f"Unknown interpolation {self.interpolation}")
         if self.data_format == 'channels_last':
             output = tf.transpose(output, perm=[2, 0, 1, 3])
-        elif self.data_format == 'channels_first':   # I checked it at init, shall I check again?
+        elif self.data_format == 'channels_first':  # I checked it at init, shall I check again?
             output = tf.transpose(output, perm=[2, 3, 0, 1])
         else:
             raise ValueError(f'The `data_format` argument must be one of "channels_first", "channels_last". '
@@ -60,18 +59,20 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
     def nearest_neighbor(input, deisred_size):
         # Put channels first, this will do out[i, j] = in[i, j] even if its a matrix? Sound good
         i_output = None
+        # j_output = tf.reshape(tf.constant([], dtype=input.dtype), (0, 1, input.shape[2], input.shape[3]))
         j_output = None
         for i in range(0, deisred_size[0]):
             for j in range(0, deisred_size[1]):
-                i_new = tf.cast(tf.round((input.shape[0]*i)/deisred_size[0]), dtype=tf.int32)
-                j_new = tf.cast(tf.round((input.shape[1]*j)/deisred_size[1]), dtype=tf.int32)
+                i_new = tf.cast(tf.floor((input.shape[0] * i) / deisred_size[0]), dtype=tf.int32)
+                j_new = tf.cast(tf.floor((input.shape[1] * j) / deisred_size[1]), dtype=tf.int32)
                 if j_output is not None:
-                    # import pdb; pdb.set_trace()
-                    j_output = tf.stack([j_output, input[i_new, j_new]], axis=0)
+                    to_apend = tf.expand_dims(tf.expand_dims(input[i_new, j_new], axis=0), axis=0)
+                    # set_trace()
+                    j_output = tf.concat([j_output, to_apend], axis=1)
                 else:
-                    j_output = input[i_new, j_new]
+                    j_output = tf.expand_dims(tf.expand_dims(input[i_new, j_new], axis=0), axis=0)
             if i_output is not None:
-                i_output = tf.stack([i_output, j_output], axis=0)
+                i_output = tf.concat([i_output, j_output], axis=0)
             else:
                 i_output = j_output
             j_output = None
@@ -90,12 +91,60 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
 if __name__ == '__main__':
     import numpy as np
     from pdb import set_trace
+
     input_shape = (2, 2, 1, 3)
     x = np.arange(np.prod(input_shape)).reshape(input_shape).astype(np.float32)
     z = tf.complex(real=x, imag=x)
+    upsample = ComplexUpSampling2D(size=(2, 3))
+    y = upsample(z)
+    expected = np.array([[[[0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
+                          [[0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
+                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j]],
+                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j]]],
+                         [[[6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
+                          [[6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
+                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j]],
+                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j]]]])
+    assert np.all(y.numpy() == expected)
+    upsample = ComplexUpSampling2D(size=(1, 3))
+    y = upsample(z)
+    expected = np.array([[[[0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
+                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j]]],
+                         [[[6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
+                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j]]]])
+    assert np.all(y.numpy() == expected)
     upsample = ComplexUpSampling2D(size=(1, 2))
     y = upsample(z)
-    print(y)
+    # print(y)
     y_tf = tf.keras.layers.UpSampling2D(size=(1, 2))(x)
     my_y = upsample.get_real_equivalent()(x)
+    assert np.all(my_y == y_tf)
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    upsample = ComplexUpSampling2D(size=2, data_format='channels_first')
+    my_y = upsample(x)
+    y_tf = tf.keras.layers.UpSampling2D(size=(2, 2), data_format='channels_first')(x)
     assert np.all(my_y == y_tf)
