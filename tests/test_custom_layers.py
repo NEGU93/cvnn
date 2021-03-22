@@ -1,6 +1,6 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
-    ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax
+    ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax, ComplexUpSampling2D
 import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -19,7 +19,7 @@ This module tests:
         ComplexDropout
 """
 
-
+@tf.autograph.experimental.do_not_convert
 def dense_example():
     img_r = np.array([[
         [0, 1, 2],
@@ -54,6 +54,7 @@ def dense_example():
     res = model(img.astype(np.complex64))
 
 
+@tf.autograph.experimental.do_not_convert
 def serial_layers():
     model = Sequential()
     model.add(ComplexDense(32, activation='relu', input_shape=(32, 32, 3)))
@@ -88,6 +89,7 @@ def serial_layers():
     res = model(img)
 
 
+@tf.autograph.experimental.do_not_convert
 def shape_ad_dtype_of_conv2d():
     input_shape = (4, 28, 28, 3)
     x = tf.cast(tf.random.normal(input_shape), tf.complex64)
@@ -96,6 +98,7 @@ def shape_ad_dtype_of_conv2d():
     assert y.dtype == tf.complex64
 
 
+@tf.autograph.experimental.do_not_convert
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
     return tf.cast(image, tf.float32) / 255., label
@@ -258,7 +261,68 @@ def complex_conv_2d_transpose():
 
 
 @tf.autograph.experimental.do_not_convert
+def test_upsampling_near_neighbour():
+    input_shape = (2, 2, 1, 3)
+    x = np.arange(np.prod(input_shape)).reshape(input_shape).astype(np.float32)
+    z = tf.complex(real=x, imag=x)
+    upsample = ComplexUpSampling2D(size=(2, 3))
+    y = upsample(z)
+    expected = np.array([[[[0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
+                          [[0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
+                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j]],
+                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j]]],
+                         [[[6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
+                          [[6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
+                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j]],
+                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j]]]])
+    assert np.all(y.numpy() == expected)
+    upsample = ComplexUpSampling2D(size=(1, 3))
+    y = upsample(z)
+    expected = np.array([[[[0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
+                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
+                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
+                           [3. + 3.j, 4. + 4.j, 5. + 5.j]]],
+                         [[[6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
+                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
+                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
+                           [9. + 9.j, 10. + 10.j, 11. + 11.j]]]])
+    assert np.all(y.numpy() == expected)
+    upsample = ComplexUpSampling2D(size=(1, 2))
+    y = upsample(z)
+    # print(y)
+    y_tf = tf.keras.layers.UpSampling2D(size=(1, 2))(x)
+    my_y = upsample.get_real_equivalent()(x)
+    assert np.all(my_y == y_tf)
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    upsample = ComplexUpSampling2D(size=2, data_format='channels_first')
+    my_y = upsample(x)
+    y_tf = tf.keras.layers.UpSampling2D(size=(2, 2), data_format='channels_first')(x)
+    assert np.all(my_y == y_tf)
+
+
+@tf.autograph.experimental.do_not_convert
 def test_layers():
+    test_upsampling_near_neighbour()
     complex_conv_2d_transpose()
     complex_max_pool_2d()
     dropout()

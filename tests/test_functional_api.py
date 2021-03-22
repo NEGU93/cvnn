@@ -1,4 +1,5 @@
-from cvnn.layers import ComplexUnPooling2D, complex_input, ComplexMaxPooling2DWithArgmax
+from cvnn.layers import ComplexUnPooling2D, complex_input, ComplexMaxPooling2DWithArgmax, \
+    ComplexUpSampling2D, ComplexMaxPooling2D
 import tensorflow as tf
 import numpy as np
 from pdb import set_trace
@@ -43,8 +44,24 @@ def unpooling_example():
     return model
 
 
+def upsampling_example():
+    x = get_img()
+    inputs = complex_input(shape=x.shape[1:])
+    max_pool_o = ComplexMaxPooling2D(data_format="channels_last")(inputs)
+    upsampling = ComplexUpSampling2D(size=(2, 2))
+    set_trace()
+    outputs = upsampling(max_pool_o)
+    model = tf.keras.Model(inputs=inputs, outputs=outputs, name="pooling_model")
+    model.summary()
+    model(x)
+    print(model(x)[..., 0])
+    # set_trace()
+    return model
+
+
 def test_functional_api():
-    model = unpooling_example()
+    upsampling_example()
+    unpooling_example()
 
 
 if __name__ == "__main__":

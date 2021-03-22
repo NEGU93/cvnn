@@ -58,9 +58,9 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
     @staticmethod
     def nearest_neighbor(inputs_to_resize, desired_size):
         i_output = tf.reshape(tf.constant([], dtype=inputs_to_resize.dtype),
-                              (0, desired_size[1], inputs_to_resize.shape[2], inputs_to_resize.shape[3]))
+                              (0, desired_size[1], tf.shape(inputs_to_resize)[2], tf.shape(inputs_to_resize)[3]))
         j_output = tf.reshape(tf.constant([], dtype=inputs_to_resize.dtype),
-                              (1, 0, inputs_to_resize.shape[2], inputs_to_resize.shape[3]))
+                              (1, 0, tf.shape(inputs_to_resize)[2], tf.shape(inputs_to_resize)[3]))
         for i in range(0, desired_size[0]):
             for j in range(0, desired_size[1]):
                 i_new = tf.cast(tf.floor((inputs_to_resize.shape[0] * i) / desired_size[0]), dtype=tf.int32)
@@ -69,77 +69,15 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
                 j_output = tf.concat([j_output, to_apend], axis=1)
             i_output = tf.concat([i_output, j_output], axis=0)
             j_output = tf.reshape(tf.constant([], dtype=inputs_to_resize.dtype),
-                                  (1, 0, inputs_to_resize.shape[2], inputs_to_resize.shape[3]))
+                                  (1, 0, tf.shape(inputs_to_resize)[2], tf.shape(inputs_to_resize)[3]))
         # output = tf.transpose(i_output, perm=[2, 0, 1, 3])
         # assert i_output.shape == (tuple(deisred_size) + (input.shape[2], input.shape[3]))
         return i_output
 
     @staticmethod
-    def bilinear(input, desired_size):
+    def bilinear(inputs_to_resize, desired_size):
         pass
 
     def get_real_equivalent(self):
         return ComplexUpSampling2D(size=self.factor_upsample, data_format=self.data_format,
                                    interpolation=self.interpolation, dtype=self.my_dtype.real_dtype)
-
-
-if __name__ == '__main__':
-    import numpy as np
-    from pdb import set_trace
-
-    input_shape = (2, 2, 1, 3)
-    x = np.arange(np.prod(input_shape)).reshape(input_shape).astype(np.float32)
-    z = tf.complex(real=x, imag=x)
-    upsample = ComplexUpSampling2D(size=(2, 3))
-    y = upsample(z)
-    expected = np.array([[[[0. + 0.j, 1. + 1.j, 2. + 2.j],
-                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
-                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
-                          [[0. + 0.j, 1. + 1.j, 2. + 2.j],
-                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
-                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
-                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
-                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
-                           [3. + 3.j, 4. + 4.j, 5. + 5.j]],
-                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
-                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
-                           [3. + 3.j, 4. + 4.j, 5. + 5.j]]],
-                         [[[6. + 6.j, 7. + 7.j, 8. + 8.j],
-                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
-                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
-                          [[6. + 6.j, 7. + 7.j, 8. + 8.j],
-                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
-                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
-                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
-                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
-                           [9. + 9.j, 10. + 10.j, 11. + 11.j]],
-                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
-                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
-                           [9. + 9.j, 10. + 10.j, 11. + 11.j]]]])
-    assert np.all(y.numpy() == expected)
-    upsample = ComplexUpSampling2D(size=(1, 3))
-    y = upsample(z)
-    expected = np.array([[[[0. + 0.j, 1. + 1.j, 2. + 2.j],
-                           [0. + 0.j, 1. + 1.j, 2. + 2.j],
-                           [0. + 0.j, 1. + 1.j, 2. + 2.j]],
-                          [[3. + 3.j, 4. + 4.j, 5. + 5.j],
-                           [3. + 3.j, 4. + 4.j, 5. + 5.j],
-                           [3. + 3.j, 4. + 4.j, 5. + 5.j]]],
-                         [[[6. + 6.j, 7. + 7.j, 8. + 8.j],
-                           [6. + 6.j, 7. + 7.j, 8. + 8.j],
-                           [6. + 6.j, 7. + 7.j, 8. + 8.j]],
-                          [[9. + 9.j, 10. + 10.j, 11. + 11.j],
-                           [9. + 9.j, 10. + 10.j, 11. + 11.j],
-                           [9. + 9.j, 10. + 10.j, 11. + 11.j]]]])
-    assert np.all(y.numpy() == expected)
-    upsample = ComplexUpSampling2D(size=(1, 2))
-    y = upsample(z)
-    # print(y)
-    y_tf = tf.keras.layers.UpSampling2D(size=(1, 2))(x)
-    my_y = upsample.get_real_equivalent()(x)
-    assert np.all(my_y == y_tf)
-    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
-    upsample = ComplexUpSampling2D(size=2, data_format='channels_first')
-    my_y = upsample(x)
-    y_tf = tf.keras.layers.UpSampling2D(size=(2, 2), data_format='channels_first')(x)
-    assert np.all(my_y == y_tf)
