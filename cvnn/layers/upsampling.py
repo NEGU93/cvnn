@@ -56,27 +56,22 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
         return output
 
     @staticmethod
-    def nearest_neighbor(input, deisred_size):
-        # Put channels first, this will do out[i, j] = in[i, j] even if its a matrix? Sound good
-        i_output = None
-        # j_output = tf.reshape(tf.constant([], dtype=input.dtype), (0, 1, input.shape[2], input.shape[3]))
-        j_output = None
-        for i in range(0, deisred_size[0]):
-            for j in range(0, deisred_size[1]):
-                i_new = tf.cast(tf.floor((input.shape[0] * i) / deisred_size[0]), dtype=tf.int32)
-                j_new = tf.cast(tf.floor((input.shape[1] * j) / deisred_size[1]), dtype=tf.int32)
-                if j_output is not None:
-                    to_apend = tf.expand_dims(tf.expand_dims(input[i_new, j_new], axis=0), axis=0)
-                    # set_trace()
-                    j_output = tf.concat([j_output, to_apend], axis=1)
-                else:
-                    j_output = tf.expand_dims(tf.expand_dims(input[i_new, j_new], axis=0), axis=0)
-            if i_output is not None:
-                i_output = tf.concat([i_output, j_output], axis=0)
-            else:
-                i_output = j_output
-            j_output = None
+    def nearest_neighbor(inputs_to_resize, desired_size):
+        i_output = tf.reshape(tf.constant([], dtype=inputs_to_resize.dtype),
+                              (0, desired_size[1], inputs_to_resize.shape[2], inputs_to_resize.shape[3]))
+        j_output = tf.reshape(tf.constant([], dtype=inputs_to_resize.dtype),
+                              (1, 0, inputs_to_resize.shape[2], inputs_to_resize.shape[3]))
+        for i in range(0, desired_size[0]):
+            for j in range(0, desired_size[1]):
+                i_new = tf.cast(tf.floor((inputs_to_resize.shape[0] * i) / desired_size[0]), dtype=tf.int32)
+                j_new = tf.cast(tf.floor((inputs_to_resize.shape[1] * j) / desired_size[1]), dtype=tf.int32)
+                to_apend = tf.expand_dims(tf.expand_dims(inputs_to_resize[i_new, j_new], axis=0), axis=0)
+                j_output = tf.concat([j_output, to_apend], axis=1)
+            i_output = tf.concat([i_output, j_output], axis=0)
+            j_output = tf.reshape(tf.constant([], dtype=inputs_to_resize.dtype),
+                                  (1, 0, inputs_to_resize.shape[2], inputs_to_resize.shape[3]))
         # output = tf.transpose(i_output, perm=[2, 0, 1, 3])
+        # assert i_output.shape == (tuple(deisred_size) + (input.shape[2], input.shape[3]))
         return i_output
 
     @staticmethod
