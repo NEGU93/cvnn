@@ -74,11 +74,20 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
         return i_output
 
     def bilinear(self, inputs, desired_size):
+        # Equations
+        #   https://www.ajdesigner.com/phpinterpolation/linear_interpolation_equation.php
+        # Difference with align corners image:
+        #   https://discuss.pytorch.org/t/what-we-should-use-align-corners-false/22663/9
+        # Examples:
+        #   https://www.omnicalculator.com/math/bilinear-interpolation
+        #   https://blogs.sas.com/content/iml/2020/05/18/what-is-bilinear-interpolation.html#:~:text=Bilinear%20interpolation%20is%20a%20weighted,the%20point%20and%20the%20corners.&text=The%20only%20important%20formula%20is,x%20%5B0%2C1%5D.
+        # Implementations
+        #   https://stackoverflow.com/questions/8661537/how-to-perform-bilinear-interpolation-in-python
         i_output = tf.reshape(tf.constant([], dtype=inputs.dtype),
                               (0, desired_size[1], tf.shape(inputs)[2], tf.shape(inputs)[3]))
         j_output = tf.reshape(tf.constant([], dtype=inputs.dtype), (1, 0, tf.shape(inputs)[2], tf.shape(inputs)[3]))
-        i_multiplier = desired_size[0] - 1
-        j_multiplier = desired_size[1] - 1
+        i_multiplier = (desired_size[0] - 1) / (tf.shape(inputs)[0] - 1)
+        j_multiplier = (desired_size[1] - 1) / (tf.shape(inputs)[1] - 1)
         for i in range(0, desired_size[0]):
             for j in range(0, desired_size[1]):
                 x = i / i_multiplier
@@ -124,15 +133,51 @@ if __name__ == '__main__':
     from pdb import set_trace
     import numpy as np
 
+    # Pytorch examples
+    # https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
     x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
     z = tf.complex(real=x, imag=x)
-    upsample = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')
-    y_tf = upsample(x)
+    expected = np.array([[[[1.0000, 1.3333, 1.6667, 2.0000],
+                           [1.6667, 2.0000, 2.3333, 2.6667],
+                           [2.3333, 2.6667, 3.0000, 3.3333],
+                           [3.0000, 3.3333, 3.6667, 4.0000]]]])
     upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')
     y_complex = upsample(z)
+    assert np.allclose(expected, tf.math.real(y_complex).numpy(), 0.0001)
+    x = tf.convert_to_tensor([[[[1., 2., 0.],
+                                [3., 4., 0.],
+                                [0., 0., 0.]]]])
+    expected = np.array([[[[1.0000, 1.4000, 1.8000, 1.6000, 0.8000, 0.0000],
+                           [1.8000, 2.2000, 2.6000, 2.2400, 1.1200, 0.0000],
+                           [2.6000, 3.0000, 3.4000, 2.8800, 1.4400, 0.0000],
+                           [2.4000, 2.7200, 3.0400, 2.5600, 1.2800, 0.0000],
+                           [1.2000, 1.3600, 1.5200, 1.2800, 0.6400, 0.0000],
+                           [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]]]])
+    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')
+    y = upsample(x)
+    assert np.allclose(expected, tf.math.real(y).numpy(), 0.00001)
 
+    # https://blogs.sas.com/content/iml/2020/05/18/what-is-bilinear-interpolation.html#:~:text=Bilinear%20interpolation%20is%20a%20weighted,the%20point%20and%20the%20corners.&text=The%20only%20important%20formula%20is,x%20%5B0%2C1%5D.
     x = tf.convert_to_tensor([[[[0., 4.], [2., 1.]]]])
     z = tf.complex(real=x, imag=x)
     upsample = ComplexUpSampling2D(size=3, interpolation='bilinear', data_format='channels_first')
     y_complex = upsample(z)
-    set_trace()
+    expected = np.array([[[[0. + 0.j, 0.8 + 0.8j,
+                            1.6 + 1.6j, 2.4 + 2.4j,
+                            3.2 + 3.2j, 4. + 4.j],
+                           [0.4 + 0.4j, 1. + 1.j,
+                            1.6 + 1.6j, 2.2 + 2.2j,
+                            2.8 + 2.8j, 3.4 + 3.4j],
+                           [0.8 + 0.8j, 1.2 + 1.2j,
+                            1.6 + 1.6j, 2. + 2.j,
+                            2.4 + 2.4j, 2.8 + 2.8j],
+                           [1.2 + 1.2j, 1.4 + 1.4j,
+                            1.6 + 1.6j, 1.8 + 1.8j,
+                            2. + 2.j, 2.2 + 2.2j],
+                           [1.6 + 1.6j, 1.6 + 1.6j,
+                            1.6 + 1.6j, 1.6 + 1.6j,
+                            1.6 + 1.6j, 1.6 + 1.6j],
+                           [2. + 2.j, 1.8 + 1.8j,
+                            1.6 + 1.6j, 1.4 + 1.4j,
+                            1.2 + 1.2j, 1. + 1.j]]]])
+    assert np.allclose(expected, y_complex.numpy(), 0.000001)
