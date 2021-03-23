@@ -37,9 +37,9 @@ def unpooling_example():
     max_unpool = ComplexUnPooling2D(x.shape[1:])
     outputs = max_unpool([max_pool_o, max_arg])
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="pooling_model")
-    model.summary()
+    # model.summary()
     model(x)
-    print(model(x)[..., 0])
+    # print(model(x)[..., 0])
     # set_trace()
     return model
 
@@ -49,12 +49,11 @@ def upsampling_example():
     inputs = complex_input(shape=x.shape[1:])
     max_pool_o = ComplexMaxPooling2D(data_format="channels_last")(inputs)
     upsampling = ComplexUpSampling2D(size=(2, 2))
-    set_trace()
     outputs = upsampling(max_pool_o)
     model = tf.keras.Model(inputs=inputs, outputs=outputs, name="pooling_model")
-    model.summary()
+    # model.summary()
     model(x)
-    print(model(x)[..., 0])
+    # print(model(x)[..., 0])
     # set_trace()
     return model
 
