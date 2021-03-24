@@ -83,15 +83,14 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
         #   https://blogs.sas.com/content/iml/2020/05/18/what-is-bilinear-interpolation.html#:~:text=Bilinear%20interpolation%20is%20a%20weighted,the%20point%20and%20the%20corners.&text=The%20only%20important%20formula%20is,x%20%5B0%2C1%5D.
         # Implementations
         #   https://stackoverflow.com/questions/8661537/how-to-perform-bilinear-interpolation-in-python
+        if inputs.dtype.is_integer:     # TODO: Check input is a tensor?
+            inputs = tf.cast(inputs, dtype=tf.float32)
         i_output = tf.reshape(tf.constant([], dtype=inputs.dtype),
                               (0, desired_size[1], tf.shape(inputs)[2], tf.shape(inputs)[3]))
         j_output = tf.reshape(tf.constant([], dtype=inputs.dtype), (1, 0, tf.shape(inputs)[2], tf.shape(inputs)[3]))
         for x in range(0, desired_size[0]):
             for y in range(0, desired_size[1]):
-                if self.align_corners:
-                    (q11, q21, q12, q22), (x1, x2), (y1, y2) = self._get_q_points_align(x, y, inputs, desired_size)
-                else:
-                    (q11, q21, q12, q22), (x1, x2), (y1, y2) = self._get_q_points_no_align(x, y, inputs, desired_size)
+                (q11, q21, q12, q22), (x1, x2), (y1, y2) = self._get_q_points(x, y, inputs)
                 x2_diff = x2 - tf.cast(x, dtype=inputs.dtype)
                 x1_diff = tf.cast(x, dtype=inputs.dtype) - x1
                 y2_diff = y2 - tf.cast(y, dtype=inputs.dtype)
@@ -117,21 +116,43 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
             j_output = tf.reshape(tf.constant([], dtype=inputs.dtype), (1, 0, tf.shape(inputs)[2], tf.shape(inputs)[3]))
         return i_output
 
-    def _get_q_points_no_align(self, x, y):
+    def _get_q_points(self, x, y, inputs):
+        X_small = tf.linspace(0, tf.shape(inputs)[0], tf.shape(inputs)[0])
+        Y_small = tf.linspace(0, tf.shape(inputs)[1], tf.shape(inputs)[1])
+        X, Y = self._to_big((X_small, Y_small))
+        x2, x1, y2, y1  = self._get_closest_points(x, y, X, Y)
+        q11 = inputs[tf.where(x1 == X)][tf.where(y1 == Y)]
+        q21 = inputs[tf.where(x2 == X)][tf.where(y1 == Y)]
+        q12 = inputs[tf.where(x1 == X)][tf.where(y2 == Y)]
+        q22 = inputs[tf.where(x2 == X)][tf.where(y2 == Y)]
+        return (q11, q21, q12, q22), (x1, x2), (y1, y2)
+
+
+    @staticmethod
+    def _get_closest_points(x, y, X, Y):
         pass
 
-    def _get_q_points_align(self, x, y, inputs, desired_size):
+    def _to_big(self, index):
+        # This must use different equations according to align_corners
+        (x_floor * (2 * self.factor_upsample[0]) + 1) / self.factor_upsample[0]
+        return index    # Return the big index
+
+    def _get_4_closest_points(self, x, y, x_list, y_list):
+        # This function gets the 4 closests points
+        X = x2, x1
+        Y = y2, y1
+        return X, Y
+
+    @staticmethod
+    def _get_q_points_align(x, y, inputs, desired_size):
         i_multiplier = (desired_size[0] - 1) / (tf.shape(inputs)[0] - 1)
         j_multiplier = (desired_size[1] - 1) / (tf.shape(inputs)[1] - 1)
         x = x / i_multiplier  # Supposed position of my new element in the small/normalized scale.
         y = y / j_multiplier
-
-        # if align_corners:
         x1 = tf.math.floor(x)
         x2 = tf.math.ceil(x)
         y1 = tf.math.floor(y)
         y2 = tf.math.ceil(y)
-
         q11 = inputs[tf.cast(x1, tf.int32)][tf.cast(y1, tf.int32)]
         q21 = inputs[tf.cast(x2, tf.int32)][tf.cast(y1, tf.int32)]
         q12 = inputs[tf.cast(x1, tf.int32)][tf.cast(y2, tf.int32)]
@@ -141,16 +162,12 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
         Y = (tf.cast(y1 * i_multiplier, dtype=inputs.dtype), tf.cast(y2 * i_multiplier, dtype=inputs.dtype))
         return Q, X, Y
 
-
     def get_real_equivalent(self):
         return ComplexUpSampling2D(size=self.factor_upsample, data_format=self.data_format,
                                    interpolation=self.interpolation, dtype=self.my_dtype.real_dtype)
 
 
-if __name__ == '__main__':
-    from pdb import set_trace
-    import numpy as np
-
+def test_corners_aligned():
     # Pytorch examples
     # https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
     x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
@@ -199,3 +216,44 @@ if __name__ == '__main__':
                             1.6 + 1.6j, 1.4 + 1.4j,
                             1.2 + 1.2j, 1. + 1.j]]]])
     assert np.allclose(expected, y_complex.numpy(), 0.000001)
+
+
+if __name__ == '__main__':
+    from pdb import set_trace
+    import numpy as np
+
+    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/UpSampling2D
+    input_shape = (2, 2, 1, 3)
+    x = np.arange(np.prod(input_shape)).reshape(input_shape)
+    y_tf = tf.keras.layers.UpSampling2D(size=(1, 2), interpolation='bilinear')(x)
+    y_own = ComplexUpSampling2D(size=(1, 2), interpolation='bilinear')(x)
+    assert np.all(y_tf == y_own)
+    # Pytorch
+    #   https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(z)
+    # set_trace()
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    x = tf.convert_to_tensor([[[[1., 2., 0.],
+                                [3., 4., 0.],
+                                [0., 0., 0.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=3, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=3, interpolation='bilinear', data_format='channels_first')(z)
+    set_trace()
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    y_tf = tf.keras.layers.UpSampling2D(size=6, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=6, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    y_tf = tf.keras.layers.UpSampling2D(size=8, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=8, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    test_corners_aligned()
+    # to test bicubic= https://discuss.pytorch.org/t/what-we-should-use-align-corners-false/22663/17
