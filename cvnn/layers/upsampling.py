@@ -8,10 +8,10 @@ from cvnn.layers.core import DEFAULT_COMPLEX_TYPE
 class ComplexUpSampling2D(Layer, ComplexLayer):
 
     def __init__(self, size=(2, 2), data_format: Optional[str] = None, interpolation: str = 'nearest',
-                 dtype=DEFAULT_COMPLEX_TYPE, **kwargs):
+                 align_corners: bool = False, dtype=DEFAULT_COMPLEX_TYPE, **kwargs):
         self.my_dtype = tf.dtypes.as_dtype(dtype)
         super(ComplexUpSampling2D, self).__init__(dtype=self.my_dtype.real_dtype, **kwargs)
-
+        self.align_corners = align_corners
         if isinstance(size, int):
             self.factor_upsample = (size,) * 2
         else:
@@ -86,43 +86,61 @@ class ComplexUpSampling2D(Layer, ComplexLayer):
         i_output = tf.reshape(tf.constant([], dtype=inputs.dtype),
                               (0, desired_size[1], tf.shape(inputs)[2], tf.shape(inputs)[3]))
         j_output = tf.reshape(tf.constant([], dtype=inputs.dtype), (1, 0, tf.shape(inputs)[2], tf.shape(inputs)[3]))
-        i_multiplier = (desired_size[0] - 1) / (tf.shape(inputs)[0] - 1)
-        j_multiplier = (desired_size[1] - 1) / (tf.shape(inputs)[1] - 1)
-        for i in range(0, desired_size[0]):
-            for j in range(0, desired_size[1]):
-                x = i / i_multiplier
-                y = j / j_multiplier
-
-                x1 = tf.math.floor(x)
-                x2 = tf.math.ceil(x)
-                y1 = tf.math.floor(y)
-                y2 = tf.math.ceil(y)
-
-                x2_diff = tf.cast(x2 - x, dtype=inputs.dtype)
-                x1_diff = tf.cast(x - x1, dtype=inputs.dtype)
-                y2_diff = tf.cast(y2 - y, dtype=inputs.dtype)
-                y1_diff = tf.cast(y - y1, dtype=inputs.dtype)
-                if x1 == x2:
+        for x in range(0, desired_size[0]):
+            for y in range(0, desired_size[1]):
+                if self.align_corners:
+                    (q11, q21, q12, q22), (x1, x2), (y1, y2) = self._get_q_points_align(x, y, inputs, desired_size)
+                else:
+                    (q11, q21, q12, q22), (x1, x2), (y1, y2) = self._get_q_points_no_align(x, y, inputs, desired_size)
+                x2_diff = x2 - tf.cast(x, dtype=inputs.dtype)
+                x1_diff = tf.cast(x, dtype=inputs.dtype) - x1
+                y2_diff = y2 - tf.cast(y, dtype=inputs.dtype)
+                y1_diff = tf.cast(y, dtype=inputs.dtype) - y1
+                delta_x = x2 - x1
+                delta_y = y2 - y1
+                if x1 == x2:    # The index was exact, so just make both 1/2
                     x2_diff = tf.cast(0.5, dtype=inputs.dtype)
                     x1_diff = tf.cast(0.5, dtype=inputs.dtype)
+                    delta_x = tf.cast(1, dtype=inputs.dtype)
                 if y1 == y2:
                     y2_diff = tf.cast(0.5, dtype=inputs.dtype)
                     y1_diff = tf.cast(0.5, dtype=inputs.dtype)
-
-                q11 = inputs[tf.cast(x1, tf.int32)][tf.cast(y1, tf.int32)]
-                q21 = inputs[tf.cast(x2, tf.int32)][tf.cast(y1, tf.int32)]
-                q12 = inputs[tf.cast(x1, tf.int32)][tf.cast(y2, tf.int32)]
-                q22 = inputs[tf.cast(x2, tf.int32)][tf.cast(y2, tf.int32)]
+                    delta_y = tf.cast(1, dtype=inputs.dtype)
                 t11 = q11 * y2_diff * x2_diff
                 t21 = q21 * x1_diff * y2_diff
                 t12 = q12 * x2_diff * y1_diff
                 t22 = q22 * x1_diff * y1_diff
-                to_append = tf.expand_dims(tf.expand_dims(t11 + t22 + t12 + t21, axis=0), axis=0)
+                to_append = tf.expand_dims(tf.expand_dims((t11 + t22 + t12 + t21) / (delta_y*delta_x), axis=0), axis=0)
                 # set_trace()
                 j_output = tf.concat([j_output, to_append], axis=1)
             i_output = tf.concat([i_output, j_output], axis=0)
             j_output = tf.reshape(tf.constant([], dtype=inputs.dtype), (1, 0, tf.shape(inputs)[2], tf.shape(inputs)[3]))
         return i_output
+
+    def _get_q_points_no_align(self, x, y):
+        pass
+
+    def _get_q_points_align(self, x, y, inputs, desired_size):
+        i_multiplier = (desired_size[0] - 1) / (tf.shape(inputs)[0] - 1)
+        j_multiplier = (desired_size[1] - 1) / (tf.shape(inputs)[1] - 1)
+        x = x / i_multiplier  # Supposed position of my new element in the small/normalized scale.
+        y = y / j_multiplier
+
+        # if align_corners:
+        x1 = tf.math.floor(x)
+        x2 = tf.math.ceil(x)
+        y1 = tf.math.floor(y)
+        y2 = tf.math.ceil(y)
+
+        q11 = inputs[tf.cast(x1, tf.int32)][tf.cast(y1, tf.int32)]
+        q21 = inputs[tf.cast(x2, tf.int32)][tf.cast(y1, tf.int32)]
+        q12 = inputs[tf.cast(x1, tf.int32)][tf.cast(y2, tf.int32)]
+        q22 = inputs[tf.cast(x2, tf.int32)][tf.cast(y2, tf.int32)]
+        Q = (q11, q21, q12, q22)
+        X = (tf.cast(x1 * i_multiplier, dtype=inputs.dtype), tf.cast(x2 * i_multiplier, dtype=inputs.dtype))
+        Y = (tf.cast(y1 * i_multiplier, dtype=inputs.dtype), tf.cast(y2 * i_multiplier, dtype=inputs.dtype))
+        return Q, X, Y
+
 
     def get_real_equivalent(self):
         return ComplexUpSampling2D(size=self.factor_upsample, data_format=self.data_format,
@@ -141,7 +159,7 @@ if __name__ == '__main__':
                            [1.6667, 2.0000, 2.3333, 2.6667],
                            [2.3333, 2.6667, 3.0000, 3.3333],
                            [3.0000, 3.3333, 3.6667, 4.0000]]]])
-    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')
+    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first', align_corners=True)
     y_complex = upsample(z)
     assert np.allclose(expected, tf.math.real(y_complex).numpy(), 0.0001)
     x = tf.convert_to_tensor([[[[1., 2., 0.],
@@ -153,14 +171,14 @@ if __name__ == '__main__':
                            [2.4000, 2.7200, 3.0400, 2.5600, 1.2800, 0.0000],
                            [1.2000, 1.3600, 1.5200, 1.2800, 0.6400, 0.0000],
                            [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]]]])
-    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')
+    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first', align_corners=True)
     y = upsample(x)
     assert np.allclose(expected, tf.math.real(y).numpy(), 0.00001)
 
     # https://blogs.sas.com/content/iml/2020/05/18/what-is-bilinear-interpolation.html#:~:text=Bilinear%20interpolation%20is%20a%20weighted,the%20point%20and%20the%20corners.&text=The%20only%20important%20formula%20is,x%20%5B0%2C1%5D.
     x = tf.convert_to_tensor([[[[0., 4.], [2., 1.]]]])
     z = tf.complex(real=x, imag=x)
-    upsample = ComplexUpSampling2D(size=3, interpolation='bilinear', data_format='channels_first')
+    upsample = ComplexUpSampling2D(size=3, interpolation='bilinear', data_format='channels_first', align_corners=True)
     y_complex = upsample(z)
     expected = np.array([[[[0. + 0.j, 0.8 + 0.8j,
                             1.6 + 1.6j, 2.4 + 2.4j,
