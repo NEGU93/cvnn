@@ -1,15 +1,26 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
-from typing import Optional
+from typing import Optional, Union, Tuple
 from cvnn.layers.core import ComplexLayer
 from cvnn.layers.core import DEFAULT_COMPLEX_TYPE
 
 
 class ComplexUpSampling2D(Layer, ComplexLayer):
 
-    def __init__(self, size=(2, 2), data_format: Optional[str] = None, interpolation: str = 'nearest',
+    def __init__(self, size: Union[int, Tuple[int, int]] = (2, 2),
+                 data_format: Optional[str] = None, interpolation: str = 'nearest',
                  align_corners: bool = False, dtype=DEFAULT_COMPLEX_TYPE, **kwargs):
-
+        """
+        :param size: Int, or tuple of 2 integers. The upsampling factors for rows and columns.
+        :param data_format: string, one of channels_last (default) or channels_first.
+            The ordering of the dimensions in the inputs. channels_last corresponds to inputs with shape
+            (batch_size, height, width, channels) while channels_first corresponds to inputs with shape
+            (batch_size, channels, height, width).
+        :param interpolation: A string, one of nearest or bilinear.
+        :param align_corners:  if True, the corner pixels of the input and output tensors are aligned,
+            and thus preserving the values at those pixels.
+            Example of align coreners: https://discuss.pytorch.org/t/what-we-should-use-align-corners-false/22663/9
+        """
         self.my_dtype = tf.dtypes.as_dtype(dtype)
         super(ComplexUpSampling2D, self).__init__(dtype=self.my_dtype.real_dtype, **kwargs)
         self.align_corners = align_corners

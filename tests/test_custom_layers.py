@@ -320,6 +320,7 @@ def test_upsampling_near_neighbour():
     assert np.all(my_y == y_tf)
 
 
+@tf.autograph.experimental.do_not_convert
 def test_upsampling_bilinear_corners_aligned():
     # Pytorch examples
     # https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
@@ -371,6 +372,7 @@ def test_upsampling_bilinear_corners_aligned():
     assert np.allclose(expected, y_complex.numpy(), 0.000001)
 
 
+@tf.autograph.experimental.do_not_convert
 def test_upsampling_bilinear_corner_not_aligned():
     # Pytorch
     #   https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
@@ -407,6 +409,7 @@ def test_upsampling_bilinear_corner_not_aligned():
     assert np.all(y_tf == y_own)
 
 
+@tf.autograph.experimental.do_not_convert
 def test_upsampling():
     test_upsampling_near_neighbour()
     test_upsampling_bilinear_corners_aligned()

@@ -6,3 +6,4 @@ Complex Upsampling techniques
 
     unpooling2d
     complex_conv_tranpose
+    complex_upsampling2d
