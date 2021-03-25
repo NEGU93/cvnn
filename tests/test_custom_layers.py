@@ -320,9 +320,102 @@ def test_upsampling_near_neighbour():
     assert np.all(my_y == y_tf)
 
 
+def test_upsampling_bilinear_corners_aligned():
+    # Pytorch examples
+    # https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    z = tf.complex(real=x, imag=x)
+    expected = np.array([[[[1.0000, 1.3333, 1.6667, 2.0000],
+                           [1.6667, 2.0000, 2.3333, 2.6667],
+                           [2.3333, 2.6667, 3.0000, 3.3333],
+                           [3.0000, 3.3333, 3.6667, 4.0000]]]])
+    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first', align_corners=True)
+    y_complex = upsample(z)
+    assert np.allclose(expected, tf.math.real(y_complex).numpy(), 0.0001)
+    x = tf.convert_to_tensor([[[[1., 2., 0.],
+                                [3., 4., 0.],
+                                [0., 0., 0.]]]])
+    expected = np.array([[[[1.0000, 1.4000, 1.8000, 1.6000, 0.8000, 0.0000],
+                           [1.8000, 2.2000, 2.6000, 2.2400, 1.1200, 0.0000],
+                           [2.6000, 3.0000, 3.4000, 2.8800, 1.4400, 0.0000],
+                           [2.4000, 2.7200, 3.0400, 2.5600, 1.2800, 0.0000],
+                           [1.2000, 1.3600, 1.5200, 1.2800, 0.6400, 0.0000],
+                           [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000]]]])
+    upsample = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first', align_corners=True)
+    y = upsample(x)
+    assert np.allclose(expected, tf.math.real(y).numpy(), 0.00001)
+
+    # https://blogs.sas.com/content/iml/2020/05/18/what-is-bilinear-interpolation.html#:~:text=Bilinear%20interpolation%20is%20a%20weighted,the%20point%20and%20the%20corners.&text=The%20only%20important%20formula%20is,x%20%5B0%2C1%5D.
+    x = tf.convert_to_tensor([[[[0., 4.], [2., 1.]]]])
+    z = tf.complex(real=x, imag=x)
+    upsample = ComplexUpSampling2D(size=3, interpolation='bilinear', data_format='channels_first', align_corners=True)
+    y_complex = upsample(z)
+    expected = np.array([[[[0. + 0.j, 0.8 + 0.8j,
+                            1.6 + 1.6j, 2.4 + 2.4j,
+                            3.2 + 3.2j, 4. + 4.j],
+                           [0.4 + 0.4j, 1. + 1.j,
+                            1.6 + 1.6j, 2.2 + 2.2j,
+                            2.8 + 2.8j, 3.4 + 3.4j],
+                           [0.8 + 0.8j, 1.2 + 1.2j,
+                            1.6 + 1.6j, 2. + 2.j,
+                            2.4 + 2.4j, 2.8 + 2.8j],
+                           [1.2 + 1.2j, 1.4 + 1.4j,
+                            1.6 + 1.6j, 1.8 + 1.8j,
+                            2. + 2.j, 2.2 + 2.2j],
+                           [1.6 + 1.6j, 1.6 + 1.6j,
+                            1.6 + 1.6j, 1.6 + 1.6j,
+                            1.6 + 1.6j, 1.6 + 1.6j],
+                           [2. + 2.j, 1.8 + 1.8j,
+                            1.6 + 1.6j, 1.4 + 1.4j,
+                            1.2 + 1.2j, 1. + 1.j]]]])
+    assert np.allclose(expected, y_complex.numpy(), 0.000001)
+
+
+def test_upsampling_bilinear_corner_not_aligned():
+    # Pytorch
+    #   https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(z)
+    # set_trace()
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    x = tf.convert_to_tensor([[[[1., 2., 0.],
+                                [3., 4., 0.],
+                                [0., 0., 0.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=3, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=3, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.allclose(y_tf, tf.math.real(y_own).numpy())
+    y_tf = tf.keras.layers.UpSampling2D(size=6, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=6, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.allclose(y_tf, tf.math.real(y_own).numpy())
+    y_tf = tf.keras.layers.UpSampling2D(size=8, interpolation='bilinear', data_format='channels_first')(x)
+    y_own = ComplexUpSampling2D(size=8, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.all(y_tf == tf.math.real(y_own).numpy())
+    # to test bicubic= https://discuss.pytorch.org/t/what-we-should-use-align-corners-false/22663/17
+    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/UpSampling2D
+    input_shape = (2, 2, 1, 3)
+    x = np.arange(np.prod(input_shape)).reshape(input_shape)
+    y_tf = tf.keras.layers.UpSampling2D(size=(1, 2), interpolation='bilinear')(x)
+    y_own = ComplexUpSampling2D(size=(1, 2), interpolation='bilinear')(x)
+    assert np.all(y_tf == y_own)
+
+
+def test_upsampling():
+    test_upsampling_near_neighbour()
+    test_upsampling_bilinear_corners_aligned()
+    test_upsampling_bilinear_corner_not_aligned()
+
+
 @tf.autograph.experimental.do_not_convert
 def test_layers():
-    test_upsampling_near_neighbour()
+    test_upsampling()
     complex_conv_2d_transpose()
     complex_max_pool_2d()
     dropout()
