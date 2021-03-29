@@ -24,7 +24,7 @@ except ImportError as e:
 try:
     import matplotlib.pyplot as plt
     AVAILABLE_LIBRARIES.add('matplotlib')
-    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][1:] # Uncomment to remove blue color
+    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][1:]
 except ImportError as e:
     logger.info("Matplotlib not installed, consider installing it to get more plotting capabilities")
 if 'matplotlib' in AVAILABLE_LIBRARIES:
@@ -39,13 +39,15 @@ if 'matplotlib' in AVAILABLE_LIBRARIES:
     except ImportError as e:
         logger.info("Tikzplotlib not installed, consider installing it to get more plotting capabilities")
 
-DEFAULT_PLOTLY_COLORS = ['rgb(31, 119, 180)',  # Blue
-                         'rgb(255, 127, 14)',  # Orange
-                         'rgb(44, 160, 44)',  # Green
-                         'rgb(214, 39, 40)',
-                         'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
-                         'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
-                         'rgb(188, 189, 34)', 'rgb(23, 190, 207)']
+DEFAULT_PLOTLY_COLORS = [
+    # 'rgb(31, 119, 180)',  # Blue
+    'rgb(255, 127, 14)',  # Orange
+    'rgb(44, 160, 44)',  # Green
+    'rgb(214, 39, 40)',
+    'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
+    'rgb(227, 119, 194)', 'rgb(127, 127, 127)',
+    'rgb(188, 189, 34)', 'rgb(23, 190, 207)'
+]
 
 
 @dataclass
@@ -1432,6 +1434,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.44'
+__version__ = '0.1.45'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

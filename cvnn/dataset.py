@@ -412,7 +412,6 @@ class CorrelatedGaussianNormal(GeneratorDataset):
             evals, evecs = eigh(r)
             # Construct c, so c*c^T = r.
             c = np.dot(evecs, np.diag(np.sqrt(evals)))
-
         # Convert the data to correlated random variables.
         y = np.dot(c, x)
         return [y[0][i] + 1j * y[1][i] for i in range(y.shape[1])]
@@ -667,8 +666,9 @@ if __name__ == "__main__":
         [[1, -0.75], [-0.75, 1]]
     ]
     dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)"""
-    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.5, 1, 1], [-0.5, 1, 1]])
-    dataset.save_data("./data/MLSP/")
+    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.1, 1, 1], [-0.1, 1, 1]])
+    # dataset.save_data("./data/MLSP/")
+    print(parametric_predictor(dataset))
 
     # dataset = OpenDataset("./data/MLSP/")
     # dataset.plot_data(overlapped=True, showfig=True, library="matplotlib")
@@ -676,6 +676,6 @@ if __name__ == "__main__":
     # print("{:.2%}".format(parametric_predictor(dataset)))
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.20'
+__version__ = '0.1.21'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

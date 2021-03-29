@@ -407,7 +407,8 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
                    debug: bool = False, do_conf_mat: bool = True, do_all: bool = True, tensorboard: bool = False,
-                   polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None) -> str:
+                   polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
+                   plot_data: bool = False) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -455,6 +456,9 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     monte_carlo.output_config['tensorboard'] = tensorboard
     monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     monte_carlo.output_config['plot_all'] = do_all
+    if plot_data:
+        dataset.plot_data(overlapped=True, showfig=False, save_path=monte_carlo.monte_carlo_analyzer.path,
+                          library='matplotlib')
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     validation_split=validation_split, validation_data=validation_data,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
@@ -466,7 +470,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                          models_names=[str(model.name) for model in models],
                          dataset_name=dataset.dataset_name,
                          num_classes=str(dataset.y.shape[1]),
-                         polar_mode='Yes' if polar else 'No',
+                         polar_mode=str(polar),
                          dataset_size=str(dataset.x.shape[0]),
                          features_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size
                          )
@@ -480,7 +484,8 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
                                     debug: bool = False, do_all: bool = True, tensorboard: bool = False,
                                     polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                     capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
-                                    dropout: Optional[float] = None, models: Optional[List[Model]] = None) -> str:
+                                    dropout: Optional[float] = None, models: Optional[List[Model]] = None,
+                                    plot_data: bool = True) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
         1. Generates a complex-valued gaussian correlated noise with the characteristics given by the inputs.
@@ -537,7 +542,8 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
         return run_montecarlo(models=models, dataset=dataset, open_dataset=None,
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                               validation_split=validation_split, validation_data=None,
-                              debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=True)
+                              debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=True,
+                              plot_data=plot_data)
     else:
         return mlp_run_real_comparison_montecarlo(dataset=dataset, open_dataset=None, iterations=iterations,
                                                   epochs=epochs, batch_size=batch_size, display_freq=display_freq,
@@ -546,7 +552,8 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
                                                   tensorboard=tensorboard,
                                                   capacity_equivalent=capacity_equivalent,
                                                   equiv_technique=equiv_technique,
-                                                  dropout=dropout, validation_split=validation_split)
+                                                  dropout=dropout, validation_split=validation_split,
+                                                  plot_data=plot_data)
 
 
 def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
@@ -559,7 +566,8 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        dropout: float = 0.5, validation_split: float = 0.2,
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
-                                       shuffle: bool = False, tensorboard: bool = False) -> str:
+                                       shuffle: bool = False, tensorboard: bool = False,
+                                       plot_data: bool = True) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over any dataset.
     1. Automatically creates two Multi-Layer Perceptrons (MLP), one complex and one real.
@@ -642,6 +650,9 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     # monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     monte_carlo.output_config['plot_all'] = do_all
     monte_carlo.output_config['excel_summary'] = False
+    if plot_data:
+        dataset.plot_data(overlapped=True, showfig=False, save_path=monte_carlo.monte_carlo_analyzer.path,
+                          library='matplotlib')
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
@@ -686,7 +697,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         loss=str(complex_network.loss.__class__),
         hl=str(len(shape_raw)), shape=str(shape_raw),
         dropout=str(dropout), num_classes=str(dataset.y.shape[1]),
-        polar_mode='Yes' if polar else 'No',
+        polar_mode=str(polar),
         activation=activation,
         dataset_size=str(dataset.x.shape[0]), feature_size=str(dataset.x.shape[1]),
         epochs=epochs, batch_size=batch_size,
