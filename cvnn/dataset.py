@@ -644,7 +644,7 @@ def parametric_predictor(dataset, coef_1=0.5, coef_2=-0.5):
     y = np.imag(dataset.x)
     for re, im in zip(x, y):
         cov = np.cov([re, im])
-        rho.append(cov[0][1] / (cov[0][0] * cov[1][1]))
+        rho.append(cov[0][1] / (np.sqrt(cov[0][0]) * np.sqrt(cov[1][1])))
 
     rho = np.array(rho)
     thresh = np.full(rho.shape, (coef_1 + coef_2) / 2)
