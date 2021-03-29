@@ -222,17 +222,18 @@ class MonteCarlo:
                                       epochs=epochs, batch_size=batch_size
                                       )
         if self.output_config['confusion_matrix']:
-            for model_cm in confusion_matrix:
-                # If the first prediction does not predict a given class, the order will be wrong, so I sort it.
-                cm = model_cm['matrix']
-                cols = cm.columns.tolist()
-                strs = list(filter(lambda x: type(x) == str, cols))
-                ints = list(filter(lambda x: type(x) == int, cols))
-                ints.sort()
-                strs.sort()
-                cm_sorted = cm.fillna(0)[ints + strs]  # Sorted confusion matrix
-                model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
-                model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
+            if confusion_matrix is not None:
+                for model_cm in confusion_matrix:
+                    # If the first prediction does not predict a given class, the order will be wrong, so I sort it.
+                    cm = model_cm['matrix']
+                    cols = cm.columns.tolist()
+                    strs = list(filter(lambda x: type(x) == str, cols))
+                    ints = list(filter(lambda x: type(x) == int, cols))
+                    ints.sort()
+                    strs.sort()
+                    cm_sorted = cm.fillna(0)[ints + strs]  # Sorted confusion matrix
+                    model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
+                    model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
         if test_results is not None:
             test_results.groupby('network').describe().to_csv(self.monte_carlo_analyzer.path / ("test_results.csv"))
         if self.output_config['plot_all']:
@@ -406,7 +407,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
-                   debug: bool = False, do_conf_mat: bool = True, do_all: bool = True, tensorboard: bool = False,
+                   debug: bool = False, do_conf_mat: bool = False, do_all: bool = True, tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                    plot_data: bool = False) -> str:
     """
