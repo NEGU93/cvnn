@@ -257,6 +257,7 @@ class MonteCarlo:
                                                                                               y_test)))
                 except ValueError:
                     logger.warning("ValueError: Could not do confusion matrix. No objects to concatenate.")
+                    # TODO: I think confusion matrix stopped working.
             else:
                 print("Confusion matrix only available for validation_data")
         if self.output_config['save_weights']:
@@ -474,8 +475,9 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                          polar_mode=str(polar),
                          dataset_size=str(dataset.x.shape[0]),
                          features_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size
+                         # filename='./log/run_data.csv'
                          )
-    return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")
+    return str("./log/run_data.csv")
 
 
 def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: int = 128, param_list=None,
@@ -543,7 +545,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
         return run_montecarlo(models=models, dataset=dataset, open_dataset=None,
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                               validation_split=validation_split, validation_data=None,
-                              debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=True,
+                              debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=False,
                               plot_data=plot_data)
     else:
         return mlp_run_real_comparison_montecarlo(dataset=dataset, open_dataset=None, iterations=iterations,
