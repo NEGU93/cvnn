@@ -214,6 +214,8 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
                 fig.savefig(filename)
             if showfig:
                 fig.show()
+            else:
+                fig.close()
     elif library == 'plotly':
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning(
@@ -245,6 +247,8 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
             fig = ff.create_annotated_heatmap(z, x=x, y=y)
             if showfig:
                 fig.show()
+            else:
+                fig.close()
 
 
 def get_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
@@ -465,6 +469,8 @@ class SeveralMonteCarloComparison:
                 tikzplotlib.save(Path(os.path.split(savefile)[0]) / ("tikz_box_plot_" + self.x_label + ".tex"))
         if showfig:
             fig.show()
+        else:
+            fig.close()
         return fig, ax
 
     def save_pandas_csv_result(self, path, epoch=-1):
@@ -649,10 +655,12 @@ class Plotter:
         ax.set_ylabel(key)
         ax.set_xlabel("epoch")
         ax.set_title(title)
-        if showfig:
-            fig.show()
         if savefig:
             fig.savefig(str(self.path / key) + "_matplotlib" + extension, transparent=True)
+        if showfig:
+            fig.show()
+        else:
+            fig.close()
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
         if 'plotly' not in AVAILABLE_LIBRARIES:
@@ -834,8 +842,6 @@ class MonteCarloPlotter(Plotter):
         ax.set_ylabel(key)
         ax.grid()
         ax.legend()
-        if showfig:
-            fig.show()
         if savefig:
             os.makedirs(str(self.path / "plots/lines_confidence/"), exist_ok=True)
             fig.savefig(self.path / ("plots/lines_confidence/montecarlo_" +
@@ -848,6 +854,10 @@ class MonteCarloPlotter(Plotter):
                 tikzplotlib.save(self.path / ("plots/lines_confidence/montecarlo_" +
                                               key.replace(" ", "_") + "_matplotlib" + ".tex"))
         # set_trace()
+        if showfig:
+            fig.show()
+        else:
+            fig.close()
 
     def _plot_line_confidance_interval_plotly(self, key='accuracy', showfig=False, savefig=True,
                                               title='', full_border=True, x_axis='epoch'):
@@ -1202,6 +1212,8 @@ class MonteCarloAnalyzer:
                 tikzplotlib.save(filename + ".tex")
         if showfig:
             fig.show()
+        else:
+            fig.close()
         return fig, ax
 
     def show_plotly_table(self):
@@ -1329,6 +1341,10 @@ class MonteCarloAnalyzer:
                    filename=self.path / (
                            "plots/histogram/montecarlo_" + key.replace(" ", "_") + "_matplotlib" + extension),
                    showfig=showfig, savefig=savefig)
+        if showfig:
+            fig.show()
+        else:
+            fig.close()
         return fig, ax
 
     def _plot_histogram_plotly(self, key='val_accuracy', epoch=-1, showfig=False, savefig=True, title=''):
@@ -1403,6 +1419,10 @@ class MonteCarloAnalyzer:
                 " will not save tex file")
         else:
             tikzplotlib.save(self.path / ("plots/histogram/montecarlo_" + key.replace(" ", "_") + "_seaborn" + ".tex"))
+        if showfig:
+            fig.show()
+        else:
+            fig.close()
         return fig, ax
 
 
@@ -1434,6 +1454,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.45'
+__version__ = '0.1.46'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
