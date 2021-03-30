@@ -24,7 +24,7 @@ except ImportError as e:
 try:
     import matplotlib.pyplot as plt
     AVAILABLE_LIBRARIES.add('matplotlib')
-    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color'][1:]
+    DEFAULT_MATPLOTLIB_COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']       # [1:]
 except ImportError as e:
     logger.info("Matplotlib not installed, consider installing it to get more plotting capabilities")
 if 'matplotlib' in AVAILABLE_LIBRARIES:
@@ -40,7 +40,7 @@ if 'matplotlib' in AVAILABLE_LIBRARIES:
         logger.info("Tikzplotlib not installed, consider installing it to get more plotting capabilities")
 
 DEFAULT_PLOTLY_COLORS = [
-    # 'rgb(31, 119, 180)',  # Blue
+    'rgb(31, 119, 180)',  # Blue
     'rgb(255, 127, 14)',  # Orange
     'rgb(44, 160, 44)',  # Green
     'rgb(214, 39, 40)',
@@ -1454,6 +1454,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.46'
+__version__ = '0.1.47'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
