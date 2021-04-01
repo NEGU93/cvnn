@@ -18,7 +18,9 @@ Complex Conv 2D
 
     2D convolution layer (e.g. spatial convolution over images).
     Support complex and real input.
-    `cnn <https://miro.medium.com/max/395/1*1VJDP6qDY9-ExTuQVEOlVg.gif>`_
+    
+    .. image::  https://miro.medium.com/max/395/1*1VJDP6qDY9-ExTuQVEOlVg.gif
+    
     This layer creates a convolution kernel that is convolved with the layer input to produce a tensor of outputs. 
     If :code:`use_bias` is :code:`True`, a bias vector is created and added to the outputs. 
     Finally, if :code:`activation` is not :code:`None`, it is applied to the outputs as well.
