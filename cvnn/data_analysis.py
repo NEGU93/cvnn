@@ -214,8 +214,6 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
                 fig.savefig(filename)
             if showfig:
                 fig.show()
-            else:
-                fig.close()
     elif library == 'plotly':
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning(
@@ -247,8 +245,6 @@ def plot_confusion_matrix(data, filename=None, library='plotly', axis_legends=No
             fig = ff.create_annotated_heatmap(z, x=x, y=y)
             if showfig:
                 fig.show()
-            else:
-                fig.close()
 
 
 def get_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None):
@@ -262,7 +258,7 @@ def get_confusion_matrix(y_pred_np, y_label_np, filename=None, axis_legends=None
     y_label_pd = pd.Series(y_label_np, name='Actual')
     df = pd.crosstab(y_label_pd, y_pred_pd, rownames=['Actual'], colnames=['Predicted'], margins=True, dropna=False)
     if filename is not None:
-        df.to_csv(filename)
+        df.to_csv(filename, index=False)
     # plot_confusion_matrix(df, filename, library='plotly', axis_legends=axis_legends)
     return df.fillna(0)
 
@@ -469,8 +465,6 @@ class SeveralMonteCarloComparison:
                 tikzplotlib.save(Path(os.path.split(savefile)[0]) / ("tikz_box_plot_" + self.x_label + ".tex"))
         if showfig:
             fig.show()
-        else:
-            fig.close()
         return fig, ax
 
     def save_pandas_csv_result(self, path, epoch=-1):
@@ -485,7 +479,7 @@ class SeveralMonteCarloComparison:
                 filter = [a == net and b == epoch for a, b in zip(df.network, df.epoch)]
                 data = df[filter].describe()
                 data = data[cols]
-                data.to_csv(path + net + "_" + self.x[i] + "_stats.csv")
+                data.to_csv(path + net + "_" + self.x[i] + "_stats.csv", index=False)
 
     def plot_histogram(self, key='accuracy', epoch=-1, library='seaborn', showfig=False, savefig=True, title='',
                        extension=".svg"):
@@ -533,15 +527,19 @@ class Plotter:
         # So ordering the files makes sure I open the Complex model first and so it plots with the same colours.
         # TODO: Think a better way without loosing generality (This sort is all done because of the ComplexVsReal case)
         for path, subdirs, files in os.walk(self.path):
-            files.sort()  # Respect the colors for the plot of Monte Carlo.
+            # files.sort()  # Respect the colors for the plot of Monte Carlo.
+            data_files = []
             for file in files:
                 if file.endswith(self.file_suffix):
-                    label = re.sub(self.file_suffix + '$', '', file).replace('_', ' ')
-                    tmp_df = pd.read_csv(Path(path) / file)
-                    if self.pandas_dict.get(label) is None:
-                        self.pandas_dict[label] = tmp_df
-                    else:
-                        self.pandas_dict[label] = pd.concat([self.pandas_dict[label], tmp_df], ignore_index=True)
+                    data_files.append(file)
+            # set_trace()
+            for file in data_files:
+                label = re.sub(self.file_suffix + '$', '', file).replace('_', ' ')
+                tmp_df = pd.read_csv(Path(path) / file)
+                if self.pandas_dict.get(label) is None:
+                    self.pandas_dict[label] = tmp_df
+                else:
+                    self.pandas_dict[label] = pd.concat([self.pandas_dict[label], tmp_df], ignore_index=True)
         # set_trace()
 
     def reload_data(self):
@@ -659,8 +657,6 @@ class Plotter:
             fig.savefig(str(self.path / key) + "_matplotlib" + extension, transparent=True)
         if showfig:
             fig.show()
-        else:
-            fig.close()
 
     def _plot_plotly(self, key='loss', showfig=False, savefig=True, func=min, index_loc=None):
         if 'plotly' not in AVAILABLE_LIBRARIES:
@@ -766,7 +762,7 @@ class MonteCarloPlotter(Plotter):
         super().plot_key(key, reload, library, showfig, savefig, index_loc, extension=extension)
 
     def plot_line_confidence_interval(self, key='accuracy', showfig=False, savefig=True, library='matplotlib',
-                                      title='', full_border=True, x_axis='epoch', extension=".svg"):
+                                      title='', full_border=True, x_axis='epoch', extension=".svg", network_filter=None):
         """
         Saves/shows the evolution of the trainig median and mean with the corresponding confidence intervals
             of the results.
@@ -787,20 +783,23 @@ class MonteCarloPlotter(Plotter):
             self._plot_line_confidance_interval_plotly(key=key, showfig=showfig, savefig=savefig,
                                                        title=title, full_border=full_border, x_axis=x_axis)
         elif library == 'matplotlib' or library == 'seaborn':
-            self._plot_line_confidence_interval_matplotlib(key=key, showfig=showfig, savefig=savefig,
-                                                           title=title, x_axis=x_axis, extension=extension)
+            self._plot_line_confidence_interval_matplotlib(key=key, showfig=showfig, savefig=savefig, title=title,
+                                                           x_axis=x_axis, extension=extension,
+                                                           network_filter=network_filter)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
     def _plot_line_confidence_interval_matplotlib(self, key='accuracy', showfig=False, savefig=True,
-                                                  title='', x_axis='epoch', extension=".svg"):
+                                                  title='', x_axis='epoch', extension=".svg", network_filter=None):
         if 'matplotlib' not in AVAILABLE_LIBRARIES:
             logger.warning("No Matplotlib installed, function " +
                            self._plot_line_confidence_interval_matplotlib.__name__ + " was called but will be omitted")
             return None
         fig, ax = plt.subplots()
         for i, (label, data) in enumerate(self.pandas_dict.items()):
+            if network_filter is not None and label.replace(' ', '_') not in network_filter:
+                continue
             x = data[x_axis].unique().tolist()
             data_mean = data[data['stats'] == 'mean'][key].tolist()
             if len(x) == len(data_mean):
@@ -834,6 +833,8 @@ class MonteCarloPlotter(Plotter):
             ax.fill_between(x, data_min, data_max, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.15,
                             label=label.replace('_', ' ') + ' border')
         for label in self.pandas_dict.keys():
+            if network_filter is not None and label not in network_filter:
+                continue
             title += label.replace('_', ' ') + ' vs '
         title = title[:-3] + key
 
@@ -856,8 +857,6 @@ class MonteCarloPlotter(Plotter):
         # set_trace()
         if showfig:
             fig.show()
-        else:
-            fig.close()
 
     def _plot_line_confidance_interval_plotly(self, key='accuracy', showfig=False, savefig=True,
                                               title='', full_border=True, x_axis='epoch'):
@@ -1008,13 +1007,13 @@ class MonteCarloAnalyzer:
         if path is not None and df is not None:  # I have data and the place where I want to save it
             self.df = df  # DataFrame with all the data
             self.path = Path(path)
-            self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+            self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
         elif path is not None and df is None:  # Load df from Path
             if not path.endswith("run_data.csv") or not path.endswith("run_data"): 
                 self.df = pd.DataFrame()
                 data_files = get_data_files_list(path)
                 for file in data_files:
-                    tmp_df = pd.read_csv(Path(file))
+                    tmp_df = pd.read_csv(Path(file), index_col=False)
                     # filter = [e == max(tmp_df.epoch) and n == 'complex_model' for e, n in
                     #           zip(tmp_df.epoch, tmp_df.network)]
                     # th = 0.3
@@ -1024,12 +1023,12 @@ class MonteCarloAnalyzer:
             else:
                 if not path.endswith('.csv'):
                     path += '.csv'
-                self.df = pd.read_csv(Path(path))  # Path(__file__).parents[1].absolute() /
+                self.df = pd.read_csv(Path(path), index_col=False)  # Path(__file__).parents[1].absolute() /
                 self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
         elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./log/montecarlo/")
             self.df = df  # DataFrame with all the data
-            self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+            self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
         else:  # I have nothing
             self.path = create_folder("./log/montecarlo/")
             self.df = pd.DataFrame()
@@ -1039,7 +1038,7 @@ class MonteCarloAnalyzer:
 
     def set_df(self, df, conf_mat=None):
         self.df = df  # DataFrame with all the data
-        self.df.to_csv(self.path / "run_data.csv")  # Save the results for latter use
+        self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
         if conf_mat is not None:
             for i in range(len(conf_mat)):
                 mat = conf_mat[i]["matrix"]
@@ -1067,13 +1066,13 @@ class MonteCarloAnalyzer:
         # Save confusion matrix
         for i in range(len(self.confusion_matrix)):
             self.confusion_matrix[i]["matrix"].to_csv(self.path / (self.confusion_matrix[i]["name"]
-                                                                   + "_confusion_matrix.csv"))
+                                                                   + "_confusion_matrix.csv"), index=False)
 
     # ------------
     # Plot methods
     # ------------
 
-    def do_all(self, extension=".svg", showfig=False, savefig=True):
+    def do_all(self, extension=".svg", showfig=False, savefig=True, network_filter=None):
         """
         Plots box plot, histogram and confidence interval (using :code:`MonteCarloPlotter`) for both
             1. plotly
@@ -1084,12 +1083,13 @@ class MonteCarloAnalyzer:
             3. accuracy
             4. loss
         """
-        key_list = [c for c in self.df.columns.values.tolist() if c not in ['network', 'epoch', 'path']]
+        key_list = [c for c in self.df.columns.values.tolist() if c not in ['network', 'epoch', 'path', 'Unnamed: 0']]
         for key in key_list:
             # self.plot_3d_hist(key=key)
             for lib in ['seaborn', 'plotly']:
                 try:
-                    self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig)
+                    self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig,
+                                  network_filter=network_filter)
                 except:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
                 try:
@@ -1100,12 +1100,13 @@ class MonteCarloAnalyzer:
                     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
                 try:
                     self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib,
-                                                                           showfig=showfig, savefig=savefig)
+                                                                           showfig=showfig, savefig=savefig,
+                                                                           network_filter=network_filter)
                 except:
                     logger.warning(f"Could not plot {key} line_confidence_interval with {lib}", exc_info=True)
 
     def box_plot(self, epoch: int = -1, library: str = 'plotly', key: str = 'val_accuracy',
-                 showfig: bool = False, savefig: bool = True, extension: str = '.svg'):
+                 showfig: bool = False, savefig: bool = True, extension: str = '.svg', network_filter=None):
         """
         Saves/shows a box plot of the results.
         :param epoch: Which epoch to use for the box plot. If -1 (default) it will use the last epoch.
@@ -1121,7 +1122,8 @@ class MonteCarloAnalyzer:
         if library == 'plotly':
             self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig)
         elif library == 'seaborn':
-            self._box_plot_seaborn(key=key, epoch=epoch, showfig=showfig, savefig=savefig, extension=extension)
+            self._box_plot_seaborn(key=key, epoch=epoch, showfig=showfig, savefig=savefig, extension=extension,
+                                   network_filter=network_filter)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
@@ -1134,9 +1136,8 @@ class MonteCarloAnalyzer:
         fig = go.Figure()
         if epoch == -1:
             epoch = max(self.df.epoch)
-        networks_availables = self.df.network.unique()
-        # set_trace()
-        for col, net in enumerate(networks_availables):
+        networks_available = self.df.network.unique()
+        for col, net in enumerate(networks_available):
             filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
             data = self.df[filter]
             fig.add_trace(go.Box(
@@ -1176,8 +1177,11 @@ class MonteCarloAnalyzer:
             #                                 + "_box_plot" + extension)))
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
+        else:
+            plt.close(fig)
 
-    def _box_plot_seaborn(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True, extension='.svg'):
+    def _box_plot_seaborn(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True, extension='.svg',
+                          network_filter=None):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._box_plot_seaborn.__name__ +
                            " was called but will be omitted")
@@ -1187,7 +1191,9 @@ class MonteCarloAnalyzer:
         # Prepare data
         filter = self.df['epoch'] == epoch
         data = self.df[filter]
-
+        if network_filter:
+            filter = data['network'].isin(network_filter)
+            data = data[filter]
         # Run figure
         fig = plt.figure()
         ax = sns.boxplot(x="network", y=key, data=data, boxprops=dict(alpha=.3))
@@ -1213,7 +1219,7 @@ class MonteCarloAnalyzer:
         if showfig:
             fig.show()
         else:
-            fig.close()
+            plt.close(fig)
         return fig, ax
 
     def show_plotly_table(self):
@@ -1344,7 +1350,7 @@ class MonteCarloAnalyzer:
         if showfig:
             fig.show()
         else:
-            fig.close()
+            plt.close(fig)
         return fig, ax
 
     def _plot_histogram_plotly(self, key='val_accuracy', epoch=-1, showfig=False, savefig=True, title=''):
@@ -1384,6 +1390,8 @@ class MonteCarloAnalyzer:
             #                                  + "plotly_histogram" + extension)))
         elif showfig:
             fig.show(config=PLOTLY_CONFIG)
+        else:
+            plt.close(fig)
         return fig
 
     def _plot_histogram_seaborn(self, key='val_accuracy', epoch=-1,
@@ -1422,17 +1430,23 @@ class MonteCarloAnalyzer:
         if showfig:
             fig.show()
         else:
-            fig.close()
+            plt.close(fig)
         return fig, ax
 
 
 if __name__ == "__main__":
-    path = "/home/barrachina/Documents/onera/src/PolSar/Oberpfaffenhofen/log/montecarlo/2021/02February/21Sunday/run-13h36m02"
+    path = "/mnt/point_de_montage/log/montecarlo/2021/04April/02Friday/run-11h03m43"
     monte = MonteCarloAnalyzer(path=path)
     # monte.monte_carlo_plotter.plot_line_confidence_interval(showfig=True, library="plotly")
-    monte.plot_histogram(library="seaborn", showfig=True)
-    # monte.do_all(showfig=False, savefig=True)
+    # monte.plot_histogram(library="seaborn", showfig=True)
+    # monte.box_plot(library='seaborn', network_filter=['complex_network', 'real_network'])
+    monte.do_all(showfig=False, savefig=True, network_filter=['complex_network', 'real_network'])
     # set_trace()
+    # monte.monte_carlo_plotter.plot_line_confidence_interval()
+    #     key='accuracy', showfig=False, savefig=True,
+    #                                                         library='seaborn', title='', full_border=True,
+    #                                                         x_axis='epoch', extension=".svg",
+    #                                                         network_filter=['complex_network', 'real_network'])
     # monte.plot_histogram(library='matplotlib', showfig=False, savefig=True)
     # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True)
     # monte.monte_carlo_plotter.plot_train_vs_test(showfig=False, savefig=True, key='loss', median=True)
@@ -1454,6 +1468,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.47'
+__version__ = '0.1.48'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

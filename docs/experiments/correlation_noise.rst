@@ -7,13 +7,13 @@ This results can be replicated by running the following code (changing the input
 
         from cvnn.montecarlo import run_gaussian_dataset_montecarlo
 
-        run_gaussian_dataset_montecarlo(iterations=1000, m=10000, n=128, param_list=None,
-                                        epochs=150, batch_size=100, display_freq=1, optimizer='Adam',
+        run_gaussian_dataset_montecarlo(iterations=30, m=10000, n=128, param_list=None,
+                                        epochs=300, batch_size=100, display_freq=1, optimizer='adam',
                                         shape_raw=None, activation='cart_relu', debug=False, 
-                                        polar=False, do_all=True, dropout=None)
+                                        polar=False, do_all=True, dropout=0.5)
 
 
-.. note:: Results will be differents to those published on the report because of the following reasons
+.. note:: Results will be differents to those published because of the following reasons (Fixed on the ArXiv version):
     
     - Since version 0.2.89 the default real mlp model changed using a new definition that will be published in a new article.
     - Since version 0.3.48 cvnn started using TensorFlow optimizer which averages gradients by it's batch size according to `this post <https://stackoverflow.com/questions/66566905/debugging-tensorflow-fit-not-making-sense/>`_. This `issue <https://github.com/tensorflow/tensorflow/issues/47702>`_ was raised officially.
@@ -26,9 +26,9 @@ This results can be replicated by running the following code (changing the input
 .. toctree::
     :maxdepth: 1
 
+    several_coef_correl
     base_case_type_a_2hl
     base_case_type_a_1hl
-    no_dropout_type_a_1hl
 
 **Method Documentation**
 
@@ -79,6 +79,5 @@ This results can be replicated by running the following code (changing the input
     :param dropout: (float) Dropout to be used at each hidden layer. If None it will not use any dropout.
     :return: (string) Full path to the :code:`run_data.csv` generated file. 
         It can be used by :code:`cvnn.data_analysis.SeveralMonteCarloComparison` to compare several runs.
-
 
 .. [CIT2020-BARRACHINA] Jose Agustin Barrachina, Chenfang Ren, Christele Morisseau, Gilles Vieillard, Jean-Philippe Ovarlez “Complex-Valued vs. Real-Valued Neural Networks for Classification Perspectives: An Example on Non-Circular Data” arXiv:2009.08340 ML Stat, Sep. 2020. Available: https://arxiv.org/abs/2009.08340.

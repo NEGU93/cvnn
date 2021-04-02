@@ -1,5 +1,14 @@
-Base Case Type A 1HL
-^^^^^^^^^^^^^^^^^^^^
+Several correlation coefficients
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Results Graph
+"""""""""""""
+
+.. raw:: html
+
+    <iframe src="../_static/circularity/coef_correl_1HL_w_dropout.html" height="500px" width="100%"></iframe>
+
+
 
 **Monte Carlo run**
 
@@ -10,6 +19,8 @@ Base Case Type A 1HL
 - Data is not shuffled at each iteration
 
 **Opened data located in data/TypeA**
+
+Correlation coefficient was changed from 0.1 to 0.9 in order to create the graph.
 
 - Num classes: 2
 - Total Samples: 20000
@@ -49,14 +60,3 @@ Dense layer
 - act_fun = softmax_real;
 - weight init = Glorot Uniform; bias init = Zeros
 - Dropout: None
-
-Results Graphs
-""""""""""""""
-
-.. raw:: html
-
-   <iframe src="../_static/circularity/base_case_type_A_1HL_test_accuracy_box_plot.html" height="500px" width="100%"></iframe>
-
-.. raw:: html
-
-   <iframe src="../_static/circularity/base_case_type_A_1HL_test_accuracy_histogram.html" height="500px" width="100%"></iframe>

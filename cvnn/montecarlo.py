@@ -404,8 +404,8 @@ class RealVsComplex(MonteCarlo):
 #   Monte Carlo simulation methods
 # ====================================
 def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
-                   iterations: int = 500,
-                   epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
+                   iterations: int = 30,
+                   epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
                    debug: bool = False, do_conf_mat: bool = False, do_all: bool = True, tensorboard: bool = False,
@@ -480,8 +480,8 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     return str("./log/run_data.csv")
 
 
-def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: int = 128, param_list=None,
-                                    epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
+def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int = 128, param_list=None,
+                                    epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
                                     optimizer='sgd', validation_split: float = 0.2,      # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
                                     debug: bool = False, do_all: bool = True, tensorboard: bool = False,
@@ -536,8 +536,8 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
     # Get parameters
     if param_list is None:
         param_list = [
-            [0.5, 1, 1],
-            [-0.5, 1, 1]
+            [0.3, 1, 1],
+            [-0.3, 1, 1]
         ]
     dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
     print("Database loaded...")
@@ -560,9 +560,9 @@ def run_gaussian_dataset_montecarlo(iterations: int = 1000, m: int = 10000, n: i
 
 
 def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
-                                       iterations: int = 1000,
-                                       epochs: int = 150, batch_size: int = 100, display_freq: int = 1,
-                                       optimizer='sgd',     # TODO: Typing
+                                       iterations: int = 30,
+                                       epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
+                                       optimizer='adam',     # TODO: Typing
                                        shape_raw=None, activation: t_activation = 'cart_relu',
                                        debug:  bool = False, do_all: bool = True,
                                        polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
