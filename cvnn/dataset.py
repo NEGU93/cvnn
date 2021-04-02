@@ -9,11 +9,13 @@ from abc import ABC, abstractmethod
 import plotly.graph_objects as go
 import plotly
 from matplotlib import pyplot as plt
+import matplotlib.colors as mcolors
 from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
 import tikzplotlib
 
 MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
+COLORS = list(mcolors.BASE_COLORS)
 logger = logging.getLogger(cvnn.__name__)
 
 
@@ -194,7 +196,11 @@ class Dataset:
                 for index, label in enumerate(labels):
                     if label == cls:
                         ax.plot(np.real(self.x[index]),
-                                np.imag(self.x[index]), MARKERS[cls % len(MARKERS)], label="Class " + str(cls))
+                                np.imag(self.x[index]),
+                                MARKERS[cls % len(MARKERS)],
+                                color=COLORS[cls % len(COLORS)],
+                                label="Class " + str(cls)
+                                )
                         ax.axis('equal')
                         ax.grid(True)
                         ax.set_aspect('equal', adjustable='box')
@@ -221,8 +227,8 @@ class Dataset:
             prefix = ""
             if overlapped:
                 prefix = "overlapped_"
-            fig.savefig(save_path / Path(prefix + "data_example" + extension), transparent=True)
-            tikzplotlib.save(save_path / (prefix + "data_example.tikz"))
+            fig.savefig(save_path / Path(prefix + self.dataset_name + "_data_example" + extension), transparent=True)
+            tikzplotlib.save(save_path / (prefix + self.dataset_name + "_data_example.tikz"))
         return fig, ax
 
     # =======
@@ -364,7 +370,8 @@ class GeneratorDataset(ABC, Dataset):
 
 class CorrelatedGaussianNormal(GeneratorDataset):
 
-    def __init__(self, m, n, cov_matrix_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
+    def __init__(self, m, n, cov_matrix_list, num_classes=None, ratio=0.8, debug=False, savedata=False,
+                 dataset_name=None):
         if num_classes is None:
             num_classes = len(cov_matrix_list)
         if not len(cov_matrix_list) == num_classes:
@@ -383,8 +390,10 @@ class CorrelatedGaussianNormal(GeneratorDataset):
                 logger.error("corelation coefficient module must be lower than one")
                 sys.exit(-1)
         self.cov_matrix_list = cov_matrix_list
+        if dataset_name is None:
+            dataset_name = "Correlated Gaussian Normal"
         super().__init__(m, n, num_classes=num_classes, ratio=ratio, savedata=savedata, debug=debug,
-                         dataset_name="Correlated Gaussian Normal")
+                         dataset_name=dataset_name)
 
     @staticmethod
     def _create_correlated_gaussian_point(num_samples, r=None):
@@ -477,7 +486,7 @@ class CorrelatedGaussianNormal(GeneratorDataset):
 
 class CorrelatedGaussianCoeffCorrel(CorrelatedGaussianNormal):
 
-    def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False):
+    def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False, dataset_name=None):
         if num_classes is None:
             num_classes = len(param_list)
         if not len(param_list) == num_classes:
@@ -492,7 +501,8 @@ class CorrelatedGaussianCoeffCorrel(CorrelatedGaussianNormal):
             sigma_xy = param[0] * sqrt(param[1] * param[2])
             cov_mat_list.append([[param[1], sigma_xy], [sigma_xy, param[2]]])
         super().__init__(m=m, n=n, cov_matrix_list=cov_mat_list,
-                         num_classes=num_classes, ratio=ratio, debug=debug, savedata=savedata)
+                         num_classes=num_classes, ratio=ratio, debug=debug, savedata=savedata,
+                         dataset_name=dataset_name)
 
 
 class ComplexNormalVariable(CorrelatedGaussianNormal):
@@ -667,10 +677,12 @@ if __name__ == "__main__":
         [[1, -0.75], [-0.75, 1]]
     ]
     dataset = CorrelatedGaussianNormal(m, n, cov_matr_list, debug=False)"""
-    dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[0.0, 1, 1], [-0.0, 1, 1]])
+    for coef in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]:
+        dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[coef, 1, 1], [-coef, 1, 1]],
+                                                dataset_name=f"{int(coef*100)}")
+        dataset.plot_data(overlapped=True, showfig=True,
+                          save_path="/home/barrachina/Dropbox/thesis/CVNN-thesis-Agustin/ppts/20210611 - ICASSP/img")
     # dataset.save_data("./data/MLSP/")
-    dataset.plot_data(overlapped=True, showfig=False,
-                      save_path="/home/barrachina/Dropbox/thesis/CVNN-thesis-Agustin/ppts/20210331 - Seminaire AI and Physique ONERA/datasets")
     # print(parametric_predictor(dataset))
 
     # dataset = OpenDataset("./data/MLSP/")
@@ -679,6 +691,6 @@ if __name__ == "__main__":
     # print("{:.2%}".format(parametric_predictor(dataset)))
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.22'
+__version__ = '0.1.23'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
