@@ -27,6 +27,9 @@ def linear(z: Tensor) -> Tensor:
 Complex input, real output
 """
 
+def sigmoid_real(z: Tensor) -> Tensor:
+    return tf.keras.activations.sigmoid(tf.math.real(z) + tf.math.imag(z))
+
 
 def softmax_real(z: Tensor, axis=-1) -> Tensor:
     """
@@ -273,6 +276,7 @@ def pol_selu(z: Tensor) -> Tensor:
 act_dispatcher = {
     'linear': Activation(linear),
     'convert_to_real_with_abs': Activation(convert_to_real_with_abs),
+    'sigmoid_real': Activation(sigmoid_real),
     'cart_sigmoid': Activation(cart_sigmoid),
     'cart_elu': Activation(cart_elu),
     'cart_exponential': Activation(cart_exponential),
