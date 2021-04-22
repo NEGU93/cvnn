@@ -27,11 +27,12 @@ def linear(z: Tensor) -> Tensor:
 Complex input, real output
 """
 
+
 def sigmoid_real(z: Tensor) -> Tensor:
     return tf.keras.activations.sigmoid(tf.math.real(z) + tf.math.imag(z))
 
 
-def softmax_real(z: Tensor, axis=-1) -> Tensor:
+def softmax_real_with_abs(z: Tensor, axis=-1) -> Tensor:
     """
     Applies the softmax function to the modulus of z.
     The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
@@ -44,6 +45,78 @@ def softmax_real(z: Tensor, axis=-1) -> Tensor:
     """
     if z.dtype.is_complex:
         return tf.keras.activations.softmax(tf.math.abs(z), axis)
+    else:
+        return tf.keras.activations.softmax(z, axis)
+
+
+def softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
+    """
+    Applies the softmax function to the modulus of z.
+    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+    It is often used as the activation for the last layer of a classification network because the result could be
+    interpreted as a probability distribution.
+    The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
+    if z.dtype.is_complex:
+        return tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.real(z), axis)
+    else:
+        return tf.keras.activations.softmax(z, axis)
+
+
+def softmax_real_with_mult(z: Tensor, axis=-1) -> Tensor:
+    """
+    Applies the softmax function to the modulus of z.
+    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+    It is often used as the activation for the last layer of a classification network because the result could be
+    interpreted as a probability distribution.
+    The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
+    if z.dtype.is_complex:
+        return tf.keras.activations.softmax(tf.math.real(z), axis) * tf.keras.activations.softmax(tf.math.real(z), axis)
+    else:
+        return tf.keras.activations.softmax(z, axis)
+
+
+def softmax_of_softmax_real_with_mult(z: Tensor, axis=-1) -> Tensor:
+    """
+    Applies the softmax function to the modulus of z.
+    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+    It is often used as the activation for the last layer of a classification network because the result could be
+    interpreted as a probability distribution.
+    The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
+    if z.dtype.is_complex:
+        return tf.keras.activations.softmax(
+            tf.keras.activations.softmax(tf.math.real(z), axis) * tf.keras.activations.softmax(tf.math.real(z), axis),
+            axis)
+    else:
+        return tf.keras.activations.softmax(z, axis)
+
+
+def softmax_of_softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
+    """
+    Applies the softmax function to the modulus of z.
+    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+    It is often used as the activation for the last layer of a classification network because the result could be
+    interpreted as a probability distribution.
+    The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
+    if z.dtype.is_complex:
+        return tf.keras.activations.softmax(
+            tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.real(z), axis),
+            axis)
     else:
         return tf.keras.activations.softmax(z, axis)
 
@@ -277,6 +350,11 @@ act_dispatcher = {
     'linear': Activation(linear),
     'convert_to_real_with_abs': Activation(convert_to_real_with_abs),
     'sigmoid_real': Activation(sigmoid_real),
+    'softmax_real_with_abs': Activation(softmax_real_with_abs),
+    'softmax_real_with_avg': Activation(softmax_real_with_avg),
+    'softmax_real_with_mult': Activation(softmax_real_with_mult),
+    'softmax_of_softmax_real_with_mult': Activation(softmax_of_softmax_real_with_mult),
+    'softmax_of_softmax_real_with_avg': Activation(softmax_of_softmax_real_with_avg),
     'cart_sigmoid': Activation(cart_sigmoid),
     'cart_elu': Activation(cart_elu),
     'cart_exponential': Activation(cart_exponential),
@@ -288,7 +366,6 @@ act_dispatcher = {
     'cart_softsign': Activation(cart_softsign),
     'cart_tanh': Activation(cart_tanh),
     'cart_softmax': Activation(cart_softmax),
-    'softmax_real': Activation(softmax_real),
     'pol_tanh': Activation(pol_tanh),
     'pol_sigmoid': Activation(pol_sigmoid),
     'pol_selu': Activation(pol_selu)

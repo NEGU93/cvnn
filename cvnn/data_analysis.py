@@ -1435,7 +1435,7 @@ class MonteCarloAnalyzer:
 
 
 if __name__ == "__main__":
-    path = "/mnt/point_de_montage/log/montecarlo/2021/04April/02Friday/run-11h03m43"
+    path = "/mnt/point_de_montage/log/montecarlo/2021/04April/01Thursday/run-22h45m49"
     monte = MonteCarloAnalyzer(path=path)
     # monte.monte_carlo_plotter.plot_line_confidence_interval(showfig=True, library="plotly")
     # monte.plot_histogram(library="seaborn", showfig=True)

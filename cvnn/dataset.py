@@ -14,7 +14,7 @@ from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
 import tikzplotlib
 
-MARKERS = [".", "x", "s", "+", "^", "D", "_", "v", "|", "*", "H"]
+MARKERS = ["*", "s", "x", "+", "^", "D", "_", "v", "|", ".", "H"]
 COLORS = list(mcolors.BASE_COLORS)
 logger = logging.getLogger(cvnn.__name__)
 
@@ -371,7 +371,8 @@ class GeneratorDataset(ABC, Dataset):
 class CorrelatedGaussianNormal(GeneratorDataset):
 
     def __init__(self, m, n, cov_matrix_list, num_classes=None, ratio=0.8, debug=False, savedata=False,
-                 dataset_name=None):
+                 dataset_name=None, sort: bool = False):
+        self.sort = sort
         if num_classes is None:
             num_classes = len(cov_matrix_list)
         if not len(cov_matrix_list) == num_classes:
@@ -396,7 +397,7 @@ class CorrelatedGaussianNormal(GeneratorDataset):
                          dataset_name=dataset_name)
 
     @staticmethod
-    def _create_correlated_gaussian_point(num_samples, r=None):
+    def _create_correlated_gaussian_point(num_samples, r=None, sort=False):
         # https: // scipy - cookbook.readthedocs.io / items / CorrelatedRandomSamples.html
         # Choice of cholesky or eigenvector method.
         method = 'cholesky'
@@ -424,7 +425,13 @@ class CorrelatedGaussianNormal(GeneratorDataset):
             c = np.dot(evecs, np.diag(np.sqrt(evals)))
         # Convert the data to correlated random variables.
         y = np.dot(c, x)
-        return [y[0][i] + 1j * y[1][i] for i in range(y.shape[1])]
+        y = [y[0][i] + 1j * y[1][i] for i in range(y.shape[1])]
+        if sort:
+            y.sort(key=lambda x: np.abs(x))
+        # tmp = [np.abs(y[i]) < np.abs(y[i+1]) for i in range(0, len(y)-1)]
+        # assert np.all(tmp)
+        # set_trace()
+        return y
 
     def _generate_data(self, num_samples_per_class, num_samples, num_classes):
         x = []
@@ -433,7 +440,7 @@ class CorrelatedGaussianNormal(GeneratorDataset):
             r = self.cov_matrix_list[signal_class]
             y.extend(signal_class * np.ones(num_samples_per_class))
             for _ in range(num_samples_per_class):
-                x.append(self._create_correlated_gaussian_point(num_samples, r))
+                x.append(self._create_correlated_gaussian_point(num_samples, r, sort=self.sort))
         return np.array(x), np.array(y)
 
     def summary(self, res_str=None):
@@ -486,7 +493,8 @@ class CorrelatedGaussianNormal(GeneratorDataset):
 
 class CorrelatedGaussianCoeffCorrel(CorrelatedGaussianNormal):
 
-    def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False, dataset_name=None):
+    def __init__(self, m, n, param_list, num_classes=None, ratio=0.8, debug=False, savedata=False, dataset_name=None,
+                 sort: bool = False):
         if num_classes is None:
             num_classes = len(param_list)
         if not len(param_list) == num_classes:
@@ -502,7 +510,7 @@ class CorrelatedGaussianCoeffCorrel(CorrelatedGaussianNormal):
             cov_mat_list.append([[param[1], sigma_xy], [sigma_xy, param[2]]])
         super().__init__(m=m, n=n, cov_matrix_list=cov_mat_list,
                          num_classes=num_classes, ratio=ratio, debug=debug, savedata=savedata,
-                         dataset_name=dataset_name)
+                         dataset_name=dataset_name, sort=sort)
 
 
 class ComplexNormalVariable(CorrelatedGaussianNormal):
@@ -649,10 +657,8 @@ def inf(a, b):
     return a > b
 
 
-def parametric_predictor(dataset, coef_1=0.5, coef_2=-0.5):
+def get_parametric_predictor_labels(x, y, coef_1=0.5, coef_2=-0.5):
     rho = []
-    x = np.real(dataset.x)
-    y = np.imag(dataset.x)
     for re, im in zip(x, y):
         cov = np.cov([re, im])
         rho.append(cov[0][1] / (np.sqrt(cov[0][0]) * np.sqrt(cov[1][1])))
@@ -663,7 +669,13 @@ def parametric_predictor(dataset, coef_1=0.5, coef_2=-0.5):
         result = np.less(rho, thresh).astype(int)
     else:
         result = np.greater(rho, thresh).astype(int)
+    return result
 
+
+def parametric_predictor(dataset, coef_1=0.5, coef_2=-0.5):
+    x = np.real(dataset.x)
+    y = np.imag(dataset.x)
+    result = get_parametric_predictor_labels(x=x, y=y, coef_1=coef_1, coef_2=coef_2)
     acc = np.sum(np.equal(Dataset.categorical_to_sparse(dataset.y), result)) / len(result)
     return acc
 
@@ -680,7 +692,7 @@ if __name__ == "__main__":
     for coef in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]:
         dataset = CorrelatedGaussianCoeffCorrel(m, n, param_list=[[coef, 1, 1], [-coef, 1, 1]],
                                                 dataset_name=f"{int(coef*100)}")
-        dataset.plot_data(overlapped=True, showfig=True,
+        dataset.plot_data(overlapped=True, showfig=False,
                           save_path="/home/barrachina/Dropbox/thesis/CVNN-thesis-Agustin/ppts/20210611 - ICASSP/img")
     # dataset.save_data("./data/MLSP/")
     # print(parametric_predictor(dataset))
