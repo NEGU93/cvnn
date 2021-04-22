@@ -63,5 +63,5 @@ List of activation functions::
 
     activations/types
     activations/real_output
-    ../examples/mvn_activation.ipynb
+    activations/mvn_activation.ipynb
 

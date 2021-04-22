@@ -379,6 +379,7 @@ act_dispatcher = {
     'softmax_real_with_mult': Activation(softmax_real_with_mult),
     'softmax_of_softmax_real_with_mult': Activation(softmax_of_softmax_real_with_mult),
     'softmax_of_softmax_real_with_avg': Activation(softmax_of_softmax_real_with_avg),
+    'mvn_activation': Activation(mvn_activation),
     'cart_sigmoid': Activation(cart_sigmoid),
     'cart_elu': Activation(cart_elu),
     'cart_exponential': Activation(cart_exponential),
@@ -395,36 +396,7 @@ act_dispatcher = {
     'pol_selu': Activation(pol_selu)
 }
 
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    x = tf.constant([-2, 1.0, 0.0, 1.0, -4], dtype=tf.float32)
-    y = tf.constant([-2.5, -1.5, 0.0, 1.0, 4], dtype=tf.float32)
-    z = tf.complex(x, y)
-    k = 3
-    result = mvn_activation(z, k=k)
-    # cnums = np.arange(5) + 1j * np.arange(6, 11)]
-    ax = plt.axes()
-    ax.scatter(tf.math.real(z), tf.math.imag(z), color='blue')
-    ax.scatter(tf.math.real(result), tf.math.imag(result), color='blue')
-    for x, y, dx, dy in zip(tf.math.real(z), tf.math.imag(z),
-                            tf.math.real(result) - tf.math.real(z),
-                            tf.math.imag(result) - tf.math.imag(z)):
-        ax.arrow(x, y, dx, dy, length_includes_head=True, head_width=0.1)
-    t = np.linspace(0, np.pi * 2, 100)
-    ax.plot(np.cos(t), np.sin(t), linewidth=1)
-
-    yabs_max = abs(max(ax.get_ylim(), key=abs))
-    xabs_max = abs(max(ax.get_xlim(), key=abs))
-    axis_max = max(yabs_max, xabs_max)
-
-    ax.set_ylim(ymin=-axis_max, ymax=axis_max)
-    ax.set_xlim(xmin=-axis_max, xmax=axis_max)
-    ax.pie(np.ones(k) / k, radius=10, wedgeprops={'alpha': 0.3})
-    plt.show()
-
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
