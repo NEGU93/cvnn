@@ -134,6 +134,68 @@ def convert_to_real_with_abs(z: Tensor) -> Tensor:
         return z
 
 
+"""
+etf Functions
+"""
+
+
+def etf_circular_tan(z: Tensor) -> Tensor:
+    return tf.math.tan(z)
+
+
+def etf_circular_sin(z: Tensor) -> Tensor:
+    return tf.math.sin(z)
+
+
+def etf_inv_circular_atan(z: Tensor) -> Tensor:
+    return tf.math.atan(z)
+
+
+def etf_inv_circular_asin(z: Tensor) -> Tensor:
+    return tf.math.asin(z)
+
+
+def etf_inv_circular_acos(z: Tensor) -> Tensor:
+    return tf.math.acos(z)
+
+
+def etf_circular_tanh(z: Tensor) -> Tensor:
+    return tf.math.tanh(z)
+
+
+def etf_circular_sinh(z: Tensor) -> Tensor:
+    return tf.math.sinh(z)
+
+
+def etf_inv_circular_atanh(z: Tensor) -> Tensor:
+    return tf.math.atanh(z)
+
+
+def etf_inv_circular_asinh(z: Tensor) -> Tensor:
+    return tf.math.asinh(z)
+
+
+"""
+Phasor Networks
+"""
+
+
+def complex_signum(z: Tensor, k: Optional[int] = None) -> Tensor:
+    """
+    Complex signum activation function is very similar to mvn_activation.
+    For a detailed explanation refer to:
+        https://ieeexplore.ieee.org/abstract/document/548176
+    """
+    if k:
+        # values = np.linspace(pi / k, 2 * pi - pi / k, k)
+        angle_cast = tf.math.floor(tf.math.angle(z) * k / (2 * pi))
+        # import pdb; pdb.set_trace()
+        return tf.math.exp(tf.complex(
+            tf.zeros(tf.shape(z), dtype=z.dtype.real_dtype), angle_cast * 2 * pi / k))
+    else:
+        return tf.math.exp(tf.complex(tf.zeros(tf.shape(z), dtype=z.dtype.real_dtype), tf.math.angle(z)))
+
+
 def mvn_activation(z: Tensor, k: Optional[int] = None) -> Tensor:
     """
     Function inspired by Naum Aizenberg.
@@ -372,6 +434,7 @@ def pol_selu(z: Tensor) -> Tensor:
 
 act_dispatcher = {
     'linear': Activation(linear),
+    # Complex input, real output
     'convert_to_real_with_abs': Activation(convert_to_real_with_abs),
     'sigmoid_real': Activation(sigmoid_real),
     'softmax_real_with_abs': Activation(softmax_real_with_abs),
@@ -379,7 +442,10 @@ act_dispatcher = {
     'softmax_real_with_mult': Activation(softmax_real_with_mult),
     'softmax_of_softmax_real_with_mult': Activation(softmax_of_softmax_real_with_mult),
     'softmax_of_softmax_real_with_avg': Activation(softmax_of_softmax_real_with_avg),
+    # Phasor networks
     'mvn_activation': Activation(mvn_activation),
+    'complex_signum': Activation(complex_signum),
+    # Type A (cartesian)
     'cart_sigmoid': Activation(cart_sigmoid),
     'cart_elu': Activation(cart_elu),
     'cart_exponential': Activation(cart_exponential),
@@ -391,12 +457,27 @@ act_dispatcher = {
     'cart_softsign': Activation(cart_softsign),
     'cart_tanh': Activation(cart_tanh),
     'cart_softmax': Activation(cart_softmax),
+    # Type B (polar)
     'pol_tanh': Activation(pol_tanh),
     'pol_sigmoid': Activation(pol_sigmoid),
-    'pol_selu': Activation(pol_selu)
+    'pol_selu': Activation(pol_selu),
+    # Elementary Transcendental Functions (ETF)
+    'etf_circular_tan': Activation(etf_circular_tan),
+    'etf_circular_sin': Activation(etf_circular_sin),
+    'etf_inv_circular_atan': Activation(etf_inv_circular_atan),
+    'etf_inv_circular_asin': Activation(etf_inv_circular_asin),
+    'etf_inv_circular_acos': Activation(etf_inv_circular_acos),
+    'etf_circular_tanh': Activation(etf_circular_tanh),
+    'etf_circular_sinh': Activation(etf_circular_sinh),
+    'etf_inv_circular_atanh': Activation(etf_inv_circular_atanh),
+    'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh),
 }
 
+if __name__ == '__main__':
+    z = tf.complex(4., 5.)
+    print(etf_circular_tan(z))
+
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
