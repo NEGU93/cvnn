@@ -62,7 +62,8 @@ def softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
     :return: Real-valued tensor of the applied activation function
     """
     if z.dtype.is_complex:
-        return tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.real(z), axis)
+        return 0.5 * (tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.real(z),
+                                                                                                        axis))
     else:
         return tf.keras.activations.softmax(z, axis)
 
@@ -178,6 +179,14 @@ def etf_inv_circular_asinh(z: Tensor) -> Tensor:
 """
 Phasor Networks
 """
+
+
+def georgiou_cdbp(z:Tensor, r: float = 1, c: float = 1e-3) -> Tensor:
+    """
+    Activation function proposed by G. M. Georgioy and C. Koutsougeras in
+        https://ieeexplore.ieee.org/abstract/document/142037
+    """
+    return z / tf.cast(c + tf.math.abs(z)/r, dtype=z.dtype)
 
 
 def complex_signum(z: Tensor, k: Optional[int] = None) -> Tensor:
@@ -474,10 +483,33 @@ act_dispatcher = {
 }
 
 if __name__ == '__main__':
-    z = tf.complex(4., 5.)
-    print(etf_circular_tan(z))
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    x = tf.constant([-2, 1.0, 0.0, 1.0, -3, 0.8, 0.1], dtype=tf.float32)
+    y = tf.constant([-2.5, -1.5, 0.0, 1.0, 2, 0.4, -0.4], dtype=tf.float32)
+    z = tf.complex(x, y)
+    result = georgiou_cdbp(z)
+
+    ax = plt.axes()
+    ax.scatter(tf.math.real(z), tf.math.imag(z), color='red')
+    ax.scatter(tf.math.real(result), tf.math.imag(result), color='blue')
+    for x, y, dx, dy in zip(tf.math.real(z), tf.math.imag(z),
+                            tf.math.real(result) - tf.math.real(z),
+                            tf.math.imag(result) - tf.math.imag(z)):
+        ax.arrow(x, y, dx, dy, length_includes_head=True, head_width=0.1)
+    t = np.linspace(0, np.pi * 2, 100)
+    ax.plot(np.cos(t), np.sin(t), linewidth=1)
+
+    yabs_max = abs(max(ax.get_ylim(), key=abs))
+    xabs_max = abs(max(ax.get_xlim(), key=abs))
+    axis_max = max(yabs_max, xabs_max)
+
+    ax.set_ylim(ymin=-axis_max, ymax=axis_max)
+    ax.set_xlim(xmin=-axis_max, xmax=axis_max)
+    plt.show()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.13'
+__version__ = '0.0.14'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
