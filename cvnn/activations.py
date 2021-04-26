@@ -135,6 +135,24 @@ def convert_to_real_with_abs(z: Tensor) -> Tensor:
         return z
 
 
+def softmax_real_with_polar(z: Tensor, axis=-1) -> Tensor:
+    """
+    Applies the softmax function to the modulus of z.
+    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
+    It is often used as the activation for the last layer of a classification network because the result could be
+    interpreted as a probability distribution.
+    The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
+    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+    :param z: Input tensor.
+    :return: Real-valued tensor of the applied activation function
+    """
+    if z.dtype.is_complex:
+        return 0.5 * (tf.keras.activations.softmax(tf.math.abs(z), axis) + tf.keras.activations.softmax(tf.math.angle(z),
+                                                                                                        axis))
+    else:
+        return tf.keras.activations.softmax(z, axis)
+
+
 """
 etf Functions
 """
@@ -451,7 +469,9 @@ act_dispatcher = {
     'softmax_real_with_mult': Activation(softmax_real_with_mult),
     'softmax_of_softmax_real_with_mult': Activation(softmax_of_softmax_real_with_mult),
     'softmax_of_softmax_real_with_avg': Activation(softmax_of_softmax_real_with_avg),
+    'softmax_real_with_polar': Activation(softmax_real_with_polar),
     # Phasor networks
+    'georgiou_cdbp': Activation(georgiou_cdbp),
     'mvn_activation': Activation(mvn_activation),
     'complex_signum': Activation(complex_signum),
     # Type A (cartesian)
@@ -510,6 +530,6 @@ if __name__ == '__main__':
     plt.show()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.14'
+__version__ = '0.0.15'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
