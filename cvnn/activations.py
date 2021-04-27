@@ -123,6 +123,27 @@ def softmax_of_softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
         return tf.keras.activations.softmax(z, axis)
 
 
+def softmax_real_by_parameter(z: Tensor, axis=-1, params: Optional[dict] = None) -> Tensor:
+    if params is None:
+        params = {
+            'abs': True,
+            'angle': True,
+            'real': True,
+            'imag': True
+        }
+    result = []
+    for k, v in params:
+        if k == 'abs' and v:
+            result.append(tf.keras.activations.softmax(tf.math.abs(z), axis))
+        if k == 'angle' and v:
+            result.append(tf.keras.activations.softmax(tf.math.angle(z), axis))
+        if k == 'real' and v:
+            result.append(tf.keras.activations.softmax(tf.math.real(z), axis))
+        if k == 'imag' and v:
+            result.append(tf.keras.activations.softmax(tf.math.imag(z), axis))
+    return tf.convert_to_tensor(result)
+
+
 def convert_to_real_with_abs(z: Tensor) -> Tensor:
     """
     Applies the absolute value and returns a real-valued output.
@@ -530,6 +551,6 @@ if __name__ == '__main__':
     plt.show()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.15'
+__version__ = '0.0.16'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
