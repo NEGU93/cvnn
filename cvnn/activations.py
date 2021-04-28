@@ -520,7 +520,7 @@ act_dispatcher = {
     'etf_circular_tanh': Activation(etf_circular_tanh),
     'etf_circular_sinh': Activation(etf_circular_sinh),
     'etf_inv_circular_atanh': Activation(etf_inv_circular_atanh),
-    'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh),
+    'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh)
 }
 
 if __name__ == '__main__':
@@ -551,6 +551,6 @@ if __name__ == '__main__':
     plt.show()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.16'
+__version__ = '0.0.17'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

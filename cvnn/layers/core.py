@@ -88,6 +88,7 @@ def complex_input(shape=None, batch_size=None, name=None, dtype=DEFAULT_COMPLEX_
         raise ValueError(
             'Cannot set both sparse and ragged to True in a Keras input.')
 
+    dtype = tf.as_dtype(dtype)
     input_layer_config = {'name': name, 'dtype': dtype.name, 'sparse': sparse,
                           'ragged': ragged, 'input_tensor': tensor}
 
