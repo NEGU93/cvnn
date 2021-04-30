@@ -263,6 +263,13 @@ class Zeros:
         return tf.zeros(shape, dtype=tf.dtypes.as_dtype(dtype).real_dtype)
 
 
+class Ones:
+    __name__ = "Ones"
+
+    def __call__(self, shape, dtype=tf.dtypes.complex64):
+        return tf.ones(shape, dtype=tf.dtypes.as_dtype(dtype).real_dtype)
+
+
 if __name__ == '__main__':
     # Nothing yet
     set_trace()
