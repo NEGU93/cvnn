@@ -141,24 +141,6 @@ TYPE A: Cartesian form
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
 
-Classification
-^^^^^^^^^^^^^^
-
-.. py:method:: cart_softmax(z, axis=-1)
-
-	Applies the `softmax function <https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax>`_ to both the real and imag part of z.
-    The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
-    It is often used as the activation for the last layer of a classification network because the result could be
-    interpreted as a probability distribution.
-    The softmax of x is calculated by:
-	
-	.. math::
-	
-		\frac{e^x}{\textrm{tf.reduce_sum}(e^x)}
-    
-    :param z: Input tensor.
-    :return: Tensor result of the applied activation function
-
 
 TYPE B: Polar form
 ------------------
