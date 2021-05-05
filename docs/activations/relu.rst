@@ -3,14 +3,15 @@ ReLU-based
 
 .. py:method:: modrelu(z: Tensor, b: float, c: float = 1e-3)
     
-    mod ReLU presented in [CIT2016-KIM]_
+    mod ReLU presented in [CIT2016-KIM]_.
+    
     A variation of the ReLU named modReLU. It is a pointwise nonlinearity,
     :math:`modReLU(z) : C \longrightarrow C`, which affects only the absolute
     value of a complex number, defined
     
     .. math::
     
-    modReLU(z) = ReLU(|z|+b)*z/|z|
+        modReLU(z) = ReLU(|z|+b)*z/|z|
 
 .. py:method:: crelu(z: Tensor)
 
@@ -23,7 +24,7 @@ ReLU-based
 
         .. math::
 
-                        f(x) = \textrm{max_value}, \quad \textrm{for} \quad x >= \textrm{max_value} \\
+            f(x) = \textrm{max_value}, \quad \textrm{for} \quad x >= \textrm{max_value} \\
             f(x) = x, \quad \textrm{for} \quad \textrm{threshold} <= x < \textrm{max_value} \\
             f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\
 
@@ -37,11 +38,9 @@ ReLU-based
     
     .. math::
     
-    f(z)= \left\{ \begin{array}{lcc}
-              z &   if  & 0 \leq \phi_z \leq \pi / 2 \\
-              0 &  if & elsewhere \\
-              \end{array}
-             \right.
+          f(z) = z \quad \textrm{for} 0 \leq \phi_z \leq \pi / 2 \\
+          f(z) =    0 \quad \textrm{elsewhere}  \\
+
              
              
 .. [CIT2016-ARJOVSKY] M. Arjovsky et al. "Unitary Evolution Recurrent Neural Networks" 2016
