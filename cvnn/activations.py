@@ -50,6 +50,12 @@ def zrelu(z: Tensor) -> Tensor:
         return z
     else:
         return tf.cast(0, dtype=z.dtype)
+    
+def crelu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, threshold: float = 0) -> Tensor:
+    """
+    Mirror of cart_relu
+    """
+    return cart_relu(z, alpha, max_value, threshold)
 
 
 """
@@ -530,7 +536,6 @@ act_dispatcher = {
     'cart_exponential': Activation(cart_exponential),
     'cart_hard_sigmoid': Activation(cart_hard_sigmoid),
     'cart_relu': Activation(cart_relu),
-    'crelu': Activation(cart_relu),
     'cart_leaky_relu': Activation(cart_leaky_relu),
     'cart_selu': Activation(cart_selu),
     'cart_softplus': Activation(cart_softplus),
@@ -553,6 +558,7 @@ act_dispatcher = {
     'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh),
     # Misc
     'modrelu': Activation(modrelu),
+    'crelu': Activation(crelu),
     'zrelu': Activation(zrelu)  
 }
 
