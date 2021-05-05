@@ -4,13 +4,13 @@ from tensorflow.keras.layers import Activation
 from typing import Union, Callable, Optional
 from tensorflow import Tensor
 from numpy import pi
-import cvnn
+# import cvnn
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
 """
 
-logger = logging.getLogger(cvnn.__name__)
+# logger = logging.getLogger(cvnn.__name__)
 t_activation = Union[str, Callable]  # TODO: define better
 
 
@@ -36,7 +36,7 @@ def modrelu(z: Tensor, b: float, c: float = 1e-3) -> Tensor:
     TODO: See how to check the non zero abs.
     """
     abs_z = tf.math.abs(z)
-    return tf.keras.activations.relu(abs_z + b) * z / (abs_z + c)
+    return tf.cast(tf.keras.activations.relu(abs_z + b), dtype=z.dtype) * z / tf.cast(abs_z + c, dtype=z.dtype)
 
 
 def zrelu(z: Tensor) -> Tensor:
@@ -46,10 +46,7 @@ def zrelu(z: Tensor) -> Tensor:
     This methods let's the output as the input if both real and 
         imaginary parts are positive.
     """
-    if 0 >= tf.math.angle(z) >= tf.math.pi / 2:
-        return z
-    else:
-        return tf.cast(0, dtype=z.dtype)
+    return tf.keras.activations.relu(tf.math.real(z)) * tf.keras.activations.relu(tf.math.imag(z))
     
 def crelu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, threshold: float = 0) -> Tensor:
     """
@@ -58,6 +55,17 @@ def crelu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, thre
     return cart_relu(z, alpha, max_value, threshold)
 
 
+def complex_cardioid(z: Tensor) -> Tensor:
+    """
+    Complex cardioid presented in "Better than Real: Complex-valued Neural Nets for MRI Fingerprinting"
+        from V. Patrick (2017).
+        
+    This function maintains the phase information while attenuating the magnitude based on the phase itself. 
+    For real-valued inputs, it reduces to the ReLU.
+    """
+    return tf.cast(1 + tf.math.cos(tf.math.angle(z)), dtype=z.dtype) * z / 2.
+
+            
 """
 Complex input, real output
 """
@@ -559,11 +567,19 @@ act_dispatcher = {
     # Misc
     'modrelu': Activation(modrelu),
     'crelu': Activation(crelu),
-    'zrelu': Activation(zrelu)  
+    'zrelu': Activation(zrelu),
+    'complex_cardioid': Activation(complex_cardioid)
 }
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
+    x = tf.constant([-2, 1.0, 0.0, 1.0, -3, 0.8, 0.1], dtype=tf.float32)
+    y = tf.constant([-2.5, -1.5, 0.0, 1.0, 2, 0.4, -0.4], dtype=tf.float32)
+    z = tf.complex(x, y)
+    result = crelu(z)
+    result = modrelu(z, 4)
+    result = zrelu(z)
+    result = complex_cardioid(z)
+    """import matplotlib.pyplot as plt
     import numpy as np
 
     x = tf.constant([-2, 1.0, 0.0, 1.0, -3, 0.8, 0.1], dtype=tf.float32)
@@ -587,7 +603,7 @@ if __name__ == '__main__':
 
     ax.set_ylim(ymin=-axis_max, ymax=axis_max)
     ax.set_xlim(xmin=-axis_max, xmax=axis_max)
-    plt.show()
+    plt.show()"""
     
 
 __author__ = 'J. Agustin BARRACHINA'
