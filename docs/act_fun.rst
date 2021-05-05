@@ -8,6 +8,7 @@
 
     activations/types
     activations/real_output
+    activations/relu
     activations/mvn_activation.ipynb
     activations/etf
 
