@@ -38,7 +38,7 @@ ReLU-based
     
     .. math::
     
-          f(z) = z \quad \textrm{for} 0 \leq \phi_z \leq \pi / 2 \\
+          f(z) = z \quad \textrm{for} \quad 0 \leq \phi_z \leq \pi / 2 \\
           f(z) =    0 \quad \textrm{elsewhere}  \\
 
              
