@@ -24,6 +24,34 @@ def linear(z: Tensor) -> Tensor:
     return z
 
 
+def modrelu(z: Tensor, b: float, c: float = 1e-3) -> Tensor:
+    """
+    mod ReLU presented in "Unitary Evolution Recurrent Neural Networks"
+        from M. Arjovsky et al. (2016)
+        URL: https://arxiv.org/abs/1511.06464
+    A variation of the ReLU named modReLU. It is a pointwise nonlinearity,
+    modReLU(z) : C -> C, which affects only the absolute
+    value of a complex number, defined:
+        modReLU(z) = ReLU(|z|+b)*z/|z|
+    TODO: See how to check the non zero abs.
+    """
+    abs_z = tf.math.abs(z)
+    return tf.keras.activations.relu(abs_z + b) * z / (abs_z + c)
+
+
+def zrelu(z: Tensor) -> Tensor:
+    """
+    zReLU presented in "On Complex Valued Convolutional Neural Networks"
+        from Nitzan Guberman (2016).
+    This methods let's the output as the input if both real and 
+        imaginary parts are positive.
+    """
+    if 0 >= tf.math.angle(z) >= tf.math.pi / 2:
+        return z
+    else:
+        return tf.cast(0, dtype=z.dtype)
+
+
 """
 Complex input, real output
 """
@@ -281,7 +309,8 @@ def cart_sigmoid(z: Tensor) -> Tensor:
     :return: Tensor result of the applied activation function
     """
     return tf.cast(tf.complex(tf.keras.activations.sigmoid(tf.math.real(z)),
-                              tf.keras.activations.sigmoid(tf.math.imag(z))), dtype=z.dtype)
+                              tf.keras.activations.sigmoid(tf.math.imag(z))), 
+                   dtype=z.dtype)
 
 
 def cart_elu(z: Tensor, alpha=1.0) -> Tensor:
@@ -501,6 +530,7 @@ act_dispatcher = {
     'cart_exponential': Activation(cart_exponential),
     'cart_hard_sigmoid': Activation(cart_hard_sigmoid),
     'cart_relu': Activation(cart_relu),
+    'crelu': Activation(cart_relu),
     'cart_leaky_relu': Activation(cart_leaky_relu),
     'cart_selu': Activation(cart_selu),
     'cart_softplus': Activation(cart_softplus),
@@ -520,7 +550,10 @@ act_dispatcher = {
     'etf_circular_tanh': Activation(etf_circular_tanh),
     'etf_circular_sinh': Activation(etf_circular_sinh),
     'etf_inv_circular_atanh': Activation(etf_inv_circular_atanh),
-    'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh)
+    'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh),
+    # Misc
+    'modrelu': Activation(modrelu),
+    'zrelu': Activation(zrelu)  
 }
 
 if __name__ == '__main__':
@@ -549,6 +582,7 @@ if __name__ == '__main__':
     ax.set_ylim(ymin=-axis_max, ymax=axis_max)
     ax.set_xlim(xmin=-axis_max, xmax=axis_max)
     plt.show()
+    
 
 __author__ = 'J. Agustin BARRACHINA'
 __version__ = '0.0.17'
