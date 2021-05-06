@@ -5,13 +5,14 @@ from cvnn.layers.convolutional import ComplexConv2D, ComplexConv1D, ComplexConv3
 from cvnn.layers.convolutional import ComplexConv2DTranspose
 from cvnn.layers.core import ComplexInput, ComplexDense, ComplexFlatten, ComplexDropout, complex_input
 from cvnn.layers.upsampling import ComplexUpSampling2D
+from cvnn.layers.core import ComplexBatchNormalization
 
 
 __author__ = 'J. Agustin BARRACHINA'
 __copyright__ = 'Copyright 2020, {project_name}'
 __credits__ = ['{credit_list}']
 __license__ = '{license}'
-__version__ = '1.0.11'
+__version__ = '1.0.12'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
 __status__ = '{dev_status}'

@@ -47,7 +47,8 @@ def zrelu(z: Tensor) -> Tensor:
         imaginary parts are positive.
     """
     return tf.keras.activations.relu(tf.math.real(z)) * tf.keras.activations.relu(tf.math.imag(z))
-    
+
+
 def crelu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, threshold: float = 0) -> Tensor:
     """
     Mirror of cart_relu
@@ -607,6 +608,6 @@ if __name__ == '__main__':
     
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

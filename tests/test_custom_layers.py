@@ -1,6 +1,7 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
-    ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax, ComplexUpSampling2D
+    ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax, \
+    ComplexUpSampling2D, ComplexBatchNormalization
 import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -416,15 +417,50 @@ def test_upsampling():
     test_upsampling_bilinear_corner_not_aligned()
 
 
+def check_proximity(x1, x2, name: str):
+    if np.array_equal(x1, x2):
+        return True
+    else:
+        equal = False
+        for error in [0.00001, 0.0001, 0.001, 0.01, 0.1]:
+            if np.allclose(x1, x2, error):
+                equal = True
+                print(name + f" are equal with an error of {error}")
+                break
+        return equal
+
+
+def batch_norm():
+    z = np.array([[[-1, 1] * 10] * 20] * 2).transpose()
+    c_bn = ComplexBatchNormalization(dtype=np.float32)
+    c_out = c_bn(z, training=True)
+    # set_trace()
+    assert check_proximity(c_out, z, "Normalized input")
+
+    z = np.random.rand(3, 43, 12, 75)  # + np.random.rand(3, 43, 12, 75)*1j
+    bn = tf.keras.layers.BatchNormalization(epsilon=0)
+    c_bn = ComplexBatchNormalization(dtype=np.float32)      # If I use the complex64 then the init is different
+    input = tf.convert_to_tensor(z.astype(np.float32), dtype=np.float32)
+    out = bn(input, training=True)
+    c_out = c_bn(input, training=True)
+
+    assert check_proximity(out, c_out, "Results")
+    assert check_proximity(bn.moving_mean, c_bn.moving_mean, "Moving mean")
+    assert check_proximity(bn.moving_variance, c_bn.moving_var[..., 0, 0], "Moving variance")
+    assert check_proximity(bn.gamma, c_bn.gamma, "Gamma")
+    assert check_proximity(bn.beta, c_bn.beta, "Beta")
+
+
 @tf.autograph.experimental.do_not_convert
 def test_layers():
-    test_upsampling()
+    batch_norm()
+    """test_upsampling()
     complex_conv_2d_transpose()
     complex_max_pool_2d()
     dropout()
     complex_avg_pool()
     shape_ad_dtype_of_conv2d()
-    dense_example()
+    dense_example()"""
 
 
 if __name__ == "__main__":

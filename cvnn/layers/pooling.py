@@ -42,7 +42,7 @@ class ComplexPooling2D(Layer, ComplexLayer):
         if strides is None:
             strides = pool_size
         self.pool_size = conv_utils.normalize_tuple(pool_size, 2,
-                                                    'pool_size')  # Values are checked here. No need to check them latter.
+                                                    'pool_size')  # Values are checked here. No need to check them later
         self.strides = conv_utils.normalize_tuple(strides, 2, 'strides')
         self.padding = conv_utils.normalize_padding(padding)
         self.data_format = conv_utils.normalize_data_format(data_format)

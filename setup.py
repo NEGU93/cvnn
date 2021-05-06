@@ -2,7 +2,7 @@ from setuptools import setup
 import versioneer
 
 requirements = [
-    'tensorflow>=2.0',
+    'tensorflow>=2.0', 'tensorflow_probability',    # tfp for the Batch Norm (covariance)
     'numpy', 'six',
     'pandas', 'scipy',                   # Data
     'colorlog', 'openpyxl',              # Logging

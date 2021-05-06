@@ -3,12 +3,15 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow.python.keras import backend as K
+from tensorflow.python.keras import initializers
+import tensorflow_probability as tfp
+from tensorflow.python.keras.layers import normalization
 from tensorflow import TensorShape, Tensor
 # typing
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 # Own modules
 from cvnn.activations import t_activation
-from cvnn.initializers import ComplexGlorotUniform, Zeros
+from cvnn.initializers import ComplexGlorotUniform, Zeros, Ones
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
@@ -214,11 +217,11 @@ class ComplexDense(Dense, ComplexLayer):
         else:
             # TODO: For Complex you should probably want to use MY init for real keras. DO sth! at least error message
             self.w = self.add_weight('kernel',
-                shape=(input_shape[-1], self.units),
-                dtype=self.my_dtype,
-                initializer=self.kernel_initializer,
-                trainable=True,
-            )
+                                     shape=(input_shape[-1], self.units),
+                                     dtype=self.my_dtype,
+                                     initializer=self.kernel_initializer,
+                                     trainable=True,
+                                     )
             self.b = self.add_weight('bias', shape=(self.units,), dtype=self.my_dtype,
                                      initializer=self.bias_initializer, trainable=True)
 
@@ -312,3 +315,162 @@ class ComplexDropout(Layer, ComplexLayer):
         }
         base_config = super(ComplexDropout, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+
+
+class ComplexBatchNormalization(Layer, ComplexLayer):
+    """
+    Complex Batch-Normalization as defined in section 3.5 of https://arxiv.org/abs/1705.09792
+    """
+
+    def __init__(self, axis: Union[List[int], Tuple[int], int] = -1, momentum: float = 0.99,
+                 center: bool = True, scale: bool = True, epsilon: float = 0.001,
+                 beta_initializer=Zeros(), gamma_initializer=Ones(), dtype=DEFAULT_COMPLEX_TYPE,
+                 moving_mean_initializer=Zeros(), moving_variance_initializer=Ones(),  # TODO: Check inits
+                 **kwargs):
+        self.my_dtype = tf.dtypes.as_dtype(dtype)
+        self.epsilon_matrix = tf.eye(2, dtype=self.my_dtype.real_dtype) * epsilon
+        if isinstance(axis, int):
+            axis = [axis]
+        self.axis = list(axis)
+        super(ComplexBatchNormalization, self).__init__(**kwargs)
+        self.momentum = momentum
+        self.beta_initializer = initializers.get(beta_initializer)
+        self.gamma_initializer = initializers.get(gamma_initializer)
+        self.moving_mean_initializer = initializers.get(moving_mean_initializer)
+        self.moving_variance_initializer = initializers.get(moving_variance_initializer)
+        self.center = center
+        self.scale = scale
+
+    def build(self, input_shape):
+        # Cast the negative indices to positive
+        self.axis = [len(input_shape) + ax if ax < 0 else ax for ax in self.axis]
+        desired_shape = [input_shape[ax] for ax in self.axis]
+        if self.my_dtype.is_complex:
+            self.beta_r = tf.Variable(
+                name="beta_r",
+                initial_value=self.beta_initializer(shape=desired_shape, dtype=self.my_dtype),
+                trainable=True
+            )
+            self.beta_i = tf.Variable(
+                name="beta_i",
+                initial_value=self.beta_initializer(shape=desired_shape, dtype=self.my_dtype),
+                trainable=True
+            )
+            self.moving_mean = tf.Variable(
+                name='moving_mean',
+                initial_value=tf.complex(real=self.moving_mean_initializer(shape=desired_shape,
+                                                                           dtype=self.my_dtype),
+                                         imag=self.moving_mean_initializer(shape=desired_shape,
+                                                                           dtype=self.my_dtype)),
+                trainable=False
+            )
+            self.gamma_r = tf.Variable(
+                name='gamma_r',
+                initial_value=self.gamma_initializer(shape=tuple(desired_shape), dtype=self.my_dtype),
+                trainable=True
+            )
+            self.gamma_i = tf.Variable(
+                name='gamma_i',
+                initial_value=Zeros()(shape=tuple(desired_shape), dtype=self.my_dtype),
+                trainable=True
+            )       # I think I just need to scale with gamma, so by default I leave the imag part to zero
+            self.moving_var = tf.Variable(
+                name='moving_var',
+                initial_value=tf.eye(2) * self.moving_variance_initializer(shape=tuple(desired_shape) + (2, 2),
+                                                                           dtype=self.my_dtype) / tf.math.sqrt(2.),
+                trainable=False
+            )
+        else:
+            self.beta = tf.Variable(
+                name="beta",
+                initial_value=self.beta_initializer(shape=desired_shape, dtype=self.my_dtype),
+                trainable=True
+            )
+            self.moving_mean = tf.Variable(
+                name='moving_mean',
+                initial_value=self.moving_mean_initializer(shape=desired_shape, dtype=self.my_dtype),
+                trainable=False
+            )
+            self.gamma = tf.Variable(
+                name='gamma',
+                initial_value=self.gamma_initializer(shape=tuple(desired_shape), dtype=self.my_dtype),
+                trainable=True
+            )
+            self.moving_var = tf.Variable(
+                name='moving_var',
+                initial_value=tf.eye(2, dtype=self.my_dtype) * self.moving_variance_initializer(
+                    shape=tuple(desired_shape) + (2, 2),
+                    dtype=self.my_dtype),
+                trainable=False
+            )
+
+    def call(self, inputs, training=None):
+        if inputs.dtype != self.my_dtype:
+            tf.print(f"Warning: Expecting input dtype {self.my_dtype} but got {inputs.dtype}. "
+                     f"Automatic cast will be done.")
+            inputs = tf.cast(inputs, dtype=self.my_dtype)
+        if training is None:
+            training = K.learning_phase()
+            tf.print(f"Training was None and now is {training}")
+            # This is used for my own debugging, I don't know WHEN this happens,
+            # I trust K.learning_phase() returns a correct boolean.
+        if training:
+            # First get the mean and var
+            used_axis = [ax for ax in range(0, tf.rank(inputs)) if ax not in self.axis]
+            mean = tf.math.reduce_mean(inputs, axis=used_axis)
+            X = tf.stack((tf.math.real(inputs), tf.math.imag(inputs)), axis=-1)
+            var = tfp.stats.covariance(X, sample_axis=used_axis, event_axis=-1)
+            # Now the train part with these values
+            self.moving_mean = self.moving_mean * self.momentum + mean * (1. - self.momentum)
+            self.moving_var = self.moving_var * self.momentum + var * (1. - self.momentum)
+            out = self._normalize(inputs, var, mean)
+        else:
+            out = self._normalize(inputs, self.moving_var, self.moving_mean)
+        if self.scale:
+            if self.my_dtype.is_complex:
+                gamma = tf.complex(self.gamma_r, self.gamma_i)
+            else:
+                gamma = self.gamma
+            out = gamma * out
+        if self.center:
+            if self.my_dtype.is_complex:
+                beta = tf.complex(self.beta_r, self.beta_i)
+            else:
+                beta = self.beta
+            out = out + beta
+        return out
+
+    def _normalize(self, inputs, var, mean):
+        """
+        :inputs: Tensor
+        :param var: Tensor of shape [..., 2, 2], if inputs dtype is real, var[slice] = [[var_slice, 0], [0, 0]]
+        :param mean: Tensor with the mean in the corresponding dtype (same shape as inputs)
+        """
+        complex_zero_mean = inputs - mean
+        # Inv and sqrtm is done over 2 inner most dimension [..., M, M] so it should be [..., 2, 2] for us.
+        inv_sqrt_var = tf.linalg.sqrtm(tf.linalg.inv(var + self.epsilon_matrix))  # var^(-1/2)  # TODO: Check this exists always?
+        # Separate real and imag so I go from shape [...] to [..., 2]
+        zero_mean = tf.stack((tf.math.real(complex_zero_mean), tf.math.imag(complex_zero_mean)), axis=-1)
+        # I expand dims to make the mult of matrix [..., 2, 2] and [..., 2, 1] resulting in [..., 2, 1]
+        inputs_hat = tf.matmul(inv_sqrt_var, tf.expand_dims(zero_mean, axis=-1))
+        # Then I squeeze to remove the last shape so I go from [..., 2, 1] to [..., 2].
+        # Use reshape and not squeeze in case I have 1 channel for example.
+        squeeze_inputs_hat = tf.reshape(inputs_hat, shape=tf.shape(inputs_hat)[:-1])
+        # Get complex data
+        complex_inputs_hat = tf.cast(tf.complex(squeeze_inputs_hat[..., 0], squeeze_inputs_hat[..., 1]),
+                                     dtype=self.my_dtype)
+        # import pdb; pdb.set_trace()
+        return complex_inputs_hat
+
+    """@staticmethod
+    def _normalize_real(inputs, var, mean):
+        numerator = inputs - mean
+        denominator = tf.math.sqrt(var[..., 0, 0])
+        return numerator / tf.cast(denominator, dtype=inputs.dtype)"""
+
+    def get_real_equivalent(self):
+        return ComplexBatchNormalization(axis=self.axis, momentum=self.momentum, center=self.center, scale=self.scale,
+                                         beta_initializer=self.beta_initializer, epsilon=self.epsilon_matrix[0],
+                                         gamma_initializer=self.gamma_initializer, dtype=self.my_dtype,
+                                         moving_mean_initializer=self.moving_mean_initializer,
+                                         moving_variance_initializer=self.moving_variance_initializer)
