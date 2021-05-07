@@ -240,3 +240,12 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         return ComplexUnPooling2D(desired_output_shape=self.desired_output_shape, name=self.name,
                                   dtype=self.my_dtype.real_dtype, dynamic=self.dtype)
 
+    def get_config(self):
+        config = {
+            'desired_output_shape': self.desired_output_shape,
+            'name': self.name,
+            'dtype': self.my_dtype,
+            'dynamic': False,
+        }
+        base_config = super(ComplexUnPooling2D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))

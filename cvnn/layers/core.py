@@ -344,6 +344,7 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
     def build(self, input_shape):
         # Cast the negative indices to positive
         self.axis = [len(input_shape) + ax if ax < 0 else ax for ax in self.axis]
+        self.used_axis = [ax for ax in range(0, len(input_shape)) if ax not in self.axis]
         desired_shape = [input_shape[ax] for ax in self.axis]
         if self.my_dtype.is_complex:
             self.beta_r = tf.Variable(
@@ -416,10 +417,9 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
             # I trust K.learning_phase() returns a correct boolean.
         if training:
             # First get the mean and var
-            used_axis = [ax for ax in range(0, tf.rank(inputs)) if ax not in self.axis]
-            mean = tf.math.reduce_mean(inputs, axis=used_axis)
+            mean = tf.math.reduce_mean(inputs, axis=self.used_axis)
             X = tf.stack((tf.math.real(inputs), tf.math.imag(inputs)), axis=-1)
-            var = tfp.stats.covariance(X, sample_axis=used_axis, event_axis=-1)
+            var = tfp.stats.covariance(X, sample_axis=self.used_axis, event_axis=-1)
             # Now the train part with these values
             self.moving_mean = self.moving_mean * self.momentum + mean * (1. - self.momentum)
             self.moving_var = self.moving_var * self.momentum + var * (1. - self.momentum)
@@ -474,3 +474,18 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
                                          gamma_initializer=self.gamma_initializer, dtype=self.my_dtype,
                                          moving_mean_initializer=self.moving_mean_initializer,
                                          moving_variance_initializer=self.moving_variance_initializer)
+
+    def get_config(self):
+        config = {
+            'axis': self.axis,
+            'momentum': self.momentum,
+            'center': self.center,
+            'scale': self.scale,
+            'beta_initializer': self.beta_initializer,
+            'gamma_initializer': self.gamma_initializer,
+            'dtype': self.my_dtype,
+            'moving_mean_initializer': self.moving_mean_initializer,
+            'moving_variance_initializer': self.moving_variance_initializer
+        }
+        base_config = super(ComplexBatchNormalization, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
