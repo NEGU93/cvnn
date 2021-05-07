@@ -24,7 +24,7 @@ def linear(z: Tensor) -> Tensor:
     return z
 
 
-def modrelu(z: Tensor, b: float, c: float = 1e-3) -> Tensor:
+def modrelu(z: Tensor, b: float = 1., c: float = 1e-3) -> Tensor:
     """
     mod ReLU presented in "Unitary Evolution Recurrent Neural Networks"
         from M. Arjovsky et al. (2016)
@@ -608,6 +608,6 @@ if __name__ == '__main__':
     
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.18'
+__version__ = '0.0.19'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
