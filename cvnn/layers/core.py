@@ -328,7 +328,7 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
                  moving_mean_initializer=Zeros(), moving_variance_initializer=Ones(),  # TODO: Check inits
                  **kwargs):
         self.my_dtype = tf.dtypes.as_dtype(dtype)
-        self.epsilon_matrix = tf.eye(2, dtype=self.my_dtype.real_dtype) * epsilon
+        self.epsilon = epsilon
         if isinstance(axis, int):
             axis = [axis]
         self.axis = list(axis)
@@ -342,6 +342,7 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
         self.scale = scale
 
     def build(self, input_shape):
+        self.epsilon_matrix = tf.eye(2, dtype=self.my_dtype.real_dtype) * self.epsilon
         # Cast the negative indices to positive
         self.axis = [len(input_shape) + ax if ax < 0 else ax for ax in self.axis]
         self.used_axis = [ax for ax in range(0, len(input_shape)) if ax not in self.axis]
@@ -421,8 +422,8 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
             X = tf.stack((tf.math.real(inputs), tf.math.imag(inputs)), axis=-1)
             var = tfp.stats.covariance(X, sample_axis=self.used_axis, event_axis=-1)
             # Now the train part with these values
-            self.moving_mean = self.moving_mean * self.momentum + mean * (1. - self.momentum)
-            self.moving_var = self.moving_var * self.momentum + var * (1. - self.momentum)
+            self.moving_mean.assign(self.momentum * self.moving_mean + (1. - self.momentum) * mean)
+            self.moving_var.assign(self.moving_var * self.momentum + var * (1. - self.momentum))
             out = self._normalize(inputs, var, mean)
         else:
             out = self._normalize(inputs, self.moving_var, self.moving_mean)

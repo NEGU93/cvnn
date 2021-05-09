@@ -20,6 +20,7 @@ This module tests:
         ComplexDropout
 """
 
+
 @tf.autograph.experimental.do_not_convert
 def dense_example():
     img_r = np.array([[
@@ -148,7 +149,7 @@ def dropout():
         complex_layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
         complex_layers.ComplexDense(128, activation='cart_relu', dtype=np.float32),
         complex_layers.ComplexDropout(rate=0.5),
-        complex_layers.ComplexDense(10, activation='softmax_real', dtype=np.float32)
+        complex_layers.ComplexDense(10, activation='softmax_real_with_abs', dtype=np.float32)
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
@@ -181,6 +182,7 @@ def get_img():
     img = img_r + 1j * img_i
     img = np.reshape(img, (2, 3, 3, 1))
     return img
+
 
 @tf.autograph.experimental.do_not_convert
 def complex_max_pool_2d(test_unpool=True):
@@ -222,6 +224,16 @@ def complex_max_pool_2d(test_unpool=True):
     max_pool_2d = tf.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid')
     complex_max_pool_2d = ComplexMaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='valid')
     assert np.all(max_pool_2d(x) == complex_max_pool_2d(x))
+
+
+def new_max_unpooling_2d_test():
+    img = get_img()
+    new_imag = tf.stack((img.reshape((2, 3, 3)), img.reshape((2, 3, 3))), axis=-1)
+    max_pool = ComplexMaxPooling2DWithArgmax(strides=1, data_format="channels_last")
+    res, argmax = max_pool(tf.cast(new_imag, dtype=np.complex64))
+    max_unpooling = ComplexUnPooling2D(new_imag.shape[1:])
+    unpooled = max_unpooling([res, argmax])
+    set_trace()
 
 
 @tf.autograph.experimental.do_not_convert
@@ -431,7 +443,7 @@ def check_proximity(x1, x2, name: str):
 
 
 def batch_norm():
-    z = np.array([[[-1, 1] * 10] * 20] * 2).transpose()
+    z = tf.transpose(tf.convert_to_tensor([[[-1, 1] * 10] * 20] * 2))
     c_bn = ComplexBatchNormalization(dtype=np.float32)
     c_out = c_bn(z, training=True)
     # set_trace()
@@ -453,14 +465,15 @@ def batch_norm():
 
 @tf.autograph.experimental.do_not_convert
 def test_layers():
-    batch_norm()
-    """test_upsampling()
-    complex_conv_2d_transpose()
+    new_max_unpooling_2d_test()
     complex_max_pool_2d()
+    batch_norm()
+    test_upsampling()
+    complex_conv_2d_transpose()
     dropout()
     complex_avg_pool()
     shape_ad_dtype_of_conv2d()
-    dense_example()"""
+    dense_example()
 
 
 if __name__ == "__main__":

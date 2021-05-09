@@ -229,9 +229,11 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         flat_output_shape = tf.reduce_prod(self.desired_output_shape)
 
         updates = tf.reshape(inputs_values, [-1])
+        shape = (tf.shape(inputs_values)[0]*flat_output_shape,)
         indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
+        # assert indices.shape[-1] == tf.rank(shape)
 
-        ret = tf.scatter_nd(indices, updates, shape=(tf.shape(inputs_values)[0]*flat_output_shape,))
+        ret = tf.scatter_nd(indices, updates, shape=shape)
         desired_output_shape_with_batch = tf.concat([[tf.shape(inputs_values)[0]], self.desired_output_shape], axis=0)
         ret = tf.reshape(ret, shape=desired_output_shape_with_batch)
         return ret
