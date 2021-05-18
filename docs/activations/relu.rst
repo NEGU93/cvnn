@@ -20,13 +20,13 @@ ReLU-based
 
     The relu function, with default values, it returns element-wise max(x, 0).
 
-    Otherwise, it follows:
+    Otherwise, it follows.
 
-        .. math::
+    .. math::
 
-            f(x) = \textrm{max_value}, \quad \textrm{for} \quad x >= \textrm{max_value} \\
-            f(x) = x, \quad \textrm{for} \quad \textrm{threshold} <= x < \textrm{max_value} \\
-            f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\
+        f(x) = \textrm{max_value}, \quad \textrm{for} \quad x >= \textrm{max_value} \\
+        f(x) = x, \quad \textrm{for} \quad \textrm{threshold} <= x < \textrm{max_value} \\
+        f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\
 
     :param z: Input tensor.
     :return: Tensor result of the applied activation function
@@ -38,8 +38,8 @@ ReLU-based
     
     .. math::
     
-          f(z) = z \quad \textrm{for} \quad 0 \leq \phi_z \leq \pi / 2 \\
-          f(z) =    0 \quad \textrm{elsewhere}  \\
+        f(z) = z \quad \textrm{for} \quad 0 \leq \phi_z \leq \pi / 2 \\
+        f(z) =    0 \quad \textrm{elsewhere}  \\
 
              
              
