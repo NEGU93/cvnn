@@ -83,7 +83,7 @@ def softmax_real_with_abs(z: Tensor, axis=-1) -> Tensor:
     It is often used as the activation for the last layer of a classification network because the result could be
     interpreted as a probability distribution.
     The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
-    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+        https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
     :param z: Input tensor.
     :return: Real-valued tensor of the applied activation function
     """
@@ -95,18 +95,17 @@ def softmax_real_with_abs(z: Tensor, axis=-1) -> Tensor:
 
 def softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
     """
-    Applies the softmax function to the modulus of z.
     The softmax activation function transforms the outputs so that all values are in range (0, 1) and sum to 1.
     It is often used as the activation for the last layer of a classification network because the result could be
     interpreted as a probability distribution.
     The softmax of x is calculated by exp(x)/tf.reduce_sum(exp(x)).
-    https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
+        https://www.tensorflow.org/api_docs/python/tf/keras/activations/softmax
     :param z: Input tensor.
     :return: Real-valued tensor of the applied activation function
     """
     if z.dtype.is_complex:
-        return 0.5 * (tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.real(z),
-                                                                                                        axis))
+        return 0.5 * (tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(
+            tf.math.real(z), axis))
     else:
         return tf.keras.activations.softmax(z, axis)
 

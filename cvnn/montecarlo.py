@@ -29,7 +29,7 @@ from tensorflow import data
 from typing import Type
 
 logger = logging.getLogger(cvnn.__name__)
-
+DEFAULT_OUTPUT_ACT = 'softmax_of_softmax_real_with_mult'
 t_path = Union[str, Path]
 
 
@@ -635,14 +635,14 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     if len(shape_raw) == 0:
         logger.warning("No hidden layers are used. activation and dropout will be ignored")
         shape.append(
-            ComplexDense(units=output_size, activation='softmax_real', input_dtype=np.complex64)
+            ComplexDense(units=output_size, activation=DEFAULT_OUTPUT_ACT, input_dtype=np.complex64)
         )
     else:  # len(shape_raw) > 0:
         for s in shape_raw:
             shape.append(ComplexDense(units=s, activation=activation))   # Add dropout!
             if dropout is not None:
                 shape.append(ComplexDropout(rate=dropout))
-        shape.append(ComplexDense(units=output_size, activation='softmax_real'))
+        shape.append(ComplexDense(units=output_size, activation=DEFAULT_OUTPUT_ACT))
 
     complex_network = tf.keras.Sequential(shape, name="complex_network")
     complex_network.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=['accuracy'])
