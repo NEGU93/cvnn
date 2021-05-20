@@ -3,7 +3,7 @@ ReLU-based
 
 .. py:method:: modrelu(z: Tensor, b: float, c: float = 1e-3)
     
-    mod ReLU presented in [CIT2016-KIM]_.
+    mod ReLU presented in [CIT2016-ARJOVSKY]_.
     
     A variation of the ReLU named modReLU. It is a pointwise nonlinearity,
     :math:`modReLU(z) : C \longrightarrow C`, which affects only the absolute
@@ -41,7 +41,20 @@ ReLU-based
         f(z) = z \quad \textrm{for} \quad 0 \leq \phi_z \leq \pi / 2 \\
         f(z) =    0 \quad \textrm{elsewhere}  \\
 
+.. py:method:: complex_cardioid(z: Tensor)
+
+    Complex cardioid presented in [CIT2017-PATRICK]_
+
+    This function maintains the phase information while attenuating the magnitude based on the phase itself. 
+    For real-valued inputs, it reduces to the ReLU.
+
+    .. math::
+
+        f(z) = \frac{(1 + cos \phi_z) * z}{2}
+
+
              
              
 .. [CIT2016-ARJOVSKY] M. Arjovsky et al. "Unitary Evolution Recurrent Neural Networks" 2016
 .. [CIT2016-GUBERMAN] N. Guberman "On Complex Valued Convolutional Neural Networks" 2016
+.. [CIT2017-PATRICK] V. Patrick et al. "Better than Real: Complex-valued Neural Nets for MRI Fingerprinting" 2017
