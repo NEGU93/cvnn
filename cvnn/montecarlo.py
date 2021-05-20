@@ -29,7 +29,7 @@ from tensorflow import data
 from typing import Type
 
 logger = logging.getLogger(cvnn.__name__)
-DEFAULT_OUTPUT_ACT = 'softmax_of_softmax_real_with_mult'
+DEFAULT_OUTPUT_ACT = 'softmax_real_with_abs'
 t_path = Union[str, Path]
 
 
@@ -488,7 +488,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
-                   debug: bool = False, do_conf_mat: bool = False, do_all: bool = True, tensorboard: bool = False,
+                   debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True, tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                    plot_data: bool = False) -> str:
     """
@@ -565,7 +565,8 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
                                        optimizer='adam',     # TODO: Typing
                                        shape_raw=None, activation: t_activation = 'cart_relu',
-                                       debug:  bool = False, do_all: bool = True,
+                                       output_activation : t_activation = DEFAULT_OUTPUT_ACT,
+                                       debug:  Union[bool, int] = False, do_all: bool = True,
                                        polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                        dropout: float = 0.5, validation_split: float = 0.2,
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
@@ -626,26 +627,11 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         shape_raw = [64]
     if open_dataset:
         dataset = dp.OpenDataset(open_dataset)  # Warning, open_dataset overwrites dataset
-    # Create complex network
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
-    shape = [
-        layers.ComplexInput(input_shape=input_size)
-    ]
-    if len(shape_raw) == 0:
-        logger.warning("No hidden layers are used. activation and dropout will be ignored")
-        shape.append(
-            ComplexDense(units=output_size, activation=DEFAULT_OUTPUT_ACT, input_dtype=np.complex64)
-        )
-    else:  # len(shape_raw) > 0:
-        for s in shape_raw:
-            shape.append(ComplexDense(units=s, activation=activation))   # Add dropout!
-            if dropout is not None:
-                shape.append(ComplexDropout(rate=dropout))
-        shape.append(ComplexDense(units=output_size, activation=DEFAULT_OUTPUT_ACT))
-
-    complex_network = tf.keras.Sequential(shape, name="complex_network")
-    complex_network.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=['accuracy'])
+    complex_network = get_mlp(input_size=input_size, output_size=output_size,
+                              shape_raw=shape_raw, activation=activation, dropout=-dropout,
+                              output_activation=output_activation, optimizer=optimizer)
 
     # Monte Carlo
     monte_carlo = RealVsComplex(complex_network,
@@ -712,6 +698,30 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         filename='./log/mlp_montecarlo_summary.xlsx'
     )
     return str(monte_carlo.monte_carlo_analyzer.path / "run_data.csv")
+
+
+def get_mlp(input_size, output_size,
+            shape_raw=None, activation="cart_relu", dropout=0.5,
+            output_activation='softmax_real_with_abs', optimizer="sgd", name="complex_network"):
+    if shape_raw is None:
+        shape_raw = [100, 50]
+    shape = [
+        layers.ComplexInput(input_shape=input_size)
+    ]
+    if len(shape_raw) == 0:
+        shape.append(
+            ComplexDense(units=output_size, activation=output_activation, input_dtype=np.complex64)
+        )
+    else:  # len(shape_raw) > 0:
+        for s in shape_raw:
+            shape.append(ComplexDense(units=s, activation=activation))  # Add dropout!
+            if dropout is not None:
+                shape.append(ComplexDropout(rate=dropout))
+        shape.append(ComplexDense(units=output_size, activation=output_activation))
+
+    complex_network = tf.keras.Sequential(shape, name=name)
+    complex_network.compile(optimizer=optimizer, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=['accuracy'])
+    return complex_network
 
 
 # ====================================

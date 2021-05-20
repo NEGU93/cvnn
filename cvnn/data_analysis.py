@@ -797,7 +797,7 @@ class MonteCarloPlotter(Plotter):
                            self._plot_line_confidence_interval_matplotlib.__name__ + " was called but will be omitted")
             return None
         fig, ax = plt.subplots()
-        for i, (label, data) in enumerate(self.pandas_dict.items()):
+        for i, (label, data) in enumerate(sorted(self.pandas_dict.items())):
             if network_filter is not None and label.replace(' ', '_') not in network_filter:
                 continue
             x = data[x_axis].unique().tolist()
@@ -832,7 +832,7 @@ class MonteCarloPlotter(Plotter):
                             label=label.replace('_', ' ') + ' interquartile')
             ax.fill_between(x, data_min, data_max, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.15,
                             label=label.replace('_', ' ') + ' border')
-        for label in self.pandas_dict.keys():
+        for label in sorted(self.pandas_dict.keys()):
             if network_filter is not None and label not in network_filter:
                 continue
             title += label.replace('_', ' ') + ' vs '
@@ -865,7 +865,7 @@ class MonteCarloPlotter(Plotter):
                            " was called but will be omitted")
             return None
         fig = go.Figure()
-        for i, (label, data) in enumerate(self.pandas_dict.items()):
+        for i, (label, data) in enumerate(sorted(self.pandas_dict.items())):
             # set_trace()
             x = data[x_axis].unique().tolist()
             x_rev = x[::-1]
@@ -923,7 +923,7 @@ class MonteCarloPlotter(Plotter):
                 line=dict(color=DEFAULT_PLOTLY_COLORS[i], dash='dash'),
                 name=label.replace('_', ' ') + " median",
             ))
-        for label in self.pandas_dict.keys():
+        for label in sorted(self.pandas_dict.keys()):
             title += label.replace('_', ' ') + ' vs '
         title = title[:-3] + key
 
@@ -950,7 +950,7 @@ class MonteCarloPlotter(Plotter):
         filter_label = 'mean'
         if median:
             filter_label = '50%'
-        for i, (label, data) in enumerate(self.pandas_dict.items()):
+        for i, (label, data) in enumerate(sorted(self.pandas_dict.items())):
             x = data[x_axis].unique().tolist()
             data_mean_test = data[data['stats'] == filter_label]["val_" + key].tolist()
             fig.add_trace(go.Scatter(
@@ -1137,7 +1137,7 @@ class MonteCarloAnalyzer:
         if epoch == -1:
             epoch = max(self.df.epoch)
         networks_available = self.df.network.unique()
-        for col, net in enumerate(networks_available):
+        for col, net in enumerate(sorted(networks_available)):
             filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
             data = self.df[filter]
             fig.add_trace(go.Box(
@@ -1468,6 +1468,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.48'
+__version__ = '0.1.49'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
