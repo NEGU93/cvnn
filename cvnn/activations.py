@@ -1,4 +1,6 @@
 import logging
+import pdb
+
 import tensorflow as tf
 from tensorflow.keras.layers import Activation
 from typing import Union, Callable, Optional
@@ -43,10 +45,16 @@ def zrelu(z: Tensor) -> Tensor:
     """
     zReLU presented in "On Complex Valued Convolutional Neural Networks"
         from Nitzan Guberman (2016).
-    This methods let's the output as the input if both real and 
-        imaginary parts are positive.
+    This methods let's the output as the input if both real and imaginary parts are positive.
+
+    https://stackoverflow.com/questions/49412717/advanced-custom-activation-function-in-keras-tensorflow
     """
-    return tf.keras.activations.relu(tf.math.real(z)) * tf.keras.activations.relu(tf.math.imag(z))
+    angle = tf.math.angle(z)
+    return tf.keras.backend.switch(0 <= angle,
+                                   tf.keras.backend.switch(angle <= pi / 2,
+                                                           z,
+                                                           tf.cast(0., dtype=z.dtype)),
+                                   tf.cast(0., dtype=z.dtype))
 
 
 def crelu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, threshold: float = 0) -> Tensor:
@@ -564,7 +572,7 @@ act_dispatcher = {
     'etf_circular_sinh': Activation(etf_circular_sinh),
     'etf_inv_circular_atanh': Activation(etf_inv_circular_atanh),
     'etf_inv_circular_asinh': Activation(etf_inv_circular_asinh),
-    # Misc
+    # ReLU
     'modrelu': Activation(modrelu),
     'crelu': Activation(crelu),
     'zrelu': Activation(zrelu),
