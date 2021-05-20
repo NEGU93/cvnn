@@ -61,7 +61,7 @@ The softmax of x is calculated by:
     :param axis:	(Optional) Integer, axis along which the softmax normalization is applied.
     :return: Real-valued tensor of the applied activation function
 
-.. py:method:: softmax_of_softmax_real_with_avg(z, axis=-1)
+.. py:method:: softmax_of_softmax_real_with_mult(z, axis=-1)
 
     Applies the function to the real and imaginary part of z separately and then applies the function again on the product of them.
 
@@ -75,11 +75,24 @@ The softmax of x is calculated by:
 
 .. py:method:: softmax_of_softmax_real_with_avg(z, axis=-1)
 
-    Applies the function to the modulus and phase of z separately and then takes the average.
+    Applies the function to the real and imaginary part of z separately and then applies the function again on the sum of them.
 
     .. math::
 
-      out = \frac{\sigma(|z|) * \sigma(\phi_z)}{2}
+      out = \sigma(\sigma(x) + \sigma(y))
+                
+    :param z: Input tensor.
+    :param axis:	(Optional) Integer, axis along which the softmax normalization is applied.
+    :return: Real-valued tensor of the applied activation function
+
+
+.. py:method:: softmax_real_with_polar(z, axis=-1)
+
+    Applies the function to the amplitude and phase of z separately and then averages them.
+
+    .. math::
+
+      out = \frac{\sigma(|z|) + \sigma(\phi_z))}{2}
                 
     :param z: Input tensor.
     :param axis:	(Optional) Integer, axis along which the softmax normalization is applied.
