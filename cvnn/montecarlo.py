@@ -149,7 +149,7 @@ class MonteCarlo:
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
                                        callbacks=callbacks)
-                test_results = self._inner_callback(model, validation_data, confusion_matrix, real_cast_modes, i,
+                test_results = self._inner_callback(model, validation_data, confusion_matrix, real_cast_modes[i], i,
                                                     run_result, test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
         return self._end_callback(x, y, iterations, data_summary, real_cast_modes, epochs, batch_size,
