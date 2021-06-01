@@ -22,7 +22,7 @@ The softmax of x is calculated by:
 
 .. math::
 
-  \frac{e^x}{\textrm{tf.reduce_sum}(e^x)}
+  \sigma = \frac{e^x}{\textrm{tf.reduce_sum}(e^x)}
 
 
 .. py:method:: softmax_real_with_abs(z, axis=-1)

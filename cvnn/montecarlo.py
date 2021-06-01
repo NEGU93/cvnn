@@ -571,7 +571,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        dropout: float = 0.5, validation_split: float = 0.2,
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
-                                       shuffle: bool = False, tensorboard: bool = False,
+                                       shuffle: bool = False, tensorboard: bool = False, do_conf_mat: bool = False,
                                        plot_data: bool = True) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over any dataset.
@@ -605,11 +605,11 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
             Percentage of the input data to be used as test set (the rest will be use as train set)
             Default: 0.0 (No validation set).
             This input is ignored if validation_data is given.
-        :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
-            The model will not be trained on this data. This parameter takes precedence over validation_split.
-            It can be:
-                - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
-                - A tf.data dataset.
+    :param validation_data: Data on which to evaluate the loss and any model metrics at the end of each epoch.
+        The model will not be trained on this data. This parameter takes precedence over validation_split.
+        It can be:
+            - tuple (x_val, y_val) of Numpy arrays or tensors. Preferred data type (less overhead).
+            - A tf.data dataset.
     :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
                         trainable parameters (capacity equivalent according to: https://arxiv.org/abs/1811.12351)
             - True, it creates a capacity-equivalent model in terms of trainable parameters
@@ -640,6 +640,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     # monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     monte_carlo.output_config['plot_all'] = do_all
     monte_carlo.output_config['excel_summary'] = False
+    monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     if plot_data:
         dataset.plot_data(overlapped=True, showfig=False, save_path=monte_carlo.monte_carlo_analyzer.path,
                           library='matplotlib')
