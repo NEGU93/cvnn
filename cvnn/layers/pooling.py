@@ -197,15 +197,20 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         (and you need the argmax which I only implemented the 2D case).
     """
 
-    def __init__(self, desired_output_shape, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
+    def __init__(self, desired_output_shape=None, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
         """
         :param desired_output_shape: tf.TensorShape (or equivalent like tuple or list).
             The expected output shape without the batch size.
             Meaning that for a 2D image to be enlarged, this is size 3 of the form HxWxC or CxHxW
         """
         self.my_dtype = tf.dtypes.as_dtype(dtype)
-        if len(desired_output_shape) != 3:
-            raise ValueError(f"desired_output_shape expected to be size 3 and got size {len(desired_output_shape)}")
+        if desired_output_shape is not None:
+            if not tf.TensorShape(desired_output_shape).is_fully_defined():
+                # tf.print(f"Warning: Partially defined desired_output_shape will be casted to None")
+                # desired_output_shape = None
+                raise ValueError(f"desired_output_shape must be fully defined, got {desired_output_shape}")
+            elif len(desired_output_shape) != 3:
+                raise ValueError(f"desired_output_shape expected to be size 3 and got size {len(desired_output_shape)}")
         self.desired_output_shape = desired_output_shape
         super(ComplexUnPooling2D, self).__init__(trainable=False, name=name, dtype=self.my_dtype.real_dtype,
                                                  dynamic=dynamic, **kwargs)
@@ -220,21 +225,25 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         """
         if not isinstance(inputs, list):
             raise ValueError('This layer should be called on a list of inputs.')
-        elif len(inputs) != 2:
-            raise ValueError(f'inputs = {inputs} must have size 2 and had size {len(inputs)}')
+        if len(inputs) == 2:
+            inputs_values, unpool_mat = inputs
+            output_shape = self.desired_output_shape
+        elif len(inputs) == 3:
+            inputs_values, unpool_mat, output_shape = inputs
+        else:
+            raise ValueError(f'inputs = {inputs} must have size 2 or 3 and had size {len(inputs)}')
 
-        inputs_values, unpool_mat = inputs
+        
         # https://stackoverflow.com/a/42549265/5931672
         # https://github.com/tensorflow/addons/issues/632#issuecomment-482580850
-        flat_output_shape = tf.reduce_prod(self.desired_output_shape)
-
-        updates = tf.reshape(inputs_values, [-1])
+        flat_output_shape = tf.reduce_prod(output_shape)
         shape = (tf.shape(inputs_values)[0]*flat_output_shape,)
+        updates = tf.reshape(inputs_values, [-1])
         indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
         # assert indices.shape[-1] == tf.rank(shape)
-
         ret = tf.scatter_nd(indices, updates, shape=shape)
-        desired_output_shape_with_batch = tf.concat([[tf.shape(inputs_values)[0]], self.desired_output_shape], axis=0)
+        import pdb; pdb.set_trace()
+        desired_output_shape_with_batch = tf.concat([[tf.shape(inputs_values)[0]], output_shape], axis=0)
         ret = tf.reshape(ret, shape=desired_output_shape_with_batch)
         return ret
 
