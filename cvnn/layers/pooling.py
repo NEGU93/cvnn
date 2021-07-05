@@ -233,7 +233,6 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         else:
             raise ValueError(f'inputs = {inputs} must have size 2 or 3 and had size {len(inputs)}')
 
-        
         # https://stackoverflow.com/a/42549265/5931672
         # https://github.com/tensorflow/addons/issues/632#issuecomment-482580850
         flat_output_shape = tf.reduce_prod(output_shape)
@@ -242,7 +241,7 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
         # assert indices.shape[-1] == tf.rank(shape)
         ret = tf.scatter_nd(indices, updates, shape=shape)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         desired_output_shape_with_batch = tf.concat([[tf.shape(inputs_values)[0]], output_shape], axis=0)
         ret = tf.reshape(ret, shape=desired_output_shape_with_batch)
         return ret
