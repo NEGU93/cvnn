@@ -11,7 +11,12 @@ Un-pooling 2D
 
     Performs UnPooling as explained `here <https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml>`_.
 
-    There are 2 main ways to use this function, either give the expected output shape or give an upsampling_factor. The second options is the only way to deal with partially known output, for example (None, None, 3) to deal with variable size iamges.
+    There are 2 main ways to use this function
+
+    - Using the expected output shape or 
+    - Using the :code:`upsampling_factor` parameter. 
+
+    The second options is the only way to deal with partially known output, for example :code:`(None, None, 3)` to deal with variable size iamges.
 
 .. figure:: ../_static/max_unpool_explain.png
 
@@ -59,6 +64,8 @@ Un-pooling 2D
 
 **Usage example with upsampling_factor**
 
+.. code-block:: python
+
     inputs = complex_input(shape=(None, None, 3))  # Input is an unknown size RGB image
     max_pool_o, max_arg = ComplexMaxPooling2DWithArgmax(strides=1, data_format="channels_last", name="argmax")(inputs)
     unpool = ComplexUnPooling2D(upsampling_factor=2)([input_to_block, pool_argmax])
@@ -79,6 +86,7 @@ Un-pooling 2D
 
         - :code:`input` A Tensor.
         - :code:`argmax` A Tensor. The indices in argmax are flattened (Complains directly to TensorFlow)
+        - :code:`output_shape` (Optional) A :code:`tf.TensorShape` (or equivalent like tuple or list). The expected output shape without the batch size. Meaning that for a 2D image to be enlarged, this is size 3 of the form HxWxC or CxHxW
 
 
 
