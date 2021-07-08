@@ -197,11 +197,14 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         (and you need the argmax which I only implemented the 2D case).
     """
 
-    def __init__(self, desired_output_shape=None, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
+    def __init__(self, desired_output_shape=None, upsampling_factor: Optional[int] = None, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
         """
         :param desired_output_shape: tf.TensorShape (or equivalent like tuple or list).
             The expected output shape without the batch size.
             Meaning that for a 2D image to be enlarged, this is size 3 of the form HxWxC or CxHxW
+        :param upsampling_factor: Integer. The factor to which enlarge the image, 
+            For example, if upsampling_factor=2, an input image of size 32x32 will be 64x64.
+            This parameter is ignored if desired_output_shape is used or if the output shape is given to the call funcion.
         """
         self.my_dtype = tf.dtypes.as_dtype(dtype)
         if desired_output_shape is not None:
@@ -212,6 +215,10 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
             elif len(desired_output_shape) != 3:
                 raise ValueError(f"desired_output_shape expected to be size 3 and got size {len(desired_output_shape)}")
         self.desired_output_shape = desired_output_shape
+        if upsampling_factor is None or isinstance(upsampling_factor, int):
+            self.upsampling_factor = upsampling_factor
+        else:
+             raise ValueError(f"Unsuported upsampling_factor = {upsampling_factor}")
         super(ComplexUnPooling2D, self).__init__(trainable=False, name=name, dtype=self.my_dtype.real_dtype,
                                                  dynamic=dynamic, **kwargs)
 
@@ -221,6 +228,9 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         :param inputs: A tuple of Tensor objects (input, argmax).
             - input 	A Tensor.
             - argmax	A Tensor. The indices in argmax are flattened (Complains directly to TensorFlow)
+            - output_shape (Optional) A tf.TensorShape (or equivalent like tuple or list).
+                The expected output shape without the batch size.
+                Meaning that for a 2D image to be enlarged, this is size 3 of the form HxWxC or CxHxW
             # TODO: I could make an automatic unpool mat if it is not given.
         """
         if not isinstance(inputs, list):
@@ -235,6 +245,17 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
 
         # https://stackoverflow.com/a/42549265/5931672
         # https://github.com/tensorflow/addons/issues/632#issuecomment-482580850
+        # This is for the case I don't know the expected output shape so I used the upsampling factor
+        if not tf.TensorShape(output_shape).is_fully_defined():
+            if self.upsampling_factor is None:
+                raise ValueError('output_shape should be passed as 3rd element or either desired_output_shape or upsampling_factor should be passed on construction')
+            output_shape = tf.shape(inputs_values)[1:]
+            if inputs_values.get_shape().is_fully_defined():
+                y = tf.constant([self.upsampling_factor]*(output_shape.shape[0]-1) + [1], dtype=output_shape.dtype)
+                output_shape = tf.multiply(output_shape, y)
+        elif self.upsampling_factor is not None:
+            tf.print("WARNING: Ignoring self.upsampling_factor parameter")
+            
         flat_output_shape = tf.reduce_prod(output_shape)
         shape = (tf.shape(inputs_values)[0]*flat_output_shape,)
         updates = tf.reshape(inputs_values, [-1])

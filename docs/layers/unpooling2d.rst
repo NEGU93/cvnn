@@ -11,9 +11,11 @@ Un-pooling 2D
 
     Performs UnPooling as explained `here <https://www.oreilly.com/library/view/hands-on-convolutional-neural/9781789130331/6476c4d5-19f2-455f-8590-c6f99504b7a5.xhtml>`_.
 
+    There are 2 main ways to use this function, either give the expected output shape or give an upsampling_factor. The second options is the only way to deal with partially known output, for example (None, None, 3) to deal with variable size iamges.
+
 .. figure:: ../_static/max_unpool_explain.png
 
-**Usage example**
+**Usage example with desired_output_shape**
 
 .. code-block:: python
 
@@ -55,10 +57,21 @@ Un-pooling 2D
     model.summary()
     model(x)
 
+**Usage example with upsampling_factor**
+
+    inputs = complex_input(shape=(None, None, 3))  # Input is an unknown size RGB image
+    max_pool_o, max_arg = ComplexMaxPooling2DWithArgmax(strides=1, data_format="channels_last", name="argmax")(inputs)
+    unpool = ComplexUnPooling2D(upsampling_factor=2)([input_to_block, pool_argmax])
+
+    model = tf.keras.Model(inputs=inputs, outputs=outputs, name="pooling_model")
+    model.summary()
+    model(x)
+
 
 .. py:method:: __init__(self, desired_output_shape, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs)
 
     :param desired_output_shape: tf.TensorShape (or equivalent like tuple or list). The expected output shape without the batch size. Meaning that for a 2D image to be enlarged, this is size 3 of the form HxWxC or CxHxW
+    :param upsampling_factor: Integer. The factor to which enlarge the image. For example, if upsampling_factor=2, an input image of size 32x32 will be 64x64. This parameter is ignored if desired_output_shape is used or if the output shape is given to the call funcion.
 
 .. py:method:: call(self, inputs, **kwargs)
 
