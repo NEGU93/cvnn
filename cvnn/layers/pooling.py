@@ -248,10 +248,11 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         # This is for the case I don't know the expected output shape so I used the upsampling factor
         if not tf.TensorShape(output_shape).is_fully_defined():
             if self.upsampling_factor is None:
-                raise ValueError('output_shape should be passed as 3rd element or either desired_output_shape or upsampling_factor should be passed on construction')
+                raise ValueError('output_shape should be passed as 3rd element or either desired_output_shape '
+                                 'or upsampling_factor should be passed on construction')
             output_shape = tf.shape(inputs_values)[1:]
-            if inputs_values.get_shape().is_fully_defined():
-                y = tf.constant([self.upsampling_factor]*(output_shape.shape[0]-1) + [1], dtype=output_shape.dtype)
+            if inputs_values.get_shape()[1:].is_fully_defined():
+                y = tf.constant([self.upsampling_factor]*2 + [1], dtype=output_shape.dtype)  # TODO: Remove hardcoded 2
                 output_shape = tf.multiply(output_shape, y)
         elif self.upsampling_factor is not None:
             tf.print("WARNING: Ignoring self.upsampling_factor parameter")
