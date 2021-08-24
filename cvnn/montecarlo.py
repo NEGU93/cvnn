@@ -630,7 +630,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     input_size = dataset.x.shape[1]  # Size of input
     output_size = dataset.y.shape[1]  # Size of output
     complex_network = get_mlp(input_size=input_size, output_size=output_size,
-                              shape_raw=shape_raw, activation=activation, dropout=-dropout,
+                              shape_raw=shape_raw, activation=activation, dropout=dropout,
                               output_activation=output_activation, optimizer=optimizer)
 
     # Monte Carlo

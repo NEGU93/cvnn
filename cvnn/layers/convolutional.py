@@ -1,17 +1,23 @@
 import six
 import functools
 import tensorflow as tf
-from tensorflow.python.eager import context
-from tensorflow.keras.layers import Layer
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import regularizers
+from packaging import version
+
 from tensorflow.keras import activations
-from tensorflow.python.keras import constraints
-from tensorflow.python.keras import backend
+from tensorflow.keras import backend
+from tensorflow.keras import constraints
+from tensorflow.keras import initializers
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Layer
+if version.parse(tf.__version__) < version.parse("2.6.0"):
+    from tensorflow.python.keras.engine.input_spec import InputSpec
+    from tensorflow.python.keras.utils import conv_utils
+else:
+    from tensorflow.keras.engine.input_spec import InputSpec
+    from tensorflow.keras.utils import conv_utils
+from tensorflow.python.eager import context
 from tensorflow.python.framework import tensor_shape
-from tensorflow.python.keras.utils import conv_utils
 from tensorflow.python.ops import array_ops
-from tensorflow.python.keras.engine.input_spec import InputSpec
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import nn_ops
 # Own modules
@@ -144,7 +150,7 @@ class ComplexConv(Layer, ComplexLayer):
                              'and `SeparableConv1D`.')
 
     def build(self, input_shape):
-        input_shape = tensor_shape.TensorShape(input_shape)
+        input_shape = tf.TensorShape(input_shape)
         input_channel = self._get_input_channel(input_shape)
         if input_channel % self.groups != 0:
             raise ValueError(
@@ -200,29 +206,25 @@ class ComplexConv(Layer, ComplexLayer):
         channel_axis = self._get_channel_axis()
         self.input_spec = InputSpec(min_ndim=self.rank + 2,
                                     axes={channel_axis: input_channel})
+        self.built = True
 
+    def convolution_op(self, inputs, kernel):
         # Convert Keras formats to TF native formats.
         if self.padding == 'causal':
             tf_padding = 'VALID'  # Causal padding handled in `call`.
-        elif isinstance(self.padding, six.string_types):
+        elif isinstance(self.padding, str):
             tf_padding = self.padding.upper()
         else:
             tf_padding = self.padding
-        tf_dilations = list(self.dilation_rate)
-        tf_strides = list(self.strides)
 
-        tf_op_name = self.__class__.__name__
-        if tf_op_name == 'Conv1D':
-            tf_op_name = 'conv1d'  # Backwards compat.
-
-        self._convolution_op = functools.partial(
-            nn_ops.convolution_v2,
-            strides=tf_strides,
+        return tf.nn.convolution(
+            inputs,
+            kernel,
+            strides=list(self.strides),
             padding=tf_padding,
-            dilations=tf_dilations,
+            dilations=list(self.dilation_rate),
             data_format=self._tf_data_format,
-            name=tf_op_name)
-        self.built = True
+            name=self.__class__.__name__)
 
     def call(self, inputs):
         """
@@ -240,7 +242,7 @@ class ComplexConv(Layer, ComplexLayer):
                          "at the start (tf casts input automatically to real).")
             inputs = tf.cast(inputs, self.my_dtype)
         if self._is_causal:  # Apply causal padding to inputs for Conv1D.
-            inputs = array_ops.pad(inputs, self._compute_causal_padding(inputs))
+            inputs = tf.pad(inputs, self._compute_causal_padding(inputs))
         # Convolution
         inputs_r = tf.math.real(inputs)
         inputs_i = tf.math.imag(inputs)
@@ -254,15 +256,15 @@ class ComplexConv(Layer, ComplexLayer):
             kernel_i = tf.math.imag(self.kernel)    # TODO: Check they are all zero
             if self.use_bias:
                 bias = self.bias
-        real_outputs = self._convolution_op(inputs_r, kernel_r) - self._convolution_op(inputs_i, kernel_i)
-        imag_outputs = self._convolution_op(inputs_r, kernel_i) + self._convolution_op(inputs_i, kernel_r)
+        real_outputs = self.convolution_op(inputs_r, kernel_r) - self.convolution_op(inputs_i, kernel_i)
+        imag_outputs = self.convolution_op(inputs_r, kernel_i) + self.convolution_op(inputs_i, kernel_r)
         outputs = tf.cast(tf.complex(real_outputs, imag_outputs), dtype=self.my_dtype)
         # Add bias
         if self.use_bias:
             output_rank = outputs.shape.rank
             if self.rank == 1 and self._channels_first:
-                # nn.bias_add does not accept a 1D input tensor.
-                bias = array_ops.reshape(bias, (1, self.filters, 1))
+                # tf.nn.bias_add does not accept a 1D input tensor.
+                bias = tf.reshape(bias, (1, self.filters, 1))
                 outputs += bias
             else:
                 # Handle multiple batch dimensions.
@@ -270,12 +272,12 @@ class ComplexConv(Layer, ComplexLayer):
 
                     def _apply_fn(o):
                         # TODO: Will this bias be visible? Horrible
-                        return nn.bias_add(o, bias, data_format=self._tf_data_format)
+                        return tf.nn.bias_add(o, bias, data_format=self._tf_data_format)
 
                     outputs = nn_ops.squeeze_batch_dims(
                         outputs, _apply_fn, inner_rank=self.rank + 1)
                 else:
-                    outputs = nn.bias_add(
+                    outputs = tf.nn.bias_add(
                         outputs, bias, data_format=self._tf_data_format)
         # Activation function
         if self.activation is not None:
@@ -294,15 +296,15 @@ class ComplexConv(Layer, ComplexLayer):
         ]
 
     def compute_output_shape(self, input_shape):
-        input_shape = tensor_shape.TensorShape(input_shape).as_list()
+        input_shape = tf.TensorShape(input_shape).as_list()
         batch_rank = len(input_shape) - self.rank - 1
         if self.data_format == 'channels_last':
-            return tensor_shape.TensorShape(
+            return tf.TensorShape(
                 input_shape[:batch_rank]
                 + self._spatial_output_shape(input_shape[batch_rank:-1])
                 + [self.filters])
         else:
-            return tensor_shape.TensorShape(
+            return tf.TensorShape(
                 input_shape[:batch_rank] + [self.filters] +
                 self._spatial_output_shape(input_shape[batch_rank + 1:]))
 
@@ -802,7 +804,7 @@ class ComplexConv2DTranspose(ComplexConv2D):
                     raise ValueError(f'Stride {self.strides} must be greater than output padding {self.output_padding}')
 
     def build(self, input_shape):
-        input_shape = tensor_shape.TensorShape(input_shape)
+        input_shape = tf.TensorShape(input_shape)
         if len(input_shape) != 4:
             raise ValueError(f'Inputs should have rank 4. Received input shape: {input_shape}')
         channel_axis = self._get_channel_axis()
@@ -859,7 +861,7 @@ class ComplexConv2DTranspose(ComplexConv2D):
         self.built = True
 
     def call(self, inputs):
-        inputs_shape = array_ops.shape(inputs)
+        inputs_shape = tf.shape(inputs)
         batch_size = inputs_shape[0]
         if self.data_format == 'channels_first':
             h_axis, w_axis = 2, 3
@@ -902,7 +904,7 @@ class ComplexConv2DTranspose(ComplexConv2D):
         else:
             output_shape = (batch_size, out_height, out_width, self.filters)
 
-        output_shape_tensor = array_ops.stack(output_shape)
+        output_shape_tensor = tf.stack(output_shape)
         # Deconvolution part
         inputs_r = tf.math.real(inputs)
         inputs_i = tf.math.imag(inputs)
@@ -952,20 +954,20 @@ class ComplexConv2DTranspose(ComplexConv2D):
         imag_outputs = real_outputs_ii_rk + real_outputs_ri_ik
         outputs = tf.cast(tf.complex(real_outputs, imag_outputs), dtype=self.my_dtype)
 
-        if not context.executing_eagerly():
+        if not tf.executing_eagerly():
             # Infer the static output shape:
             out_shape = self.compute_output_shape(inputs.shape)
             outputs.set_shape(out_shape)
         # Apply bias
         if self.use_bias:
-            outputs = nn.bias_add(outputs, bias, data_format=conv_utils.convert_data_format(self.data_format, ndim=4))
+            outputs = tf.nn.bias_add(outputs, bias, data_format=conv_utils.convert_data_format(self.data_format, ndim=4))
         # Apply activation function
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
 
     def compute_output_shape(self, input_shape):
-        input_shape = tensor_shape.TensorShape(input_shape).as_list()
+        input_shape = tf.TensorShape(input_shape).as_list()
         output_shape = list(input_shape)
         if self.data_format == 'channels_first':
             c_axis, h_axis, w_axis = 1, 2, 3
@@ -995,7 +997,7 @@ class ComplexConv2DTranspose(ComplexConv2D):
             output_padding=out_pad_w,
             stride=stride_w,
             dilation=self.dilation_rate[1])
-        return tensor_shape.TensorShape(output_shape)
+        return tf.TensorShape(output_shape)
 
     def get_config(self):
         config = super(ComplexConv2DTranspose, self).get_config()

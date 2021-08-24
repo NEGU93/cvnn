@@ -78,7 +78,7 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
     model = tf.keras.models.Sequential([
         layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
         layers.ComplexDense(128, activation='cart_relu', dtype=np.float32, kernel_initializer=init1),
-        layers.ComplexDense(10, activation='softmax_real', dtype=np.float32, kernel_initializer=init2)
+        layers.ComplexDense(10, activation='softmax_real_with_abs', dtype=np.float32, kernel_initializer=init2)
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',

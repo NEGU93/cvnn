@@ -14,12 +14,12 @@ def shape_tst(input_size, output_size, shape_raw, classifier=True, capacity_equi
     ]
     if len(shape_raw) == 0:
         shape.append(
-            ComplexDense(units=output_size, activation='softmax_real', dtype=np.complex64)
+            ComplexDense(units=output_size, activation='softmax_real_with_abs', dtype=np.complex64)
         )
     else:  # len(shape_raw) > 0:
         for s in shape_raw:
             shape.append(ComplexDense(units=s, activation='cart_relu'))  # Add dropout!
-        shape.append(ComplexDense(units=output_size, activation='softmax_real'))
+        shape.append(ComplexDense(units=output_size, activation='softmax_real_with_abs'))
 
     complex_network = Sequential(shape, name="complex_network")
     complex_network.compile(optimizer='sgd', loss=categorical_crossentropy, metrics=['accuracy'])

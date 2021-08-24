@@ -233,7 +233,6 @@ def new_max_unpooling_2d_test():
     res, argmax = max_pool(tf.cast(new_imag, dtype=np.complex64))
     max_unpooling = ComplexUnPooling2D(new_imag.shape[1:])
     unpooled = max_unpooling([res, argmax])
-    set_trace()
 
 
 @tf.autograph.experimental.do_not_convert
