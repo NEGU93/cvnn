@@ -46,6 +46,9 @@ pip install cvnn[full]
 
 ## Short example
 
+
+:warning: **Disclaimer**: Use the activation function parameter as a function and not as a string or downgrade tensorflow to version 2.5. We are working on a fix.
+
 ```
 import numpy as np
 import cvnn.layers as complex_layers
