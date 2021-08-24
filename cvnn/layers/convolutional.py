@@ -5,7 +5,7 @@ from tensorflow.python.eager import context
 from tensorflow.keras.layers import Layer
 from tensorflow.python.keras import initializers
 from tensorflow.python.keras import regularizers
-from tensorflow.python.keras import activations
+from tensorflow.keras import activations
 from tensorflow.python.keras import constraints
 from tensorflow.python.keras import backend
 from tensorflow.python.framework import tensor_shape
