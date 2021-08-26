@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow.python.keras import backend as K
-from tensorflow.python.keras import initializers
+from tensorflow.keras import initializers
 import tensorflow_probability as tfp
 from tensorflow.python.keras.layers import normalization
 from tensorflow import TensorShape, Tensor
@@ -11,12 +11,14 @@ from tensorflow import TensorShape, Tensor
 from typing import Optional, Union, List, Tuple
 # Own modules
 from cvnn.activations import t_activation
-from cvnn.initializers import ComplexGlorotUniform, Zeros, Ones
+from cvnn.initializers import ComplexGlorotUniform, Zeros, Ones, ComplexInitializer
+
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
 
 DEFAULT_COMPLEX_TYPE = tf.as_dtype(np.complex64)
+INIT_TECHNIQUES = {'zero_imag', 'mirror'}
 
 
 class ComplexLayer(ABC):
@@ -172,6 +174,7 @@ class ComplexDense(Dense, ComplexLayer):
                  kernel_initializer=ComplexGlorotUniform(),
                  bias_initializer=Zeros(),
                  dtype=DEFAULT_COMPLEX_TYPE,  # TODO: Check typing of this.
+                 init_technique: str = 'mirror',
                  **kwargs):
         """
         :param units: Positive integer, dimensionality of the output space.
@@ -191,29 +194,47 @@ class ComplexDense(Dense, ComplexLayer):
                                            bias_initializer=bias_initializer, **kwargs)
         # !Cannot override dtype of the layer because it has a read-only @property
         self.my_dtype = tf.dtypes.as_dtype(dtype)
+        self.init_technique = init_technique.lower()
 
     def build(self, input_shape):
         if self.my_dtype.is_complex:
+            i_kernel_dtype = self.my_dtype if isinstance(self.kernel_initializer,
+                                                         ComplexInitializer) else self.my_dtype.real_dtype
+            i_bias_dtype = self.my_dtype if isinstance(self.bias_initializer,
+                                                       ComplexInitializer) else self.my_dtype.real_dtype
+            i_kernel_initializer = self.kernel_initializer
+            i_bias_initializer = self.bias_initializer
+            if not isinstance(self.kernel_initializer, ComplexInitializer):
+                print("WARNING: you are using a Tensorflow Initializer for complex numbers")
+                if self.init_technique in INIT_TECHNIQUES:
+                    if self.init_technique == 'zero_imag':
+                        # This section is done to initialize with tf initializers, making imaginary part zero
+                        i_kernel_initializer = initializers.Zeros()
+                        i_bias_initializer = initializers.Zeros()
+                else:
+                    raise ValueError(f"Unsuported init_technique {self.init_technique}, "
+                                     f"supported techniques are {INIT_TECHNIQUES}")
             self.w_r = tf.Variable(
                 name='kernel_r',
-                initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
+                initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=i_kernel_dtype),
                 trainable=True
             )
             self.w_i = tf.Variable(
                 name='kernel_i',
-                initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=self.my_dtype),
+                initial_value=i_kernel_initializer(shape=(input_shape[-1], self.units), dtype=i_kernel_dtype),
                 trainable=True
             )
-            self.b_r = tf.Variable(
-                name='bias_r',
-                initial_value=self.bias_initializer(shape=(self.units,), dtype=self.my_dtype),
-                trainable=True
-            )
-            self.b_i = tf.Variable(
-                name='bias_i',
-                initial_value=self.bias_initializer(shape=(self.units,), dtype=self.my_dtype),
-                trainable=True
-            )
+            if self.use_bias:
+                self.b_r = tf.Variable(
+                    name='bias_r',
+                    initial_value=self.bias_initializer(shape=(self.units,), dtype=i_bias_dtype),
+                    trainable=self.use_bias
+                )
+                self.b_i = tf.Variable(
+                    name='bias_i',
+                    initial_value=i_bias_initializer(shape=(self.units,), dtype=i_bias_dtype),
+                    trainable=self.use_bias
+                )
         else:
             # TODO: For Complex you should probably want to use MY init for real keras. DO sth! at least error message
             self.w = self.add_weight('kernel',
@@ -222,8 +243,9 @@ class ComplexDense(Dense, ComplexLayer):
                                      initializer=self.kernel_initializer,
                                      trainable=True,
                                      )
-            self.b = self.add_weight('bias', shape=(self.units,), dtype=self.my_dtype,
-                                     initializer=self.bias_initializer, trainable=True)
+            if self.use_bias:
+                self.b = self.add_weight('bias', shape=(self.units,), dtype=self.my_dtype,
+                                         initializer=self.bias_initializer, trainable=self.use_bias)
 
     def call(self, inputs: t_input):
         # tf.print(f"inputs at ComplexDense are {inputs.dtype}")
@@ -235,11 +257,15 @@ class ComplexDense(Dense, ComplexLayer):
             inputs = tf.cast(inputs, self.my_dtype)
         if self.my_dtype.is_complex:
             w = tf.complex(self.w_r, self.w_i)
-            b = tf.complex(self.b_r, self.b_i)
+            if self.use_bias:
+                b = tf.complex(self.b_r, self.b_i)
         else:
             w = self.w
-            b = self.b
-        out = tf.matmul(inputs, w) + b
+            if self.use_bias:
+                b = self.b
+        out = tf.matmul(inputs, w)
+        if self.use_bias:
+            out = out + b
         return self.activation(out)
 
     def get_real_equivalent(self, output_multiplier=2):

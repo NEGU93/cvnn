@@ -20,6 +20,10 @@ PLOTLY_CONFIG = {
 }
 
 
+def cast_to_complex(image, label):
+    return tf.cast(image, tf.complex64), label
+
+
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
     return tf.cast(image, tf.float32) / 255., label
@@ -48,13 +52,13 @@ def get_dataset():
     return ds_train, ds_test
 
 
-def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
+def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform', train_bias=True):
     tf.random.set_seed(24)
     # https://www.tensorflow.org/datasets/keras_example
     model = tf.keras.models.Sequential([
       tf.keras.layers.Flatten(input_shape=(28, 28, 1), dtype=np.float32),
-      tf.keras.layers.Dense(128, activation='relu', kernel_initializer=init1, dtype=np.float32),
-      tf.keras.layers.Dense(10, activation='softmax', kernel_initializer=init2, dtype=np.float32)
+      tf.keras.layers.Dense(128, activation='relu', kernel_initializer=init1, dtype=np.float32, use_bias=train_bias),
+      tf.keras.layers.Dense(10, activation='softmax', kernel_initializer=init2, dtype=np.float32, use_bias=train_bias)
     ])
     model.compile(
         loss='sparse_categorical_crossentropy',
@@ -62,6 +66,43 @@ def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='gl
         metrics=['accuracy'],
     )
     weigths = model.get_weights()
+    loss = model.evaluate(ds_test)
+    print(loss)
+    start = timeit.default_timer()
+    history = model.fit(
+        ds_train,
+        epochs=6,
+        validation_data=ds_test,
+        verbose=verbose, shuffle=False
+    )
+    stop = timeit.default_timer()
+    return history, stop - start, weigths
+
+
+def own_complex_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
+    tf.random.set_seed(24)
+    model = tf.keras.models.Sequential([
+        layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.complex64),
+        layers.ComplexDense(128, activation='cart_relu', dtype=np.complex64, kernel_initializer=init1, use_bias=False),
+        layers.ComplexDense(10, activation='cast_to_real', dtype=np.complex64, kernel_initializer=init2,
+                            use_bias=False),
+        tf.keras.layers.Activation('softmax')
+    ])
+    model.compile(
+        loss='sparse_categorical_crossentropy',
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        metrics=['accuracy'],
+    )
+    # ds_train = ds_train.map(cast_to_complex)
+    # ds_test = ds_test.map(cast_to_complex)
+    weigths = model.get_weights()
+    with tf.GradientTape() as tape:
+        elem, label = next(iter(ds_test))
+        loss = tf.keras.losses.get(model.loss)(elem, label)
+        print(loss)
+    dy_dx = tape.gradient(loss, model.get_weights())
+    print(dy_dx)  # Returns 6
+    set_trace()
     start = timeit.default_timer()
     history = model.fit(
         ds_train,
@@ -100,6 +141,10 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
 def test_mnist():
     assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
     ds_train, ds_test = get_dataset()
+    own_cvnn_hist, own_cvnn_time, own_cvnn_weigths = own_complex_fit(ds_train, ds_test, verbose=False)
+    keras_hist, keras_time, keras_weigths = keras_fit(ds_train, ds_test, train_bias=False, verbose=False)
+    set_trace()
+    # Not exactly equal due to bias
     keras_hist, keras_time, keras_weigths = keras_fit(ds_train, ds_test)
     # keras2_hist, keras2_time, k2_weights = keras_fit(ds_train, ds_test)
     own_hist, own_time, own_weigths = own_fit(ds_train, ds_test)
