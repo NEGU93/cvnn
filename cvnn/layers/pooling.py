@@ -113,7 +113,10 @@ class ComplexMaxPooling2D(ComplexPooling2D):
 
     def pool_function(self, inputs, ksize, strides, padding, data_format):
         # The max is calculated with the absolute value. This will still work on real values.
-        abs_in = tf.math.abs(inputs)
+        if inputs.dtype.is_complex:
+            abs_in = tf.math.abs(inputs)
+        else:
+            abs_in = inputs
         output, argmax = tf.nn.max_pool_with_argmax(input=abs_in, ksize=ksize, strides=strides,
                                                     padding=padding, data_format=data_format,
                                                     include_batch_in_index=True)
