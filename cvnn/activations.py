@@ -41,7 +41,7 @@ def modrelu(z: Tensor, b: float = 1., c: float = 1e-3) -> Tensor:
     return tf.cast(tf.keras.activations.relu(abs_z + b), dtype=z.dtype) * z / tf.cast(abs_z + c, dtype=z.dtype)
 
 
-def zrelu(z: Tensor) -> Tensor:
+def zrelu(z: Tensor, epsilon=1e-7) -> Tensor:
     """
     zReLU presented in "On Complex Valued Convolutional Neural Networks"
         from Nitzan Guberman (2016).
@@ -49,12 +49,12 @@ def zrelu(z: Tensor) -> Tensor:
 
     https://stackoverflow.com/questions/49412717/advanced-custom-activation-function-in-keras-tensorflow
     """
-    angle = tf.math.angle(z)
-    return tf.keras.backend.switch(0 <= angle,
-                                   tf.keras.backend.switch(angle <= pi / 2,
-                                                           z,
-                                                           tf.cast(0., dtype=z.dtype)),
-                                   tf.cast(0., dtype=z.dtype))
+    imag_relu = tf.nn.relu(tf.math.imag(z))
+    real_relu = tf.nn.relu(tf.math.real(z))
+    ret_real = imag_relu*real_relu / (imag_relu + epsilon)
+    ret_imag = imag_relu*real_relu / (real_relu + epsilon)
+    ret_val = tf.complex(ret_real, ret_imag)
+    return ret_val
 
 
 def crelu(z: Tensor, alpha: float = 0.0, max_value: Optional[float] = None, threshold: float = 0) -> Tensor:
