@@ -3,6 +3,7 @@ import tensorflow_datasets as tfds
 from cvnn import layers
 import numpy as np
 import timeit
+import datetime
 from pdb import set_trace
 try:
     import plotly.graph_objects as go
@@ -13,6 +14,7 @@ except ModuleNotFoundError:
 
 # tf.enable_v2_behavior()
 # tfds.disable_progress_bar()
+
 
 PLOTLY_CONFIG = {
     'scrollZoom': True,
@@ -66,8 +68,16 @@ def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='gl
         metrics=['accuracy'],
     )
     weigths = model.get_weights()
-    loss = model.evaluate(ds_test)
-    print(loss)
+    with tf.GradientTape() as tape:
+        # for elem, label in iter(ds_train):
+        elem, label = next(iter(ds_test))
+        loss = model.compiled_loss(y_true=label, y_pred=model(elem))    # calculate loss
+        gradients = tape.gradient(loss, model.trainable_weights)        # back-propagation
+    logs = {
+        'weights': weigths,
+        'loss': loss,
+        'gradients': gradients
+    }
     start = timeit.default_timer()
     history = model.fit(
         ds_train,
@@ -76,16 +86,17 @@ def keras_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='gl
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return history, stop - start, weigths
+    return history, stop - start, logs
 
 
 def own_complex_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
     tf.random.set_seed(24)
     model = tf.keras.models.Sequential([
         layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.complex64),
-        layers.ComplexDense(128, activation='cart_relu', dtype=np.complex64, kernel_initializer=init1, use_bias=False),
+        layers.ComplexDense(128, activation='cart_relu', dtype=np.complex64, kernel_initializer=init1,
+                            use_bias=False, init_technique='zero_imag'),
         layers.ComplexDense(10, activation='cast_to_real', dtype=np.complex64, kernel_initializer=init2,
-                            use_bias=False),
+                            use_bias=False, init_technique='zero_imag'),
         tf.keras.layers.Activation('softmax')
     ])
     model.compile(
@@ -97,12 +108,15 @@ def own_complex_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', ini
     # ds_test = ds_test.map(cast_to_complex)
     weigths = model.get_weights()
     with tf.GradientTape() as tape:
+        # for elem, label in iter(ds_train):
         elem, label = next(iter(ds_test))
-        loss = tf.keras.losses.get(model.loss)(elem, label)
-        print(loss)
-    dy_dx = tape.gradient(loss, model.get_weights())
-    print(dy_dx)  # Returns 6
-    set_trace()
+        loss = model.compiled_loss(y_true=label, y_pred=model(elem))  # calculate loss
+        gradients = tape.gradient(loss, model.trainable_weights)  # back-propagation
+    logs = {
+        'weights': weigths,
+        'loss': loss,
+        'gradients': gradients
+    }
     start = timeit.default_timer()
     history = model.fit(
         ds_train,
@@ -111,7 +125,7 @@ def own_complex_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', ini
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return history, stop - start, weigths
+    return history, stop - start, logs
 
 
 def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glorot_uniform'):
@@ -127,6 +141,16 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
         metrics=['accuracy'],
     )
     weigths = model.get_weights()
+    with tf.GradientTape() as tape:
+        # for elem, label in iter(ds_train):
+        elem, label = next(iter(ds_test))
+        loss = model.compiled_loss(y_true=label, y_pred=model(elem))    # calculate loss
+        gradients = tape.gradient(loss, model.trainable_weights)        # back-propagation
+    logs = {
+        'weights': weigths,
+        'loss': loss,
+        'gradients': gradients
+    }
     start = timeit.default_timer()
     history = model.fit(
         ds_train,
@@ -135,31 +159,41 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
         verbose=verbose, shuffle=False
     )
     stop = timeit.default_timer()
-    return history, stop - start, weigths
+    return history, stop - start, logs
 
 
 def test_mnist():
     assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
     ds_train, ds_test = get_dataset()
-    own_cvnn_hist, own_cvnn_time, own_cvnn_weigths = own_complex_fit(ds_train, ds_test, verbose=False)
-    keras_hist, keras_time, keras_weigths = keras_fit(ds_train, ds_test, train_bias=False, verbose=False)
-    set_trace()
-    # Not exactly equal due to bias
-    keras_hist, keras_time, keras_weigths = keras_fit(ds_train, ds_test)
-    # keras2_hist, keras2_time, k2_weights = keras_fit(ds_train, ds_test)
-    own_hist, own_time, own_weigths = own_fit(ds_train, ds_test)
+    # Don't use bias becase complex model gets a complex bias with imag not zero.
+    keras_hist, keras_time, keras_logs = keras_fit(ds_train, ds_test, train_bias=False)
+    keras_weigths = keras_logs['weights']
+    own_cvnn_hist, own_cvnn_time, own_cvnn_logs = own_complex_fit(ds_train, ds_test)
+    own_cvnn_weigths = own_cvnn_logs['weights']
+    assert np.all([np.all(k_w == o_w) for k_w, o_w in zip(keras_weigths, own_cvnn_weigths[::2])])
+    assert np.all([np.all(o_w == 0) for o_w in own_cvnn_weigths[1::2]])
+    assert own_cvnn_logs['loss'] == keras_logs['loss']
+    assert np.allclose(own_cvnn_logs['gradients'][2], keras_logs['gradients'][1])
+    # for k, o in zip(keras_hist.history.values(), own_cvnn_hist.history.values()):
+    #     assert np.allclose(k, o), f"\n{keras_hist.history}\n !=\n{own_cvnn_hist.history}"
+    # DO AGAIN TO USE BIAS
+    keras_hist, keras_time, keras_logs = keras_fit(ds_train, ds_test)
+    keras_weigths = keras_logs['weights']
+    own_hist, own_time, own_logs = own_fit(ds_train, ds_test)
+    own_weigths = own_logs['weights']
     assert [np.all(k_w == o_w) for k_w, o_w in zip(keras_weigths, own_weigths)]
     assert keras_hist.history == own_hist.history, f"\n{keras_hist.history}\n !=\n{own_hist.history}"
+    assert own_logs['loss'] == keras_logs['loss']
     # for k, k2, o in zip(keras_hist.history.values(), keras2_hist.history.values(), own_hist.history.values()):
     #     if np.all(np.array(k) == np.array(k2)):
     #         assert np.all(np.array(k) == np.array(o)), f"\n{keras_hist.history}\n !=\n{own_hist.history}"
     
 
 if __name__ == "__main__":
-    test_mnist()
+    # test_mnist()
     # test_mnist_montecarlo()
-    # ds_train, ds_test = get_dataset()
-    # keras_fit(ds_train, ds_test)
+    ds_train, ds_test = get_dataset()
+    keras_fit(ds_train, ds_test, train_bias=False)
     # own_fit(ds_train, ds_test)
 
 

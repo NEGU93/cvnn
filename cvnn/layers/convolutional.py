@@ -22,7 +22,7 @@ from tensorflow.python.ops import nn
 from tensorflow.python.ops import nn_ops
 # Own modules
 from cvnn.layers.core import ComplexLayer
-from cvnn.initializers import ComplexGlorotUniform, Zeros
+from cvnn.initializers import ComplexGlorotUniform, Zeros, ComplexInitializer, INIT_TECHNIQUES
 from cvnn import logger
 from cvnn.layers.core import DEFAULT_COMPLEX_TYPE
 
@@ -94,6 +94,7 @@ class ComplexConv(Layer, ComplexLayer):
                  kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(),
                  kernel_regularizer=None, bias_regularizer=None,  # TODO: Not yet working
                  activity_regularizer=None, kernel_constraint=None, bias_constraint=None,
+                 init_technique: str = 'mirror',
                  trainable=True, name=None, conv_op=None, **kwargs):
         if kernel_regularizer is not None or bias_regularizer is not None:
             logger.warning(f"Sorry, regularizers are not implemented yet, this parameter will take no effect")
@@ -134,6 +135,8 @@ class ComplexConv(Layer, ComplexLayer):
         self._tf_data_format = conv_utils.convert_data_format(
             self.data_format, self.rank + 2)
 
+        self.init_technique = init_technique
+
     def _validate_init(self):
         if self.filters is not None and self.filters % self.groups != 0:
             raise ValueError(
@@ -159,26 +162,43 @@ class ComplexConv(Layer, ComplexLayer):
                 f'(full input shape is {input_shape}).')
         kernel_shape = self.kernel_size + (input_channel // self.groups, self.filters)
         if self.my_dtype.is_complex:
+            i_kernel_dtype = self.my_dtype if isinstance(self.kernel_initializer,
+                                                         ComplexInitializer) else self.my_dtype.real_dtype
+            i_bias_dtype = self.my_dtype if isinstance(self.bias_initializer,
+                                                       ComplexInitializer) else self.my_dtype.real_dtype
+            i_kernel_initializer = self.kernel_initializer
+            i_bias_initializer = self.bias_initializer
+            if not isinstance(self.kernel_initializer, ComplexInitializer):
+                tf.print(f"WARNING: you are using a Tensorflow Initializer for complex numbers. "
+                         f"Using {self.init_technique} method.")
+                if self.init_technique in INIT_TECHNIQUES:
+                    if self.init_technique == 'zero_imag':
+                        # This section is done to initialize with tf initializers, making imaginary part zero
+                        i_kernel_initializer = initializers.Zeros()
+                        i_bias_initializer = initializers.Zeros()
+                else:
+                    raise ValueError(f"Unsuported init_technique {self.init_technique}, "
+                                     f"supported techniques are {INIT_TECHNIQUES}")
             self.kernel_r = tf.Variable(
-                initial_value=self.kernel_initializer(shape=kernel_shape, dtype=self.my_dtype),
+                initial_value=self.kernel_initializer(shape=kernel_shape, dtype=i_kernel_dtype),
                 name='kernel_r',
                 constraint=self.kernel_constraint,
                 trainable=True
             )  # TODO: regularizer=self.kernel_regularizer,
             self.kernel_i = tf.Variable(
-                initial_value=self.kernel_initializer(shape=kernel_shape, dtype=self.my_dtype),
+                initial_value=i_kernel_initializer(shape=kernel_shape, dtype=i_kernel_dtype),
                 name='kernel_i',
                 constraint=self.kernel_constraint,
                 trainable=True
             )  # TODO: regularizer=self.kernel_regularizer
             if self.use_bias:
                 self.bias_r = tf.Variable(
-                    initial_value=self.bias_initializer(shape=(self.filters,), dtype=self.my_dtype),
+                    initial_value=self.bias_initializer(shape=(self.filters,), dtype=i_bias_dtype),
                     name='bias_r',
                     trainable=True
                 )
                 self.bias_i = tf.Variable(
-                    initial_value=self.bias_initializer(shape=(self.filters,), dtype=self.my_dtype),
+                    initial_value=i_bias_initializer(shape=(self.filters,), dtype=i_bias_dtype),
                     name='bias_i',
                     constraint=self.bias_constraint,
                     trainable=True

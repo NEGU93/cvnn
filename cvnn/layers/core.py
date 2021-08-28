@@ -11,14 +11,13 @@ from tensorflow import TensorShape, Tensor
 from typing import Optional, Union, List, Tuple
 # Own modules
 from cvnn.activations import t_activation
-from cvnn.initializers import ComplexGlorotUniform, Zeros, Ones, ComplexInitializer
+from cvnn.initializers import ComplexGlorotUniform, Zeros, Ones, ComplexInitializer, INIT_TECHNIQUES
 
 
 t_input = Union[Tensor, tuple, list]
 t_input_shape = Union[TensorShape, List[TensorShape]]
 
 DEFAULT_COMPLEX_TYPE = tf.as_dtype(np.complex64)
-INIT_TECHNIQUES = {'zero_imag', 'mirror'}
 
 
 class ComplexLayer(ABC):
@@ -205,7 +204,8 @@ class ComplexDense(Dense, ComplexLayer):
             i_kernel_initializer = self.kernel_initializer
             i_bias_initializer = self.bias_initializer
             if not isinstance(self.kernel_initializer, ComplexInitializer):
-                print("WARNING: you are using a Tensorflow Initializer for complex numbers")
+                tf.print(f"WARNING: you are using a Tensorflow Initializer for complex numbers. "
+                         f"Using {self.init_technique} method.")
                 if self.init_technique in INIT_TECHNIQUES:
                     if self.init_technique == 'zero_imag':
                         # This section is done to initialize with tf initializers, making imaginary part zero

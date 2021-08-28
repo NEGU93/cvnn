@@ -3,7 +3,7 @@ import versioneer
 
 requirements = [
     'tensorflow>=2.0', 'tensorflow-probability',    # tfp for the Batch Norm (covariance)
-    'numpy', 'six',
+    'numpy', 'six', 'packaging',
     'pandas', 'scipy',                   # Data
     'colorlog', 'openpyxl',              # Logging
     'tqdm'
