@@ -107,3 +107,14 @@ Next you have a model but beware to change the version and date accordingly.
   url          = {https://doi.org/10.5281/zenodo.4452131}
 }
 ```
+
+## Issues
+
+For any issues please report them in [here](https://github.com/NEGU93/cvnn/issues)
+
+This library is tested using [pytest](https://docs.pytest.org/).
+
+![pytest logo](tests/pytest.png)
+
+
+
