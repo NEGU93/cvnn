@@ -105,12 +105,10 @@ def test_cifar10():
     keras, keras_logs = keras_fit(epochs=epochs, use_bias=False)
     # keras1 = keras_fit(epochs=epochs)
     own, own_logs = own_complex_fit(epochs=epochs)
-    set_trace()
     assert np.all([np.all(k_w == o_w) for k_w, o_w in zip(keras_logs['weights'], own_logs['weights'][::2])])
     assert np.all([np.all(o_w == 0) for o_w in own_logs['weights'][1::2]])
     assert own_logs['loss'] == keras_logs['loss']
-    assert np.all([np.all(k == o) for k, o in zip(keras_logs['weights'], own_logs['weights'][::2])])
-    # TODO: This is indeed strange, gradients are the same! Not even similar, but result is not.
+    assert np.all([np.allclose(k, o) for k, o in zip(keras_logs['gradients'], own_logs['gradients'][::2])])
     # assert keras.history == own.history, f"\n{keras.history}\n !=\n{own.history}"
 
     keras, _ = keras_fit(epochs=epochs)
