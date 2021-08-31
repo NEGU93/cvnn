@@ -86,6 +86,11 @@ class ComplexConv(Layer, ComplexLayer):
             not safe to use when doing asynchronous distributed training.
         bias_constraint: Optional projection function to be applied to the
             bias after being updated by an `Optimizer`.
+        :param init_technique: One of 'mirror' or 'zero_imag'. Tells the initializer how to init complex number if
+            the initializer was tensorflow's built in initializers (not supporting complex numbers).
+            - 'mirror': Uses the initializer for both real and imaginary part.
+                Note that some initializers such as Glorot or He will lose it's property if initialized this way.
+            - 'zero_imag': Initializer real part and let imaginary part to zero.
       """
 
     def __init__(self, rank, filters, kernel_size, dtype=DEFAULT_COMPLEX_TYPE, strides=1, padding='valid', data_format=None, dilation_rate=1,
@@ -134,7 +139,7 @@ class ComplexConv(Layer, ComplexLayer):
         self._tf_data_format = conv_utils.convert_data_format(
             self.data_format, self.rank + 2)
 
-        self.init_technique = init_technique
+        self.init_technique = init_technique.lower()
 
     def _validate_init(self):
         if self.filters is not None and self.filters % self.groups != 0:

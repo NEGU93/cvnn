@@ -182,10 +182,15 @@ class ComplexDense(Dense, ComplexLayer):
             If you don't specify anything, no activation is applied (ie. "linear" activation: a(x) = x).
         :param use_bias: Boolean, whether the layer uses a bias vector.
         :param kernel_initializer: Initializer for the kernel weights matrix.
-            Recomended to use a `ComplexInitializer` such as `cvnn.initializers.ComplexGlorotUniform()` (default)
+            Recommended to use a `ComplexInitializer` such as `cvnn.initializers.ComplexGlorotUniform()` (default)
         :param bias_initializer: Initializer for the bias vector.
-            Recomended to use a `ComplexInitializer` such as `cvnn.initializers.Zeros()` (default)
+            Recommended to use a `ComplexInitializer` such as `cvnn.initializers.Zeros()` (default)
         :param dtype: Dtype of the input and layer.
+        :param init_technique: One of 'mirror' or 'zero_imag'. Tells the initializer how to init complex number if
+            the initializer was tensorflow's built in initializers (not supporting complex numbers).
+            - 'mirror': Uses the initializer for both real and imaginary part.
+                Note that some initializers such as Glorot or He will lose it's property if initialized this way.
+            - 'zero_imag': Initializer real part and let imaginary part to zero.
         """
         # TODO: verify the initializers? and that dtype complex has cvnn.activations.
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,

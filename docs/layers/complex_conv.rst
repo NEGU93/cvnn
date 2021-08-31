@@ -28,7 +28,7 @@ Complex Conv 2D
     e.g. :code:`input_shape=(128, 128, 3)` for 128x128 RGB pictures in :code:`data_format="channels_last"`.
 
 
-.. py:method:: __init__(self, filters, kernel_size, strides=(1, 1), padding='valid', data_format=None, dilation_rate=(1, 1), groups=1, activation=None, use_bias=True, dtype=np.complex64, kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(), kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None, kernel_constraint=None, bias_constraint=None, **kwargs)
+.. py:method:: __init__(self, filters, kernel_size, strides=(1, 1), padding='valid', data_format=None, dilation_rate=(1, 1), groups=1, activation=None, use_bias=True, dtype=np.complex64, kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(), kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None, kernel_constraint=None, bias_constraint=None, init_technique: str = 'mirror', **kwargs)
 
     :param filters: Integer, the dimensionality of the output space (i.e. the number of output filters in the convolution).
     :param kernel_size: An integer or tuple/list of 2 integers, specifying the height and width of the 2D convolution window. Can be a single integer to specify  the same value for all spatial dimensions.
@@ -55,6 +55,10 @@ Complex Conv 2D
     :param activity_regularizer: Regularizer function applied to the output of the layer (its "activation") (see :code:`keras.regularizers`).
     :param kernel_constraint: Constraint function applied to the kernel matrix (see :code:`keras.constraints`).
     :param bias_constraint: Constraint function applied to the bias vector (see :code:`keras.constraints`).
+    :param init_technique: String. One of 'mirror' or 'zero_imag'. Tells the initializer how to init complex number if the initializer was tensorflow's built in initializers (not supporting complex numbers).
+            
+            - 'mirror' (default): Uses the initializer for both real and imaginary part. Note that some initializers such as Glorot or He will lose it's property if initialized this way.
+            - 'zero_imag': Initializer real part and let imaginary part to zero.
 
 .. warning:: 
     ATTENTION: :code:`regularizers` not yet working, that parameter will be ignored.

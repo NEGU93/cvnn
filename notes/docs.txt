@@ -11,6 +11,7 @@ make html
 Install:
 	conda install -c anaconda sphinx
 	conda install -c conda-forge nbsphinx recommonmark
+	conda install -c conda-forge sphinx_rtd_theme
 	
 Select conda env vscode:
 	1. Ctrl+Shift+P

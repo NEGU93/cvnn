@@ -16,7 +16,7 @@ Complex Dense
     * weights is a matrix created by the layer
     * bias is a bias vector created by the layer
 
-.. py:method:: __init__(self, units, activation=None, use_bias=True, kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(), dtype=DEFAULT_COMPLEX_TYPE, **kwargs)
+.. py:method:: __init__(self, units, activation=None, use_bias=True, kernel_initializer=ComplexGlorotUniform(), bias_initializer=Zeros(), dtype=DEFAULT_COMPLEX_TYPE, init_technique: str = 'mirror', **kwargs)
 
         Initializer of the Dense layer
 
@@ -30,6 +30,10 @@ Complex Dense
         :param bias_initializer: Initializer for the bias vector.
             Recomended to use a :code:`ComplexInitializer` such as :code:`cvnn.initializers.Zeros()` (default)
         :param dtype: Dtype of the input and layer.
+        :param init_technique: String. One of 'mirror' or 'zero_imag'. Tells the initializer how to init complex number if the initializer was tensorflow's built in initializers (not supporting complex numbers).
+            
+            - 'mirror' (default): Uses the initializer for both real and imaginary part. Note that some initializers such as Glorot or He will lose it's property if initialized this way.
+            - 'zero_imag': Initializer real part and let imaginary part to zero.
 
 **Code example**
 
