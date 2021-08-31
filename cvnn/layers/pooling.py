@@ -1,8 +1,12 @@
 import tensorflow as tf
+from packaging import version
 from tensorflow.keras.layers import Layer
 from tensorflow.python.keras import backend
 from tensorflow.python.keras.utils import conv_utils
-from tensorflow.python.keras.engine.input_spec import InputSpec
+if version.parse(tf.__version__) < version.parse("2.6.0"):
+    from tensorflow.python.keras.engine.input_spec import InputSpec
+else:
+    from tensorflow.keras.layers import InputSpec
 from tensorflow.python.framework import tensor_shape
 from abc import abstractmethod
 # Typing

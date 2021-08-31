@@ -9,12 +9,11 @@ from tensorflow.keras import constraints
 from tensorflow.keras import initializers
 from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Layer
+from tensorflow.python.keras.utils import conv_utils
 if version.parse(tf.__version__) < version.parse("2.6.0"):
     from tensorflow.python.keras.engine.input_spec import InputSpec
-    from tensorflow.python.keras.utils import conv_utils
 else:
     from tensorflow.keras.layers import InputSpec
-    import tensorflow.keras.utils as conv_utils
 from tensorflow.python.eager import context
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import array_ops

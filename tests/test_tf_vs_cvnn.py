@@ -1,6 +1,7 @@
 from examples.cifar410_example import test_cifar10
 from examples.fashion_mnist_example import test_fashion_mnist
 from examples.mnist_dataset_example import test_mnist
+from examples.u_net_example import test_unet
 from importlib import reload
 import os
 import tensorflow
@@ -12,6 +13,7 @@ def test_tf_vs_cvnn():
     """
     reload(tensorflow)
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    test_unet()
     test_mnist()
     test_fashion_mnist()
     test_cifar10()

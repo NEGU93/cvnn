@@ -30,13 +30,14 @@ def keras_fit(epochs=10, use_bias=True):
         # for elem, label in iter(ds_train):
         loss = model.compiled_loss(y_true=tf.convert_to_tensor(test_labels), y_pred=model(test_images))
         gradients = tape.gradient(loss, model.trainable_weights)  # back-propagation
-    logs = {
-        'weights': weigths,
-        'loss': loss,
-        'gradients': gradients
-    }
     history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
+    logs = {
+        'weights_at_init': weigths,
+        'loss': loss,
+        'gradients': gradients,
+        'weights_at_end': model.get_weights()
+    }
     return history, logs
 
 
@@ -89,13 +90,14 @@ def own_complex_fit(epochs=10):
     with tf.GradientTape() as tape:
         loss = model.compiled_loss(y_true=tf.convert_to_tensor(test_labels), y_pred=model(test_images))
         gradients = tape.gradient(loss, model.trainable_weights)  # back-propagation
-    logs = {
-        'weights': weigths,
-        'loss': loss,
-        'gradients': gradients
-    }
     history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
+    logs = {
+        'weights_at_init': weigths,
+        'loss': loss,
+        'gradients': gradients,
+        'weights_at_end': model.get_weights()
+    }
     return history, logs
 
 
@@ -105,9 +107,11 @@ def test_cifar10():
     keras, keras_logs = keras_fit(epochs=epochs, use_bias=False)
     # keras1 = keras_fit(epochs=epochs)
     own, own_logs = own_complex_fit(epochs=epochs)
-    assert np.all([np.all(k_w == o_w) for k_w, o_w in zip(keras_logs['weights'], own_logs['weights'][::2])])
-    assert np.all([np.all(o_w == 0) for o_w in own_logs['weights'][1::2]])
-    assert own_logs['loss'] == keras_logs['loss']
+    assert np.all([np.all(k_w == o_w) for k_w, o_w in zip(keras_logs['weights_at_init'],
+                                                          own_logs['weights_at_init'][::2])])   # real part equal
+    assert np.all([np.all(o_w == 0) for o_w in own_logs['weights_at_init'][1::2]])  # imag part at zero
+    assert np.all([np.all(o_w == 0) for o_w in own_logs['weights_at_end'][1::2]])
+    assert own_logs['loss'] == keras_logs['loss']       # same loss
     assert np.all([np.allclose(k, o) for k, o in zip(keras_logs['gradients'], own_logs['gradients'][::2])])
     # assert keras.history == own.history, f"\n{keras.history}\n !=\n{own.history}"
 
