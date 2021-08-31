@@ -374,6 +374,16 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
         self.used_axis = [ax for ax in range(0, len(input_shape)) if ax not in self.axis]
         desired_shape = [input_shape[ax] for ax in self.axis]
         if self.my_dtype.is_complex:
+            self.gamma_r = tf.Variable(
+                name='gamma_r',
+                initial_value=self.gamma_initializer(shape=tuple(desired_shape), dtype=self.my_dtype),
+                trainable=True
+            )
+            self.gamma_i = tf.Variable(
+                name='gamma_i',
+                initial_value=Zeros()(shape=tuple(desired_shape), dtype=self.my_dtype),
+                trainable=True
+            )  # I think I just need to scale with gamma, so by default I leave the imag part to zero
             self.beta_r = tf.Variable(
                 name="beta_r",
                 initial_value=self.beta_initializer(shape=desired_shape, dtype=self.my_dtype),
@@ -392,16 +402,6 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
                                                                            dtype=self.my_dtype)),
                 trainable=False
             )
-            self.gamma_r = tf.Variable(
-                name='gamma_r',
-                initial_value=self.gamma_initializer(shape=tuple(desired_shape), dtype=self.my_dtype),
-                trainable=True
-            )
-            self.gamma_i = tf.Variable(
-                name='gamma_i',
-                initial_value=Zeros()(shape=tuple(desired_shape), dtype=self.my_dtype),
-                trainable=True
-            )       # I think I just need to scale with gamma, so by default I leave the imag part to zero
             self.moving_var = tf.Variable(
                 name='moving_var',
                 initial_value=tf.eye(2) * self.moving_variance_initializer(shape=tuple(desired_shape) + (2, 2),
@@ -409,6 +409,11 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
                 trainable=False
             )
         else:
+            self.gamma = tf.Variable(
+                name='gamma',
+                initial_value=self.gamma_initializer(shape=tuple(desired_shape), dtype=self.my_dtype),
+                trainable=True
+            )
             self.beta = tf.Variable(
                 name="beta",
                 initial_value=self.beta_initializer(shape=desired_shape, dtype=self.my_dtype),
@@ -418,11 +423,6 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
                 name='moving_mean',
                 initial_value=self.moving_mean_initializer(shape=desired_shape, dtype=self.my_dtype),
                 trainable=False
-            )
-            self.gamma = tf.Variable(
-                name='gamma',
-                initial_value=self.gamma_initializer(shape=tuple(desired_shape), dtype=self.my_dtype),
-                trainable=True
             )
             self.moving_var = tf.Variable(
                 name='moving_var',
