@@ -46,29 +46,19 @@ pip install cvnn[full]
 
 ## Short example
 
+From "outside" everything is the same as when using Tensorflow.
+
 ```
 import numpy as np
-import cvnn.layers as complex_layers
 import tensorflow as tf
 
 # Assume you already have complex data... example numpy arrays of dtype np.complex64
 (train_images, train_labels), (test_images, test_labels) = get_dataset()        # to be done by each user
 
-# Create your model
-model = tf.keras.models.Sequential()
-model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))                     # Always use ComplexInput at the start
-model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
-model.add(complex_layers.ComplexAvgPooling2D((2, 2)))
-model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
-model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
-model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
-model.add(complex_layers.ComplexFlatten())
-model.add(complex_layers.ComplexDense(64, activation='cart_relu'))
-model.add(complex_layers.ComplexDense(10, activation='convert_to_real_with_abs'))   
-# An activation that casts to real must be used at the last layer. 
-# The loss function cannot minimize a complex number
+# Get your model
+model = get_model()
 
-# Compile it
+# Compile as any TensorFlow model
 model.compile(optimizer='adam', 
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
@@ -78,6 +68,44 @@ model.summary()
 history = model.fit(train_images, train_labels, epochs=epochs, validation_data=(test_images, test_labels))
 test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 ```
+The main difference is that you will be using `cvnn` layers instead of Tensorflow layers.
+There are some options on how to do it as shown here:
+
+### Sequential API
+```
+import cvnn.layers as complex_layers
+
+def get_model():
+  model = tf.keras.models.Sequential()
+  model.add(complex_layers.ComplexInput(input_shape=(32, 32, 3)))                     # Always use ComplexInput at the start
+  model.add(complex_layers.ComplexConv2D(32, (3, 3), activation='cart_relu'))
+  model.add(complex_layers.ComplexAvgPooling2D((2, 2)))
+  model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
+  model.add(complex_layers.ComplexMaxPooling2D((2, 2)))
+  model.add(complex_layers.ComplexConv2D(64, (3, 3), activation='cart_relu'))
+  model.add(complex_layers.ComplexFlatten())
+  model.add(complex_layers.ComplexDense(64, activation='cart_relu'))
+  model.add(complex_layers.ComplexDense(10, activation='convert_to_real_with_abs'))   
+  # An activation that casts to real must be used at the last layer. 
+  # The loss function cannot minimize a complex number
+  return model
+```
+### Functional API
+```
+import cvnn.layers as complex_layers
+def get_model():
+  inputs = complex_layers.complex_input(shape=(128, 128, 3))
+  c0 = complex_layers.ComplexConv2D(32, activation='cart_relu', kernel_size=3)(inputs)
+  c1 = complex_layers.ComplexConv2D(32, activation='cart_relu', kernel_size=3)(c0)
+  c2 = complex_layers.ComplexMaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='valid')(c1)
+  t01 = complex_layers.ComplexConv2DTranspose(5, kernel_size=2, strides=(2, 2), activation='cart_relu')(c2)
+  concat01 = tf.keras.layers.concatenate([t01, c1], axis=-1)
+
+  c3 = complex_layers.ComplexConv2D(4, activation='cart_relu', kernel_size=3)(concat01)
+  out = complex_layers.ComplexConv2D(4, activation='cart_relu', kernel_size=3)(c3)
+  return tf.keras.Model(inputs, out)
+```
+
 
 ## About me & Motivation
 
