@@ -77,6 +77,7 @@ def get_dataset():
 def get_cvnn_model(dtype=tf.float32):
     tf.random.set_seed(1)
     inputs = layers.complex_input(shape=INPUT_SIZE + (3,), dtype=dtype)
+    # inputs = tf.keras.layers.InputLayer(input_shape=INPUT_SIZE + (3,), dtype=dtype)
     # inputs = tf.keras.layers.Input(shape=INPUT_SIZE + (3,))
 
     c0, c1, c2 = _downsample_cvnn(inputs, 64, dtype)

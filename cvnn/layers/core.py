@@ -5,7 +5,6 @@ from tensorflow.keras.layers import Flatten, Dense, InputLayer, Layer
 from tensorflow.python.keras import backend as K
 from tensorflow.keras import initializers
 import tensorflow_probability as tfp
-from tensorflow.python.keras.layers import normalization
 from tensorflow import TensorShape, Tensor
 # typing
 from typing import Optional, Union, List, Tuple
