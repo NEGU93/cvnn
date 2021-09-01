@@ -1,7 +1,7 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
     ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax, \
-    ComplexUpSampling2D, ComplexBatchNormalization
+    ComplexUpSampling2D, ComplexBatchNormalization, ComplexAvgPooling1D
 import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -182,6 +182,41 @@ def get_img():
     img = img_r + 1j * img_i
     img = np.reshape(img, (2, 3, 3, 1))
     return img
+
+
+@tf.autograph.experimental.do_not_convert
+def complex_avg_pool_1d():
+    x = tf.constant([1., 2., 3., 4., 5.])
+    x = tf.reshape(x, [1, 5, 1])
+    avg_pool_1d = tf.keras.layers.AveragePooling1D(pool_size=2, strides=1, padding='valid')
+    tf_res = avg_pool_1d(x)
+    own_res = ComplexAvgPooling1D(pool_size=2, strides=1, padding='valid')(x)
+    assert np.all(tf_res.numpy() == own_res.numpy())
+    avg_pool_1d = tf.keras.layers.AveragePooling1D(pool_size=2, strides=2, padding='valid')
+    tf_res = avg_pool_1d(x)
+    own_res = ComplexAvgPooling1D(pool_size=2, strides=2, padding='valid')(x)
+    assert np.all(tf_res.numpy() == own_res.numpy())
+    avg_pool_1d = tf.keras.layers.AveragePooling1D(pool_size=2, strides=1, padding='same')
+    tf_res = avg_pool_1d(x)
+    own_res = ComplexAvgPooling1D(pool_size=2, strides=1, padding='same')(x)
+    assert np.all(tf_res.numpy() == own_res.numpy())
+    img_r = np.array([[
+        [0, 1, 2, 0, 2, 2, 0, 5, 7]
+    ], [
+        [0, 4, 5, 3, 7, 9, 4, 5, 3]
+    ]]).astype(np.float32)
+    img_i = np.array([[
+        [0, 4, 5, 3, 7, 9, 4, 5, 3]
+    ], [
+        [0, 4, 5, 3, 2, 2, 4, 8, 9]
+    ]]).astype(np.float32)
+    img = img_r + 1j * img_i
+    img = np.reshape(img, (2, 9, 1))
+    avg_pool = ComplexAvgPooling1D()
+    res = avg_pool(img.astype(np.complex64))
+    expected = tf.expand_dims(tf.convert_to_tensor([[0.5 + 2.j, 1. + 4.j, 2. + 8.j, 2.5 + 4.5j],
+                                     [2. + 2.j, 4. + 4.j, 8. + 2.j, 4.5 + 6.j]], dtype=tf.complex64), axis=-1)
+    assert np.all(res.numpy() == expected.numpy())
 
 
 @tf.autograph.experimental.do_not_convert
@@ -455,7 +490,7 @@ def batch_norm():
 
     z = np.random.rand(3, 43, 12, 75)  # + np.random.rand(3, 43, 12, 75)*1j
     bn = tf.keras.layers.BatchNormalization(epsilon=0)
-    c_bn = ComplexBatchNormalization(dtype=np.float32)      # If I use the complex64 then the init is different
+    c_bn = ComplexBatchNormalization(dtype=np.float32)  # If I use the complex64 then the init is different
     input = tf.convert_to_tensor(z.astype(np.float32), dtype=np.float32)
     out = bn(input, training=False)
     c_out = c_bn(input, training=False)
@@ -473,15 +508,20 @@ def batch_norm():
     assert check_proximity(bn.beta, c_bn.beta, "Beta after training")
 
 
+def pooling_layers():
+    complex_max_pool_2d()
+    complex_avg_pool_1d()
+    complex_avg_pool()
+
+
 @tf.autograph.experimental.do_not_convert
 def test_layers():
     new_max_unpooling_2d_test()
-    complex_max_pool_2d()
+    pooling_layers()
     batch_norm()
     test_upsampling()
     complex_conv_2d_transpose()
     dropout()
-    complex_avg_pool()
     shape_ad_dtype_of_conv2d()
     dense_example()
 

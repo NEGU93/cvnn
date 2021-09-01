@@ -292,3 +292,85 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         }
         base_config = super(ComplexUnPooling2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+
+
+"""
+    1D Pooling
+"""
+
+
+class ComplexPooling1D(Layer, ComplexLayer):
+    def __init__(self, pool_size=2, strides=None,
+                 padding='valid', data_format='channels_last',
+                 name=None, dtype=DEFAULT_COMPLEX_TYPE, **kwargs):
+        self.my_dtype = dtype
+        super(ComplexPooling1D, self).__init__(name=name, **kwargs)
+        if data_format is None:
+            data_format = backend.image_data_format()
+        if strides is None:
+            strides = pool_size
+        self.pool_size = conv_utils.normalize_tuple(pool_size, 1, 'pool_size')
+        self.strides = conv_utils.normalize_tuple(strides, 1, 'strides')
+        self.padding = conv_utils.normalize_padding(padding)
+        self.data_format = conv_utils.normalize_data_format(data_format)
+        self.input_spec = InputSpec(ndim=3)
+
+    @abstractmethod
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        pass
+
+    def call(self, inputs, **kwargs):
+        outputs = self.pool_function(
+            inputs,
+            self.pool_size,
+            strides=self.strides,
+            padding=self.padding.upper(),
+            data_format=conv_utils.convert_data_format(self.data_format, 3))
+        return outputs
+
+    def compute_output_shape(self, input_shape):
+        input_shape = tf.TensorShape(input_shape).as_list()
+        if self.data_format == 'channels_first':
+            steps = input_shape[2]
+            features = input_shape[1]
+        else:
+            steps = input_shape[1]
+            features = input_shape[2]
+        length = conv_utils.conv_output_length(steps,
+                                               self.pool_size[0],
+                                               self.padding,
+                                               self.strides[0])
+        if self.data_format == 'channels_first':
+            return tf.TensorShape([input_shape[0], features, length])
+        else:
+            return tf.TensorShape([input_shape[0], length, features])
+
+    def get_config(self):
+        config = {
+            'strides': self.strides,
+            'pool_size': self.pool_size,
+            'padding': self.padding,
+            'data_format': self.data_format,
+        }
+        base_config = super(ComplexPooling1D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+
+class ComplexAvgPooling1D(ComplexPooling1D):
+
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        inputs_r = tf.math.real(inputs)
+        inputs_i = tf.math.imag(inputs)
+        output_r = tf.nn.avg_pool1d(input=inputs_r, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        output_i = tf.nn.avg_pool1d(input=inputs_i, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        if inputs.dtype.is_complex:
+            output = tf.complex(output_r, output_i)
+        else:
+            output = output_r
+        return output
+
+    def get_real_equivalent(self):
+        return ComplexAvgPooling1D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
+                                   data_format=self.data_format, name=self.name + "_real_equiv")
