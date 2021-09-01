@@ -158,6 +158,8 @@ def randomize(x, y):
     :param y: data labels
     :return: Tuple of (shuffled_x, shuffled_y) maintaining coherence of elements labels
     """
+    if isinstance(x, tf.data.Dataset):
+        return x.shuffle(1000), y
     permutation = np.random.permutation(y.shape[0])
     shuffled_x = x[permutation, :]
     shuffled_y = y[permutation]
@@ -195,6 +197,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.23'
+__version__ = '0.0.24'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

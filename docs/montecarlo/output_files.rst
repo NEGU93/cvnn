@@ -31,7 +31,7 @@ A complementary file :file:`test_results.csv` can be generated if :code:`test_da
 Usage example::
 
     monte_carlo = MonteCarlo()
-    monte_carlo['plot_all'] = True      # Tell monte carlo to save the plots
+    monte_carlo.output_config['plot_all'] = True      # Tell monte carlo to save the plots
 
 
 .. csv-table:: Output files 

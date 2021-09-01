@@ -8,7 +8,8 @@ Monte Carlo
     Class that allows the statistical comparison of several models on the same dataset
 
     Example::
-
+    
+        from cvnn.montecarlo import MonteCarlo
         # Assume you already have complex data 'x' with its labels 'y'... and 3 Cvnn models.
 
         montecarlo = MonteCarlo()

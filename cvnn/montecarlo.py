@@ -123,7 +123,6 @@ class MonteCarlo:
         real_cast_modes = self._check_real_cast_modes(real_cast_modes)
         confusion_matrix, pbar, test_results = self._beginning_callback(iterations, epochs, batch_size,
                                                                         shuffle, data_summary, test_data_cols)
-        x, y = randomize(x, y)
         w_save = []                     # TODO: Find a better method
         for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
             w_save.append(model.get_weights())     # Save model weight
@@ -131,8 +130,6 @@ class MonteCarlo:
         for it in range(iterations):
             if debug:
                 logger.info("Iteration {}/{}".format(it + 1, iterations))
-            if shuffle:  # shuffle all data at each iteration
-                x, y = randomize(x, y)
             for i, model in enumerate(self.models):
                 x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
                                                                            validation_data, test_data,
@@ -148,7 +145,7 @@ class MonteCarlo:
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
-                                       callbacks=callbacks)
+                                       callbacks=callbacks, shuffle=shuffle)
                 test_results = self._inner_callback(model, validation_data, confusion_matrix, real_cast_modes[i], i,
                                                     run_result, test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
@@ -170,10 +167,18 @@ class MonteCarlo:
         # TODO: This does not work with tf.Dataset.
         val_data_fit = None
         test_data_fit = None
-        if is_complex:
+        # TODO: tf.dataset not yet supported
+        if isinstance(x, tf.data.Dataset):
+            tf.print(f"No treatment to tf dataset is done, please give the correct parameter")
             x_fit = x
             val_data_fit = validation_data
             test_data_fit = test_data
+        elif (is_complex and x.dtype.is_complex) or (not is_complex and x.dtype.is_floating):
+            x_fit = x
+            val_data_fit = validation_data
+            test_data_fit = test_data
+        elif is_complex and not x.dtype.is_complex:      # TODO: What if dataset was real? Situation not contemplated
+            raise NotImplementedError(f"TODO: Cast real dataset to complex not yet implemented")
         else:
             x_fit = transform_to_real(x, mode=polar)
             if validation_data is not None:
