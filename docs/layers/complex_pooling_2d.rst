@@ -1,5 +1,5 @@
 Complex Pooling 2D
-------------------
+^^^^^^^^^^^^^^^^^^
 
 .. py:class:: ComplexPooling2D
 
@@ -22,7 +22,7 @@ Complex Pooling 2D
 .. _complex-max-pooling-label:
 
 Complex Max Pooling 2D
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 .. py:class:: ComplexMaxPooling2D
 
@@ -108,7 +108,7 @@ This layer also works for real-valued input, for example:
 
 
 Complex Average Pooling 2D
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""
 
 .. py:class:: ComplexAvgPooling2D
 
@@ -179,7 +179,7 @@ The results is then
 
 
 Complex Max Pooling 2D With Argmax
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""
 
 
 .. py:class:: ComplexMaxPooling2DWithArgmax

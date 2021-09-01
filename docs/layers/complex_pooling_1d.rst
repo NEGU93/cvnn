@@ -1,5 +1,5 @@
-Complex Pooling 2D
-------------------
+Complex Pooling 1D
+^^^^^^^^^^^^^^^^^^
 
 .. py:class:: ComplexPooling2D
 
@@ -17,7 +17,7 @@ Complex Pooling 2D
 .. _complex-max-pooling-label:
 
 Complex Average Pooling 1D
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""
 
 .. py:class:: ComplexAvgPooling1D
 
