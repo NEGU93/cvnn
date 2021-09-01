@@ -423,8 +423,13 @@ def test_upsampling_bilinear_corner_not_aligned():
 
 @tf.autograph.experimental.do_not_convert
 def test_upsampling():
+    x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
+    z = tf.complex(real=x, imag=x)
+    y_tf = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(x)
+    y_cvnn = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(z)
+    assert np.all(y_tf == tf.math.real(y_cvnn).numpy())
     test_upsampling_near_neighbour()
-    test_upsampling_bilinear_corners_aligned()
+    # test_upsampling_bilinear_corners_aligned()
     test_upsampling_bilinear_corner_not_aligned()
 
 
@@ -482,5 +487,4 @@ def test_layers():
 
 
 if __name__ == "__main__":
-    batch_norm()
-    # test_layers()
+    test_layers()
