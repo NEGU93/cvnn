@@ -98,6 +98,20 @@ def get_func_name(fun):
         sys.exit(-1)
 
 
+def transform_to_real_map_function(image, label, mode: str = "real_imag"):
+    if mode not in REAL_CAST_MODES:
+        raise KeyError(f"Unknown real cast mode {mode}")
+    if mode == 'real_imag':
+        ret_value = tf.concat([tf.math.real(image), tf.math.imag(image)], axis=-1)
+    elif mode == 'amplitude_phase':
+        ret_value = tf.concat([tf.math.abs(image), tf.math.angle(image)], axis=-1)
+    elif mode == 'amplitude_only':
+        ret_value = tf.math.abs(image)
+    else:
+        raise KeyError(f"Real cast mode {mode} not implemented")
+    return ret_value, label
+
+
 def transform_to_real(x_complex, mode: str = "real_imag"):
     """
     Transforms a complex input matrix into a real value matrix (double size)
@@ -197,6 +211,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.24'
+__version__ = '0.0.25'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

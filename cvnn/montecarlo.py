@@ -18,7 +18,7 @@ import cvnn.layers as layers
 import cvnn.dataset as dp
 from cvnn.data_analysis import MonteCarloAnalyzer, Plotter, get_confusion_matrix
 from cvnn.layers import ComplexDense, ComplexDropout
-from cvnn.utils import transform_to_real, randomize
+from cvnn.utils import transform_to_real, randomize, transform_to_real_map_function
 from cvnn.real_equiv_tools import get_real_equivalent
 from cvnn.utils import median_error
 # typing
@@ -165,25 +165,28 @@ class MonteCarlo:
 
     @staticmethod
     def _transform_dataset(is_complex: bool, validation_data, polar):
+        val_data_fit = None
         if validation_data is not None:
             if isinstance(validation_data, tf.data.Dataset):
-                tf.print(f"WARNING: No treatment to tf.dataset {validation_data} is done.")
-                val_data_fit = validation_data
+                if not is_complex:
+                    val_data_fit = validation_data.map(lambda x, y: transform_to_real_map_function(x, y, mode=polar))
+                else:
+                    val_data_fit = validation_data
             elif (is_complex and validation_data[0].dtype.is_complex) or \
                     (not is_complex and validation_data[0].dtype.is_floating):
                 val_data_fit = validation_data
             elif is_complex and not validation_data[0].dtype.is_complex:
-                raise NotImplementedError(f"TODO: Cast real dataset to complex not yet implemented")
+                raise NotImplementedError(f"The input dataset is expected to be complex")
             else:
                 val_data_fit = (transform_to_real(validation_data[0], mode=polar), validation_data[1])
         return val_data_fit
 
     def _get_fit_dataset(self, is_complex: bool, x, validation_data, test_data, polar):
-        # TODO: This does not work with tf.Dataset.
-        # TODO: tf.dataset not yet supported
         if isinstance(x, tf.data.Dataset):
-            tf.print(f"WARNING: No treatment to tf.dataset {x} is done.")
-            x_fit = x
+            if not is_complex:
+                x_fit = x.map(lambda imag, label: transform_to_real_map_function(imag, label, mode=polar))
+            else:
+                x_fit = x
         elif (is_complex and x.dtype.is_complex) or (not is_complex and x.dtype.is_floating):
             x_fit = x
         elif is_complex and not x.dtype.is_complex:
