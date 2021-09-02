@@ -62,7 +62,8 @@ class MonteCarlo:
     def run(self, x, y, data_summary: str = '',
             real_cast_modes: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
             validation_split: float = 0.2,
-            validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,  # TODO: Add the tuple of validation data details.
+            validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
+            # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
             shuffle: bool = True, debug: bool = False, display_freq: int = 1):
@@ -123,9 +124,9 @@ class MonteCarlo:
         real_cast_modes = self._check_real_cast_modes(real_cast_modes)
         confusion_matrix, pbar, test_results = self._beginning_callback(iterations, epochs, batch_size,
                                                                         shuffle, data_summary, test_data_cols)
-        w_save = []                     # TODO: Find a better method
-        for model in self.models:       # ATTENTION: This will make all models have the SAME weights, not ideal
-            w_save.append(model.get_weights())     # Save model weight
+        w_save = []  # TODO: Find a better method
+        for model in self.models:  # ATTENTION: This will make all models have the SAME weights, not ideal
+            w_save.append(model.get_weights())  # Save model weight
         # np.save(self.monte_carlo_analyzer.path / "initial_debug_weights.npy", np.array(w_save))     # TODO
         for it in range(iterations):
             if debug:
@@ -163,28 +164,35 @@ class MonteCarlo:
         return real_cast_modes
 
     @staticmethod
-    def _get_fit_dataset(is_complex: bool, x, validation_data, test_data, polar):
+    def _transform_dataset(is_complex: bool, validation_data, polar):
+        if validation_data is not None:
+            if isinstance(validation_data, tf.data.Dataset):
+                tf.print(f"WARNING: No treatment to tf.dataset {validation_data} is done.")
+                val_data_fit = validation_data
+            elif (is_complex and validation_data[0].dtype.is_complex) or \
+                    (not is_complex and validation_data[0].dtype.is_floating):
+                val_data_fit = validation_data
+            elif is_complex and not validation_data[0].dtype.is_complex:
+                raise NotImplementedError(f"TODO: Cast real dataset to complex not yet implemented")
+            else:
+                val_data_fit = (transform_to_real(validation_data[0], mode=polar), validation_data[1])
+        return val_data_fit
+
+    def _get_fit_dataset(self, is_complex: bool, x, validation_data, test_data, polar):
         # TODO: This does not work with tf.Dataset.
-        val_data_fit = None
-        test_data_fit = None
         # TODO: tf.dataset not yet supported
         if isinstance(x, tf.data.Dataset):
-            tf.print(f"No treatment to tf dataset is done, please give the correct parameter")
+            tf.print(f"WARNING: No treatment to tf.dataset {x} is done.")
             x_fit = x
-            val_data_fit = validation_data
-            test_data_fit = test_data
         elif (is_complex and x.dtype.is_complex) or (not is_complex and x.dtype.is_floating):
             x_fit = x
-            val_data_fit = validation_data
-            test_data_fit = test_data
-        elif is_complex and not x.dtype.is_complex:      # TODO: What if dataset was real? Situation not contemplated
-            raise NotImplementedError(f"TODO: Cast real dataset to complex not yet implemented")
+        elif is_complex and not x.dtype.is_complex:
+            raise NotImplementedError(f"Cast real dataset to complex not yet implemented, "
+                                      f"please provide the dataset in complex form.")
         else:
             x_fit = transform_to_real(x, mode=polar)
-            if validation_data is not None:
-                val_data_fit = (transform_to_real(validation_data[0], mode=polar), validation_data[1])
-            if test_data is not None:
-                test_data_fit = (transform_to_real(test_data[0], mode=polar), test_data[1])
+        val_data_fit = self._transform_dataset(is_complex, validation_data, polar)
+        test_data_fit = self._transform_dataset(is_complex, test_data, polar)
         return x_fit, val_data_fit, test_data_fit
 
     # Callbacks
@@ -238,7 +246,8 @@ class MonteCarlo:
                     strs.sort()
                     cm_sorted = cm.fillna(0)[ints + strs]  # Sorted confusion matrix
                     model_cm['matrix'] = cm_sorted.groupby(cm_sorted.index).mean()
-                    model_cm['matrix'].to_csv(self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
+                    model_cm['matrix'].to_csv(
+                        self.monte_carlo_analyzer.path / (model_cm['name'] + "_confusion_matrix.csv"))
         if test_results is not None:
             test_results.groupby('network').describe().to_csv(self.monte_carlo_analyzer.path / ("test_results.csv"))
         if self.output_config['plot_all']:
@@ -282,13 +291,13 @@ class MonteCarlo:
             self.pandas_full_data.to_csv(self.monte_carlo_analyzer.path / "run_data.csv", index=False)
 
     # Saver functions
-    def _save_montecarlo_log(self, iterations, dataset_name,  num_classes, polar_mode, dataset_size,
+    def _save_montecarlo_log(self, iterations, dataset_name, num_classes, polar_mode, dataset_size,
                              features_size, epochs, batch_size):
         fieldnames = [
             'iterations',
-            'dataset', '# Classes', "Dataset Size", 'Feature Size',     # Dataset information
-            'models', 'epochs', 'batch size', "Polar Mode",             # Models information
-            'path', "cvnn version"                                      # Library information
+            'dataset', '# Classes', "Dataset Size", 'Feature Size',  # Dataset information
+            'models', 'epochs', 'batch size', "Polar Mode",  # Models information
+            'path', "cvnn version"  # Library information
         ]
         row_data = [
             iterations,
@@ -411,7 +420,7 @@ class RealVsComplex(MonteCarlo):
 
 def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int = 128, param_list=None,
                                     epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
-                                    optimizer='sgd', validation_split: float = 0.2,      # TODO: Add typing here
+                                    optimizer='sgd', validation_split: float = 0.2,  # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
                                     debug: bool = False, do_all: bool = True, tensorboard: bool = False,
                                     polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
@@ -492,8 +501,10 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    iterations: int = 30,
                    epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
                    validation_split: float = 0.2,
-                   validation_data: Optional[Union[Tuple, data.Dataset]] = None,  # TODO: Add vallidation data tuple details
-                   debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True, tensorboard: bool = False,
+                   validation_data: Optional[Union[Tuple, data.Dataset]] = None,
+                   # TODO: Add vallidation data tuple details
+                   debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
+                   tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                    plot_data: bool = False) -> str:
     """
@@ -568,13 +579,14 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
 def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_dataset: Optional[t_path] = None,
                                        iterations: int = 30,
                                        epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
-                                       optimizer='adam',     # TODO: Typing
+                                       optimizer='adam',  # TODO: Typing
                                        shape_raw=None, activation: t_activation = 'cart_relu',
-                                       output_activation : t_activation = DEFAULT_OUTPUT_ACT,
-                                       debug:  Union[bool, int] = False, do_all: bool = True,
+                                       output_activation: t_activation = DEFAULT_OUTPUT_ACT,
+                                       debug: Union[bool, int] = False, do_all: bool = True,
                                        polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                        dropout: float = 0.5, validation_split: float = 0.2,
-                                       validation_data: Optional[Union[Tuple, data.Dataset]] = None,    # TODO: Add typing of tuple
+                                       validation_data: Optional[Union[Tuple, data.Dataset]] = None,
+                                       # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                        shuffle: bool = False, tensorboard: bool = False, do_conf_mat: bool = False,
                                        plot_data: bool = True) -> str:
@@ -783,9 +795,9 @@ def _save_montecarlo_log(iterations, path, dataset_name, models_names, num_class
                          features_size, epochs, batch_size, filename=None):
     fieldnames = [
         'iterations',
-        'dataset', '# Classes', "Dataset Size", 'Feature Size',     # Dataset information
-        'models', 'epochs', 'batch size', "Polar Mode",             # Models information
-        'path', "cvnn version"                                      # Library information
+        'dataset', '# Classes', "Dataset Size", 'Feature Size',  # Dataset information
+        'models', 'epochs', 'batch size', "Polar Mode",  # Models information
+        'path', "cvnn version"  # Library information
     ]
     row_data = [
         iterations,
