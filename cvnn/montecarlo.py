@@ -50,7 +50,8 @@ class MonteCarlo:
             'summary_of_run': True,
             'tensorboard': False,
             'save_weights': False,
-            'safety_checkpoints': False
+            'safety_checkpoints': False,
+            'early_stop': False
         }
 
     def add_model(self, model: Type[Model]):
@@ -138,11 +139,14 @@ class MonteCarlo:
                 model.set_weights(w_save[i])
                 temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
                 os.makedirs(temp_path, exist_ok=True)
-                callbacks = None
+                callbacks = []
                 if self.output_config['tensorboard']:
                     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=temp_path / 'tensorboard',
                                                                           histogram_freq=1)
-                    callbacks = [tensorboard_callback]
+                    callbacks.append(tensorboard_callback)
+                if self.output_config['early_stop']:
+                    eas = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+                    callbacks.append(eas)
                 run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
@@ -187,9 +191,10 @@ class MonteCarlo:
                 x_fit = x.map(lambda imag, label: transform_to_real_map_function(imag, label, mode=polar))
             else:
                 x_fit = x
-        elif (is_complex and x.dtype.is_complex) or (not is_complex and x.dtype.is_floating):
+        elif (is_complex and tf.dtypes.as_dtype(x.dtype).is_complex) or \
+                (not is_complex and tf.dtypes.as_dtype(x.dtype).is_floating):
             x_fit = x
-        elif is_complex and not x.dtype.is_complex:
+        elif is_complex and not tf.dtypes.as_dtype(x.dtype).is_complex:
             raise NotImplementedError(f"Cast real dataset to complex not yet implemented, "
                                       f"please provide the dataset in complex form.")
         else:
@@ -429,7 +434,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
                                     polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                     capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None,
-                                    plot_data: bool = True) -> str:
+                                    plot_data: bool = True, early_stop: bool = False) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
         1. Generates a complex-valued gaussian correlated noise with the characteristics given by the inputs.
@@ -487,7 +492,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                               validation_split=validation_split, validation_data=None,
                               debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=False,
-                              plot_data=plot_data)
+                              plot_data=plot_data, early_stop=early_stop)
     else:
         return mlp_run_real_comparison_montecarlo(dataset=dataset, open_dataset=None, iterations=iterations,
                                                   epochs=epochs, batch_size=batch_size, display_freq=display_freq,
@@ -509,7 +514,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
                    tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
-                   plot_data: bool = False) -> str:
+                   plot_data: bool = False, early_stop: bool = True) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -557,6 +562,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     monte_carlo.output_config['tensorboard'] = tensorboard
     monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     monte_carlo.output_config['plot_all'] = do_all
+    monte_carlo.output_config['early_stop'] = early_stop
     if plot_data:
         dataset.plot_data(overlapped=True, showfig=False, save_path=monte_carlo.monte_carlo_analyzer.path,
                           library='matplotlib')
