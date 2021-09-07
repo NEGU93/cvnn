@@ -355,10 +355,11 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
     def __init__(self, axis: Union[List[int], Tuple[int], int] = -1, momentum: float = 0.99,
                  center: bool = True, scale: bool = True, epsilon: float = 0.001,
                  beta_initializer=Zeros(), gamma_initializer=Ones(), dtype=DEFAULT_COMPLEX_TYPE,
-                 moving_mean_initializer=Zeros(), moving_variance_initializer=Ones(),  # TODO: Check inits
+                 moving_mean_initializer=Zeros(), moving_variance_initializer=Ones(), cov_method: int = 1,  # TODO: Check inits
                  **kwargs):
         self.my_dtype = tf.dtypes.as_dtype(dtype)
         self.epsilon = epsilon
+        self.cov_method = cov_method
         if isinstance(axis, int):
             axis = [axis]
         self.axis = list(axis)
@@ -449,8 +450,19 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
         if training:
             # First get the mean and var
             mean = tf.math.reduce_mean(inputs, axis=self.used_axis)
-            X = tf.stack((tf.math.real(inputs), tf.math.imag(inputs)), axis=-1)
-            var = tfp.stats.covariance(X, sample_axis=self.used_axis, event_axis=-1)
+            if self.cov_method == 1:
+                X_20 = tf.concat((tf.math.real(inputs), tf.math.imag(inputs)), axis=-1)
+                var_20_20 = tfp.stats.covariance(X_20, sample_axis=self.used_axis, event_axis=-1)
+                valu = int(var_20_20.shape[-1] / 2)
+                indices = [([[i, i], [i, i + valu]], [[i + valu, i], [i + valu, i + valu]]) for i in range(0, valu)]
+                var = tf.gather_nd(var_20_20, indices=indices)
+            elif self.cov_method == 2:
+                X_10_2 = tf.stack((tf.math.real(inputs), tf.math.imag(inputs)), axis=-1)
+                var_10_2_2 = tfp.stats.covariance(X_10_2, sample_axis=self.used_axis, event_axis=-1)
+                var = var_10_2_2
+            else:
+                raise ValueError(f"Method {self.method} not implemented")
+
             # Now the train part with these values
             self.moving_mean.assign(self.momentum * self.moving_mean + (1. - self.momentum) * mean)
             self.moving_var.assign(self.moving_var * self.momentum + var * (1. - self.momentum))
@@ -484,6 +496,7 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
         zero_mean = tf.stack((tf.math.real(complex_zero_mean), tf.math.imag(complex_zero_mean)), axis=-1)
         # I expand dims to make the mult of matrix [..., 2, 2] and [..., 2, 1] resulting in [..., 2, 1]
         inputs_hat = tf.matmul(inv_sqrt_var, tf.expand_dims(zero_mean, axis=-1))
+
         # Then I squeeze to remove the last shape so I go from [..., 2, 1] to [..., 2].
         # Use reshape and not squeeze in case I have 1 channel for example.
         squeeze_inputs_hat = tf.reshape(inputs_hat, shape=tf.shape(inputs_hat)[:-1])

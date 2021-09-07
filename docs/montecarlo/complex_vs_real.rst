@@ -23,9 +23,11 @@ Real Vs Complex
 
     :param complex_model: :code:`tensorflow.keras.model`
     :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or trainable parameters (capacity equivalent according to `this paper <https://arxiv.org/abs/1811.12351>`_)
+        
         - True, it creates a capacity-equivalent model in terms of trainable parameters
         - False, it will double all layer size (except the last one if classifier=True)
     :param equiv_technique: Used to define the strategy of the capacity equivalent model.
         This parameter is ignored if :code:`capacity_equivalent=False`
+        
         - 'ratio': :code:`neurons_real_valued_layer[i] = r * neurons_complex_valued_layer[i]`, 'r' constant for all 'i'
         - 'alternate': Method described in `this paper <https://arxiv.org/abs/1811.12351>`_ where one alternates between multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.

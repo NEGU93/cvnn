@@ -469,43 +469,55 @@ def test_upsampling():
 
 
 def check_proximity(x1, x2, name: str):
-    if np.array_equal(x1, x2):
-        return True
-    else:
-        equal = False
-        for error in [0.00001, 0.0001, 0.001, 0.01, 0.1]:
-            if np.allclose(x1, x2, error):
-                equal = True
-                print(name + f" are equal with an error of {error}")
-                break
-        return equal
+    th = 0.1
+    diff = np.max(np.abs(x1 - x2))
+    if 0 < diff < th:
+        print(f"{name} are equal with an error of {diff}")
+    if diff >= th:
+        return False
+    return True
 
 
 def batch_norm():
-    z = tf.transpose(tf.convert_to_tensor([[[-1, 1] * 10] * 20] * 2))
-    c_bn = ComplexBatchNormalization(dtype=np.float32)
-    c_out = c_bn(z, training=True)
-    # set_trace()
-    assert check_proximity(c_out, z, "Normalized input")
+    # z = tf.transpose(tf.convert_to_tensor([[[-1, 1] * 10] * 20] * 2))
+    # c_bn = ComplexBatchNormalization(dtype=np.float32)
+    # c_out = c_bn(z, training=True)
+    # # set_trace()
+    # assert check_proximity(c_out, z, "Normalized input")
 
-    z = np.random.rand(3, 43, 12, 75)  # + np.random.rand(3, 43, 12, 75)*1j
+    z = np.random.rand(3, 43, 12, 10)  # + np.random.rand(3, 43, 12, 75)*1j
+    # z = np.random.rand(100, 10)
     bn = tf.keras.layers.BatchNormalization(epsilon=0)
     c_bn = ComplexBatchNormalization(dtype=np.float32)  # If I use the complex64 then the init is different
+    c_bn_2 = ComplexBatchNormalization(dtype=np.float32, cov_method=2)
     input = tf.convert_to_tensor(z.astype(np.float32), dtype=np.float32)
     out = bn(input, training=False)
     c_out = c_bn(input, training=False)
-    assert check_proximity(out, c_out, "Results before training")
-    assert check_proximity(bn.moving_mean, c_bn.moving_mean, "Moving mean before training")
-    assert check_proximity(bn.moving_variance, c_bn.moving_var[..., 0, 0], "Moving variance before training")
-    assert check_proximity(bn.gamma, c_bn.gamma, "Gamma before training")
-    assert check_proximity(bn.beta, c_bn.beta, "Beta before training")
+    c_out_2 = c_bn_2(input, training=False)
+    # assert check_proximity(out, c_out, "Results before training")
+    assert check_proximity(c_out, c_out_2, "Method comparison results before training")
+    # assert check_proximity(bn.moving_mean, c_bn.moving_mean, "Moving mean before training")
+    # assert check_proximity(bn.moving_variance, c_bn.moving_var[..., 0, 0], "Moving variance before training")
+    # assert check_proximity(bn.gamma, c_bn.gamma, "Gamma before training")
+    # assert check_proximity(bn.beta, c_bn.beta, "Beta before training")
+    assert check_proximity(c_bn_2.moving_mean, c_bn.moving_mean, "Method comparison moving mean before training")
+    assert check_proximity(c_bn_2.moving_var, c_bn.moving_var, "Method comparison Moving variance before training")
+    assert check_proximity(c_bn_2.gamma, c_bn.gamma, "Method comparison Gamma before training")
+    assert check_proximity(c_bn_2.beta, c_bn.beta, "Method comparison Beta before training")
     out = bn(input, training=True)
     c_out = c_bn(input, training=True)
-    assert check_proximity(out, c_out, "Results after training")
-    assert check_proximity(bn.moving_mean, c_bn.moving_mean, "Moving mean after training")
-    assert check_proximity(bn.moving_variance, c_bn.moving_var[..., 0, 0], "Moving variance after training")
-    assert check_proximity(bn.gamma, c_bn.gamma, "Gamma after training")
-    assert check_proximity(bn.beta, c_bn.beta, "Beta after training")
+    c_out_2 = c_bn_2(input, training=True)
+    # assert check_proximity(out, c_out, "Results after training")
+    assert check_proximity(c_out, c_out_2, "Method comparison results after training")
+    # assert check_proximity(bn.moving_mean, c_bn.moving_mean, "Moving mean after training")
+    # assert check_proximity(bn.moving_variance, c_bn.moving_var[..., 0, 0], "Moving variance after training")
+    # assert check_proximity(bn.gamma, c_bn.gamma, "Gamma after training")
+    # assert check_proximity(bn.beta, c_bn.beta, "Beta after training")
+    assert check_proximity(c_bn_2.moving_mean, c_bn.moving_mean, "Method comparison Moving mean after training")
+    assert check_proximity(c_bn_2.moving_var, c_bn.moving_var, "Method comparison Moving variance after training")
+    assert check_proximity(c_bn_2.gamma, c_bn.gamma, "Method comparison Gamma after training")
+    assert check_proximity(c_bn_2.beta, c_bn.beta, "Method comparison Beta after training")
+    set_trace()
 
 
 def pooling_layers():
