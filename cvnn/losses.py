@@ -6,8 +6,11 @@ class ComplexAverageCrossEntropy(Loss):
 
     def call(self, y_true, y_pred):
         real_loss = categorical_crossentropy(y_true, tf.math.real(y_pred))
-        imag_loss = categorical_crossentropy(y_true, tf.math.imag(y_pred))
-        return (real_loss + imag_loss) / 2
+        if y_pred.dtype.is_complex:
+            imag_loss = categorical_crossentropy(y_true, tf.math.imag(y_pred))
+        else:
+            imag_loss = real_loss
+        return (real_loss + imag_loss) / 2.
 
 
 if __name__ == "__main__":
