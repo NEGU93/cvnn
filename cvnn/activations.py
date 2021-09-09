@@ -1,12 +1,8 @@
-import logging
-import pdb
-
 import tensorflow as tf
 from tensorflow.keras.layers import Activation
 from typing import Union, Callable, Optional
 from tensorflow import Tensor
 from numpy import pi
-# import cvnn
 
 """
 This module contains many complex-valued activation functions to be used by CVNN class.
@@ -620,6 +616,6 @@ if __name__ == '__main__':
     
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

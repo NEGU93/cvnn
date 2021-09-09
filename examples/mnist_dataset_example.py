@@ -190,10 +190,10 @@ def test_mnist():
     
 
 if __name__ == "__main__":
-    # test_mnist()
+    test_mnist()
     # test_mnist_montecarlo()
-    ds_train, ds_test = get_dataset()
-    keras_fit(ds_train, ds_test, train_bias=False)
-    own_fit(ds_train, ds_test)
+    # ds_train, ds_test = get_dataset()
+    # keras_fit(ds_train, ds_test, train_bias=False)
+    # own_fit(ds_train, ds_test)
 
 

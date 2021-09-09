@@ -2,6 +2,7 @@ import tensorflow as tf
 from cvnn import layers
 from pdb import set_trace
 import tensorflow_datasets as tfds
+# https://medium.com/analytics-vidhya/training-u-net-from-scratch-using-tensorflow2-0-fad541e2eaf1
 
 BATCH_SIZE = 64
 BUFFER_SIZE = 1000
