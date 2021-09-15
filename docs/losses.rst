@@ -4,7 +4,7 @@ Losses
 Complex Average Cross Entropy
 -----------------------------
 
-Inspired on [CIT2018-CAO]_ Average Cross Entropy (CAE) loss function described on section 2.4.
+Inspired on [CIT2018-CAO]_ Average Cross Entropy (ACE) loss function described on section 2.4.
 
 This function applies Categorical Cross Entropy to both the real and imaginary part separately and then averages it.
 Mathematically this is
