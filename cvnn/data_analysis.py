@@ -824,13 +824,13 @@ class MonteCarloPlotter(Plotter):
                     data_50.append(stats['50%'])
                     data_25.append(stats['25%'])
                     data_75.append(stats['75%'])
-            ax.plot(x, data_mean, color=DEFAULT_MATPLOTLIB_COLORS[i],
+            ax.plot(x, data_mean, color=DEFAULT_MATPLOTLIB_COLORS[i%len(DEFAULT_MATPLOTLIB_COLORS)],
                     label=label.replace('_', ' ') + ' mean')
-            ax.plot(x, data_50, '--', color=DEFAULT_MATPLOTLIB_COLORS[i],
+            ax.plot(x, data_50, '--', color=DEFAULT_MATPLOTLIB_COLORS[i%len(DEFAULT_MATPLOTLIB_COLORS)],
                     label=label.replace('_', ' ') + ' median')
-            ax.fill_between(x, data_25, data_75, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.4,
+            ax.fill_between(x, data_25, data_75, color=DEFAULT_MATPLOTLIB_COLORS[i%len(DEFAULT_MATPLOTLIB_COLORS)], alpha=.4,
                             label=label.replace('_', ' ') + ' interquartile')
-            ax.fill_between(x, data_min, data_max, color=DEFAULT_MATPLOTLIB_COLORS[i], alpha=.15,
+            ax.fill_between(x, data_min, data_max, color=DEFAULT_MATPLOTLIB_COLORS[i%len(DEFAULT_MATPLOTLIB_COLORS)], alpha=.15,
                             label=label.replace('_', ' ') + ' border')
         for label in sorted(self.pandas_dict.keys()):
             if network_filter is not None and label not in network_filter:
@@ -899,8 +899,8 @@ class MonteCarloPlotter(Plotter):
                     x=x + x_rev,
                     y=data_max + data_min,
                     fill='toself',
-                    fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.1),
-                    line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                    fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], 0.1),
+                    line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], 0),
                     showlegend=True,
                     name=label.replace('_', ' ') + " borders",
                 ))
@@ -908,19 +908,19 @@ class MonteCarloPlotter(Plotter):
                 x=x + x_rev,
                 y=data_75 + data_25,
                 fill='toself',
-                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0.2),
-                line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], 0.2),
+                line_color=add_transparency(DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], 0),
                 showlegend=True,
                 name=label.replace('_', ' ') + " interquartile",
             ))
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean,
-                line_color=DEFAULT_PLOTLY_COLORS[i],
+                line_color=DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)],
                 name=label.replace('_', ' ') + " mean",
             ))
             fig.add_trace(go.Scatter(
                 x=x, y=data_50,
-                line=dict(color=DEFAULT_PLOTLY_COLORS[i], dash='dash'),
+                line=dict(color=DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], dash='dash'),
                 name=label.replace('_', ' ') + " median",
             ))
         for label in sorted(self.pandas_dict.keys()):
@@ -955,7 +955,7 @@ class MonteCarloPlotter(Plotter):
             data_mean_test = data[data['stats'] == filter_label]["val_" + key].tolist()
             fig.add_trace(go.Scatter(
                 x=x, y=data_mean_test,
-                line_color=DEFAULT_PLOTLY_COLORS[i],
+                line_color=DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)],
                 name=label + " test",
             ))
             data_mean_train = data[data['stats'] == filter_label][key].tolist()
@@ -1025,6 +1025,7 @@ class MonteCarloAnalyzer:
                     path += '.csv'
                 self.df = pd.read_csv(Path(path), index_col=False)  # Path(__file__).parents[1].absolute() /
                 self.path = Path(os.path.split(path)[0])  # Keep only the path and not the filename
+            self.df["network"] = self.df["network"].astype(str)  # Make sure networks name are string
         elif path is None and df is not None:  # Save df into default path
             self.path = create_folder("./log/montecarlo/")
             self.df = df  # DataFrame with all the data
@@ -1091,7 +1092,7 @@ class MonteCarloAnalyzer:
                     self.box_plot(key=key, extension=extension, library=lib, showfig=showfig, savefig=savefig,
                                   network_filter=network_filter)
                 except:
-                    logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
+                    logger.warning("Could not plot " + key + " Box Plot with " + str(lib), exc_info=True)
                 try:
                     self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
                 except np.linalg.LinAlgError:
@@ -1146,9 +1147,9 @@ class MonteCarloAnalyzer:
                 name=net.replace('_', ' '),
                 whiskerwidth=0.2,
                 notched=True,  # confidence intervals for the median
-                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col], 0.5),
+                fillcolor=add_transparency(DEFAULT_PLOTLY_COLORS[col%len(DEFAULT_PLOTLY_COLORS)], 0.5),
                 boxpoints='suspectedoutliers',  # to mark the suspected outliers
-                line=dict(color=DEFAULT_PLOTLY_COLORS[col]),
+                line=dict(color=DEFAULT_PLOTLY_COLORS[col%len(DEFAULT_PLOTLY_COLORS)]),
                 boxmean=True  # Interesting how sometimes it falls outside the box
             ))
         fig.update_layout(
@@ -1269,15 +1270,15 @@ class MonteCarloAnalyzer:
 
                 fig.add_traces(go.Scatter3d(x=[epoch] * len(counts), y=bins, z=counts,
                                             mode='lines', name=net.replace("_", " ") + "; epoch: " + str(epoch),
-                                            surfacecolor=add_transparency(DEFAULT_PLOTLY_COLORS[i], 0),
+                                            surfacecolor=add_transparency(DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], 0),
                                             # surfaceaxis=0,
-                                            line=dict(color=DEFAULT_PLOTLY_COLORS[i], width=4)
+                                            line=dict(color=DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], width=4)
                                             )
                                )
                 verts, tri = triangulate_histogram([epoch] * len(counts), bins, counts)
                 x, y, z = verts.T
                 I, J, K = tri.T
-                fig.add_traces(go.Mesh3d(x=x, y=y, z=z, i=I, j=J, k=K, color=DEFAULT_PLOTLY_COLORS[i], opacity=0.4))
+                fig.add_traces(go.Mesh3d(x=x, y=y, z=z, i=I, j=J, k=K, color=DEFAULT_PLOTLY_COLORS[i%len(DEFAULT_PLOTLY_COLORS)], opacity=0.4))
         for net in networks_availables:
             title += net + ' '
         title += key + " comparison"
