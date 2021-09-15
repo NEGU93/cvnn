@@ -51,8 +51,7 @@ class MonteCarlo:
             'summary_of_run': True,
             'tensorboard': False,
             'save_weights': False,
-            'safety_checkpoints': False,
-            'early_stop': False
+            'safety_checkpoints': False
         }
 
     def add_model(self, model: Type[Model]):
@@ -67,7 +66,7 @@ class MonteCarlo:
             validation_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
-            iterations: int = 100, epochs: int = 10, batch_size: int = 100,
+            iterations: int = 100, epochs: int = 10, batch_size: int = 100, early_stop: bool = False,
             shuffle: bool = True, debug: bool = False, display_freq: int = 1, same_weights: bool = False):
         """
         This function is used to compare all models added with `self.add_model` method.
@@ -116,6 +115,7 @@ class MonteCarlo:
             Frequency on terms of epochs before running the validation.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
         :param debug:
+        :param early_stop: (Default: False) Wheather to implement early stop on training.
         :param same_weights: (Default False) If True it will use the same weights at each iteration.
         :return: (string) Full path to the run_data.csv generated file.
             It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
@@ -153,7 +153,7 @@ class MonteCarlo:
                     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=temp_path / 'tensorboard',
                                                                           histogram_freq=1)
                     callbacks.append(tensorboard_callback)
-                if self.output_config['early_stop']:
+                if early_stop:
                     eas = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
                     callbacks.append(eas)
                 run_result = clone_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
@@ -444,7 +444,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
                                     polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                     capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None,
-                                    plot_data: bool = True, early_stop: bool = False, shuffle: bool = False) -> str:
+                                    plot_data: bool = True, early_stop: bool = False, shuffle: bool = True) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
         1. Generates a complex-valued gaussian correlated noise with the characteristics given by the inputs.
@@ -524,7 +524,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
                    tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
-                   plot_data: bool = False, early_stop: bool = True, shuffle: bool = False) -> str:
+                   plot_data: bool = False, early_stop: bool = True, shuffle: bool = True) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -572,13 +572,12 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     monte_carlo.output_config['tensorboard'] = tensorboard
     monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     monte_carlo.output_config['plot_all'] = do_all
-    monte_carlo.output_config['early_stop'] = early_stop
     if plot_data:
         dataset.plot_data(overlapped=True, showfig=False, save_path=monte_carlo.monte_carlo_analyzer.path,
                           library='matplotlib')
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     validation_split=validation_split, validation_data=validation_data,
-                    epochs=epochs, batch_size=batch_size, display_freq=display_freq,
+                    epochs=epochs, batch_size=batch_size, display_freq=display_freq, early_stop=early_stop,
                     shuffle=shuffle, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar)
 
     # Save data to remember later what I did.
@@ -607,7 +606,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,
                                        # TODO: Add typing of tuple
                                        capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
-                                       shuffle: bool = False, tensorboard: bool = False, do_conf_mat: bool = False,
+                                       shuffle: bool = True, tensorboard: bool = False, do_conf_mat: bool = False,
                                        plot_data: bool = True) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over any dataset.

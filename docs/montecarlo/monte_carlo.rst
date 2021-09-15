@@ -81,5 +81,7 @@ Monte Carlo
     :param display_freq: Integer (Default 1)
         Frequency on terms of epochs before saving information and running a checkpoint.
     :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
+    :param early_stop: (Boolean) Default: False. Wheather to implement early stop on training.
+    :param same_weights: (Boolean) Default: False. If True it will use the same weights at each iteration.
     :return: (string) Full path to the :code:`run_data.csv` generated file.
         It can be used by :code:`cvnn.data_analysis.SeveralMonteCarloComparison` to compare several runs.
