@@ -169,8 +169,8 @@ class ComplexDense(Dense, ComplexLayer):
     """
 
     def __init__(self, units: int, activation: t_activation = None, use_bias: bool = True,
-                 kernel_initializer=ComplexGlorotUniform(),
-                 bias_initializer=Zeros(),
+                 kernel_initializer="ComplexGlorotUniform",
+                 bias_initializer="Zeros",
                  dtype=DEFAULT_COMPLEX_TYPE,  # TODO: Check typing of this.
                  init_technique: str = 'mirror',
                  **kwargs):
@@ -280,6 +280,15 @@ class ComplexDense(Dense, ComplexLayer):
                             kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
                             dtype=self.my_dtype.real_dtype, name=self.name + "_real_equiv")
 
+    def get_config(self):
+        config = super(ComplexDense, self).get_config()
+        config.update({
+            'dtype': self.my_dtype,
+            'init_technique': self.init_technique
+
+        })
+        return config
+
 
 class ComplexDropout(Layer, ComplexLayer):
     """
@@ -325,9 +334,10 @@ class ComplexDropout(Layer, ComplexLayer):
             # I trust K.learning_phase() returns a correct boolean.
         if not training:
             return inputs
-        elif inputs.shape[0] is None:  # When testing the shape
+        elif inputs.shape[0] is None:  # TODO: This is for partially_defined tensors, a better way should probably exist
             return inputs
         drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
+        # TODO: Can this be a complex multiplication once?
         y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))
         y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
         y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=inputs.dtype)
@@ -338,13 +348,13 @@ class ComplexDropout(Layer, ComplexLayer):
                               name=self.name + "_real_equiv")
 
     def get_config(self):
-        config = {
+        config = super(ComplexDropout, self).get_config()
+        config.update({
             'rate': self.rate,
             'noise_shape': self.noise_shape,
             'seed': self.seed
-        }
-        base_config = super(ComplexDropout, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        })
+        return config
 
 
 class ComplexBatchNormalization(Layer, ComplexLayer):
@@ -355,7 +365,7 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
     def __init__(self, axis: Union[List[int], Tuple[int], int] = -1, momentum: float = 0.99,
                  center: bool = True, scale: bool = True, epsilon: float = 0.001,
                  beta_initializer=Zeros(), gamma_initializer=Ones(), dtype=DEFAULT_COMPLEX_TYPE,
-                 moving_mean_initializer=Zeros(), moving_variance_initializer=Ones(), cov_method: int = 1,  # TODO: Check inits
+                 moving_mean_initializer=Zeros(), moving_variance_initializer=Ones(), cov_method: int = 2,  # TODO: Check inits
                  **kwargs):
         self.my_dtype = tf.dtypes.as_dtype(dtype)
         self.epsilon = epsilon
@@ -520,7 +530,8 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
                                          moving_variance_initializer=self.moving_variance_initializer)
 
     def get_config(self):
-        config = {
+        config = super(ComplexBatchNormalization, self).get_config()
+        config.update({
             'axis': self.axis,
             'momentum': self.momentum,
             'center': self.center,
@@ -530,6 +541,5 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
             'dtype': self.my_dtype,
             'moving_mean_initializer': self.moving_mean_initializer,
             'moving_variance_initializer': self.moving_variance_initializer
-        }
-        base_config = super(ComplexBatchNormalization, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        })
+        return config

@@ -6,16 +6,31 @@ from math import sqrt
 from scipy import signal
 from pdb import set_trace
 from abc import ABC, abstractmethod
-import plotly.graph_objects as go
-import plotly
-from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
 from scipy.linalg import eigh, cholesky
 from scipy.stats import norm
-import tikzplotlib
+# Plotter libraries
+try:
+    PLOTLY_IMPORTED = True
+    import plotly.graph_objects as go
+    import plotly
+except ImportError:
+    PLOTLY_IMPORTER = False
+try:
+    MATPLOTLIB_IMPORTED = True
+    from matplotlib import pyplot as plt
+    import matplotlib.colors as mcolors
+    COLORS = list(mcolors.BASE_COLORS)
+except ImportError:
+    MATPLOTLIB_IMPORTER = False
+try:
+    import tikzplotlib
+    TIKZ_IMPORTED = True
+except ImportError:
+    TIKZ_IMPORTED = False
+
+
 
 MARKERS = ["*", "s", "x", "+", "^", "D", "_", "v", "|", ".", "H"]
-COLORS = list(mcolors.BASE_COLORS)
 logger = logging.getLogger(cvnn.__name__)
 
 
@@ -161,75 +176,82 @@ class Dataset:
             return None
 
     def _plot_data_plotly(self, showfig=False, save_path=None, extension=".svg"):
-        fig = go.Figure()
-        labels = self.y
-        if self.categorical:
-            labels = self.categorical_to_sparse(labels)
-        for cls in range(self.num_classes):
-            for index, label in enumerate(labels):
-                if label == cls:
-                    fig.add_trace(go.Scatter(x=np.real(self.x[index]), y=np.imag(self.x[index]),
-                                             mode='markers', marker_symbol=cls, marker_size=10,
-                                             name="Class: " + str(cls)))
-                    break
-        fig.update_layout(title='Data Visualization Example',
-                          yaxis=dict(scaleanchor="x", scaleratio=1),
-                          xaxis_title='real (x)',
-                          yaxis_title='imaginary (y)',
-                          showlegend=True)
-        if save_path is not None:
-            # https://plot.ly/python/configuration-options/
-            os.makedirs(save_path, exist_ok=True)
-            plotly.offline.plot(fig, filename=str(save_path / "data_example.html"), config={'editable': True},
-                                auto_open=showfig)
-            fig.write_image(str(save_path / "data_example") + extension)
-        elif showfig:
-            fig.show(config={'scrollZoom': True, 'editable': True})
-
-    def _plot_data_matplotlib(self, overlapped=False, showfig=False, save_path=None, extension=".svg"):
-        labels = self.y
-        if self.categorical:
-            labels = self.categorical_to_sparse(labels)
-        if overlapped:
-            fig, ax = plt.subplots()
+        if PLOTLY_IMPORTED:
+            fig = go.Figure()
+            labels = self.y
+            if self.categorical:
+                labels = self.categorical_to_sparse(labels)
             for cls in range(self.num_classes):
                 for index, label in enumerate(labels):
                     if label == cls:
-                        ax.plot(np.real(self.x[index]),
-                                np.imag(self.x[index]),
-                                MARKERS[cls % len(MARKERS)],
-                                color=COLORS[cls % len(COLORS)],
-                                label="Class " + str(cls)
-                                )
-                        ax.axis('equal')
-                        ax.grid(True)
-                        ax.set_aspect('equal', adjustable='box')
+                        fig.add_trace(go.Scatter(x=np.real(self.x[index]), y=np.imag(self.x[index]),
+                                                 mode='markers', marker_symbol=cls, marker_size=10,
+                                                 name="Class: " + str(cls)))
                         break
-            ax.set_xlabel('real (x)')
-            ax.set_ylabel('imaginary (y)')
-            ax.legend(loc='upper right')
+            fig.update_layout(title='Data Visualization Example',
+                              yaxis=dict(scaleanchor="x", scaleratio=1),
+                              xaxis_title='real (x)',
+                              yaxis_title='imaginary (y)',
+                              showlegend=True)
+            if save_path is not None:
+                # https://plot.ly/python/configuration-options/
+                os.makedirs(save_path, exist_ok=True)
+                plotly.offline.plot(fig, filename=str(save_path / "data_example.html"), config={'editable': True},
+                                    auto_open=showfig)
+                fig.write_image(str(save_path / "data_example") + extension)
+            elif showfig:
+                fig.show(config={'scrollZoom': True, 'editable': True})
         else:
-            fig, ax = plt.subplots(self.num_classes)
-            for cls in range(self.num_classes):
-                for index, label in enumerate(labels):
-                    if label == cls:  # This is done in case the data is shuffled.
-                        ax[cls].plot(np.real(self.x[index]),
-                                     np.imag(self.x[index]), 'b.')
-                        ax[cls].axis('equal')
-                        ax[cls].grid(True)
-                        ax[cls].set_aspect('equal', adjustable='box')
-                        break
-        if showfig:
-            fig.show()
-        if save_path is not None:
-            save_path = Path(save_path)
-            os.makedirs(save_path, exist_ok=True)
-            prefix = ""
+            print("Plotly not installed. Not possible to plot data.")
+
+    def _plot_data_matplotlib(self, overlapped=False, showfig=False, save_path=None, extension=".svg"):
+        if MATPLOTLIB_IMPORTED:
+            labels = self.y
+            if self.categorical:
+                labels = self.categorical_to_sparse(labels)
             if overlapped:
-                prefix = "overlapped_"
-            fig.savefig(save_path / Path(prefix + self.dataset_name + "_data_example" + extension), transparent=True)
-            tikzplotlib.save(save_path / (prefix + self.dataset_name + "_data_example.tikz"))
-        return fig, ax
+                fig, ax = plt.subplots()
+                for cls in range(self.num_classes):
+                    for index, label in enumerate(labels):
+                        if label == cls:
+                            ax.plot(np.real(self.x[index]),
+                                    np.imag(self.x[index]),
+                                    MARKERS[cls % len(MARKERS)],
+                                    color=COLORS[cls % len(COLORS)],
+                                    label="Class " + str(cls)
+                                    )
+                            ax.axis('equal')
+                            ax.grid(True)
+                            ax.set_aspect('equal', adjustable='box')
+                            break
+                ax.set_xlabel('real (x)')
+                ax.set_ylabel('imaginary (y)')
+                ax.legend(loc='upper right')
+            else:
+                fig, ax = plt.subplots(self.num_classes)
+                for cls in range(self.num_classes):
+                    for index, label in enumerate(labels):
+                        if label == cls:  # This is done in case the data is shuffled.
+                            ax[cls].plot(np.real(self.x[index]),
+                                         np.imag(self.x[index]), 'b.')
+                            ax[cls].axis('equal')
+                            ax[cls].grid(True)
+                            ax[cls].set_aspect('equal', adjustable='box')
+                            break
+            if showfig:
+                fig.show()
+            if save_path is not None:
+                save_path = Path(save_path)
+                os.makedirs(save_path, exist_ok=True)
+                prefix = ""
+                if overlapped:
+                    prefix = "overlapped_"
+                fig.savefig(save_path / Path(prefix + self.dataset_name + "_data_example" + extension), transparent=True)
+                if TIKZ_IMPORTED:
+                    tikzplotlib.save(save_path / (prefix + self.dataset_name + "_data_example.tikz"))
+            return fig, ax
+        else:
+            print("Matplotlib not installed. Not possible to plot data.")
 
     # =======
     # Getters
@@ -604,49 +626,52 @@ class GaussianNoise(GeneratorDataset):
 
 
 def create_subplots_of_graph():
-    # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
-    m = 5
-    n = 100
-    num_classes = 2
-    coefs = [0.1, 0.4, 0.75, 0.999]
-    overlaped = True
-    rows = 2
-    if overlaped:
-        rows = 1
-    fig, axs = plt.subplots(rows, len(coefs), sharex=True, sharey=True)
-    # , gridspec_kw={'hspace': 0, 'wspace': 0})
-    for i, coef in enumerate(coefs):
-        dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=False, cov_matrix_list=coef)
-        x, y = dataset.get_all()
-        for r in range(rows):
-            for cls in range(num_classes):
-                for index, label in enumerate(y):
-                    if label == cls:
-                        if overlaped:
-                            axs[i].plot(np.real(x[index]), np.imag(x[index]), MARKERS[cls % len(MARKERS)])
-                            axs[i].axis('equal')
-                            axs[i].grid(True)
-                            axs[i].set_aspect('equal', adjustable='box')
-                            break
-                        else:
-                            axs[r, i].plot(np.real(x[index]), np.imag(x[index]), 'b.')
-                            axs[r, i].axis('equal')
-                            axs[r, i].grid(True)
-                            axs[r, i].set_aspect('equal', adjustable='box')
-                            break
-    if overlaped:
-        for ax, coef in zip(axs, coefs):
-            ax.set_title("coef abs: {}".format(coef))
-        for cls, ax in enumerate(axs):
-            ax.set_ylabel("class {}".format(int(cls)), size='large')
+    if MATPLOTLIB_IMPORTED:
+        # monte_carlo_loss_gaussian_noise(iterations=100, filename="historgram_gaussian.csv")
+        m = 5
+        n = 100
+        num_classes = 2
+        coefs = [0.1, 0.4, 0.75, 0.999]
+        overlaped = True
+        rows = 2
+        if overlaped:
+            rows = 1
+        fig, axs = plt.subplots(rows, len(coefs), sharex=True, sharey=True)
+        # , gridspec_kw={'hspace': 0, 'wspace': 0})
+        for i, coef in enumerate(coefs):
+            dataset = CorrelatedGaussianNormal(m, n, num_classes=num_classes, debug=False, cov_matrix_list=coef)
+            x, y = dataset.get_all()
+            for r in range(rows):
+                for cls in range(num_classes):
+                    for index, label in enumerate(y):
+                        if label == cls:
+                            if overlaped:
+                                axs[i].plot(np.real(x[index]), np.imag(x[index]), MARKERS[cls % len(MARKERS)])
+                                axs[i].axis('equal')
+                                axs[i].grid(True)
+                                axs[i].set_aspect('equal', adjustable='box')
+                                break
+                            else:
+                                axs[r, i].plot(np.real(x[index]), np.imag(x[index]), 'b.')
+                                axs[r, i].axis('equal')
+                                axs[r, i].grid(True)
+                                axs[r, i].set_aspect('equal', adjustable='box')
+                                break
+        if overlaped:
+            for ax, coef in zip(axs, coefs):
+                ax.set_title("coef abs: {}".format(coef))
+            for cls, ax in enumerate(axs):
+                ax.set_ylabel("class {}".format(int(cls)), size='large')
+        else:
+            for ax, coef in zip(axs[0], coefs):
+                ax.set_title("coef abs: {}".format(coef))
+            for cls, ax in enumerate(axs[:, 0]):
+                ax.set_ylabel("class {}".format(int(cls)), size='large')
+        fig.show()
+        # create_correlated_gaussian_noise(n, debug=True)
+        # set_trace()
     else:
-        for ax, coef in zip(axs[0], coefs):
-            ax.set_title("coef abs: {}".format(coef))
-        for cls, ax in enumerate(axs[:, 0]):
-            ax.set_ylabel("class {}".format(int(cls)), size='large')
-    fig.show()
-    # create_correlated_gaussian_noise(n, debug=True)
-    # set_trace()
+        raise ImportError("Matplotlib not installed")
 
 
 def sup(a, b):
@@ -703,6 +728,6 @@ if __name__ == "__main__":
     # print("{:.2%}".format(parametric_predictor(dataset)))
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.23'
+__version__ = '0.1.24'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

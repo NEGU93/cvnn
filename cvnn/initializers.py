@@ -4,7 +4,6 @@ import tensorflow as tf
 from tensorflow.python.ops import random_ops
 from tensorflow.python.ops import stateless_random_ops
 from tensorflow.keras.initializers import Initializer
-from cvnn import logger
 import sys
 from pdb import set_trace
 # Typing
@@ -272,11 +271,19 @@ class Ones:
         return tf.ones(shape, dtype=tf.dtypes.as_dtype(dtype).real_dtype)
 
 
+init_dispatcher = {
+    "ComplexGlorotUniform": ComplexGlorotUniform,
+    "ComplexGlorotNormal": ComplexGlorotNormal,
+    "ComplexHeUniform": ComplexHeUniform,
+    "ComplexHeNormal": ComplexHeNormal
+}
+
+
 if __name__ == '__main__':
     # Nothing yet
     set_trace()
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

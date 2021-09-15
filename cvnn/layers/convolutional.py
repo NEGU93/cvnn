@@ -336,42 +336,27 @@ class ComplexConv(Layer, ComplexLayer):
         return False
 
     def get_config(self):
-        config = {
-            'filters':
-                self.filters,
-            'kernel_size':
-                self.kernel_size,
-            'strides':
-                self.strides,
-            'padding':
-                self.padding,
-            'data_format':
-                self.data_format,
-            'dilation_rate':
-                self.dilation_rate,
-            'groups':
-                self.groups,
-            'activation':
-                activations.serialize(self.activation),
-            'use_bias':
-                self.use_bias,
-            'kernel_initializer':
-                initializers.serialize(self.kernel_initializer),
-            'bias_initializer':
-                initializers.serialize(self.bias_initializer),
-            'kernel_regularizer':
-                regularizers.serialize(self.kernel_regularizer),
-            'bias_regularizer':
-                regularizers.serialize(self.bias_regularizer),
-            'activity_regularizer':
-                regularizers.serialize(self.activity_regularizer),
-            'kernel_constraint':
-                constraints.serialize(self.kernel_constraint),
-            'bias_constraint':
-                constraints.serialize(self.bias_constraint)
-        }
-        base_config = super(ComplexConv, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        config = super(ComplexConv, self).get_config()
+        config.update({
+            'filters': self.filters,
+            'kernel_size': self.kernel_size,
+            'strides': self.strides,
+            'padding': self.padding,
+            'data_format': self.data_format,
+            'dilation_rate': self.dilation_rate,
+            'groups': self.groups,
+            'activation': activations.serialize(self.activation),
+            'use_bias': self.use_bias,
+            'kernel_initializer': initializers.serialize(self.kernel_initializer),
+            'bias_initializer': initializers.serialize(self.bias_initializer),
+            'kernel_regularizer': regularizers.serialize(self.kernel_regularizer),
+            'bias_regularizer': regularizers.serialize(self.bias_regularizer),
+            'activity_regularizer': regularizers.serialize(self.activity_regularizer),
+            'kernel_constraint': constraints.serialize(self.kernel_constraint),
+            'bias_constraint': constraints.serialize(self.bias_constraint),
+            'dtype': self.my_dtype
+        })
+        return config
 
     def _compute_causal_padding(self, inputs):
         """Calculates padding for 'causal' option for 1-d conv layers."""

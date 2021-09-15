@@ -91,14 +91,15 @@ class ComplexPooling2D(Layer, ComplexLayer):
                 [input_shape[0], rows, cols, input_shape[3]])
 
     def get_config(self):
-        config = {
+        config = super(ComplexPooling2D, self).get_config()
+        config.update({
             'pool_size': self.pool_size,
             'padding': self.padding,
             'strides': self.strides,
-            'data_format': self.data_format
-        }
-        base_config = super(ComplexPooling2D, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+            'data_format': self.data_format,
+            'dtype': self.my_dtype
+        })
+        return config
 
 
 class ComplexMaxPooling2D(ComplexPooling2D):
@@ -284,14 +285,14 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
                                   dtype=self.my_dtype.real_dtype, dynamic=self.dtype)
 
     def get_config(self):
-        config = {
+        config = super(ComplexUnPooling2D, self).get_config()
+        config.update({
             'desired_output_shape': self.desired_output_shape,
             'name': self.name,
             'dtype': self.my_dtype,
             'dynamic': False,
-        }
-        base_config = super(ComplexUnPooling2D, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+        })
+        return config
 
 
 """
@@ -346,14 +347,15 @@ class ComplexPooling1D(Layer, ComplexLayer):
             return tf.TensorShape([input_shape[0], length, features])
 
     def get_config(self):
-        config = {
+        config = super(ComplexPooling1D, self).get_config()
+        config.update({
             'strides': self.strides,
             'pool_size': self.pool_size,
             'padding': self.padding,
             'data_format': self.data_format,
-        }
-        base_config = super(ComplexPooling1D, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+            'dtype': self.my_dtype
+        })
+        return config
 
 
 class ComplexAvgPooling1D(ComplexPooling1D):

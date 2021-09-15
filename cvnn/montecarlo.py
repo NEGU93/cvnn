@@ -21,6 +21,7 @@ from cvnn.layers import ComplexDense, ComplexDropout
 from cvnn.utils import transform_to_real, randomize, transform_to_real_map_function
 from cvnn.real_equiv_tools import get_real_equivalent
 from cvnn.utils import median_error
+from cvnn.initializers import ComplexGlorotUniform
 # typing
 from pathlib import Path
 from typing import Union, Optional, List, Tuple
@@ -67,7 +68,7 @@ class MonteCarlo:
             # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100,
-            shuffle: bool = True, debug: bool = False, display_freq: int = 1):
+            shuffle: bool = True, debug: bool = False, display_freq: int = 1, same_weights: bool = False):
         """
         This function is used to compare all models added with `self.add_model` method.
         Runs the iteration dataset (x, y).
@@ -115,6 +116,7 @@ class MonteCarlo:
             Frequency on terms of epochs before running the validation.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
         :param debug:
+        :param same_weights: (Default False) If True it will use the same weights at each iteration.
         :return: (string) Full path to the run_data.csv generated file.
             It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
         """
@@ -136,7 +138,14 @@ class MonteCarlo:
                 x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
                                                                            validation_data, test_data,
                                                                            real_cast_modes[i])
-                model.set_weights(w_save[i])
+                clone_model = tf.keras.models.clone_model(model)
+                clone_model.compile(optimizer=model.optimizer.__class__.from_config(model.optimizer.get_config()),
+                                    loss=model.loss.__class__.from_config(config=model.loss.get_config()),
+                                    metrics=['accuracy'])   # TODO: Until the issue is solved, I need to force metrics
+                # https://github.com/tensorflow/tensorflow/issues/40030
+                # https://stackoverflow.com/questions/62116136/tensorflow-keras-metrics-not-showing/69193373
+                if same_weights:
+                    clone_model.set_weights(w_save[i])
                 temp_path = self.monte_carlo_analyzer.path / f"run/iteration{it}_model{i}_{model.name}"
                 os.makedirs(temp_path, exist_ok=True)
                 callbacks = []
@@ -147,15 +156,16 @@ class MonteCarlo:
                 if self.output_config['early_stop']:
                     eas = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
                     callbacks.append(eas)
-                run_result = model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
+                run_result = clone_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                        epochs=epochs, batch_size=batch_size,
                                        verbose=debug, validation_freq=display_freq,
                                        callbacks=callbacks, shuffle=shuffle)
-                test_results = self._inner_callback(model, validation_data, confusion_matrix, real_cast_modes[i], i,
-                                                    run_result, test_results, test_data_fit, temp_path)
+                test_results = self._inner_callback(clone_model, validation_data, confusion_matrix, real_cast_modes[i],
+                                                    i, run_result, test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
         return self._end_callback(x, y, iterations, data_summary, real_cast_modes, epochs, batch_size,
                                   confusion_matrix, test_results, pbar, w_save)
+        # TODO: What was the idea of save_weights? Is it necessary or it was only debugging?
 
     def _check_real_cast_modes(self, real_cast_modes):
         # TODO: I can check the real models input size corresponds to the real_cast_mode. And change it with a warning?
@@ -346,7 +356,7 @@ class MonteCarlo:
                 'name': model.name,
                 'loss': tf.keras.losses.serialize(model.loss),
                 'optimizer': tf.keras.optimizers.serialize(model.optimizer),
-                'layers': [tf.keras.layers.serialize(layer) for layer in model.layers]
+                'layers': [layer.get_config() for layer in model.layers]
             }
         with open(self.monte_carlo_analyzer.path / 'models_details.json', 'w') as fp:
             json.dump(str(json_dict), fp)
@@ -434,7 +444,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
                                     polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                     capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None,
-                                    plot_data: bool = True, early_stop: bool = False) -> str:
+                                    plot_data: bool = True, early_stop: bool = False, shuffle: bool = False) -> str:
     """
     This function is used to compare CVNN vs RVNN performance over statistical non-circular data.
         1. Generates a complex-valued gaussian correlated noise with the characteristics given by the inputs.
@@ -492,7 +502,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                               validation_split=validation_split, validation_data=None,
                               debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=False,
-                              plot_data=plot_data, early_stop=early_stop)
+                              plot_data=plot_data, early_stop=early_stop, shuffle=shuffle)
     else:
         return mlp_run_real_comparison_montecarlo(dataset=dataset, open_dataset=None, iterations=iterations,
                                                   epochs=epochs, batch_size=batch_size, display_freq=display_freq,
@@ -514,7 +524,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
                    tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
-                   plot_data: bool = False, early_stop: bool = True) -> str:
+                   plot_data: bool = False, early_stop: bool = True, shuffle: bool = False) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -526,7 +536,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
 
     :param models: List of cvnn.CvnnModel to be compared.
     :param dataset: cvnn.dataset.Dataset with the dataset to be used on the training
-    :param open_dataset: (None)
+    :param open_dataset: (Default: None)
         If dataset is saved inside a folder and must be opened, path of the Dataset to be opened. Else None (default)
     :param iterations: Number of iterations to be done for each model
     :param epochs: Number of epochs for each iteration
@@ -569,7 +579,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     validation_split=validation_split, validation_data=validation_data,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=False, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar)
+                    shuffle=shuffle, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar)
 
     # Save data to remember later what I did.
     _save_montecarlo_log(iterations=iterations,
@@ -741,7 +751,7 @@ def get_mlp(input_size, output_size,
         )
     else:  # len(shape_raw) > 0:
         for s in shape_raw:
-            shape.append(ComplexDense(units=s, activation=activation))  # Add dropout!
+            shape.append(ComplexDense(units=s, activation=activation))
             if dropout is not None:
                 shape.append(ComplexDropout(rate=dropout))
         shape.append(ComplexDense(units=output_size, activation=output_activation))

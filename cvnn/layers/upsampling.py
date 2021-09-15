@@ -41,6 +41,15 @@ class ComplexUpSampling2D(UpSampling2D, ComplexLayer):
         return ComplexUpSampling2D(size=self.factor_upsample, data_format=self.data_format,
                                    interpolation=self.interpolation, dtype=self.my_dtype.real_dtype)
 
+    def get_config(self):
+        config = super(ComplexUpSampling2D, self).get_config()
+        config.update({
+            'dtype': self.my_dtype,
+            'factor_upsample': self.factor_upsample
+
+        })
+        return config
+
 
 if __name__ == "__main__":
     image = tf.constant([
