@@ -6,6 +6,7 @@ from tensorflow.python.keras import backend as K
 from tensorflow.keras import initializers
 import tensorflow_probability as tfp
 from tensorflow import TensorShape, Tensor
+from keras.utils import control_flow_util
 # typing
 from typing import Optional, Union, List, Tuple
 # Own modules
@@ -317,9 +318,24 @@ class ComplexDropout(Layer, ComplexLayer):
         :param seed: A Python integer to use as random seed.
         """
         super(ComplexDropout, self).__init__(**kwargs)  # trainable=False,
+        if isinstance(rate, (int, float)) and not 0 <= rate <= 1:
+            raise ValueError(f'Invalid value {rate} received for `rate`, expected a value between 0 and 1.')
         self.rate = rate
         self.seed = seed
         self.noise_shape = noise_shape
+
+    def _get_noise_shape(self, inputs):
+        # Subclasses of `Dropout` may implement `_get_noise_shape(self, inputs)`,
+        # which will override `self.noise_shape`, and allows for custom noise
+        # shapes with dynamically sized inputs.
+        if self.noise_shape is None:
+            return None
+
+        concrete_inputs_shape = tf.shape(inputs)
+        noise_shape = []
+        for i, value in enumerate(self.noise_shape):
+            noise_shape.append(concrete_inputs_shape[i] if value is None else value)
+        return tf.convert_to_tensor(noise_shape)
 
     def call(self, inputs, training=None):
         """
@@ -332,16 +348,26 @@ class ComplexDropout(Layer, ComplexLayer):
             tf.print(f"Training was None and now is {training}")
             # This is used for my own debugging, I don't know WHEN this happens,
             # I trust K.learning_phase() returns a correct boolean.
+
+        # def dropped_inputs():
+        #     # import pdb; pdb.set_trace()
+        #     drop_filter = tf.nn.dropout(tf.ones(tf.shape(inputs)), rate=self.rate,
+        #                                 noise_shape=self._get_noise_shape(inputs), seed=self.seed)
+        #     y_out = tf.multiply(tf.cast(drop_filter, dtype=inputs.dtype), inputs)
+        #     y_out = tf.cast(y_out, dtype=inputs.dtype)
+        #     return y_out
+        # output = control_flow_util.smart_cond(training, dropped_inputs, lambda: tf.identity(inputs))
+        # return output
         if not training:
             return inputs
-        elif inputs.shape[0] is None:  # TODO: This is for partially_defined tensors, a better way should probably exist
-            return inputs
-        drop_filter = tf.nn.dropout(tf.ones(inputs.shape), rate=self.rate, noise_shape=self.noise_shape, seed=self.seed)
-        # TODO: Can this be a complex multiplication once?
-        y_out_real = tf.multiply(drop_filter, tf.math.real(inputs))
-        y_out_imag = tf.multiply(drop_filter, tf.math.imag(inputs))
-        y_out = tf.cast(tf.complex(y_out_real, y_out_imag), dtype=inputs.dtype)
+        drop_filter = tf.nn.dropout(tf.ones(tf.shape(inputs)), rate=self.rate,
+                                    noise_shape=self.noise_shape, seed=self.seed)
+        y_out = tf.multiply(tf.cast(drop_filter, dtype=inputs.dtype), inputs)
+        y_out = tf.cast(y_out, dtype=inputs.dtype)
         return y_out
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
 
     def get_real_equivalent(self):
         return ComplexDropout(rate=self.rate, seed=self.seed, noise_shape=self.noise_shape,

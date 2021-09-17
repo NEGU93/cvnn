@@ -1,6 +1,8 @@
 import logging
 import os
 import json
+
+import keras.losses
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -67,7 +69,8 @@ class MonteCarlo:
             # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100, early_stop: bool = False,
-            shuffle: bool = True, debug: bool = False, display_freq: int = 1, same_weights: bool = False):
+            shuffle: bool = True, debug: bool = False, display_freq: int = 1, same_weights: bool = False,
+            process_dataset: bool = True):
         """
         This function is used to compare all models added with `self.add_model` method.
         Runs the iteration dataset (x, y).
@@ -137,10 +140,15 @@ class MonteCarlo:
             for i, model in enumerate(self.models):
                 x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
                                                                            validation_data, test_data,
-                                                                           real_cast_modes[i])
+                                                                           real_cast_modes[i],
+                                                                           process_dataset=process_dataset)
                 clone_model = tf.keras.models.clone_model(model)
+                if isinstance(model.loss, keras.losses.Loss):
+                    loss = model.loss.__class__.from_config(config=model.loss.get_config())
+                else:
+                    loss = model.loss
                 clone_model.compile(optimizer=model.optimizer.__class__.from_config(model.optimizer.get_config()),
-                                    loss=model.loss.__class__.from_config(config=model.loss.get_config()),
+                                    loss=loss,
                                     metrics=['accuracy'])   # TODO: Until the issue is solved, I need to force metrics
                 # https://github.com/tensorflow/tensorflow/issues/40030
                 # https://stackoverflow.com/questions/62116136/tensorflow-keras-metrics-not-showing/69193373
@@ -157,9 +165,9 @@ class MonteCarlo:
                     eas = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
                     callbacks.append(eas)
                 run_result = clone_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
-                                       epochs=epochs, batch_size=batch_size,
-                                       verbose=debug, validation_freq=display_freq,
-                                       callbacks=callbacks, shuffle=shuffle)
+                                             epochs=epochs, batch_size=batch_size,
+                                             verbose=debug, validation_freq=display_freq,
+                                             callbacks=callbacks, shuffle=shuffle)
                 test_results = self._inner_callback(clone_model, validation_data, confusion_matrix, real_cast_modes[i],
                                                     i, run_result, test_results, test_data_fit, temp_path)
             self._outer_callback(pbar)
@@ -195,7 +203,9 @@ class MonteCarlo:
                 val_data_fit = (transform_to_real(validation_data[0], mode=polar), validation_data[1])
         return val_data_fit
 
-    def _get_fit_dataset(self, is_complex: bool, x, validation_data, test_data, polar):
+    def _get_fit_dataset(self, is_complex: bool, x, validation_data, test_data, polar, process_dataset):
+        if not process_dataset:
+            return x, validation_data, test_data
         if isinstance(x, tf.data.Dataset):
             if not is_complex:
                 x_fit = x.map(lambda imag, label: transform_to_real_map_function(imag, label, mode=polar))
@@ -354,8 +364,8 @@ class MonteCarlo:
         for i, model in enumerate(self.models):
             json_dict[str(i)] = {
                 'name': model.name,
-                'loss': tf.keras.losses.serialize(model.loss),
-                'optimizer': tf.keras.optimizers.serialize(model.optimizer),
+                'loss': model.loss if isinstance(model.loss, str) else model.loss.get_config(),  # Not yet support function loss
+                'optimizer': model.optimizer.get_config(),
                 'layers': [layer.get_config() for layer in model.layers]
             }
         with open(self.monte_carlo_analyzer.path / 'models_details.json', 'w') as fp:
@@ -524,7 +534,8 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
                    tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
-                   plot_data: bool = False, early_stop: bool = True, shuffle: bool = True) -> str:
+                   plot_data: bool = False, early_stop: bool = False, shuffle: bool = True,
+                   preprocess_data: bool = True) -> str:
     """
     This function is used to compare different neural networks performance.
     1. Runs simulation and compares them.
@@ -566,29 +577,39 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     for model in models:
         # model.training_param_summary()
         monte_carlo.add_model(model)
-    if not open_dataset:
+    if not open_dataset and isinstance(dataset, dp.Dataset):
         dataset.save_data(monte_carlo.monte_carlo_analyzer.path)
     monte_carlo.output_config['excel_summary'] = False
     monte_carlo.output_config['tensorboard'] = tensorboard
     monte_carlo.output_config['confusion_matrix'] = do_conf_mat
     monte_carlo.output_config['plot_all'] = do_all
-    if plot_data:
+    if plot_data and isinstance(dataset, dp.Dataset):
         dataset.plot_data(overlapped=True, showfig=False, save_path=monte_carlo.monte_carlo_analyzer.path,
                           library='matplotlib')
-    monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
+    if isinstance(dataset, dp.Dataset):
+        x = dataset.x
+        y = dataset.y
+        data_summary = dataset.summary()
+    else:
+        x = dataset
+        y = None
+        data_summary = ""
+    monte_carlo.run(x, y, iterations=iterations,
                     validation_split=validation_split, validation_data=validation_data,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq, early_stop=early_stop,
-                    shuffle=shuffle, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar)
+                    shuffle=shuffle, debug=debug, data_summary=data_summary, real_cast_modes=polar,
+                    process_dataset=preprocess_data)
 
     # Save data to remember later what I did.
     _save_montecarlo_log(iterations=iterations,
                          path=str(monte_carlo.monte_carlo_analyzer.path),
                          models_names=[str(model.name) for model in models],
-                         dataset_name=dataset.dataset_name,
-                         num_classes=str(dataset.y.shape[1]),
+                         dataset_name=data_summary,
+                         num_classes=str(dataset.y.shape[1]) if isinstance(dataset, dp.Dataset) else "",    # TODO: GET THIS
                          polar_mode=str(polar),
-                         dataset_size=str(dataset.x.shape[0]),
-                         features_size=str(dataset.x.shape[1]), epochs=epochs, batch_size=batch_size
+                         dataset_size=str(dataset.x.shape[0]) if isinstance(dataset, dp.Dataset) else "",
+                         features_size=str(dataset.x.shape[1]) if isinstance(dataset, dp.Dataset) else "",
+                         epochs=epochs, batch_size=batch_size
                          # filename='./log/run_data.csv'
                          )
     return str("./log/run_data.csv")

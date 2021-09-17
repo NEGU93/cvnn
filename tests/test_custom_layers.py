@@ -129,37 +129,6 @@ def get_dataset():
     return ds_train, ds_test
 
 
-@tf.autograph.experimental.do_not_convert
-def dropout():
-    tf.random.set_seed(0)
-    layer = complex_layers.ComplexDropout(.2, input_shape=(2,))
-    data = np.arange(10).reshape(5, 2).astype(np.float32)
-    data = tf.complex(data, data)
-    outputs = layer(data, training=True)
-    expected_out = np.array([[0. + 0.j, 1.25 + 1.25j],
-                             [2.5 + 2.5j, 3.75 + 3.75j],
-                             [5. + 5.j, 6.25 + 6.25j],
-                             [7.5 + 7.5j, 8.75 + 8.75j],
-                             [10. + 10.j, 0. + 0.j]]
-                            )
-    assert np.all(data == layer(data, training=False))
-    assert np.all(outputs == expected_out)
-    ds_train, ds_test = get_dataset()
-    model = tf.keras.models.Sequential([
-        complex_layers.ComplexFlatten(input_shape=(28, 28, 1), dtype=np.float32),
-        complex_layers.ComplexDense(128, activation='cart_relu', dtype=np.float32),
-        complex_layers.ComplexDropout(rate=0.5),
-        complex_layers.ComplexDense(10, activation='softmax_real_with_abs', dtype=np.float32)
-    ])
-    model.compile(
-        loss='sparse_categorical_crossentropy',
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        metrics=['accuracy'],
-    )
-    model.fit(ds_train, epochs=1, validation_data=ds_test, verbose=False, shuffle=False)
-    model.evaluate(ds_test, verbose=False)
-
-
 def get_img():
     img_r = np.array([[
         [0, 1, 2],
@@ -215,7 +184,8 @@ def complex_avg_pool_1d():
     avg_pool = ComplexAvgPooling1D()
     res = avg_pool(img.astype(np.complex64))
     expected = tf.expand_dims(tf.convert_to_tensor([[0.5 + 2.j, 1. + 4.j, 2. + 8.j, 2.5 + 4.5j],
-                                     [2. + 2.j, 4. + 4.j, 8. + 2.j, 4.5 + 6.j]], dtype=tf.complex64), axis=-1)
+                                                    [2. + 2.j, 4. + 4.j, 8. + 2.j, 4.5 + 6.j]], dtype=tf.complex64),
+                              axis=-1)
     assert np.all(res.numpy() == expected.numpy())
 
 
@@ -527,7 +497,6 @@ def test_layers():
     batch_norm()
     test_upsampling()
     complex_conv_2d_transpose()
-    dropout()
     shape_ad_dtype_of_conv2d()
     dense_example()
 

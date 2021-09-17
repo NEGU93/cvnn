@@ -1009,7 +1009,7 @@ class MonteCarloAnalyzer:
             self.path = Path(path)
             self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
         elif path is not None and df is None:  # Load df from Path
-            if not path.endswith("run_data.csv") or not path.endswith("run_data"): 
+            if not (path.endswith("run_data.csv") or path.endswith("run_data")):
                 self.df = pd.DataFrame()
                 data_files = get_data_files_list(path)
                 for file in data_files:
@@ -1107,7 +1107,8 @@ class MonteCarloAnalyzer:
                     logger.warning(f"Could not plot {key} line_confidence_interval with {lib}", exc_info=True)
 
     def box_plot(self, epoch: int = -1, library: str = 'plotly', key: str = 'val_accuracy',
-                 showfig: bool = False, savefig: bool = True, extension: str = '.svg', network_filter=None):
+                 showfig: bool = False, savefig: bool = True, extension: str = '.svg', network_filter=None,
+                 early_stop: bool = True):
         """
         Saves/shows a box plot of the results.
         :param epoch: Which epoch to use for the box plot. If -1 (default) it will use the last epoch.
@@ -1119,30 +1120,42 @@ class MonteCarloAnalyzer:
         :param savefig: If True, it saves the figure at: self.path / "plots/box_plot/"
         :param extension: file extensions (default svg) to be used when saving the file
             (only used when library is seaborn).
+        :param early_stop: Default True. Compatible mode if using early stop.
+            This takes precedence over epoch param.
+            Recommended to always use it at True unless you want a particular epoch.
+            Uses the last epoch of each iteration as they might differ when using early stopping.
         """
         if library == 'plotly':
-            self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig)
+            self._box_plot_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig, early_stop=early_stop)
         elif library == 'seaborn':
             self._box_plot_seaborn(key=key, epoch=epoch, showfig=showfig, savefig=savefig, extension=extension,
-                                   network_filter=network_filter)
+                                   network_filter=network_filter, early_stop=early_stop)
         else:
             logger.warning("Warning: Unrecognized library to plot " + library)
             return None
 
-    def _box_plot_plotly(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True):
+    def _box_plot_plotly(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True, early_stop=True):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._box_plot_plotly.__name__ +
                            " was called but will be omitted")
             return None
         fig = go.Figure()
-        if epoch == -1:
-            epoch = max(self.df.epoch)
         networks_available = self.df.network.unique()
-        for col, net in enumerate(sorted(networks_available)):
-            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
+        # Take the corresponging epoch
+        if early_stop:  # Take the last epoch of each iteration
+            # Next lines searches for epoch reset (meaning I got to the last epoch)
+            filter = [self.df.iloc[i]['epoch'] > self.df.iloc[i + 1]['epoch'] for i in range(0, len(self.df.index) - 1)]
+            filter = filter + [True]    # The last element is an epoch that should be taken
             data = self.df[filter]
+        else:
+            if epoch == -1:
+                epoch = max(self.df.epoch)
+            filter = self.df['epoch'] == epoch
+            data = self.df[filter]
+        for col, net in enumerate(sorted(networks_available)):
+            net_data = data[data["network"]==net]
             fig.add_trace(go.Box(
-                y=data[key],
+                y=net_data[key],
                 # x=[self.x[i]] * len(data[key]),
                 name=net.replace('_', ' '),
                 whiskerwidth=0.2,
@@ -1182,16 +1195,20 @@ class MonteCarloAnalyzer:
             plt.close(fig)
 
     def _box_plot_seaborn(self, epoch=-1, key='val_accuracy', showfig=False, savefig=True, extension='.svg',
-                          network_filter=None):
+                          network_filter=None, early_stop=True):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._box_plot_seaborn.__name__ +
                            " was called but will be omitted")
             return None
-        if epoch == -1:
-            epoch = max(self.df.epoch)
         # Prepare data
-        filter = self.df['epoch'] == epoch
-        data = self.df[filter]
+        if early_stop:
+            filter = [self.df.iloc[i]['epoch'] > self.df.iloc[i + 1]['epoch'] for i in range(0, len(self.df.index) - 1)] + [True]
+            data = self.df[filter]
+        else:
+            if epoch == -1:
+                epoch = max(self.df.epoch)
+            filter = self.df['epoch'] == epoch
+            data = self.df[filter]
         if network_filter:
             filter = data['network'].isin(network_filter)
             data = data[filter]
@@ -1334,11 +1351,18 @@ class MonteCarloAnalyzer:
         min_ax = 1.0
         max_ax = 0.0
         networks_availables = self.df.network.unique()
-        if epoch == -1:
-            epoch = max(self.df.epoch)
+        if early_stop:  # Take the last epoch of each iteration
+            # Next lines searches for epoch reset (meaning I got to the last epoch)
+            filter = [self.df.iloc[i]['epoch'] > self.df.iloc[i + 1]['epoch'] for i in range(0, len(self.df.index) - 1)]
+            filter = filter + [True]  # The last element is an epoch that should be taken
+            df_pre_filtered = self.df[filter]
+        else:
+            if epoch == -1:
+                epoch = max(self.df.epoch)
+            filter = self.df['epoch'] == epoch
+            df_pre_filtered = self.df[filter]
         for net in networks_availables:
-            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
-            data = self.df[filter]  # Get only the data to plot
+            data = df_pre_filtered[df_pre_filtered["network"]==net]  # Get only the data to plot
             ax.hist(data[key], bins, alpha=0.5, label=net.replace("_", " "))
             min_ax = min(min_ax, min(data[key]))
             max_ax = max(max_ax, max(data[key]))
@@ -1354,20 +1378,28 @@ class MonteCarloAnalyzer:
             plt.close(fig)
         return fig, ax
 
-    def _plot_histogram_plotly(self, key='val_accuracy', epoch=-1, showfig=False, savefig=True, title=''):
+    def _plot_histogram_plotly(self, key='val_accuracy', epoch=-1, showfig=False, savefig=True, title='',
+                               early_stop: bool = True):
         if 'plotly' not in AVAILABLE_LIBRARIES:
             logger.warning("No Plotly installed, function " + self._plot_histogram_plotly.__name__ +
                            " was called but will be omitted")
             return None
         networks_availables = self.df.network.unique()
-        if epoch == -1:
-            epoch = max(self.df.epoch)
+        if early_stop:  # Take the last epoch of each iteration
+            # Next lines searches for epoch reset (meaning I got to the last epoch)
+            filter = [self.df.iloc[i]['epoch'] > self.df.iloc[i + 1]['epoch'] for i in range(0, len(self.df.index) - 1)]
+            filter = filter + [True]  # The last element is an epoch that should be taken
+            df_pre_filtered = self.df[filter]
+        else:
+            if epoch == -1:
+                epoch = max(self.df.epoch)
+            filter = self.df['epoch'] == epoch
+            df_pre_filtered = self.df[filter]
         hist_data = []
         group_labels = []
         for net in networks_availables:
             title += net + ' '
-            filter = [a == net and b == epoch for a, b in zip(self.df.network, self.df.epoch)]
-            data = self.df[filter]  # Get only the data to plot
+            data = df_pre_filtered[df_pre_filtered["network"]==net]  # Get only the data to plot
             hist_data.append(data[key].to_list())
             group_labels.append(net.replace("_", " "))
             # fig.add_trace(px.histogram(np.array(data[key]), marginal="box"))
@@ -1396,7 +1428,7 @@ class MonteCarloAnalyzer:
         return fig
 
     def _plot_histogram_seaborn(self, key='val_accuracy', epoch=-1,
-                                showfig=True, savefig=True, title='', extension=".svg"):
+                                showfig=True, savefig=True, title='', extension=".svg", early_stop: bool = True):
         if 'seaborn' not in AVAILABLE_LIBRARIES:
             logger.warning("No Seaborn installed, function " + self._plot_histogram_seaborn.__name__ +
                            " was called but will be omitted")
@@ -1408,10 +1440,15 @@ class MonteCarloAnalyzer:
         max_ax = 0.0
         # ax = None
         networks_availables = self.df.network.unique()
-        if epoch == -1:
-            epoch = max(self.df.epoch)
-        filter = [e == epoch for e in self.df.epoch]
-        data = self.df[filter]
+        if early_stop:
+            filter = [self.df.iloc[i]['epoch'] > self.df.iloc[i + 1]['epoch'] for i in
+                      range(0, len(self.df.index) - 1)] + [True]
+            data = self.df[filter]
+        else:
+            if epoch == -1:
+                epoch = max(self.df.epoch)
+            filter = self.df['epoch'] == epoch
+            data = self.df[filter]
         ax = sns.histplot(data, x=key, hue='network', bins=bins, legend=True)
         min_ax = min(min_ax, min(data[key]))
         max_ax = max(max_ax, max(data[key]))
@@ -1469,6 +1506,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.49'
+__version__ = '0.1.50'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
