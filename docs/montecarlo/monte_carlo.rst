@@ -83,5 +83,11 @@ Monte Carlo
     :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
     :param early_stop: (Boolean) Default: False. Wheather to implement early stop on training.
     :param same_weights: (Boolean) Default: False. If True it will use the same weights at each iteration.
+    :param verbose: Different modes according to number:
+            - :code:`0` or 'silent': No output at all
+            - :code:`1` or :code:`False`: Progress bar per iteration
+            - :code:`2` or :code:`True` or 'debug': Progress bar per epoch
+    :param early_stop: (Default: :code:`False`) Wheather to implement early stop on training.
+        :param same_weights: (Default :code:`False`) If :code:`True` it will use the same weights at each iteration.
     :return: (string) Full path to the :code:`run_data.csv` generated file.
         It can be used by :code:`cvnn.data_analysis.SeveralMonteCarloComparison` to compare several runs.
