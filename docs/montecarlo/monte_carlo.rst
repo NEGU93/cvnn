@@ -63,7 +63,6 @@ Monte Carlo
             
         - String with the :code:`mode` listed in :code:`cvnn.utils.transform_to_real` to be used by all the real-valued models to cast complex data to real.
         - List or Tuple of strings: Same size of :code:`self.models`. Mode to cast complex data to real for each model in :code:`self.model`. :code:`real_cast_modes[i]` will indicate how to cast data for :code:`self.models[i]` (ignored when model is complex)
-    
     :param validation_split: Float between 0 and 1.
         Percentage of the input data to be used as test set (the rest will be use as train set)
         Default: 0.0 (No validation set).
@@ -83,7 +82,8 @@ Monte Carlo
     :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
     :param early_stop: (Boolean) Default: False. Wheather to implement early stop on training.
     :param same_weights: (Boolean) Default: False. If True it will use the same weights at each iteration.
-    :param verbose: Different modes according to number:
+    :param verbose: Different modes according to
+    
             - :code:`0` or 'silent': No output at all
             - :code:`1` or :code:`False`: Progress bar per iteration
             - :code:`2` or :code:`True` or 'debug': Progress bar per epoch
