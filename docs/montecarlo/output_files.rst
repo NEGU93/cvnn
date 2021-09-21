@@ -19,7 +19,6 @@ There are many other optional files that can be controled using the `output_conf
             'plot_all': False,
             'confusion_matrix': False,
             'excel_summary': True,
-            'debug': False,
             'summary_of_run': True,
             'tensorboard': False,
             'save_weights': False,
