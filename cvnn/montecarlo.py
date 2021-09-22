@@ -43,11 +43,11 @@ class MonteCarlo:
         self.models = []
         self.pandas_full_data = pd.DataFrame()
         self.monte_carlo_analyzer = MonteCarloAnalyzer()  # All at None
+        self.verbose = 1
         self.output_config = {
             'plot_all': False,
             'confusion_matrix': False,
             'excel_summary': True,
-            'debug': False,
             'summary_of_run': True,
             'tensorboard': False,
             'save_weights': False,
@@ -59,6 +59,25 @@ class MonteCarlo:
         Adds a cvnn.CvnnModel to the list to then compare between them
         """
         self.models.append(model)
+        
+    def _parse_verbose(verbose : Union[str, int, bool]) -> int:
+        if isintance(verbose, bool):
+            verbbose = 2 if verbose else 1
+        elif isinstance(verbose, str):
+            if verbose.lower() == 'silent':
+                verbose = 0
+            elif verbose.lower() == 'debug':
+                verbose = 2
+            else:
+                raise ValueError(f"Unknown verbose mode {verbose}")
+         else:
+            try:
+                verbose = int(verbose)
+                if verbose > 2 or verbose < 0:
+                    raise ValueError(f"verbose should be one of 0, 1 or 2, received {verbose}")
+            except e:
+                raise ValueError(f"Cannot cast verbose = {verbose} to int")
+        return verbose
 
     def run(self, x, y, data_summary: str = '',
             real_cast_modes: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
@@ -67,7 +86,7 @@ class MonteCarlo:
             # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100, early_stop: bool = False,
-            shuffle: bool = True, debug: bool = False, display_freq: int = 1, same_weights: bool = False,
+            shuffle: bool = True, verbose: Optional[bool, int, str] = 1, display_freq: int = 1, same_weights: bool = False,
             process_dataset: bool = True):
         """
         This function is used to compare all models added with `self.add_model` method.
@@ -115,13 +134,17 @@ class MonteCarlo:
         :param display_freq: Integer (Default 1). Only relevant if validation data is provided.
             Frequency on terms of epochs before running the validation.
         :param shuffle: (Boolean) Whether to shuffle the training data before each epoch.
-        :param debug:
+        :param verbose: Different modes according to number:
+            - 0 or 'silent': No output at all
+            - 1 or False: Progress bar per iteration
+            - 2 or True or 'debug': Progress bar per epoch
         :param early_stop: (Default: False) Wheather to implement early stop on training.
         :param same_weights: (Default False) If True it will use the same weights at each iteration.
         :return: (string) Full path to the run_data.csv generated file.
             It can be used by cvnn.data_analysis.SeveralMonteCarloComparison to compare several runs.
         """
-        self.output_config['debug'] = debug
+        if verbose:
+            self.verbose = self._parse_verbose(verbose)
         test_data_cols = None
         if test_data is not None:
             test_data_cols = ['network'] + [n.get_config()['name'] for n in self.models[0].metrics]
@@ -133,7 +156,7 @@ class MonteCarlo:
             w_save.append(model.get_weights())  # Save model weight
         # np.save(self.monte_carlo_analyzer.path / "initial_debug_weights.npy", np.array(w_save))     # TODO
         for it in range(iterations):
-            if debug:
+            if self.verbose == 2:
                 logger.info("Iteration {}/{}".format(it + 1, iterations))
             for i, model in enumerate(self.models):
                 x_fit, val_data_fit, test_data_fit = self._get_fit_dataset(model.inputs[0].dtype.is_complex, x,
@@ -164,7 +187,7 @@ class MonteCarlo:
                     callbacks.append(eas)
                 run_result = clone_model.fit(x_fit, y, validation_split=validation_split, validation_data=val_data_fit,
                                              epochs=epochs, batch_size=batch_size,
-                                             verbose=debug, validation_freq=display_freq,
+                                             verbose=self.verbose==2, validation_freq=display_freq,
                                              callbacks=callbacks, shuffle=shuffle)
                 test_results = self._inner_callback(clone_model, validation_data, confusion_matrix, real_cast_modes[i],
                                                     i, run_result, test_results, test_data_fit, temp_path)
@@ -227,7 +250,7 @@ class MonteCarlo:
         pbar = None
         # Reset data frame
         self.pandas_full_data = pd.DataFrame()
-        if not self.output_config['debug']:
+        if self.verbose == 1:
             pbar = tqdm(total=iterations)
         if self.output_config['confusion_matrix']:
             confusion_matrix = []
@@ -243,7 +266,7 @@ class MonteCarlo:
 
     def _end_callback(self, x, y, iterations, data_summary, polar, epochs, batch_size,
                       confusion_matrix, test_results, pbar, w_save):
-        if not self.output_config['debug']:
+        if self.verbose == 1:
             pbar.close()
         self.pandas_full_data = self.pandas_full_data.reset_index(drop=True)
         self.monte_carlo_analyzer.set_df(self.pandas_full_data)
@@ -310,7 +333,7 @@ class MonteCarlo:
         return test_results
 
     def _outer_callback(self, pbar):
-        if not self.output_config['debug']:
+        if self.verbose == 1:
             pbar.update()
         if self.output_config['safety_checkpoints']:
             # Save checkpoint in case Monte Carlo stops in the middle
@@ -448,7 +471,7 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
                                     epochs: int = 300, batch_size: int = 100, display_freq: int = 1,
                                     optimizer='sgd', validation_split: float = 0.2,  # TODO: Add typing here
                                     shape_raw: List[int] = None, activation: t_activation = 'cart_relu',
-                                    debug: bool = False, do_all: bool = True, tensorboard: bool = False,
+                                    verbose: bool = False, do_all: bool = True, tensorboard: bool = False,
                                     polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                     capacity_equivalent: bool = True, equiv_technique: str = 'ratio',
                                     dropout: Optional[float] = None, models: Optional[List[Model]] = None,
@@ -488,7 +511,10 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
         For example [64] will generate a CVNN with one hidden layer of size 64.
         Default None will default to example.
     :param activation: Activation function to be used at each hidden layer
-    :param debug:
+    :param verbose: Different modes according to number:
+            - 0 or 'silent': No output at all
+            - 1 or False: Progress bar per iteration
+            - 2 or True or 'debug': Progress bar per epoch
     :param tensorboard: If True, it will generate tensorboard outputs to check training values.
     :param polar: Boolean weather the RVNN should receive real and imaginary part (False) or amplitude and phase (True)
     :param do_all: If true (default) it creates a `plot/` folder with the plots generated by MonteCarloAnalyzer.do_all()
@@ -509,13 +535,13 @@ def run_gaussian_dataset_montecarlo(iterations: int = 30, m: int = 10000, n: int
         return run_montecarlo(models=models, dataset=dataset, open_dataset=None,
                               iterations=iterations, epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                               validation_split=validation_split, validation_data=None,
-                              debug=debug, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=False,
+                              verbose=verbose, polar=polar, do_all=do_all, tensorboard=tensorboard, do_conf_mat=False,
                               plot_data=plot_data, early_stop=early_stop, shuffle=shuffle)
     else:
         return mlp_run_real_comparison_montecarlo(dataset=dataset, open_dataset=None, iterations=iterations,
                                                   epochs=epochs, batch_size=batch_size, display_freq=display_freq,
                                                   optimizer=optimizer, shape_raw=shape_raw, activation=activation,
-                                                  debug=debug, polar=polar, do_all=do_all,
+                                                  verbose=verbose, polar=polar, do_all=do_all,
                                                   tensorboard=tensorboard,
                                                   capacity_equivalent=capacity_equivalent,
                                                   equiv_technique=equiv_technique,
@@ -529,7 +555,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
                    validation_split: float = 0.2,
                    validation_data: Optional[Union[Tuple, data.Dataset]] = None,
                    # TODO: Add vallidation data tuple details
-                   debug: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
+                   verbose: Union[bool, int] = False, do_conf_mat: bool = False, do_all: bool = True,
                    tensorboard: bool = False,
                    polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                    plot_data: bool = False, early_stop: bool = False, shuffle: bool = True,
@@ -551,7 +577,10 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     :param epochs: Number of epochs for each iteration
     :param batch_size: Batch size at each iteration
     :param display_freq: Frequency in terms of epochs of when to do a checkpoint.
-    :param debug:
+    :param verbose: Different modes according to number:
+            - 0 or 'silent': No output at all
+            - 1 or False: Progress bar per iteration
+            - 2 or True or 'debug': Progress bar per epoch
     :param polar: Boolean weather the RVNN should receive real and imaginary part (False) or amplitude and phase (True)
     :param do_all: If true (default) it creates a `plot/` folder with the plots generated by MonteCarloAnalyzer.do_all()
     :param validation_split: Float between 0 and 1.
@@ -595,7 +624,7 @@ def run_montecarlo(models: List[Model], dataset: cvnn.dataset.Dataset, open_data
     monte_carlo.run(x, y, iterations=iterations,
                     validation_split=validation_split, validation_data=validation_data,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq, early_stop=early_stop,
-                    shuffle=shuffle, debug=debug, data_summary=data_summary, real_cast_modes=polar,
+                    shuffle=shuffle, verbose=verbose, data_summary=data_summary, real_cast_modes=polar,
                     process_dataset=preprocess_data)
 
     # Save data to remember later what I did.
@@ -619,7 +648,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
                                        optimizer='adam',  # TODO: Typing
                                        shape_raw=None, activation: t_activation = 'cart_relu',
                                        output_activation: t_activation = DEFAULT_OUTPUT_ACT,
-                                       debug: Union[bool, int] = False, do_all: bool = True,
+                                       verbose: Union[bool, int] = False, do_all: bool = True,
                                        polar: Optional[Union[str, List[Optional[str]], Tuple[Optional[str]]]] = None,
                                        dropout: float = 0.5, validation_split: float = 0.2,
                                        validation_data: Optional[Union[Tuple, data.Dataset]] = None,
@@ -651,7 +680,10 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
         For example [64] will generate a CVNN with one hidden layer of size 64.
         Default None will default to example.
     :param activation: Activation function to be used at each hidden layer
-    :param debug:
+    :param verbose: Different modes according to number:
+            - 0 or 'silent': No output at all
+            - 1 or False: Progress bar per iteration
+            - 2 or True or 'debug': Progress bar per epoch
     :param polar: Boolean weather the RVNN should receive real and imaginary part (False) or amplitude and phase (True)
     :param do_all: If true (default) it creates a `plot/` folder with the plots generated by MonteCarloAnalyzer.do_all()
     :param dropout: (float) Dropout to be used at each hidden layer. If None it will not use any dropout.
@@ -701,7 +733,7 @@ def mlp_run_real_comparison_montecarlo(dataset: cvnn.dataset.Dataset, open_datas
     sleep(1)  # I have error if not because not enough time passed since creation of models to be in diff folders
     monte_carlo.run(dataset.x, dataset.y, iterations=iterations,
                     epochs=epochs, batch_size=batch_size, display_freq=display_freq,
-                    shuffle=shuffle, debug=debug, data_summary=dataset.summary(), real_cast_modes=polar,
+                    shuffle=shuffle, verbose=verbose, data_summary=dataset.summary(), real_cast_modes=polar,
                     validation_split=validation_split, validation_data=validation_data)
 
     # Save data to remember later what I did.
