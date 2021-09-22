@@ -1,8 +1,6 @@
 import logging
 import os
 import json
-
-import keras.losses
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -143,7 +141,7 @@ class MonteCarlo:
                                                                            real_cast_modes[i],
                                                                            process_dataset=process_dataset)
                 clone_model = tf.keras.models.clone_model(model)
-                if isinstance(model.loss, keras.losses.Loss):
+                if isinstance(model.loss, tf.keras.losses.Loss):
                     loss = model.loss.__class__.from_config(config=model.loss.get_config())
                 else:
                     loss = model.loss

@@ -278,7 +278,7 @@ def complex_conv_2d_transpose():
 
 
 @tf.autograph.experimental.do_not_convert
-def test_upsampling_near_neighbour():
+def upsampling_near_neighbour():
     input_shape = (2, 2, 1, 3)
     x = np.arange(np.prod(input_shape)).reshape(input_shape).astype(np.float32)
     z = tf.complex(real=x, imag=x)
@@ -338,7 +338,7 @@ def test_upsampling_near_neighbour():
 
 
 @tf.autograph.experimental.do_not_convert
-def test_upsampling_bilinear_corners_aligned():
+def upsampling_bilinear_corners_aligned():
     # Pytorch examples
     # https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
     x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
@@ -390,7 +390,7 @@ def test_upsampling_bilinear_corners_aligned():
 
 
 @tf.autograph.experimental.do_not_convert
-def test_upsampling_bilinear_corner_not_aligned():
+def upsampling_bilinear_corner_not_aligned():
     # Pytorch
     #   https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
     x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
@@ -427,15 +427,15 @@ def test_upsampling_bilinear_corner_not_aligned():
 
 
 @tf.autograph.experimental.do_not_convert
-def test_upsampling():
+def upsampling():
     x = tf.convert_to_tensor([[[[1., 2.], [3., 4.]]]])
     z = tf.complex(real=x, imag=x)
     y_tf = tf.keras.layers.UpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(x)
     y_cvnn = ComplexUpSampling2D(size=2, interpolation='bilinear', data_format='channels_first')(z)
     assert np.all(y_tf == tf.math.real(y_cvnn).numpy())
-    test_upsampling_near_neighbour()
+    upsampling_near_neighbour()
     # test_upsampling_bilinear_corners_aligned()
-    test_upsampling_bilinear_corner_not_aligned()
+    upsampling_bilinear_corner_not_aligned()
 
 
 def check_proximity(x1, x2, name: str):
@@ -481,7 +481,6 @@ def batch_norm():
     assert check_proximity(c_bn_2.moving_var, c_bn.moving_var, "Method comparison Moving variance after training")
     assert check_proximity(c_bn_2.gamma, c_bn.gamma, "Method comparison Gamma after training")
     assert check_proximity(c_bn_2.beta, c_bn.beta, "Method comparison Beta after training")
-    set_trace()
 
 
 def pooling_layers():
@@ -495,7 +494,7 @@ def test_layers():
     new_max_unpooling_2d_test()
     pooling_layers()
     batch_norm()
-    test_upsampling()
+    upsampling()
     complex_conv_2d_transpose()
     shape_ad_dtype_of_conv2d()
     dense_example()

@@ -6,7 +6,7 @@ from tensorflow.python.keras import backend as K
 from tensorflow.keras import initializers
 import tensorflow_probability as tfp
 from tensorflow import TensorShape, Tensor
-from keras.utils import control_flow_util
+# from keras.utils import control_flow_util
 # typing
 from typing import Optional, Union, List, Tuple
 # Own modules
