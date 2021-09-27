@@ -4,6 +4,7 @@ import numpy as np
 import re
 import os
 import sys
+import pickle
 from pathlib import Path
 from pdb import set_trace
 from cvnn.utils import create_folder
@@ -985,7 +986,7 @@ class MonteCarloAnalyzer:
     This class works with the run_data.csv generated with cvnn.montecarlo.MonteCarlo class
     """
 
-    def __init__(self, df=None, path=None):
+    def __init__(self, df=None, path=None, history_dictionary: Optional[dict] = None):
         """
         There are 2 ways to use this class:
             1. Either give the data as a pandas DataFrame.
@@ -1002,6 +1003,8 @@ class MonteCarloAnalyzer:
                     This is useful when you want to plot together different MonteCarlo.run() results.
                     This enables to run two simulations of 50 iterations each and plot them as if
                         it was a single run of 100 iterations.
+        :param history_dictionary: Optional dictionary. This parameter is only used if df and path are None.
+            Dictionary with the models as keys and a list of full paths to the model history pickle file.
         """
         self.confusion_matrix = []
         if path is not None and df is not None:  # I have data and the place where I want to save it
@@ -1031,11 +1034,34 @@ class MonteCarloAnalyzer:
             self.df = df  # DataFrame with all the data
             self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
         else:  # I have nothing
-            self.path = create_folder("./log/montecarlo/")
-            self.df = pd.DataFrame()
+            if history_dictionary is not None:
+                self.df = self._open_dict(history_dictionary)
+                self.path = create_folder("./log/montecarlo/")
+                self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
+                self.save_stat_results()       # Create the stat results for the plotter
+            else:
+                self.df = pd.DataFrame()
+                self.path = create_folder("./log/montecarlo/")
+                self.df.to_csv(self.path / "run_data.csv", index=False)  # Save the results for latter use
+
+            # set_trace()
         self.plotable_info = ['loss', 'val_loss', 'accuracy', 'val_accuracy']  # TODO: Consider delete
         self.monte_carlo_plotter = MonteCarloPlotter(self.path)
         self.summary = []
+
+    @staticmethod
+    def _open_dict(history_dictionary: dict):
+        assert isinstance(history_dictionary, dict), f"history_dictionary must be a dictionary"
+        df = pd.DataFrame()
+        for model in history_dictionary.keys():
+            for path in history_dictionary[model]:
+                with open(path, 'rb') as f:
+                    saved_history = pickle.load(f)
+                tmp_df = pd.DataFrame(saved_history)
+                tmp_df['epoch'] = list(range(0, len(saved_history['accuracy'])))
+                tmp_df['network'] = model
+                df = pd.concat([df, tmp_df])
+        return df
 
     def set_df(self, df, conf_mat=None):
         self.df = df  # DataFrame with all the data
@@ -1312,7 +1338,8 @@ class MonteCarloAnalyzer:
                             config=PLOTLY_CONFIG, auto_open=False)
 
     def plot_histogram(self, key: str = 'val_accuracy', epoch: int = -1, library: str = 'seaborn',
-                       showfig: bool = False, savefig: bool = True, title: str = '', extension: str = ".svg"):
+                       showfig: bool = False, savefig: bool = True, title: str = '', extension: str = ".svg",
+                       early_stop: bool = True):
         """
         Saves/shows a histogram of the results.
 
@@ -1326,10 +1353,14 @@ class MonteCarloAnalyzer:
         :param savefig: If True, it saves the figure at: self.path / "plots/box_plot/"
         :param title: Figure title
         :param extension: file extensions (default svg) to be used when saving the file (ignored if library is plotly).
+        :param early_stop: Default True. Compatible mode if using early stop.
+            This takes precedence over epoch param.
+            Recommended to always use it at True unless you want a particular epoch.
+            Uses the last epoch of each iteration as they might differ when using early stopping.
         """
         if library == 'matplotlib':
             self._plot_histogram_matplotlib(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title,
-                                            extension=extension)
+                                            extension=extension, early_stop=early_stop)
         elif library == 'plotly':
             self._plot_histogram_plotly(key=key, epoch=epoch, showfig=showfig, savefig=savefig, title=title)
         elif library == 'seaborn':
@@ -1340,7 +1371,7 @@ class MonteCarloAnalyzer:
             return None
 
     def _plot_histogram_matplotlib(self, key='val_accuracy', epoch=-1,
-                                   showfig=False, savefig=True, title='', extension=".svg"):
+                                   showfig=False, savefig=True, title='', extension=".svg", early_stop: bool = True):
         if 'matplotlib' not in AVAILABLE_LIBRARIES:
             logger.warning("No Matplotlib installed, function " + self._plot_histogram_matplotlib.__name__ +
                            " was called but will be omitted")
@@ -1506,6 +1537,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.50'
+__version__ = '0.1.51'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

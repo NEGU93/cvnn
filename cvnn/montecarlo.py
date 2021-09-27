@@ -59,10 +59,11 @@ class MonteCarlo:
         Adds a cvnn.CvnnModel to the list to then compare between them
         """
         self.models.append(model)
-        
+
+    @staticmethod
     def _parse_verbose(verbose : Union[str, int, bool]) -> int:
         if isintance(verbose, bool):
-            verbbose = 2 if verbose else 1
+            verbose = 2 if verbose else 1
         elif isinstance(verbose, str):
             if verbose.lower() == 'silent':
                 verbose = 0
@@ -70,7 +71,7 @@ class MonteCarlo:
                 verbose = 2
             else:
                 raise ValueError(f"Unknown verbose mode {verbose}")
-         else:
+        else:
             try:
                 verbose = int(verbose)
                 if verbose > 2 or verbose < 0:
@@ -86,8 +87,8 @@ class MonteCarlo:
             # TODO: Add the tuple of validation data details.
             test_data: Optional[Union[Tuple[np.ndarray, np.ndarray], data.Dataset]] = None,
             iterations: int = 100, epochs: int = 10, batch_size: int = 100, early_stop: bool = False,
-            shuffle: bool = True, verbose: Optional[bool, int, str] = 1, display_freq: int = 1, same_weights: bool = False,
-            process_dataset: bool = True):
+            shuffle: bool = True, verbose: Optional[Union[bool, int, str]] = 1, display_freq: int = 1,
+            same_weights: bool = False, process_dataset: bool = True):
         """
         This function is used to compare all models added with `self.add_model` method.
         Runs the iteration dataset (x, y).
