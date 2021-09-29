@@ -3,7 +3,7 @@ Complex-Valued Neural Network (CVNN)
 ====================================
 
 :Author:  J. Agustin Barrachina
-:Version: 1.1.79 of 09/27/2021
+:Version: 1.1.80 of 09/29/2021
 
 
 Content
@@ -17,6 +17,7 @@ Content
 	layers
 	act_fun
 	losses
+	metrics
 	initializers
 	montecarlo
 	data_analysis
