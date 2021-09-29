@@ -18,7 +18,7 @@ Monte Carlo Analyzer
     This class helps organizing Monte Carlo class results and plotting them.
     his class works with the run_data.csv generated with :code:`cvnn.montecarlo.MonteCarlo` class :ref:`montecarlo_class`
 
-.. py:method:: __init__(self, df=None, path=None)
+.. py:method:: __init__(self, df=None, path=None, history_dictionary: Optional[dict] = None)
 
     There are 2 ways to use this class:
 
@@ -33,6 +33,7 @@ Monte Carlo Analyzer
     2. If df is not given, path should be:
         - The full path and filename for the run_data.csv to be plotted
         - A path to search of ALL :code:`run_data.csv` that it can find (even within subfolders). This is useful when you want to plot together different :code:`MonteCarlo.run()` results. For example, it enables to run two simulations of 50 iterations each and plot them as if it was a single run of 100 iterations.
+    :param history_dictionary: Optional dictionary. This parameter is only used if df and path are None. Dictionary with the models as keys and a list of full paths to the model history pickle file.
 
 .. py:method:: do_all(self, extension=".svg", showfig=False, savefig=True)
 
