@@ -29,11 +29,12 @@ Monte Carlo Analyzer
     
     :param df: (Optional) `pandas <https://pandas.pydata.org/>`_ :code:`DataFrame` with the data to be plotted.
     :param path: (Optional)
-    1. If df was given, this can be the a path for MonteCarloAnalyzer to save a :code:`run_data.csv` file. If path is not given, it will use the default path :code:`./log/montecarlo/<year>/<month>/<day>/run_<time>/`
-    2. If df is not given, path should be:
-        - The full path and filename for the run_data.csv to be plotted
-        - A path to search of ALL :code:`run_data.csv` that it can find (even within subfolders). This is useful when you want to plot together different :code:`MonteCarlo.run()` results. For example, it enables to run two simulations of 50 iterations each and plot them as if it was a single run of 100 iterations.
-    :param history_dictionary: Optional dictionary. This parameter is only used if df and path are None. Dictionary with the models as keys and a list of full paths to the model history pickle file.
+
+       1. If df was given, this can be the a path for MonteCarloAnalyzer to save a :code:`run_data.csv` file. If path is not given, it will use the default path :code:`./log/montecarlo/<year>/<month>/<day>/run_<time>/`
+       1. If df is not given, path should be:
+           - The full path and filename for the run_data.csv to be plotted
+           - A path to search of ALL :code:`run_data.csv` that it can find (even within subfolders). This is useful when you want to plot together different :code:`MonteCarlo.run()` results. For example, it enables to run two simulations of 50 iterations each and plot them as if it was a single run of 100 iterations.
+    :param history_dictionary: (Optional) dictionary. This parameter is only used if df and path are None. Dictionary with the models names as keys and a list of full paths to the model history pickle file.
 
 .. py:method:: do_all(self, extension=".svg", showfig=False, savefig=True)
 
