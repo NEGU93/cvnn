@@ -16,7 +16,10 @@ from typing import Type
 logger = logging.getLogger(cvnn.__name__)
 
 REAL_CAST_MODES = {
-    'real_imag', 'amplitude_phase', 'amplitude_only'
+    'real_imag': 2,
+    'amplitude_phase': 2,
+    'amplitude_only': 1,
+    'real_only': 1
 }
 
 
@@ -107,6 +110,8 @@ def transform_to_real_map_function(image, label, mode: str = "real_imag"):
         ret_value = tf.concat([tf.math.abs(image), tf.math.angle(image)], axis=-1)
     elif mode == 'amplitude_only':
         ret_value = tf.math.abs(image)
+    elif mode == 'real_only':
+        ret_value = tf.math.real(image)
     else:
         raise KeyError(f"Real cast mode {mode} not implemented")
     return ret_value, label
@@ -131,9 +136,7 @@ def transform_to_real(x_complex, mode: str = "real_imag"):
     m = np.shape(x_complex)[0]
     n = np.prod(np.shape(x_complex)[1:])
     flat_x_complex = np.reshape(x_complex, (m, n))
-    multiplier = 2
-    if mode == 'amplitude_only':
-        multiplier = 1
+    multiplier = REAL_CAST_MODES[mode]
     x_real = np.ones((m, multiplier * n))
     if mode == 'real_imag':
         x_real[:, :n] = np.real(flat_x_complex)
@@ -211,6 +214,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.25'
+__version__ = '0.0.26'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

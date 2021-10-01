@@ -61,8 +61,8 @@ class MonteCarlo:
         self.models.append(model)
 
     @staticmethod
-    def _parse_verbose(verbose : Union[str, int, bool]) -> int:
-        if isintance(verbose, bool):
+    def _parse_verbose(verbose: Union[str, int, bool]) -> int:
+        if isinstance(verbose, bool):
             verbose = 2 if verbose else 1
         elif isinstance(verbose, str):
             if verbose.lower() == 'silent':
@@ -76,7 +76,7 @@ class MonteCarlo:
                 verbose = int(verbose)
                 if verbose > 2 or verbose < 0:
                     raise ValueError(f"verbose should be one of 0, 1 or 2, received {verbose}")
-            except e:
+            except Exception as e:
                 raise ValueError(f"Cannot cast verbose = {verbose} to int")
         return verbose
 
