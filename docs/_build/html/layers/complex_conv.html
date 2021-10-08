@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Complex Convolution &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Complex Dense" href="complex_dense.html" />
+    <link rel="prev" title="Complex Layers" href="../layers.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../layers.html">Complex Layers</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Complex Convolution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#complex-conv-2d">Complex Conv 2D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#complex-conv-1d-and-3d">Complex Conv 1D and 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="complex_dense.html">Complex Dense</a></li>
+<li class="toctree-l2"><a class="reference internal" href="complex_pooling_2d.html">Complex Pooling 2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="complex_upsampling.html">Complex Upsampling techniques</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dropout.html">Complex Dropout</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../layers.html">Complex Layers</a> &raquo;</li>
+        
+      <li>Complex Convolution</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/layers/complex_conv.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="complex-convolution">
+<h1>Complex Convolution<a class="headerlink" href="#complex-convolution" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="complex-conv-2d">
+<h2>Complex Conv 2D<a class="headerlink" href="#complex-conv-2d" title="Permalink to this headline">¶</a></h2>
+<p><strong>Small code example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">input_shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">input_shape</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex64</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">ComplexConv2D</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;cart_relu&#39;</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="n">input_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">tf</span><span class="o">.</span><span class="n">complex64</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt id="ComplexConv2D">
+<em class="property">class </em><code class="sig-name descname">ComplexConv2D</code><a class="headerlink" href="#ComplexConv2D" title="Permalink to this definition">¶</a></dt>
+<dd><p>2D convolution layer (e.g. spatial convolution over images).
+Support complex and real input.</p>
+<img alt="https://miro.medium.com/max/395/1*1VJDP6qDY9-ExTuQVEOlVg.gif" src="https://miro.medium.com/max/395/1*1VJDP6qDY9-ExTuQVEOlVg.gif" />
+<p>This layer creates a convolution kernel that is convolved with the layer input to produce a tensor of outputs.
+If <code class="code docutils literal notranslate"><span class="pre">use_bias</span></code> is <code class="code docutils literal notranslate"><span class="pre">True</span></code>, a bias vector is created and added to the outputs.
+Finally, if <code class="code docutils literal notranslate"><span class="pre">activation</span></code> is not <code class="code docutils literal notranslate"><span class="pre">None</span></code>, it is applied to the outputs as well.
+When using this layer as the first layer in a model, provide the keyword argument <code class="code docutils literal notranslate"><span class="pre">input_shape</span></code> (tuple of integers, does not include the sample axis),
+e.g. <code class="code docutils literal notranslate"><span class="pre">input_shape=(128,</span> <span class="pre">128,</span> <span class="pre">3)</span></code> for 128x128 RGB pictures in <code class="code docutils literal notranslate"><span class="pre">data_format=&quot;channels_last&quot;</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filters</span></em>, <em class="sig-param"><span class="n">kernel_size</span></em>, <em class="sig-param"><span class="n">strides</span><span class="o">=</span><span class="default_value">(1, 1)</span></em>, <em class="sig-param"><span class="n">padding</span><span class="o">=</span><span class="default_value">'valid'</span></em>, <em class="sig-param"><span class="n">data_format</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dilation_rate</span><span class="o">=</span><span class="default_value">(1, 1)</span></em>, <em class="sig-param"><span class="n">groups</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">activation</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_bias</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">np.complex64</span></em>, <em class="sig-param"><span class="n">kernel_initializer</span><span class="o">=</span><span class="default_value">ComplexGlorotUniform()</span></em>, <em class="sig-param"><span class="n">bias_initializer</span><span class="o">=</span><span class="default_value">Zeros()</span></em>, <em class="sig-param"><span class="n">kernel_regularizer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bias_regularizer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">activity_regularizer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">kernel_constraint</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bias_constraint</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filters</strong> – Integer, the dimensionality of the output space (i.e. the number of output filters in the convolution).</p></li>
+<li><p><strong>kernel_size</strong> – An integer or tuple/list of 2 integers, specifying the height and width of the 2D convolution window. Can be a single integer to specify  the same value for all spatial dimensions.</p></li>
+<li><p><strong>strides</strong> – An integer or tuple/list of 2 integers, specifying the strides of the convolution along the height and width. Can be a single integer to specify the same value for all spatial dimensions.
+Specifying any stride value != 1 is incompatible with specifying any <code class="code docutils literal notranslate"><span class="pre">dilation_rate</span></code> value != 1.</p></li>
+<li><p><strong>padding</strong> – one of <code class="code docutils literal notranslate"><span class="pre">&quot;valid&quot;</span></code> or <cite>“same”</cite> (case-insensitive).
+- <code class="code docutils literal notranslate"><span class="pre">&quot;valid&quot;</span></code> means no padding.
+- <code class="code docutils literal notranslate"><span class="pre">&quot;same&quot;</span></code> results in padding evenly to the left/right or up/down of the input such that output has the same height/width dimension as the input.</p></li>
+<li><p><strong>dtype</strong> – Dtype of the input and therefore layer. Default <code class="code docutils literal notranslate"><span class="pre">complex64</span></code>.</p></li>
+<li><p><strong>data_format</strong> – A string, one of <code class="code docutils literal notranslate"><span class="pre">channels_last</span></code> (default) or <code class="code docutils literal notranslate"><span class="pre">channels_first</span></code>.
+The ordering of the dimensions in the inputs. <code class="code docutils literal notranslate"><span class="pre">channels_last</span></code> corresponds to inputs with shape <code class="code docutils literal notranslate"><span class="pre">(batch_size,</span> <span class="pre">height,</span> <span class="pre">width,</span> <span class="pre">channels)</span></code> while <code class="code docutils literal notranslate"><span class="pre">channels_first</span></code> corresponds to inputs with shape <code class="code docutils literal notranslate"><span class="pre">(batch_size,</span> <span class="pre">channels,</span> <span class="pre">height,</span> <span class="pre">width)</span></code>. It defaults to the <cite>image_data_format</cite> value found in your Keras config file at <cite>~/.keras/keras.json</cite>.
+If you never set it, then it will be <code class="code docutils literal notranslate"><span class="pre">channels_last</span></code>.</p></li>
+<li><p><strong>dilation_rate</strong> – an integer or tuple/list of 2 integers, specifying the dilation rate to use for dilated convolution. Can be a single integer to specify the same value for all spatial dimensions.
+Currently, specifying any <code class="code docutils literal notranslate"><span class="pre">dilation_rate</span></code> value != 1 is incompatible with specifying any stride value != 1.</p></li>
+<li><p><strong>groups</strong> – A positive integer specifying the number of groups in which the input is split along the channel axis. Each group is convolved separately
+with <code class="code docutils literal notranslate"><span class="pre">filters</span> <span class="pre">/</span> <span class="pre">groups</span></code> filters. The output is the concatenation of all the <code class="code docutils literal notranslate"><span class="pre">groups</span></code> results along the channel axis. Input channels and <code class="code docutils literal notranslate"><span class="pre">filters</span></code> must both be divisible by <code class="code docutils literal notranslate"><span class="pre">groups</span></code>.</p></li>
+<li><p><strong>activation</strong> – Activation function to use. If you don’t specify anything, no activation is applied (see <code class="code docutils literal notranslate"><span class="pre">keras.activations</span></code> or <code class="code docutils literal notranslate"><span class="pre">cvnn.activations</span></code>).
+For complex <code class="code docutils literal notranslate"><span class="pre">dtype</span></code>, this must be a <code class="code docutils literal notranslate"><span class="pre">cvnn.activations</span></code> module.</p></li>
+<li><p><strong>use_bias</strong> – Boolean, whether the layer uses a bias vector.</p></li>
+<li><p><strong>kernel_initializer</strong> – Initializer for the <code class="code docutils literal notranslate"><span class="pre">kernel</span></code> weights matrix (see <code class="code docutils literal notranslate"><span class="pre">cvnn.initializers</span></code>).</p></li>
+<li><p><strong>bias_initializer</strong> – Initializer for the bias vector (see <code class="code docutils literal notranslate"><span class="pre">cvnn.initializers</span></code>).</p></li>
+<li><p><strong>kernel_regularizer</strong> – Regularizer function applied to the <code class="code docutils literal notranslate"><span class="pre">kernel</span></code> weights matrix (see <code class="code docutils literal notranslate"><span class="pre">keras.regularizers</span></code>).</p></li>
+<li><p><strong>bias_regularizer</strong> – Regularizer function applied to the bias vector (see <code class="code docutils literal notranslate"><span class="pre">keras.regularizers</span></code>).</p></li>
+<li><p><strong>activity_regularizer</strong> – Regularizer function applied to the output of the layer (its “activation”) (see <code class="code docutils literal notranslate"><span class="pre">keras.regularizers</span></code>).</p></li>
+<li><p><strong>kernel_constraint</strong> – Constraint function applied to the kernel matrix (see <code class="code docutils literal notranslate"><span class="pre">keras.constraints</span></code>).</p></li>
+<li><p><strong>bias_constraint</strong> – Constraint function applied to the bias vector (see <code class="code docutils literal notranslate"><span class="pre">keras.constraints</span></code>).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>ATTENTION: <code class="code docutils literal notranslate"><span class="pre">regularizers</span></code> not yet working, that parameter will be ignored.</p>
+</div>
+<dl class="py method">
+<dt id="call">
+<code class="sig-name descname">call</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">inputs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#call" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Calls convolution, this function is divided in 4:</dt><dd><ol class="arabic simple">
+<li><p>Input parser/verification</p></li>
+<li><p>Convolution</p></li>
+<li><p>Bias</p></li>
+<li><p>Activation Function</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>inputs</strong> – Input tensor, or list/tuple of input tensors.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tensor of rank 4+ representing <code class="code docutils literal notranslate"><span class="pre">activation(conv2d(inputs,</span> <span class="pre">kernel)</span> <span class="pre">+</span> <span class="pre">bias)</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="complex-conv-1d-and-3d">
+<h2>Complex Conv 1D and 3D<a class="headerlink" href="#complex-conv-1d-and-3d" title="Permalink to this headline">¶</a></h2>
+<p>This library also has 1D (<code class="code docutils literal notranslate"><span class="pre">ComplexConv1D</span></code>) and 3D (<code class="code docutils literal notranslate"><span class="pre">ComplexConv3D</span></code>) convolution layers.
+Usage is analogous to <code class="code docutils literal notranslate"><span class="pre">ComplexConv2D</span></code>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="complex_dense.html" class="btn btn-neutral float-right" title="Complex Dense" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../layers.html" class="btn btn-neutral float-left" title="Complex Layers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

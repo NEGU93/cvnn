@@ -1,0 +1,279 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>No Dropout Type A 1HL &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>No Dropout Type A 1HL</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/experiments/no_dropout_type_a_1hl.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="no-dropout-type-a-1hl">
+<h1>No Dropout Type A 1HL<a class="headerlink" href="#no-dropout-type-a-1hl" title="Permalink to this headline">¶</a></h1>
+<p><strong>Monte Carlo run</strong></p>
+<ul class="simple">
+<li><p>Iterations: 1000</p></li>
+<li><p>epochs: 150</p></li>
+<li><p>batch_size: 100</p></li>
+<li><p>Optimizer: SGD. Learning Rate: 0.01</p></li>
+<li><p>Data is not shuffled at each iteration</p></li>
+</ul>
+<p><strong>Opened data located in data/TypeA</strong></p>
+<ul class="simple">
+<li><p>Num classes: 2</p></li>
+<li><p>Total Samples: 20000</p></li>
+<li><p>Vector size: 128</p></li>
+<li><p>Train percentage: 80%</p></li>
+</ul>
+<p><strong>Models:</strong></p>
+<p><strong>Complex Network</strong></p>
+<p>Dense layer</p>
+<ul class="simple">
+<li><p>input size = 128(&lt;class ‘numpy.complex64’&gt;) -&gt; output size = 64;</p></li>
+<li><p>act_fun = cart_relu;</p></li>
+<li><p>weight init = Glorot Uniform; bias init = Zeros</p></li>
+<li><p>Dropout: None</p></li>
+</ul>
+<p>Dense layer</p>
+<ul class="simple">
+<li><p>input size = 64(complex64) -&gt; output size = 2;</p></li>
+<li><p>act_fun = softmax_real;</p></li>
+<li><p>weight init = Glorot Uniform; bias init = Zeros</p></li>
+<li><p>Dropout: None</p></li>
+</ul>
+<p><strong>Real Network</strong></p>
+<p>Dense layer</p>
+<ul class="simple">
+<li><p>input size = 256(&lt;class ‘numpy.float32’&gt;) -&gt; output size = 128;</p></li>
+<li><p>act_fun = cart_relu;</p></li>
+<li><p>weight init = Glorot Uniform; bias init = Zeros</p></li>
+<li><p>Dropout: None</p></li>
+</ul>
+<p>Dense layer</p>
+<ul class="simple">
+<li><p>input size = 128(&lt;class ‘numpy.float32’&gt;) -&gt; output size = 2;</p></li>
+<li><p>act_fun = softmax_real;</p></li>
+<li><p>weight init = Glorot Uniform; bias init = Zeros</p></li>
+<li><p>Dropout: None</p></li>
+</ul>
+<div class="section" id="results-graphs">
+<h2>Results Graphs<a class="headerlink" href="#results-graphs" title="Permalink to this headline">¶</a></h2>
+<p><strong>Box Plots</strong></p>
+<iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_box_plot.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_box_plot.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy_box_plot.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_box_plot.html" height="500px" width="100%"></iframe><p><strong>Confidence lines</strong></p>
+<iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_accuracy.html" height="500px" width="100%"></iframe><p><strong>Histograms</strong></p>
+<iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_accuracy_histogram.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_test_loss_histogram.html" height="500px" width="100%"></iframe><iframe src="../_static/circularity/no_dropout_type_a_1hl/montecarlo_train_loss_histogram.html" height="500px" width="100%"></iframe></div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

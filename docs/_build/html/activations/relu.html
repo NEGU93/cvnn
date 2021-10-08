@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ReLU-based &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Phasor activation functions" href="mvn_activation.html" />
+    <link rel="prev" title="Complex input, real output" href="real_output.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../act_fun.html">Activation Functions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="types.html">TYPE A: Cartesian form</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html#type-b-polar-form">TYPE B: Polar form</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real_output.html">Complex input, real output</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">ReLU-based</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mvn_activation.html">Phasor activation functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="etf.html">Elementary Transcentental Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../act_fun.html">Activation Functions</a> &raquo;</li>
+        
+      <li>ReLU-based</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/activations/relu.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="relu-based">
+<h1>ReLU-based<a class="headerlink" href="#relu-based" title="Permalink to this headline">¶</a></h1>
+<dl class="py method">
+<dt id="modrelu">
+<code class="sig-name descname">modrelu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span><span class="p">:</span> <span class="n">Tensor</span></em>, <em class="sig-param"><span class="n">b</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">c</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-3</span></em><span class="sig-paren">)</span><a class="headerlink" href="#modrelu" title="Permalink to this definition">¶</a></dt>
+<dd><p>mod ReLU presented in <a class="reference internal" href="#cit2016-arjovsky" id="id1"><span>[CIT2016-ARJOVSKY]</span></a>.</p>
+<p>A variation of the ReLU named modReLU. It is a pointwise nonlinearity,
+<span class="math notranslate nohighlight">\(modReLU(z) : C \longrightarrow C\)</span>, which affects only the absolute
+value of a complex number, defined</p>
+<div class="math notranslate nohighlight">
+\[modReLU(z) = ReLU(|z|+b)*z/|z|\]</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="crelu">
+<code class="sig-name descname">crelu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span><span class="p">:</span> <span class="n">Tensor</span></em><span class="sig-paren">)</span><a class="headerlink" href="#crelu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mirror of <code class="code docutils literal notranslate"><span class="pre">cvnn.activations.cart_relu</span></code>.
+Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/relu">Rectified Linear Unit</a> to both the real and imag part of z.</p>
+<p>The relu function, with default values, it returns element-wise max(x, 0).</p>
+<p>Otherwise, it follows.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}f(x) = \textrm{max_value}, \quad \textrm{for} \quad x &gt;= \textrm{max_value} \\
+f(x) = x, \quad \textrm{for} \quad \textrm{threshold} &lt;= x &lt; \textrm{max_value} \\
+f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="zrelu">
+<code class="sig-name descname">zrelu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span><span class="p">:</span> <span class="n">Tensor</span></em><span class="sig-paren">)</span><a class="headerlink" href="#zrelu" title="Permalink to this definition">¶</a></dt>
+<dd><p>zReLU presented in <a class="reference internal" href="#cit2016-guberman" id="id2"><span>[CIT2016-GUBERMAN]</span></a>.
+This methods let’s the output as the input if both real and imaginary parts are positive.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}f(z) = z \quad \textrm{for} \quad 0 \leq \phi_z \leq \pi / 2 \\
+f(z) =    0 \quad \textrm{elsewhere}  \\\end{split}\]</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="complex_cardioid">
+<code class="sig-name descname">complex_cardioid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span><span class="p">:</span> <span class="n">Tensor</span></em><span class="sig-paren">)</span><a class="headerlink" href="#complex_cardioid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Complex cardioid presented in <a class="reference internal" href="#cit2017-patrick" id="id3"><span>[CIT2017-PATRICK]</span></a></p>
+<p>This function maintains the phase information while attenuating the magnitude based on the phase itself.
+For real-valued inputs, it reduces to the ReLU.</p>
+<div class="math notranslate nohighlight">
+\[f(z) = \frac{(1 + cos \phi_z) * z}{2}\]</div>
+</dd></dl>
+
+<dl class="citation">
+<dt class="label" id="cit2016-arjovsky"><span class="brackets"><a class="fn-backref" href="#id1">CIT2016-ARJOVSKY</a></span></dt>
+<dd><ol class="upperalpha simple" start="13">
+<li><p>Arjovsky et al. “Unitary Evolution Recurrent Neural Networks” 2016</p></li>
+</ol>
+</dd>
+<dt class="label" id="cit2016-guberman"><span class="brackets"><a class="fn-backref" href="#id2">CIT2016-GUBERMAN</a></span></dt>
+<dd><ol class="upperalpha simple" start="14">
+<li><p>Guberman “On Complex Valued Convolutional Neural Networks” 2016</p></li>
+</ol>
+</dd>
+<dt class="label" id="cit2017-patrick"><span class="brackets"><a class="fn-backref" href="#id3">CIT2017-PATRICK</a></span></dt>
+<dd><ol class="upperalpha simple" start="22">
+<li><p>Patrick et al. “Better than Real: Complex-valued Neural Nets for MRI Fingerprinting” 2017</p></li>
+</ol>
+</dd>
+</dl>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mvn_activation.html" class="btn btn-neutral float-right" title="Phasor activation functions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="real_output.html" class="btn btn-neutral float-left" title="Complex input, real output" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
