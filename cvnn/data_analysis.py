@@ -1119,12 +1119,12 @@ class MonteCarloAnalyzer:
                                   network_filter=network_filter)
                 except:
                     logger.warning("Could not plot " + key + " Box Plot with " + str(lib), exc_info=True)
-                try:
-                    self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
-                except np.linalg.LinAlgError:
-                    logger.warning(f"Could not plot Histogram with {lib} because matrix was singular", exc_info=True)
-                except:
-                    logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
+                # try:
+                #     self.plot_histogram(key=key, library=lib, showfig=showfig, savefig=savefig, extension=extension)
+                # except np.linalg.LinAlgError:
+                #     logger.warning(f"Could not plot Histogram with {lib} because matrix was singular", exc_info=True)
+                # except:
+                #     logger.warning("Could not plot " + key + " Histogram with " + str(lib), exc_info=True)
                 try:
                     self.monte_carlo_plotter.plot_line_confidence_interval(key=key, x_axis='epoch', library=lib,
                                                                            showfig=showfig, savefig=savefig,
@@ -1537,6 +1537,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.51'
+__version__ = '0.1.52'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'

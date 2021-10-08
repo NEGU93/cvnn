@@ -13,28 +13,16 @@ class ComplexAverageCrossEntropy(Loss):
         return (real_loss + imag_loss) / 2.
 
 
-if __name__ == "__main__":
-    from cvnn.layers import ComplexDense, complex_input
-    import cvnn.dataset as dp
-    from pdb import set_trace
-    import os
+class ComplexWeightedAverageCrossEntropy(ComplexAverageCrossEntropy):
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    def __init__(self, weights, **kwargs):
+        self.class_weights = weights
+        super(ComplexWeightedAverageCrossEntropy, self).__init__(**kwargs)
 
-    m = 10000
-    n = 128
-    param_list = [
-        [0.3, 1, 1],
-        [-0.3, 1, 1]
-    ]
-    dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-
-    model = tf.keras.models.Sequential([
-        complex_input(shape=(n)),
-        ComplexDense(units=50, activation="cart_relu"),
-        ComplexDense(2, activation="cart_softmax")
-    ])
-
-    model.compile(loss=ComplexAverageCrossEntropy(), metrics=["accuracy"], optimizer="sgd")
-
-    model.fit(dataset.x, dataset.y, epochs=6)
+    def call(self, y_true, y_pred):
+        # https://stackoverflow.com/questions/44560549/unbalanced-data-and-weighted-cross-entropy
+        weights = tf.reduce_sum(self.class_weights * y_true, axis=-1)
+        unweighted_losses = super(ComplexWeightedAverageCrossEntropy, self).call(y_true, y_pred)
+        # import pdb; pdb.set_trace()
+        weighted_losses = unweighted_losses * weights
+        return weighted_losses

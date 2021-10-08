@@ -1,9 +1,10 @@
-from cvnn.losses import ComplexAverageCrossEntropy
+from cvnn.losses import ComplexAverageCrossEntropy, ComplexWeightedAverageCrossEntropy
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import CategoricalCrossentropy
 import cvnn.dataset as dp
 from cvnn.layers import ComplexDense, complex_input
+from pdb import set_trace
 
 
 def ace():
@@ -28,7 +29,38 @@ def ace():
     model.fit(dataset.x, dataset.y, epochs=6)
 
 
+def weighted_loss():
+    y_true = np.array([
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [0., 1.]
+    ])
+    y_pred = np.array([
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.],
+        [1., 0.]
+    ])
+    ace = ComplexAverageCrossEntropy()(y_pred=tf.complex(y_pred, y_pred), y_true=y_true)
+    wace = ComplexWeightedAverageCrossEntropy(weights=[1., 9.])(y_pred=tf.complex(y_pred, y_pred), y_true=y_true)
+    assert ace.numpy() < wace.numpy(), f"ACE {ace.numpy()} > WACE {wace.numpy()}"
+
+
 def test_losses():
+    weighted_loss()
     ace()
 
 
