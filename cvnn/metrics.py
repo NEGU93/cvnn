@@ -133,13 +133,20 @@ def custom_average_accuracy(y_true, y_pred):
 
 class ComplexAverageAccuracy(Mean):
 
-    def __init__(self, name='custom_average_accuracy', dtype=None):
+    def __init__(self, name='complex_average_accuracy', dtype=None):
         self._fn = custom_average_accuracy
         super(ComplexAverageAccuracy, self).__init__(name, dtype=dtype)
 
     def update_state(self, y_true, y_pred, sample_weight=None):
+        # WARNING: sample_weights will not be used
+        y_pred = tf.convert_to_tensor(y_pred)
+        y_true = tf.convert_to_tensor(y_true)
+        if y_pred.dtype.is_complex:
+            y_pred = (tf.math.real(y_pred) + tf.math.imag(y_pred)) / 2
+        if y_true.dtype.is_complex:
+            assert tf.math.reduce_all(tf.math.real(y_pred) == tf.math.imag(y_pred)), "y_pred must be real valued"
         matches = self._fn(y_true, y_pred)
-        return super(ComplexAverageAccuracy, self).update_state(matches, sample_weight=sample_weight)
+        return super(ComplexAverageAccuracy, self).update_state(matches)
 
 
 if __name__ == '__main__':

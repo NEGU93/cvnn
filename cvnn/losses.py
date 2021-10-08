@@ -23,6 +23,5 @@ class ComplexWeightedAverageCrossEntropy(ComplexAverageCrossEntropy):
         # https://stackoverflow.com/questions/44560549/unbalanced-data-and-weighted-cross-entropy
         weights = tf.reduce_sum(self.class_weights * y_true, axis=-1)
         unweighted_losses = super(ComplexWeightedAverageCrossEntropy, self).call(y_true, y_pred)
-        # import pdb; pdb.set_trace()
-        weighted_losses = unweighted_losses * weights
+        weighted_losses = unweighted_losses * tf.cast(weights, dtype=unweighted_losses.dtype)
         return weighted_losses
