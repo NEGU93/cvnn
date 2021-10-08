@@ -1,0 +1,281 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Real Vs Complex &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Output files" href="output_files.html" />
+    <link rel="prev" title="Monte Carlo" href="monte_carlo.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="monte_carlo.html">Monte Carlo</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Real Vs Complex</a></li>
+<li class="toctree-l2"><a class="reference internal" href="output_files.html">Output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="helper_functions.html">Other Helper function</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../montecarlo.html">Monte Carlo</a> &raquo;</li>
+        
+      <li>Real Vs Complex</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/montecarlo/complex_vs_real.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="real-vs-complex">
+<span id="id1"></span><h1>Real Vs Complex<a class="headerlink" href="#real-vs-complex" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="RealVsComplex">
+<em class="property">class </em><code class="sig-name descname">RealVsComplex</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">MonteCarlo</span></em><span class="sig-paren">)</span><a class="headerlink" href="#RealVsComplex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherits from MonteCarlo. It generates the same files with the exception that the excel file is called <code class="code docutils literal notranslate"><span class="pre">./log/rvnn_vs_cvnn_monte_carlo_summary.xlsx</span></code></p>
+<p>Compares a complex model with it’s real equivalent.</p>
+<p>Example usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assume you already have complex data &#39;x&#39; with its labels &#39;y&#39;... and a Cvnn model.</span>
+
+<span class="n">montecarlo</span> <span class="o">=</span> <span class="n">RealVsComplex</span><span class="p">(</span><span class="n">complex_model</span><span class="p">)</span>
+<span class="n">montecarlo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">complex_model</span></em>, <em class="sig-param"><span class="n">capacity_equivalent</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">equiv_technique</span><span class="o">=</span><span class="default_value">'ratio'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to compare a single Complex Model given as a parameter. The Code will generate it’s real equivalent and compre both of them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>complex_model</strong> – <code class="code docutils literal notranslate"><span class="pre">tensorflow.keras.model</span></code></p></li>
+<li><p><strong>capacity_equivalent</strong> – An equivalent model can be equivalent in terms of layer neurons or trainable parameters (capacity equivalent according to <a class="reference external" href="https://arxiv.org/abs/1811.12351">this paper</a>)
+- True, it creates a capacity-equivalent model in terms of trainable parameters
+- False, it will double all layer size (except the last one if classifier=True)</p></li>
+<li><p><strong>equiv_technique</strong> – <p>Used to define the strategy of the capacity equivalent model.
+This parameter is ignored if <code class="code docutils literal notranslate"><span class="pre">capacity_equivalent=False</span></code>
+- ‘ratio’: <code class="code docutils literal notranslate"><span class="pre">neurons_real_valued_layer[i]</span> <span class="pre">=</span> <span class="pre">r</span> <span class="pre">*</span> <span class="pre">neurons_complex_valued_layer[i]</span></code>, ‘r’ constant for all ‘i’
+- ‘alternate’: Method described in <a class="reference external" href="https://arxiv.org/abs/1811.12351">this paper</a> where one alternates between multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="output_files.html" class="btn btn-neutral float-right" title="Output files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="monte_carlo.html" class="btn btn-neutral float-left" title="Monte Carlo" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

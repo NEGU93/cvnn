@@ -1,4 +1,0 @@
-sudo -s (To become root)
-systemd-inhibit --why="Doing simulations" python my-python-script.py
-
-sudo chmod -R 777 log/

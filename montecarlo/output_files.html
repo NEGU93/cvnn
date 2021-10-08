@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Output files &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Other Helper function" href="helper_functions.html" />
+    <link rel="prev" title="Real Vs Complex" href="complex_vs_real.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="monte_carlo.html">Monte Carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="complex_vs_real.html">Real Vs Complex</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Output files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="helper_functions.html">Other Helper function</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../montecarlo.html">Monte Carlo</a> &raquo;</li>
+        
+      <li>Output files</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/montecarlo/output_files.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="output-files">
+<span id="id1"></span><h1>Output files<a class="headerlink" href="#output-files" title="Permalink to this headline">¶</a></h1>
+<p>Monte Carlo class will generate at least four different type of files on the path <code class="file docutils literal notranslate"><span class="pre">./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/</span></code></p>
+<ol class="arabic simple">
+<li><p><code class="file docutils literal notranslate"><span class="pre">run_data.csv</span></code>: Raw results with the <code class="code docutils literal notranslate"><span class="pre">loss</span></code>, <code class="code docutils literal notranslate"><span class="pre">epoch</span></code>, <code class="code docutils literal notranslate"><span class="pre">model</span></code>, etc.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">&lt;model_name&gt;_statistical_result.csv</span></code>: One file is generated for each model in the monte carlo simulation. It contains the statistical results per epoch of the model.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">models_details.json</span></code>: A full detailed description of each model to be trained.</p></li>
+<li><p><code class="file docutils literal notranslate"><span class="pre">run/iteration&lt;iteration&gt;_model&lt;model</span> <span class="pre">index</span> <span class="pre">and</span> <span class="pre">name&gt;/&lt;model_name&gt;_results_fit.csv</span></code>: Inside the <code class="file docutils literal notranslate"><span class="pre">run</span></code> folder there is information of the result for each model at each iteration.</p></li>
+</ol>
+<p>There are many other optional files that can be controled using the <cite>output_config</cite> dictionary variable of booleans:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output_config</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;plot_all&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;confusion_matrix&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;excel_summary&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;debug&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;summary_of_run&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;tensorboard&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;save_weights&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;safety_checkpoints&#39;</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+<p>A complementary file <code class="file docutils literal notranslate"><span class="pre">test_results.csv</span></code> can be generated if <code class="code docutils literal notranslate"><span class="pre">test_data</span></code> is passed <a class="reference internal" href="monte_carlo.html#run" title="run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> (<code class="code docutils literal notranslate"><span class="pre">None</span></code> by default).</p>
+<p>Usage example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">monte_carlo</span> <span class="o">=</span> <span class="n">MonteCarlo</span><span class="p">()</span>
+<span class="n">monte_carlo</span><span class="p">[</span><span class="s1">&#39;plot_all&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>      <span class="c1"># Tell monte carlo to save the plots</span>
+</pre></div>
+</div>
+<table class="colwidths-given docutils align-default" id="id4">
+<caption><span class="caption-text">Output files</span><a class="headerlink" href="#id4" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Generated File(s)</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>‘excel_summary’</p></td>
+<td><p>.logs/<a href="#id2"><span class="problematic" id="id3">*</span></a>.xlsx</p></td>
+<td><p>Adds a row to an excel file with information of the monte carlo run</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/run_data.csv</p></td>
+<td><p>Always generated. All monte carlo raw results.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/&lt;model_name&gt;_statistical_result.csv</p></td>
+<td><p>Always generated. Statistical results per model.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/models_details.json</p></td>
+<td><p>Always generated. A full detailed description of each model to be trained.</p></td>
+</tr>
+<tr class="row-even"><td><p>‘plot_all’</p></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/plots/</p></td>
+<td><p>Plots generated using MonteCarloAnalyzer.do_all()</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘confusion_matrix’</p></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/&lt;model_name&gt;_confusion_matrix.csv</p></td>
+<td><p>Generates a confusion matrix file per model</p></td>
+</tr>
+<tr class="row-even"><td><p>‘summary_of_run’</p></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/run_summary.txt</p></td>
+<td><p>Generates a user friendly monte carlo text summary</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘debug’</p></td>
+<td></td>
+<td><p>Prints progress bar per model epoch</p></td>
+</tr>
+<tr class="row-even"><td><p>‘safety_checkpoints’</p></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/run_data.csv</p></td>
+<td><p>Creates the <cite>run_data.csv</cite> as data is obtained not to lose information if an unexpected exit happens.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/test_results.csv</p></td>
+<td><p>This is generated if a test_data is passed to the <a class="reference internal" href="monte_carlo.html#run" title="run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> method of MonteCarlo.</p></td>
+</tr>
+<tr class="row-even"><td><p>‘tensorboard’</p></td>
+<td><p>./logs/montecarlo/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;/run_&lt;time&gt;/tensorboard/</p></td>
+<td><p>Saves tensorboard results like graph, loss and accuracy.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="helper_functions.html" class="btn btn-neutral float-right" title="Other Helper function" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="complex_vs_real.html" class="btn btn-neutral float-left" title="Real Vs Complex" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
