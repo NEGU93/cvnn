@@ -12,6 +12,13 @@ class ComplexAverageCrossEntropy(Loss):
             imag_loss = real_loss
         return (real_loss + imag_loss) / 2.
 
+class ComplexMeanSquareError(Loss):
+
+    def call(self, y_true, y_pred):
+        if y_pred.dtype.is_complex:
+            y_true = tf.complex(y_true, y_true)
+        return tf.keras.metrics.mean_squared_error(y_true, y_pred)
+
 
 class ComplexWeightedAverageCrossEntropy(ComplexAverageCrossEntropy):
 
