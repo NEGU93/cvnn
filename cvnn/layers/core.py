@@ -193,6 +193,8 @@ class ComplexDense(Dense, ComplexLayer):
             - 'zero_imag': Initializer real part and let imaginary part to zero.
         """
         # TODO: verify the initializers? and that dtype complex has cvnn.activations.
+        if activation is None:
+            activation = "linear"
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                            kernel_initializer=kernel_initializer,
                                            bias_initializer=bias_initializer, **kwargs)
