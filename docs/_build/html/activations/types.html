@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>TYPE A: Cartesian form &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Complex input, real output" href="real_output.html" />
+    <link rel="prev" title="Activation Functions" href="../act_fun.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../act_fun.html">Activation Functions</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">TYPE A: Cartesian form</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#type-b-polar-form">TYPE B: Polar form</a></li>
+<li class="toctree-l2"><a class="reference internal" href="real_output.html">Complex input, real output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="relu.html">ReLU-based</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mvn_activation.html">Phasor activation functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="etf.html">Elementary Transcentental Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../act_fun.html">Activation Functions</a> &raquo;</li>
+        
+      <li>TYPE A: Cartesian form</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/activations/types.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following <code class="code docutils literal notranslate"><span class="pre">cart</span></code> or <code class="code docutils literal notranslate"><span class="pre">pol</span></code> means either type A (cartesian) or type B (polar) according to <a class="reference internal" href="#cit2003-kuroe" id="id1"><span>[CIT2003-KUROE]</span></a> notation.</p>
+</div>
+<div class="section" id="type-a-cartesian-form">
+<h1>TYPE A: Cartesian form<a class="headerlink" href="#type-a-cartesian-form" title="Permalink to this headline">¶</a></h1>
+<dl class="py method">
+<dt id="cart_sigmoid">
+<code class="sig-name descname">cart_sigmoid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Called with <code class="code docutils literal notranslate"><span class="pre">'cart_sigmoid'</span></code> string.</p>
+<p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/sigmoid">sigmoid</a> function to both the real and imag part of z.</p>
+<div class="math notranslate nohighlight">
+\[\frac{1}{1 + e^{-x}} + j  \frac{1}{1 + e^{-y}}\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[z = x + j y\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Tensor to be used as input of the activation function</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_elu">
+<code class="sig-name descname">cart_elu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">0.1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_elu" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/elu">Exponential linear unit</a>. To both the real and imaginary part of z.</p>
+<div class="math notranslate nohighlight">
+\[x if x &gt; 0 and alpha * (exp(x)-1) if x &lt; 0\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> – Input tensor.</p></li>
+<li><p><strong>alpha</strong> – A scalar, slope of negative section.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_exponential">
+<code class="sig-name descname">cart_exponential</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_exponential" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Exponential activation function. Applies to both the real and imag part of z the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/exponential">exponential activation</a>:</p>
+<div class="math notranslate nohighlight">
+\[e^x\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_hard_sigmoid">
+<code class="sig-name descname">cart_hard_sigmoid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_hard_sigmoid" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies the <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid">hard Sigmoid</a> function to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The hard sigmoid function is faster to compute than sigmoid activation.
+Hard sigmoid activation:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\begin{split}            0               ,\quad x &lt; -2.5 \\
+1               ,\quad x &gt; 2.5 \\
+0.2 * x + 0.5   ,\quad -2.5 &lt;= x &lt;= 2.5\end{split}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_relu">
+<code class="sig-name descname">cart_relu</code><span class="sig-paren">(</span><em class="sig-param">z</em>, <em class="sig-param">alpha=0.0</em>, <em class="sig-param">max_value=None</em>, <em class="sig-param">threshold=0</em><span class="sig-paren">)</span><a class="headerlink" href="#cart_relu" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/relu">Rectified Linear Unit</a> to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The relu function, with default values, it returns element-wise max(x, 0).</p>
+<p>Otherwise, it follows:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\begin{split}            f(x) = \textrm{max_value}, \quad \textrm{for} \quad x &gt;= \textrm{max_value} \\
+f(x) = x, \quad \textrm{for} \quad \textrm{threshold} &lt;= x &lt; \textrm{max_value} \\
+f(x) = \alpha * (x - \textrm{threshold}), \quad \textrm{otherwise} \\\end{split}\]</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_leaky_relu">
+<code class="sig-name descname">cart_leaky_relu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="o">=</span><span class="default_value">0.2</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_leaky_relu" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/nn/leaky_relu">Leaky Rectified Linear Unit</a> <a class="reference internal" href="#cit2013-maas" id="id2"><span>[CIT2013-MAAS]</span></a> (<a class="reference external" href="http://robotics.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf">source</a>) to both the real and imag part of z.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> – Input tensor.</p></li>
+<li><p><strong>alpha</strong> – Slope of the activation function at x &lt; 0. Default: 0.2</p></li>
+<li><p><strong>name</strong> – A name for the operation (optional).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_selu">
+<code class="sig-name descname">cart_selu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_selu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id3"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to both the real and imag part of z.</p>
+<p>The scaled exponential unit activation:</p>
+<div class="math notranslate nohighlight">
+\[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt>
+<code class="sig-name descname">cart_softplus(z):</code></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/softplus">Softplus</a> activation function to both the real and imag part of z.
+The Softplus function:</p>
+<div class="math notranslate nohighlight">
+\[log(e^x + 1)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt>
+<code class="sig-name descname">cart_softsign(z):</code></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/softsign">Softsign</a> activation function to both the real and imag part of z.
+The softsign activation:</p>
+<div class="math notranslate nohighlight">
+\[\frac{x}{\lvert x \rvert + 1}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cart_tanh">
+<code class="sig-name descname">cart_tanh</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cart_tanh" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/tanh">Hyperbolic Tangent</a> (tanh) activation function to both the real and imag part of z.</p>
+</div></blockquote>
+<p>The tanh activation:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[tanh(x) = \frac{sinh(x)}{cosh(x)} = \frac{e^x - e^{-x}}{e^x + e^{-x}}.\]</div>
+</div></blockquote>
+<p>The derivative if tanh is computed as  <span class="math notranslate nohighlight">\(1 - tanh^2\)</span> so it should be fast to compute for backprop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="type-b-polar-form">
+<h1>TYPE B: Polar form<a class="headerlink" href="#type-b-polar-form" title="Permalink to this headline">¶</a></h1>
+<dl class="py method">
+<dt id="pol_selu">
+<code class="sig-name descname">pol_selu</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pol_selu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies <a class="reference external" href="https://www.tensorflow.org/api_docs/python/tf/keras/activations/selu">Scaled Exponential Linear Unit (SELU)</a> <a class="reference internal" href="#cit2017-klambauer" id="id6"><span>[CIT2017-KLAMBAUER]</span></a> (<a class="reference external" href="https://arxiv.org/abs/1706.02515">source</a>) to the absolute value of z, keeping the phase unchanged.</p>
+<p>The scaled exponential unit activation:</p>
+<div class="math notranslate nohighlight">
+\[\textrm{scale} * \textrm{elu}(x, \alpha)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – Input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tensor result of the applied activation function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="citation">
+<dt class="label" id="cit2003-kuroe"><span class="brackets"><a class="fn-backref" href="#id1">CIT2003-KUROE</a></span></dt>
+<dd><p>Kuroe, Yasuaki, Mitsuo Yoshid, and Takehiro Mori. “On activation functions for complex-valued neural networks—existence of energy functions—.” Artificial Neural Networks and Neural Information Processing—ICANN/ICONIP 2003. Springer, Berlin, Heidelberg, 2003. 985-992.</p>
+</dd>
+<dt class="label" id="cit2013-maas"><span class="brackets"><a class="fn-backref" href="#id2">CIT2013-MAAS</a></span></dt>
+<dd><ol class="upperalpha simple">
+<li><ol class="upperalpha simple" start="12">
+<li><p>Maas, A. Y. Hannun, and A. Y. Ng, “Rectifier Nonlinearities Improve Neural Network Acoustic Models,” 2013.</p></li>
+</ol>
+</li>
+</ol>
+</dd>
+<dt class="label" id="cit2017-klambauer"><span class="brackets">CIT2017-KLAMBAUER</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id6">2</a>)</span></dt>
+<dd><ol class="upperalpha simple" start="7">
+<li><p>Klambauer, T. Unterthiner, A. Mayr, and S. Hochreiter, “Self-Normalizing Neural Networks,” ArXiv170602515 Cs Stat, Sep. 2017. Available: <a class="reference external" href="http://arxiv.org/abs/1706.02515">http://arxiv.org/abs/1706.02515</a>.</p></li>
+</ol>
+</dd>
+</dl>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="real_output.html" class="btn btn-neutral float-right" title="Complex input, real output" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../act_fun.html" class="btn btn-neutral float-left" title="Activation Functions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

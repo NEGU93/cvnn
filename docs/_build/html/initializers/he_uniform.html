@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>He Uniform &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Monte Carlo" href="../montecarlo.html" />
+    <link rel="prev" title="He Normal" href="he_normal.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../initializers.html">Initializers</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="glorot_uniform.html">Glorot Uniform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="glorot_normal.html">Glorot Normal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="he_normal.html">He Normal</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">He Uniform</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_analysis.html">Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../initializers.html">Initializers</a> &raquo;</li>
+        
+      <li>He Uniform</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/initializers/he_uniform.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="he-uniform">
+<h1>He Uniform<a class="headerlink" href="#he-uniform" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="HeUniform">
+<em class="property">class </em><code class="sig-name descname">HeUniform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">RandomInitializer</span></em><span class="sig-paren">)</span><a class="headerlink" href="#HeUniform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The He Uniform initializer.</p>
+<p>Reference: <a class="reference internal" href="he_normal.html#he-2015" id="id1"><span>[HE-2015]</span></a></p>
+<p>Draws samples from a uniform distribution</p>
+<ul class="simple">
+<li><p>Real case: <code class="code docutils literal notranslate"><span class="pre">x</span> <span class="pre">~</span> <span class="pre">U[-limit,</span> <span class="pre">limit]</span></code> where <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">sqrt(6</span> <span class="pre">/</span> <span class="pre">fan_in)</span></code></p></li>
+<li><p>Complex case: <code class="code docutils literal notranslate"><span class="pre">z</span> <span class="pre">/</span> <span class="pre">Re{z}</span> <span class="pre">=</span> <span class="pre">Im{z}</span> <span class="pre">~</span> <span class="pre">U[-limit,</span> <span class="pre">limit]</span></code> where <code class="code docutils literal notranslate"><span class="pre">limit</span> <span class="pre">=</span> <span class="pre">sqrt(3</span> <span class="pre">/</span> <span class="pre">fan_in)</span></code></p></li>
+</ul>
+<p>where <code class="code docutils literal notranslate"><span class="pre">fan_in</span></code> is the number of input units in the weight tensor.</p>
+<p>Standalone usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">HeUniform</span><span class="p">()</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">initializer</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>                  <span class="c1"># Returns a complex He Uniform tensor of shape (2, 2)</span>
+</pre></div>
+</div>
+<p>Usage in a cvnn layer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cvnn</span>
+<span class="n">initializer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">HeUniform</span><span class="p">()</span>
+<span class="n">layer</span> <span class="o">=</span> <span class="n">cvnn</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">input_size</span><span class="o">=</span><span class="mi">23</span><span class="p">,</span> <span class="n">output_size</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">weight_initializer</span><span class="o">=</span><span class="n">initializer</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="call__">
+<code class="sig-name descname">__call__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">shape</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">tf.dtypes.complex64</span></em><span class="sig-paren">)</span><a class="headerlink" href="#call__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Returns a real-valued tensor object initialized as specified by the initializer.</dt><dd><p>The complex dtype input will only be used to know the limits to be used. This result must be used for the real and imaginary part separately.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> – Shape of the tensor.</p></li>
+<li><p><strong>dtype</strong> – Optinal dtype of the tensor. Either floating or complex. ex: <code class="code docutils literal notranslate"><span class="pre">tf.complex64</span></code> or <code class="code docutils literal notranslate"><span class="pre">tf.float32</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../montecarlo.html" class="btn btn-neutral float-right" title="Monte Carlo" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="he_normal.html" class="btn btn-neutral float-left" title="He Normal" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

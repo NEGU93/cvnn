@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Monte Carlo Plotter &mdash; cvnn 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Several Monte Carlo Comparison" href="several_monte_carlo_comparison.html" />
+    <link rel="prev" title="Monte Carlo Analyzer" href="monte_carlo_analyzer.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cvnn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../layers.html">Complex Layers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../act_fun.html">Activation Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../initializers.html">Initializers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../montecarlo.html">Monte Carlo</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../data_analysis.html">Data Analysis</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="plotter.html">Plotter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="monte_carlo_analyzer.html">Monte Carlo Analyzer</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Monte Carlo Plotter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="several_monte_carlo_comparison.html">Several Monte Carlo Comparison</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../code_examples.html">Code Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../results.html">Publication results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Me</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cvnn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../data_analysis.html">Data Analysis</a> &raquo;</li>
+        
+      <li>Monte Carlo Plotter</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/data_analysis/monte_carlo_plotter.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="monte-carlo-plotter">
+<h1>Monte Carlo Plotter<a class="headerlink" href="#monte-carlo-plotter" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All seaborn and matplotlib saved figures also generates a tikz figure (.tex) for LaTeX reports.</p>
+</div>
+<p><strong>Small code example</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;path/to/the/run_data/file&quot;</span>
+<span class="n">monte</span> <span class="o">=</span> <span class="n">MonteCarloAnalyzer</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>       <span class="c1"># MonteCarloAnalyzer uses MonteCarloPlotter by default as a variable :code:`monte_carlo_plotter`</span>
+<span class="n">monte</span><span class="o">.</span><span class="n">monte_carlo_plotter</span><span class="o">.</span><span class="n">plot_line_confidence_interval</span><span class="p">(</span><span class="n">x_axis</span><span class="o">=</span><span class="s1">&#39;epoch&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt id="MonteCarloPlotter">
+<em class="property">class </em><code class="sig-name descname">MonteCarloPlotter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Plotter</span></em><span class="sig-paren">)</span><a class="headerlink" href="#MonteCarloPlotter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inherits from Plotter.
+Used by <a class="reference internal" href="monte_carlo_analyzer.html#monte-carlo-analyzer"><span class="std std-ref">Monte Carlo Analyzer</span></a>.</p>
+<p>As <a class="reference internal" href="plotter.html#plotter"><span class="std std-ref">Plotter</span></a>, this class is used to plot evolution graphs with respect to each epoch like loss or accuracy but uses the average and/or median result of a monte carlo simulation.
+It also enables the plot of the same figures but with confidence intervals as it can be seen in the figures at the end of the page.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> – Path where with all the csv files that ends with <code class="code docutils literal notranslate"><span class="pre">_statistical_result.csv</span></code>. These csv are generated by <a class="reference internal" href="monte_carlo_analyzer.html#monte-carlo-analyzer"><span class="std std-ref">Monte Carlo Analyzer</span></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="plot_line_confidence_interval">
+<code class="sig-name descname">plot_line_confidence_interval</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'accuracy'</span></em>, <em class="sig-param"><span class="n">showfig</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">savefig</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">library</span><span class="o">=</span><span class="default_value">'matplotlib'</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">full_border</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">x_axis</span><span class="o">=</span><span class="default_value">'epoch'</span></em>, <em class="sig-param"><span class="n">extension</span><span class="o">=</span><span class="default_value">'.svg'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#plot_line_confidence_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves/shows the evolution of the trainig median and mean with the corresponding confidence intervals of the results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>library</strong> – string stating the library to be used to generate the box plot. <a class="reference external" href="https://matplotlib.org/stable/index.html">matplotlib</a>, <a class="reference external" href="https://plotly.com/python/">plotly</a> or <a class="reference external" href="https://seaborn.pydata.org/">seaborn</a></p></li>
+<li><p><strong>key</strong> – String stating what to plot using <code class="code docutils literal notranslate"><span class="pre">tf.keras.History</span></code> labels. ex. <code class="code docutils literal notranslate"><span class="pre">val_accuracy</span></code>, <code class="code docutils literal notranslate"><span class="pre">val_loss</span></code>, <code class="code docutils literal notranslate"><span class="pre">accuracy</span></code> or <code class="code docutils literal notranslate"><span class="pre">loss</span></code>.</p></li>
+<li><p><strong>showfig</strong> – If <code class="code docutils literal notranslate"><span class="pre">True</span></code>, it will show the grated box plot</p></li>
+<li><p><strong>savefig</strong> – If <code class="code docutils literal notranslate"><span class="pre">True</span></code>, it saves the figure at: <code class="code docutils literal notranslate"><span class="pre">self.path</span> <span class="pre">/</span> <span class="pre">&quot;plots/box_plot/&quot;</span></code></p></li>
+<li><p><strong>title</strong> – Figure title</p></li>
+<li><p><strong>full_border</strong> – </p></li>
+<li><p><strong>x_axis</strong> – What to use for the <code class="code docutils literal notranslate"><span class="pre">x_axis</span></code>, by default, <code class="code docutils literal notranslate"><span class="pre">epoch</span></code> (Not recommended to change)</p></li>
+<li><p><strong>extension</strong> – file extensions (default svg) to be used when saving the file (ignored if library is plotly).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p><strong>Output example using pyplot</strong></p>
+<iframe src="../_static/data_analysis_examples/montecarlo_test_accuracy.html" height="500px" width="100%"></iframe><p><strong>Output example using seaborn</strong></p>
+<object data="../_static/data_analysis_examples/montecarlo_test_accuracy_matplotlib.svg" type="image/svg+xml"></object><dl class="py method">
+<dt id="plot_key">
+<code class="sig-name descname">plot_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">'accuracy'</span></em>, <em class="sig-param"><span class="n">reload</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">library</span><span class="o">=</span><span class="default_value">'plotly'</span></em>, <em class="sig-param"><span class="n">showfig</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">savefig</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">index_loc</span><span class="o">=</span><span class="default_value">'mean'</span></em>, <em class="sig-param"><span class="n">extension</span><span class="o">=</span><span class="default_value">'.svg'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#plot_key" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>library</strong> – <p>String stating the library to be used to generate the box plot.</p>
+<ul>
+<li><p><a class="reference external" href="https://matplotlib.org/stable/index.html">matplotlib</a></p></li>
+<li><p><a class="reference external" href="https://plotly.com/python/">plotly</a></p></li>
+</ul>
+</p></li>
+<li><p><strong>key</strong> – String stating what to plot using tf.keras.History labels. ex. <cite>val_accuracy</cite> for the validation acc</p></li>
+<li><p><strong>showfig</strong> – If True, it will show the grated box plot</p></li>
+<li><p><strong>savefig</strong> – If True, it saves the figure at <cite>self.path/key_library.extension</cite></p></li>
+<li><p><strong>reload</strong> – If True it will reload data from the csv file in case it has changed.</p></li>
+<li><p><strong>index_loc</strong> – </p></li>
+<li><p><strong>extension</strong> – file extensions (default svg) to be used when saving the file (ignored if library is plotly).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="several_monte_carlo_comparison.html" class="btn btn-neutral float-right" title="Several Monte Carlo Comparison" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="monte_carlo_analyzer.html" class="btn btn-neutral float-left" title="Monte Carlo Analyzer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, J Agustin BARRACHINA
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
