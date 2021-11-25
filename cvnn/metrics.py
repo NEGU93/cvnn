@@ -115,20 +115,23 @@ def _accuracy(y_true, y_pred):
 
 
 def custom_average_accuracy(y_true, y_pred):
+    # Mask to remove the labels (y_true) that are zero: ex. [0, 0, 0]
     remove_zeros_mask = tf.math.logical_not(tf.math.reduce_all(tf.math.logical_not(tf.cast(y_true, bool)), axis=-1))
     y_true = tf.boolean_mask(y_true, remove_zeros_mask)
     y_pred = tf.boolean_mask(y_pred, remove_zeros_mask)
     num_cls = y_true.shape[-1]
-    y_pred = tf.math.argmax(y_pred, axis=-1)
+    y_pred = tf.math.argmax(y_pred, axis=-1)        # ex. [0, 0, 1] -> [2]
     y_true = tf.math.argmax(y_true, axis=-1)
-    accuracies = []
+    accuracies = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
     for i in range(0, num_cls):
         cls_mask = y_true == i
-        # set_trace()
-        accuracies.append(_accuracy(y_true=tf.boolean_mask(y_true, cls_mask),
-                                    y_pred=tf.boolean_mask(y_pred, cls_mask)))
-    accuracies = tf.convert_to_tensor(accuracies)
-    return tf.math.reduce_sum(accuracies) / len(accuracies)
+        cls_y_true = tf.boolean_mask(y_true, cls_mask)
+        if not tf.equal(tf.size(cls_y_true), 0):
+            new_acc = _accuracy(y_true=cls_y_true, y_pred=tf.boolean_mask(y_pred, cls_mask))
+            accuracies = accuracies.write(accuracies.size(), new_acc)
+    # import pdb; pdb.set_trace()
+    accuracies = accuracies.stack()
+    return tf.math.reduce_sum(accuracies) / tf.cast(len(accuracies), dtype=accuracies.dtype)
 
 
 class ComplexAverageAccuracy(Mean):
@@ -144,7 +147,8 @@ class ComplexAverageAccuracy(Mean):
         if y_pred.dtype.is_complex:
             y_pred = (tf.math.real(y_pred) + tf.math.imag(y_pred)) / 2
         if y_true.dtype.is_complex:
-            assert tf.math.reduce_all(tf.math.real(y_pred) == tf.math.imag(y_pred)), "y_pred must be real valued"
+            assert tf.math.reduce_all(tf.math.real(y_true) == tf.math.imag(y_true)), "y_pred must be real valued"
+            y_true = tf.math.real(y_true)
         matches = self._fn(y_true, y_pred)
         return super(ComplexAverageAccuracy, self).update_state(matches)
 
