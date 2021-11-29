@@ -291,7 +291,7 @@ class SeveralMonteCarloComparison:
     #                                 "path/to/3rd/run/run_data",
     #                                 "path/to/4th/run/run_data"]
     # Run self
-    several = SeveralMonteCarloComparison('learning rate', x = learning_rates, paths =paths)
+    several = SeveralMonteCarloComparison('learning rate', x=learning_rates, paths=paths)
     several.box_plot(showfig=True)
     ```
     """
@@ -1537,6 +1537,6 @@ if __name__ == "__main__":
     """
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.1.52'
+__version__ = '0.1.53'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
