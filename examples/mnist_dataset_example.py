@@ -190,6 +190,11 @@ def test_mnist():
     
 
 if __name__ == "__main__":
+    from importlib import reload
+    import os
+    import tensorflow
+    reload(tensorflow)
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     test_mnist()
     # test_mnist_montecarlo()
     # ds_train, ds_test = get_dataset()

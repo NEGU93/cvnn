@@ -59,9 +59,14 @@ def test_fashion_mnist():
     keras = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     # keras1 = keras_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
     own = own_fit(train_images, train_labels, test_images, test_labels, init1=init1, init2=init2, epochs=epochs)
-    # if keras.history == keras1.history:
     assert keras.history == own.history, f"{keras.history } != {own.history }"
 
 
 if __name__ == "__main__":
+    # https://www.tensorflow.org/tutorials/keras/classification
+    from importlib import reload
+    import os
+    import tensorflow
+    reload(tensorflow)
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     test_fashion_mnist()
