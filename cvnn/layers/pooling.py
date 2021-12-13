@@ -3,6 +3,7 @@ from packaging import version
 from tensorflow.keras.layers import Layer
 from tensorflow.python.keras import backend
 from tensorflow.python.keras.utils import conv_utils
+
 if version.parse(tf.__version__) < version.parse("2.6.0"):
     from tensorflow.python.keras.engine.input_spec import InputSpec
 else:
@@ -208,7 +209,8 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         (and you need the argmax which I only implemented the 2D case).
     """
 
-    def __init__(self, desired_output_shape=None, upsampling_factor: Optional[int] = None, name=None, dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
+    def __init__(self, desired_output_shape=None, upsampling_factor: Optional[int] = None, name=None,
+                 dtype=DEFAULT_COMPLEX_TYPE, dynamic=False, **kwargs):
         """
         :param desired_output_shape: tf.TensorShape (or equivalent like tuple or list).
             The expected output shape without the batch size.
@@ -229,7 +231,7 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
         if upsampling_factor is None or isinstance(upsampling_factor, int):
             self.upsampling_factor = upsampling_factor
         else:
-             raise ValueError(f"Unsuported upsampling_factor = {upsampling_factor}")
+            raise ValueError(f"Unsuported upsampling_factor = {upsampling_factor}")
         super(ComplexUnPooling2D, self).__init__(trainable=False, name=name, dtype=self.my_dtype.real_dtype,
                                                  dynamic=dynamic, **kwargs)
 
@@ -268,9 +270,9 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
                 output_shape = tf.shape(inputs_values)[1:]
         elif self.upsampling_factor is not None:
             tf.print("WARNING: Ignoring self.upsampling_factor parameter")
-            
+
         flat_output_shape = tf.reduce_prod(output_shape)
-        shape = (tf.shape(inputs_values)[0]*flat_output_shape,)
+        shape = (tf.shape(inputs_values)[0] * flat_output_shape,)
         updates = tf.reshape(inputs_values, [-1])
         indices = tf.expand_dims(tf.reshape(unpool_mat, [-1]), axis=-1)
         # assert indices.shape[-1] == tf.rank(shape)
@@ -293,6 +295,91 @@ class ComplexUnPooling2D(Layer, ComplexLayer):
             'dynamic': False,
         })
         return config
+
+
+"""
+    3D Pooling
+"""
+
+
+class ComplexPooling3D(Layer, ComplexLayer):
+    def __init__(self, pool_size=(2, 2, 1), strides=None,
+                 padding='valid', data_format='channels_last',
+                 name=None, dtype=DEFAULT_COMPLEX_TYPE, **kwargs):
+        self.my_dtype = dtype
+        super(ComplexPooling3D, self).__init__(name=name, **kwargs)
+        if data_format is None:
+            data_format = backend.image_data_format()
+        if strides is None:
+            strides = pool_size
+        self.pool_size = conv_utils.normalize_tuple(pool_size, 3, 'pool_size')
+        self.strides = conv_utils.normalize_tuple(strides, 3, 'strides')
+        self.padding = conv_utils.normalize_padding(padding)
+        self.data_format = conv_utils.normalize_data_format(data_format)
+        self.input_spec = InputSpec(ndim=5)
+
+    @abstractmethod
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        pass
+
+    def call(self, inputs, **kwargs):
+        outputs = self.pool_function(
+            inputs,
+            self.pool_size,
+            strides=self.strides,
+            padding=self.padding.upper(),
+            data_format=conv_utils.convert_data_format(self.data_format, 5))
+        return outputs
+
+    def compute_output_shape(self, input_shape):
+        input_shape = tensor_shape.TensorShape(input_shape).as_list()
+        if self.data_format == 'channels_first':
+            deps = input_shape[-3]
+            rows = input_shape[-2]
+            cols = input_shape[-1]
+        else:
+            deps = input_shape[-4]
+            rows = input_shape[-3]
+            cols = input_shape[-2]
+        rows = conv_utils.conv_output_length(rows, self.pool_size[0], self.padding, self.strides[0])
+        cols = conv_utils.conv_output_length(cols, self.pool_size[1], self.padding, self.strides[1])
+        if self.data_format == 'channels_first':
+            return tensor_shape.TensorShape(
+                [input_shape[0], input_shape[1], deps, rows, cols])
+        else:
+            return tensor_shape.TensorShape(
+                [input_shape[0], deps, rows, cols, input_shape[-1]])
+
+    def get_config(self):
+        config = super(ComplexPooling3D, self).get_config()
+        config.update({
+            'strides': self.strides,
+            'pool_size': self.pool_size,
+            'padding': self.padding,
+            'data_format': self.data_format,
+            'dtype': self.my_dtype
+        })
+        return config
+
+
+class ComplexAvgPooling3D(ComplexPooling3D):
+
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        inputs_r = tf.math.real(inputs)
+        inputs_i = tf.math.imag(inputs)
+        output_r = tf.nn.avg_pool3d(input=inputs_r, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        output_i = tf.nn.avg_pool3d(input=inputs_i, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        if inputs.dtype.is_complex:
+            output = tf.complex(output_r, output_i)
+        else:
+            output = output_r
+        return output
+
+    def get_real_equivalent(self):
+        return ComplexAvgPooling3D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
+                                   data_format=self.data_format, name=self.name + "_real_equiv")
 
 
 """
