@@ -34,7 +34,7 @@ def _get_real_equivalent_multiplier(layers_shape, classifier, capacity_equivalen
         if equiv_technique == "alternate":
             output_multiplier = _get_alternate_capacity_equivalent(dense_layers, classifier)
         elif equiv_technique == "ratio":
-            output_multiplier = _get_ratio_capacity_equivalent(dense_layers, classifier)
+            output_multiplier = _get_ratio_capacity_equivalent(_parse_sizes(dense_layers), classifier)
         else:
             logger.error("Unknown equiv_technique " + equiv_technique)
             sys.exit(-1)
@@ -79,23 +79,32 @@ def get_real_equivalent(complex_model: Type[Sequential], classifier: bool = True
     return real_equiv
 
 
-def _get_ratio_capacity_equivalent(dense_layers, classification: bool = True, bias_adjust: bool = True):
+def _parse_sizes(dense_layers):
+    assert len(dense_layers[0].input_shape) == 2, "I had a theory issue, " \
+                                                  "I thought this will always have size 2 in a dense layer"
+    model_in_c = dense_layers[0].input_shape[-1]  # -1 not to take the None part
+    model_out_c = dense_layers[-1].units
+    x_c = [dense_layers[i].units for i in range(len(dense_layers[:-1]))]
+    return [model_in_c, x_c, model_out_c]
+
+
+def _get_ratio_capacity_equivalent(layers_shape, classification: bool = True, bias_adjust: bool = True):
     """
     Generates output_multiplier keeping not only the same capacity but keeping a constant ratio between the
                                                                                                     model's layers
     This helps keeps the 'aspect' or shape of the model my making:
         neurons_real_layer_i = ratio * neurons_complex_layer_i
-    :param dense_layers:
+    :param layers_shape:
     :param classification: True (default) if the model is a classification model. False otherwise.
     :param bias_adjust: True (default) if taking into account the bias as a trainable parameter. If not it will
         only match the real valued parameters of the weights
     """
-    assert len(dense_layers[0].input_shape) == 2, "I had a theory issue, " \
-                                                  "I thought this will always have size 2 in a dense layer"
-    model_in_c = dense_layers[0].input_shape[-1]        # -1 not to take the None part
-    model_out_c = dense_layers[-1].units
-    x_c = [dense_layers[i].units for i in range(len(dense_layers[:-1]))]
-    p_c = np.sum([2 * x.input_shape[-1] * x.units for x in dense_layers])  # real valued complex trainable params
+    p_c = 0
+    for i in range(len(layers_shape[:-1])):
+        p_c += 2 * layers_shape[i] * layers_shape[i+1]
+    model_in_c = layers_shape[0]
+    model_out_c = layers_shape[-1]
+    x_c = layers_shape[1:-1]
     if bias_adjust:
         p_c = p_c + 2 * np.sum(x_c) + 2 * model_out_c
     model_in_r = 2 * model_in_c
