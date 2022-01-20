@@ -26,11 +26,14 @@ def shape_tst(input_size, output_size, shape_raw, classifier=True, capacity_equi
     result = _get_real_equivalent_multiplier(complex_network.layers, classifier=classifier,
                                              capacity_equivalent=capacity_equivalent,
                                              equiv_technique=equiv_technique)
+    # from pdb import set_trace; set_trace()
     # rvnn = complex_network.get_real_equivalent(classifier, capacity_equivalent)
     # complex_network.training_param_summary()
     # rvnn.training_param_summary()
     if expected_result is not None:
-        assert np.all(expected_result == result), f"Expecting result {expected_result} but got {result}."
+        if not np.all(expected_result == result):
+            from pdb import set_trace; set_trace()
+            raise f"Expecting result {expected_result} but got {result}."
     else:
         print(result)
 
@@ -41,7 +44,7 @@ def test_shape():
     shape_tst(4, 2, [1, 30, 500, 400, 60, 50, 3], classifier=True, equiv_technique='ratio')   
     sleep(2)
     # this is 1 for regression
-    shape_tst(4, 2, [64], classifier=False, equiv_technique='ratio', expected_result=[1, 2])
+    shape_tst(4, 2, [64], classifier=False, equiv_technique='ratio', expected_result=[1., 2])
     sleep(2)
     # this is 2*(in+out)/(2*in+out) = 1.2
     shape_tst(4, 2, [64], classifier=True, equiv_technique='ratio', expected_result=[1.2, 1])

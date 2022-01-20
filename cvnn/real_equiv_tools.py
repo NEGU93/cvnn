@@ -9,7 +9,8 @@ from typing import Type
 from typing import Optional
 
 
-def _get_real_equivalent_multiplier(layers_shape, classifier, capacity_equivalent, equiv_technique):
+def _get_real_equivalent_multiplier(layers_shape, classifier, capacity_equivalent, equiv_technique,
+                                    bias_adjust: bool = False):
     """
     Returns an array (output_multiplier) of size self.shape (number of hidden layers + output layer)
         one must multiply the real valued equivalent layer
@@ -34,7 +35,8 @@ def _get_real_equivalent_multiplier(layers_shape, classifier, capacity_equivalen
         if equiv_technique == "alternate":
             output_multiplier = _get_alternate_capacity_equivalent(dense_layers, classifier)
         elif equiv_technique == "ratio":
-            output_multiplier = _get_ratio_capacity_equivalent(_parse_sizes(dense_layers), classifier)
+            output_multiplier = _get_ratio_capacity_equivalent(_parse_sizes(dense_layers), classifier,
+                                                               bias_adjust=bias_adjust)
         else:
             logger.error("Unknown equiv_technique " + equiv_technique)
             sys.exit(-1)
@@ -85,7 +87,9 @@ def _parse_sizes(dense_layers):
     model_in_c = dense_layers[0].input_shape[-1]  # -1 not to take the None part
     model_out_c = dense_layers[-1].units
     x_c = [dense_layers[i].units for i in range(len(dense_layers[:-1]))]
-    return [model_in_c, x_c, model_out_c]
+    x_c.insert(0, model_in_c)
+    x_c.append(model_out_c)
+    return x_c
 
 
 def _get_ratio_capacity_equivalent(layers_shape, classification: bool = True, bias_adjust: bool = True):
