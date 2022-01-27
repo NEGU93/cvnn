@@ -211,7 +211,7 @@ def test_dropout():
     from importlib import reload
     import os
     import tensorflow
-    reload(tensorflow)
+    # reload(tensorflow)
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     dropout()
     mnist(True)
