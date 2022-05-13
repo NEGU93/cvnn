@@ -5,7 +5,7 @@ from pdb import set_trace
 from cvnn import logger
 import cvnn.layers as layers
 from cvnn.layers.core import ComplexLayer
-from typing import Type
+from typing import Type, List
 from typing import Optional
 
 EQUIV_TECHNIQUES = {
@@ -35,7 +35,8 @@ def get_real_equivalent_multiplier(layers_shape, classifier, equiv_technique, bi
                                                      equiv_technique=equiv_technique, bias_adjust=bias_adjust)
 
 
-def get_real_equivalent_multiplier_from_shape(layers_shape, classifier, equiv_technique, bias_adjust: bool = False):
+def get_real_equivalent_multiplier_from_shape(layers_shape: List[int], equiv_technique: str,
+                                              classifier: bool = True,  bias_adjust: bool = False):
     equiv_technique = equiv_technique.lower()
     if equiv_technique not in EQUIV_TECHNIQUES:
         raise ValueError(f"Unknown equiv_technique {equiv_technique}")
