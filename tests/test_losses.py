@@ -7,6 +7,36 @@ from cvnn.layers import ComplexDense, complex_input
 from pdb import set_trace
 
 
+def to_categorical_unlabeled(sparse, classes=2):
+    cat = np.zeros(shape=sparse.shape + (classes,))
+    for i in range(len(sparse)):
+        for row in range(len(sparse[i])):
+            for col in range(len(sparse[i][row])):
+                if sparse[i][row][col]:
+                    cat[i][row][col][sparse[i][row][col] - 1] = 1
+    return cat
+
+
+def averaging_method():
+    # Here, I see that the loss is not computed per image, but per pixel.
+    y_true = np.array([
+        [[1, 1], [1, 1]],
+        [[0, 0], [0, 2]]
+    ])
+    y_pred = np.array([
+        [[1, 1], [1, 2]],
+        [[1, 1], [1, 1]]
+    ])
+    y_true = to_categorical_unlabeled(y_true)
+    y_pred = to_categorical_unlabeled(y_pred)
+    class_loss_result = CategoricalCrossentropy()(y_pred=y_pred, y_true=y_true)
+    fun_loss_result = tf.keras.metrics.categorical_crossentropy(y_pred=y_pred, y_true=y_true)
+    two_dim_mean = np.mean(fun_loss_result.numpy(), axis=(1, 2))
+    mean = np.mean(fun_loss_result.numpy())
+    assert mean == class_loss_result
+    assert np.mean(two_dim_mean) == mean
+
+
 def ace():
     y_pred = np.random.rand(3, 43, 12, 10)
     y_true = np.random.rand(3, 43, 12, 10)
@@ -60,6 +90,7 @@ def weighted_loss():
 
 
 def test_losses():
+    averaging_method()
     weighted_loss()
     ace()
 

@@ -8,42 +8,50 @@ from cvnn.layers.core import ComplexLayer
 from typing import Type
 from typing import Optional
 
+EQUIV_TECHNIQUES = {
+    "np", "alternate_tp", "ratio_tp", "none"
+}
 
-def _get_real_equivalent_multiplier(layers_shape, classifier, capacity_equivalent, equiv_technique,
-                                    bias_adjust: bool = False):
+
+def get_real_equivalent_multiplier(layers_shape, classifier, equiv_technique, bias_adjust: bool = False):
     """
-    Returns an array (output_multiplier) of size self.shape (number of hidden layers + output layer)
+    Returns an array (output_multiplier) of size `self.shape` (number of hidden layers + output layer)
         one must multiply the real valued equivalent layer
     In other words, the real valued equivalent layer 'i' will have:
         neurons_real_valued_layer[i] = output_multiplier[i] * neurons_complex_valued_layer[i]
     :param layers_shape:
-    :param classifier: Boolean (default = True) weather the model's task is a to classify (True) or
-                                                                                        a regression task (False)
-    :param capacity_equivalent: An equivalent model can be equivalent in terms of layer neurons or
-                    trainable parameters (capacity equivalent according to (https://arxiv.org/abs/1811.12351)
-        - True, it creates a capacity-equivalent model in terms of trainable parameters
-        - False, it will double all layer size (except the last one if classifier=True)
+    :param classifier: Boolean (default = True) weather the model's task is to classify (True) or
+        a regression task (False)
     :param equiv_technique: Used to define the strategy of the capacity equivalent model.
         This parameter is ignored if capacity_equivalent=False
+        - 'np': double all layer size (except the last one if classifier=True)
         - 'ratio': neurons_real_valued_layer[i] = r * neurons_complex_valued_layer[i], 'r' constant for all 'i'
         - 'alternate': Method described in https://arxiv.org/abs/1811.12351 where one alternates between
-                multiplying by 2 or 1. Special case on the middle is treated as a compromise between the two.
+                multiplying by 2 or 1. Special case in the middle is treated as a compromise between the two.
     :return: output_multiplier
     """
     dense_layers = [d for d in layers_shape if isinstance(d, layers.ComplexDense)]      # Keep only dense layers
-    if capacity_equivalent:
-        if equiv_technique == "alternate":
-            output_multiplier = _get_alternate_capacity_equivalent(dense_layers, classifier)
-        elif equiv_technique == "ratio":
-            output_multiplier = _get_ratio_capacity_equivalent(_parse_sizes(dense_layers), classifier,
-                                                               bias_adjust=bias_adjust)
-        else:
-            logger.error("Unknown equiv_technique " + equiv_technique)
-            sys.exit(-1)
-    else:
-        output_multiplier = 2 * np.ones(len(dense_layers)).astype(int)
+    return get_real_equivalent_multiplier_from_shape(_parse_sizes(dense_layers), classifier=classifier,
+                                                     equiv_technique=equiv_technique, bias_adjust=bias_adjust)
+
+
+def get_real_equivalent_multiplier_from_shape(layers_shape, classifier, equiv_technique, bias_adjust: bool = False):
+    equiv_technique = equiv_technique.lower()
+    if equiv_technique not in EQUIV_TECHNIQUES:
+        raise ValueError(f"Unknown equiv_technique {equiv_technique}")
+    if equiv_technique == "alternate_tp":
+        output_multiplier = _get_alternate_capacity_equivalent(layers_shape, classifier)
+    elif equiv_technique == "ratio_tp":
+        output_multiplier = _get_ratio_capacity_equivalent(layers_shape, classifier,
+                                                           bias_adjust=bias_adjust)
+    elif equiv_technique == "np":
+        output_multiplier = 2 * np.ones(len(layers_shape)-1).astype(int)
         if classifier:
             output_multiplier[-1] = 1
+    elif equiv_technique == "none":
+        output_multiplier = np.ones(len(layers_shape) - 1).astype(int)
+    else:
+        raise ValueError(f"Unknown equiv_technique {equiv_technique} but listed on {EQUIV_TECHNIQUES}.")
     return output_multiplier
 
 
@@ -59,8 +67,8 @@ def get_real_equivalent(complex_model: Type[Sequential], classifier: bool = True
     real_input_shape[-1] = real_input_shape[-1]*2
     real_shape = [layers.ComplexInput(input_shape=real_input_shape,
                                       dtype=complex_model.layers[0].input.dtype.real_dtype)]
-    output_multiplier = _get_real_equivalent_multiplier(complex_model.layers,
-                                                        classifier, capacity_equivalent, equiv_technique)
+    output_multiplier = get_real_equivalent_multiplier(complex_model.layers,
+                                                       classifier, capacity_equivalent, equiv_technique)
     counter = 0
     for layer in complex_model.layers:
         if isinstance(layer, ComplexLayer):
@@ -82,8 +90,7 @@ def get_real_equivalent(complex_model: Type[Sequential], classifier: bool = True
 
 
 def _parse_sizes(dense_layers):
-    assert len(dense_layers[0].input_shape) == 2, "I had a theory issue, " \
-                                                  "I thought this will always have size 2 in a dense layer"
+    assert len(dense_layers[0].input_shape) == 2, "Possibly a bug of cvnn. Please report it to github issues"
     model_in_c = dense_layers[0].input_shape[-1]  # -1 not to take the None part
     model_out_c = dense_layers[-1].units
     x_c = [dense_layers[i].units for i in range(len(dense_layers[:-1]))]
@@ -129,31 +136,32 @@ def _get_ratio_capacity_equivalent(layers_shape, classification: bool = True, bi
     return [ratio] * len(x_c) + [1 if classification else 2]
 
 
-def _get_alternate_capacity_equivalent(dense_layers, classification: bool = True):
+def _get_alternate_capacity_equivalent(layers_shape, classification: bool = True):
     """
     Generates output_multiplier using the alternate method described in https://arxiv.org/abs/1811.12351 which
         doubles or not the layer if it's neighbor was doubled or not (making the opposite).
     The code fills output_multiplier from both senses:
         output_multiplier = [ ... , .... ]
-                      --->     <---
+                             --->     <---
     If when both ends meet there's not a coincidence (example: [..., 1, 1, ...]) then
         the code will find a compromise between the two to keep the same real valued trainable parameters.
     """
-    output_multiplier = np.zeros(len(dense_layers) + 1)
-    output_multiplier[0] = 2
-    output_multiplier[-1] = 1 if classification else 2
+    output_multiplier = np.zeros(len(layers_shape))
+    output_multiplier[0] = 2                                # Sets input multiplier
+    output_multiplier[-1] = 1 if classification else 2      # Output multiplier
     i: int = 1
-    while i <= (len(dense_layers) - i):
-        output_multiplier[i] = 2 if output_multiplier[i - 1] == 1 else 1  # From beginning
-        output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1  # From the end
-        if i == len(dense_layers) - i and output_multiplier[i - 1] != output_multiplier[i + 1] or \
-                i + 1 == len(dense_layers) - i and output_multiplier[i] == output_multiplier[i + 1]:
-            m_inf = dense_layers[i - 1].input_shape[-1]    # This is because dense_layers are len(output_multiplier) - 1
-            m_sup = dense_layers[i].units
-            if i == len(dense_layers) - i:
+    while i < (len(layers_shape) - i):     # Fill the hidden layers (from 1 to len()-1)
+        output_multiplier[i] = 2 if output_multiplier[i - 1] == 1 else 1        # From beginning
+        output_multiplier[-1 - i] = 2 if output_multiplier[-i] == 1 else 1      # From the end
+        index_in_middle_with_diff_borders = i == len(layers_shape) - i - 1 and output_multiplier[i - 1] != output_multiplier[i + 1]
+        subsequent_indexes_are_equal = i == len(layers_shape) - i and output_multiplier[i] == output_multiplier[i + 1]
+        if index_in_middle_with_diff_borders or subsequent_indexes_are_equal:
+            m_inf = layers_shape[i - 1]    # This is because dense_layers are len(output_multiplier) - 1
+            m_sup = layers_shape[i + 1]
+            if i == len(layers_shape) - i - 1:          # index_in_middle_with_diff_borders
                 coef_sup = output_multiplier[i + 1]
                 coef_inf = output_multiplier[i - 1]
-            else:
+            else:                                       # subsequent_indexes_are_equal
                 coef_sup = output_multiplier[i + 1]
                 coef_inf = output_multiplier[i]
             output_multiplier[i] = 2 * (m_inf + m_sup) / (coef_inf * m_inf + coef_sup * m_sup)

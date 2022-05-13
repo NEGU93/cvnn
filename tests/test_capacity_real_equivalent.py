@@ -2,13 +2,12 @@ import numpy as np
 import cvnn.layers as layers
 from time import sleep
 from cvnn.layers import ComplexDense
-from cvnn.real_equiv_tools import _get_real_equivalent_multiplier
+from cvnn.real_equiv_tools import get_real_equivalent_multiplier
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.losses import categorical_crossentropy
 
 
-def shape_tst(input_size, output_size, shape_raw, classifier=True, capacity_equivalent=True,
-              equiv_technique='alternate', expected_result=None):
+def shape_tst(input_size, output_size, shape_raw, classifier=True, equiv_technique='alternate_tp', expected_result=None):
     shape = [
         layers.ComplexInput(input_shape=input_size, dtype=np.complex64)
     ]
@@ -20,19 +19,17 @@ def shape_tst(input_size, output_size, shape_raw, classifier=True, capacity_equi
         for s in shape_raw:
             shape.append(ComplexDense(units=s, activation='cart_relu'))  # Add dropout!
         shape.append(ComplexDense(units=output_size, activation='softmax_real_with_abs'))
-
     complex_network = Sequential(shape, name="complex_network")
     complex_network.compile(optimizer='sgd', loss=categorical_crossentropy, metrics=['accuracy'])
-    result = _get_real_equivalent_multiplier(complex_network.layers, classifier=classifier,
-                                             capacity_equivalent=capacity_equivalent,
-                                             equiv_technique=equiv_technique)
+    result = get_real_equivalent_multiplier(complex_network.layers, classifier=classifier,
+                                            equiv_technique=equiv_technique)
     # from pdb import set_trace; set_trace()
     # rvnn = complex_network.get_real_equivalent(classifier, capacity_equivalent)
     # complex_network.training_param_summary()
     # rvnn.training_param_summary()
     if expected_result is not None:
         if not np.all(expected_result == result):
-            from pdb import set_trace; set_trace()
+            # from pdb import set_trace; set_trace()
             raise f"Expecting result {expected_result} but got {result}."
     else:
         print(result)
@@ -41,13 +38,13 @@ def shape_tst(input_size, output_size, shape_raw, classifier=True, capacity_equi
 def test_shape():
     # Ratio
     # The bigger the middle, it will tend to sqrt(2) = 1.4142135623730951
-    shape_tst(4, 2, [1, 30, 500, 400, 60, 50, 3], classifier=True, equiv_technique='ratio')   
+    shape_tst(4, 2, [1, 30, 500, 400, 60, 50, 3], classifier=True, equiv_technique='ratio_tp')
     sleep(2)
     # this is 1 for regression
-    shape_tst(4, 2, [64], classifier=False, equiv_technique='ratio', expected_result=[1., 2])
+    shape_tst(4, 2, [64], classifier=False, equiv_technique='ratio_tp', expected_result=[1., 2])
     sleep(2)
     # this is 2*(in+out)/(2*in+out) = 1.2
-    shape_tst(4, 2, [64], classifier=True, equiv_technique='ratio', expected_result=[1.2, 1])
+    shape_tst(4, 2, [64], classifier=True, equiv_technique='ratio_tp', expected_result=[1.2, 1])
     sleep(2)
     # shape_tst(100, 2, [100, 30, 50, 40, 60, 50, 30], classifier=True, equiv_technique='ratio')
     # sleep(2)
@@ -79,22 +76,36 @@ def test_shape():
 
     # Not capacity equivalent
     sleep(2)
-    shape_tst(100, 2, [], capacity_equivalent=False, expected_result=[1])
+    shape_tst(100, 2, [], equiv_technique='np', expected_result=[1])
     sleep(2)
-    shape_tst(100, 2, [64], capacity_equivalent=False, expected_result=[2, 1])
+    shape_tst(100, 2, [64], equiv_technique='np', expected_result=[2, 1])
     sleep(2)
-    shape_tst(100, 2, [100, 64], capacity_equivalent=False, expected_result=[2, 2, 1])
+    shape_tst(100, 2, [100, 64], equiv_technique='np', expected_result=[2, 2, 1])
     sleep(2)
-    shape_tst(100, 2, [100, 30, 64], capacity_equivalent=False, expected_result=[2, 2, 2, 1])
+    shape_tst(100, 2, [100, 30, 64], equiv_technique='np', expected_result=[2, 2, 2, 1])
     sleep(2)
-    shape_tst(100, 2, [100, 30, 40, 50], capacity_equivalent=False, expected_result=[2, 2, 2, 2, 1])
+    shape_tst(100, 2, [100, 30, 40, 50], equiv_technique='np', expected_result=[2, 2, 2, 2, 1])
     sleep(2)
-    shape_tst(100, 2, [100, 30, 40, 60, 50, 30], capacity_equivalent=False, expected_result=[2, 2, 2, 2, 2, 2, 1])
+    shape_tst(100, 2, [100, 30, 40, 60, 50, 30], equiv_technique='np', expected_result=[2, 2, 2, 2, 2, 2, 1])
     sleep(2)
-    shape_tst(100, 2, [100, 30, 40, 60, 50, 30], classifier=False, capacity_equivalent=False,
+    shape_tst(100, 2, [100, 30, 40, 60, 50, 30], classifier=False, equiv_technique='np',
               expected_result=[2, 2, 2, 2, 2, 2, 2])
-    # sleep(2)
-    # shape_tst(100, 2, [100, 30, 40, 60, 50, 30], classifier=False)"""
+    # Not capacity equivalent
+    sleep(2)
+    shape_tst(100, 2, [], equiv_technique='none', expected_result=[1])
+    sleep(2)
+    shape_tst(100, 2, [64], equiv_technique='none', expected_result=[1, 1])
+    sleep(2)
+    shape_tst(100, 2, [100, 64], equiv_technique='none', expected_result=[1, 1, 1])
+    sleep(2)
+    shape_tst(100, 2, [100, 30, 64], equiv_technique='none', expected_result=[1, 1, 1, 1])
+    sleep(2)
+    shape_tst(100, 2, [100, 30, 40, 50], equiv_technique='none', expected_result=[1, 1, 1, 1, 1])
+    sleep(2)
+    shape_tst(100, 2, [100, 30, 40, 60, 50, 30], equiv_technique='none', expected_result=[1, 1, 1, 1, 1, 1, 1])
+    sleep(2)
+    shape_tst(100, 2, [100, 30, 40, 60, 50, 30], classifier=False, equiv_technique='none',
+              expected_result=[1, 1, 1, 1, 1, 1, 1])
 
 
 if __name__ == '__main__':
