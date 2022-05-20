@@ -289,7 +289,7 @@ class ComplexDense(Dense, ComplexLayer):
         return ComplexDense(units=int(round(self.units * output_multiplier)),
                             activation=self.activation, use_bias=self.use_bias,
                             kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
-                            kernel_constraint=self.kernel_constraint, kernel_regularizer=self.kernel_regularizer), #MODIFIED CODE ------
+                            kernel_constraint=self.kernel_constraint, kernel_regularizer=self.kernel_regularizer, #MODIFIED CODE ------
                             dtype=self.my_dtype.real_dtype, name=self.name + "_real_equiv")
 
     def get_config(self):
