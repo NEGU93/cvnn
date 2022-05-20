@@ -169,9 +169,15 @@ class ComplexDense(Dense, ComplexLayer):
     * bias is a bias vector created by the layer
     """
 
+#BEGIN MODIFIED CODE --------------
+
+
+    
     def __init__(self, units: int, activation: t_activation = None, use_bias: bool = True,
                  kernel_initializer="ComplexGlorotUniform",
                  bias_initializer="Zeros",
+                 kernel_regularizer=None,
+                 kernel_constraint=None,
                  dtype=DEFAULT_COMPLEX_TYPE,  # TODO: Check typing of this.
                  init_technique: str = 'mirror',
                  **kwargs):
@@ -197,7 +203,9 @@ class ComplexDense(Dense, ComplexLayer):
             activation = "linear"
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                            kernel_initializer=kernel_initializer,
-                                           bias_initializer=bias_initializer, **kwargs)
+                                           bias_initializer=bias_initializer,
+                                           kernel_constraint=kernel_constraint, kernel_regularizer=kernel_regularizer, #MODIFIED CODE ------
+                                           **kwargs)
         # !Cannot override dtype of the layer because it has a read-only @property
         self.my_dtype = tf.dtypes.as_dtype(dtype)
         self.init_technique = init_technique.lower()
@@ -249,7 +257,7 @@ class ComplexDense(Dense, ComplexLayer):
                                      dtype=self.my_dtype,
                                      initializer=self.kernel_initializer,
                                      trainable=True,
-                                     )
+                                     kernel_constraint=self.kernel_constraint, kernel_regularizer=self.kernel_regularizer) #MODIFIED CODE ------
             if self.use_bias:
                 self.b = self.add_weight('bias', shape=(self.units,), dtype=self.my_dtype,
                                          initializer=self.bias_initializer, trainable=self.use_bias)
@@ -281,6 +289,7 @@ class ComplexDense(Dense, ComplexLayer):
         return ComplexDense(units=int(round(self.units * output_multiplier)),
                             activation=self.activation, use_bias=self.use_bias,
                             kernel_initializer=self.kernel_initializer, bias_initializer=self.bias_initializer,
+                            kernel_constraint=self.kernel_constraint, kernel_regularizer=self.kernel_regularizer) #MODIFIED CODE ------
                             dtype=self.my_dtype.real_dtype, name=self.name + "_real_equiv")
 
     def get_config(self):
