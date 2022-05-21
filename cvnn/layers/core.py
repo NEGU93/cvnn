@@ -225,10 +225,11 @@ class ComplexDense(Dense, ComplexLayer):
                 else:
                     raise ValueError(f"Unsuported init_technique {self.init_technique}, "
                                      f"supported techniques are {INIT_TECHNIQUES}")
+
             self.w_r = self.add_weight('kernel_r',
                                      shape=(input_shape[-1], self.units),
-                                     dtype=self.i_kernel_dtype,
-                                     initializer=self.kernel_initializer(shape=(input_shape[-1], self.units),
+                                     dtype=i_kernel_dtype,
+                                     initializer=self.kernel_initializer,
                                      trainable=True,
                                      constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
             #self.w_r = tf.Variable(
@@ -239,7 +240,7 @@ class ComplexDense(Dense, ComplexLayer):
             self.w_i = self.add_weight('kernel_i',
                                      shape=(input_shape[-1], self.units),
                                      dtype=i_kernel_dtype,
-                                     initializer=self.kernel_initializer(shape=(input_shape[-1], self.units),
+                                     initializer=self.kernel_initializer,
                                      trainable=True,
                                      constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
             #self.w_i = tf.Variable(
