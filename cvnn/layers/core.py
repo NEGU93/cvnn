@@ -169,10 +169,6 @@ class ComplexDense(Dense, ComplexLayer):
     * bias is a bias vector created by the layer
     """
 
-#BEGIN MODIFIED CODE --------------
-
-
-    
     def __init__(self, units: int, activation: t_activation = None, use_bias: bool = True,
                  kernel_initializer="ComplexGlorotUniform",
                  bias_initializer="Zeros",
@@ -204,7 +200,7 @@ class ComplexDense(Dense, ComplexLayer):
         super(ComplexDense, self).__init__(units, activation=activation, use_bias=use_bias,
                                            kernel_initializer=kernel_initializer,
                                            bias_initializer=bias_initializer,
-                                           kernel_constraint=kernel_constraint, kernel_regularizer=kernel_regularizer, #MODIFIED CODE ------
+                                           kernel_constraint=kernel_constraint, kernel_regularizer=kernel_regularizer,
                                            **kwargs)
         # !Cannot override dtype of the layer because it has a read-only @property
         self.my_dtype = tf.dtypes.as_dtype(dtype)
@@ -229,16 +225,28 @@ class ComplexDense(Dense, ComplexLayer):
                 else:
                     raise ValueError(f"Unsuported init_technique {self.init_technique}, "
                                      f"supported techniques are {INIT_TECHNIQUES}")
-            self.w_r = tf.Variable(
-                name='kernel_r',
-                initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=i_kernel_dtype),
-                trainable=True
-            )
-            self.w_i = tf.Variable(
-                name='kernel_i',
-                initial_value=i_kernel_initializer(shape=(input_shape[-1], self.units), dtype=i_kernel_dtype),
-                trainable=True
-            )
+            self.w_r = self.add_weight('kernel_r',
+                                     shape=(input_shape[-1], self.units),
+                                     dtype=self.i_kernel_dtype,
+                                     initializer=self.kernel_initializer(shape=(input_shape[-1], self.units),
+                                     trainable=True,
+                                     constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
+            #self.w_r = tf.Variable(
+            #    name='kernel_r',
+            #    initial_value=self.kernel_initializer(shape=(input_shape[-1], self.units), dtype=i_kernel_dtype),
+            #    trainable=True
+            #)
+            self.w_i = self.add_weight('kernel_i',
+                                     shape=(input_shape[-1], self.units),
+                                     dtype=i_kernel_dtype,
+                                     initializer=self.kernel_initializer(shape=(input_shape[-1], self.units),
+                                     trainable=True,
+                                     constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
+            #self.w_i = tf.Variable(
+            #    name='kernel_i',
+            #    initial_value=i_kernel_initializer(shape=(input_shape[-1], self.units), dtype=i_kernel_dtype),
+            #    trainable=True
+            #)
             if self.use_bias:
                 self.b_r = tf.Variable(
                     name='bias_r',
@@ -257,7 +265,7 @@ class ComplexDense(Dense, ComplexLayer):
                                      dtype=self.my_dtype,
                                      initializer=self.kernel_initializer,
                                      trainable=True,
-                                     kernel_constraint=self.kernel_constraint, kernel_regularizer=self.kernel_regularizer) #MODIFIED CODE ------
+                                     constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
             if self.use_bias:
                 self.b = self.add_weight('bias', shape=(self.units,), dtype=self.my_dtype,
                                          initializer=self.bias_initializer, trainable=self.use_bias)
