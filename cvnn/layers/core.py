@@ -228,7 +228,7 @@ class ComplexDense(Dense, ComplexLayer):
 
             self.w_r = self.add_weight('kernel_r',
                                      shape=(input_shape[-1], self.units),
-                                     dtype=i_kernel_dtype,
+                                     dtype=self.my_dtype.real_dtype,
                                      initializer=self.kernel_initializer,
                                      trainable=True,
                                      constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
@@ -239,7 +239,7 @@ class ComplexDense(Dense, ComplexLayer):
             #)
             self.w_i = self.add_weight('kernel_i',
                                      shape=(input_shape[-1], self.units),
-                                     dtype=i_kernel_dtype,
+                                     dtype=self.my_dtype.real_dtype,
                                      initializer=self.kernel_initializer,
                                      trainable=True,
                                      constraint=self.kernel_constraint, regularizer=self.kernel_regularizer)
