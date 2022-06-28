@@ -8,8 +8,8 @@ from cvnn.metrics import ComplexAverageAccuracy, ComplexCategoricalAccuracy
 def test_with_tf():
     classes = 3
     y_true = tf.cast(tf.random.uniform(shape=(34, 54, 12), maxval=classes), dtype=tf.int32)
-    y_pred = tf.cast(tf.random.uniform(shape=y_true.shape, maxval=classes), dtype=tf.int32)
-    y_pred_one_hot = tf.one_hot(y_pred, depth=classes)
+    y_pred = tf.nn.softmax(tf.cast(tf.random.uniform(shape=(34, 54, 12, classes), maxval=1), dtype=tf.float64))
+    y_pred_one_hot = y_pred     # tf.one_hot(y_pred, depth=classes)
     y_true_one_hot = tf.one_hot(y_true, depth=classes)
     tf_metric = CategoricalAccuracy()
     tf_metric.update_state(y_true_one_hot, y_pred_one_hot)
@@ -30,11 +30,11 @@ def test_with_tf():
     ])
     y_pred = np.array([
         [1., 0., 0., 0.],  # 1
+        [.8, 0., 0.2, 0.],  # 1
         [1., 0., 0., 0.],  # 1
         [1., 0., 0., 0.],  # 1
         [1., 0., 0., 0.],  # 1
-        [1., 0., 0., 0.],  # 1
-        [0., 0., 0., 1.],  # 4
+        [0., 0., 0.1, .9],  # 4
         [0., 0., 0., 1.],  # 4
         [0., 0., 0., 1.],  # 4
         [0., 0., 0., 1.]  # 4
@@ -84,7 +84,6 @@ def test_metric():
               [0.1, 0.9, 0.8],
               [0.05, 0.95, 0], [0.95, 0.05, 0],
               [0, 1, 0]]
-
     m = ComplexCategoricalAccuracy()
     m.update_state(y_true, y_pred)
     assert m.result().numpy() == 0.25

@@ -49,7 +49,9 @@ def own_fit(train_images, train_labels, test_images,  test_labels,
 
 
 def test_fashion_mnist():
-    assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
+    visible_devices = tf.config.get_visible_devices()
+    for device in visible_devices:
+        assert device.device_type != 'GPU', "Using GPU not good for debugging"
     seed = 117
     epochs = 3
     init = tf.keras.initializers.GlorotUniform(seed=seed)

@@ -163,7 +163,9 @@ def own_fit(ds_train, ds_test, verbose=True, init1='glorot_uniform', init2='glor
 
 
 def test_mnist():
-    assert not tf.test.gpu_device_name(), "Using GPU not good for debugging"
+    visible_devices = tf.config.get_visible_devices()
+    for device in visible_devices:
+        assert device.device_type != 'GPU', "Using GPU not good for debugging"
     ds_train, ds_test = get_dataset()
     # Don't use bias becase complex model gets a complex bias with imag not zero.
     keras_hist, keras_time, keras_logs = keras_fit(ds_train, ds_test, train_bias=False)
