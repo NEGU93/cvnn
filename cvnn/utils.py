@@ -133,22 +133,17 @@ def transform_to_real(x_complex, mode: str = "real_imag"):
         return x_complex
     if mode not in REAL_CAST_MODES:
         raise KeyError(f"Unknown real cast mode {mode}")
-    m = np.shape(x_complex)[0]
-    n = np.prod(np.shape(x_complex)[1:])
-    flat_x_complex = np.reshape(x_complex, (m, n))
-    multiplier = REAL_CAST_MODES[mode]
-    x_real = np.ones((m, multiplier * n))
     if mode == 'real_imag':
-        x_real[:, :n] = np.real(flat_x_complex)
-        x_real[:, n:] = np.imag(flat_x_complex)
+        x_real = np.concatenate((np.real(x_complex), np.imag(x_complex)), axis=-1)
     elif mode == 'amplitude_phase':
-        x_real[:, :n] = np.abs(flat_x_complex)
-        x_real[:, n:] = np.angle(flat_x_complex)
+        x_real = np.concatenate((np.abs(x_complex), np.angle(x_complex)), axis=-1)
     elif mode == 'amplitude_only':
-        x_real = np.abs(flat_x_complex)
+        x_real = np.abs(x_complex)
+    elif mode == 'real_only':
+        x_real = np.real(x_complex)
     else:
         raise KeyError(f"Real cast mode {mode} not implemented")
-    return np.reshape(x_real, np.shape(x_complex)[:-1] + (np.shape(x_complex)[-1]*multiplier,))
+    return x_real
 
 
 def cart2polar(z):
@@ -214,6 +209,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.26'
+__version__ = '0.0.27'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
