@@ -199,6 +199,24 @@ class ComplexAvgPooling2D(ComplexPooling2D):
         return ComplexAvgPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
                                    data_format=self.data_format, name=self.name + "_real_equiv")
 
+    
+class ComplexCircularAvgPooling2D(ComplexPooling2D):
+
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        inputs_abs   = tf.math.abs(inputs)
+        inputs_phase = tf.math.phase(inputs)
+        amp = tf.nn.avg_pool2d(input=inputs_abs, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)
+        raise NotImplemetedError("Still not implemented")       # https://en.wikipedia.org/wiki/Circular_mean
+        pha = tf.nn.avg_pool2d(input=inputs_phase, ksize=ksize, strides=strides,
+                                    padding=padding, data_format=data_format)       # TODO
+        output =  tf.cast(tf.complex(amp * tf.math.cos(pha), amp * tf.math.sin(pha)), dtype=z.dtype)
+        return output
+
+    def get_real_equivalent(self):
+        return ComplexAvgPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
+                                   data_format=self.data_format, name=self.name + "_real_equiv")
+
 
 class ComplexUnPooling2D(Layer, ComplexLayer):
     """
