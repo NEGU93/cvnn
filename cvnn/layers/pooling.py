@@ -218,6 +218,35 @@ class ComplexCircularAvgPooling2D(ComplexPooling2D):
                                    data_format=self.data_format, name=self.name + "_real_equiv")
 
 
+class ComplexPolarAvgPooling2D(ComplexPooling2D):
+
+    def pool_function(self, inputs, ksize, strides, padding, data_format):
+        inputs_abs = tf.math.abs(inputs)
+        output_abs = tf.nn.avg_pool2d(input=inputs_abs, ksize=ksize, strides=strides,
+                                      padding=padding, data_format=data_format)
+        # Use circular mean
+        inputs_angle = tf.math.angle(inputs)
+        unit_x = tf.math.cos(inputs_angle)      # Convert all angles to corresponding points on the unit circle
+        unit_y = tf.math.sin(inputs_angle)      # convert polar coordinates to Cartesian coordinates.
+        avg_unit_x = tf.nn.avg_pool2d(input=unit_x, ksize=ksize, strides=strides,   # Then compute the arithmetic
+                                      padding=padding, data_format=data_format)     # mean of these points.
+        avg_unit_y = tf.nn.avg_pool2d(input=unit_y, ksize=ksize, strides=strides,
+                                      padding=padding, data_format=data_format)
+        # The angle is a reasonable mean of the input angles.
+        output_angle = tf.math.angle(tf.complex(avg_unit_x, avg_unit_y))
+        # Unknown result. If the angles are uniformly distributed on the circle,
+        # then the resulting radius will be 0, and there is no circular mean.
+        if inputs.dtype.is_complex:
+            output = tf.complex(output_abs * tf.math.cos(output_angle), output_abs * tf.math.sin(output_angle))
+        else:
+            output = output_abs
+        return output
+
+    def get_real_equivalent(self):
+        return ComplexPolarAvgPooling2D(pool_size=self.pool_size, strides=self.strides, padding=self.padding,
+                                        data_format=self.data_format, name=self.name + "_real_equiv")
+
+
 class ComplexUnPooling2D(Layer, ComplexLayer):
     """
     Performs UnPooling as explained in:

@@ -1,7 +1,7 @@
 import numpy as np
 from cvnn.layers import ComplexDense, ComplexFlatten, ComplexInput, ComplexConv2D, ComplexMaxPooling2D, \
     ComplexAvgPooling2D, ComplexConv2DTranspose, ComplexUnPooling2D, ComplexMaxPooling2DWithArgmax, \
-    ComplexUpSampling2D, ComplexBatchNormalization, ComplexAvgPooling1D
+    ComplexUpSampling2D, ComplexBatchNormalization, ComplexAvgPooling1D, ComplexPolarAvgPooling2D
 import cvnn.layers as complex_layers
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
@@ -251,6 +251,51 @@ def complex_avg_pool():
 
 
 @tf.autograph.experimental.do_not_convert
+def complex_polar_avg_pool():
+    avg_pool = ComplexPolarAvgPooling2D(strides=1)
+    img_r = np.array([
+        [0, 1, -1],
+        [0, 1, 0],
+        [0, 1, 0]
+    ]).astype(np.float32)
+    img_i = np.array([
+        [1, 0, 0],
+        [1, 0, -1],
+        [1, 0, -1]
+    ]).astype(np.float32)
+    img = img_r + 1j * img_i
+    img = np.reshape(img, (1, 3, 3, 1))
+    res = avg_pool(img.astype(np.complex64))
+    assert np.allclose(tf.math.abs(res).numpy(), 1.)
+    img_r = np.array([
+        [1, 0],
+        [-1, 0]
+    ]).astype(np.float32)
+    img_i = np.array([
+        [0, 1],
+        [0, -1]
+    ]).astype(np.float32)
+    img = img_r + 1j * img_i
+    img = np.reshape(img, (1, 2, 2, 1))
+    res = avg_pool(img.astype(np.complex64))
+    assert np.allclose(tf.math.abs(res).numpy(), 1.)
+    img_r = np.array([
+        [1, 0],
+        [-1, 0]
+    ]).astype(np.float32)
+    img_i = np.array([
+        [0, 1],
+        [0, 1]
+    ]).astype(np.float32)
+    img = img_r + 1j * img_i
+    img = np.reshape(img, (1, 2, 2, 1))
+    res = avg_pool(img.astype(np.complex64))
+    assert np.allclose(tf.math.abs(res).numpy(), 1.)
+    assert np.allclose(tf.math.angle(res).numpy(), 1.57079632679)       # pi/2
+
+
+
+@tf.autograph.experimental.do_not_convert
 def complex_conv_2d_transpose():
     value = [[1, 2, 1], [2, 1, 2], [1, 1, 2]]
     init = tf.constant_initializer(value)
@@ -484,6 +529,7 @@ def batch_norm():
 
 
 def pooling_layers():
+    complex_polar_avg_pool()
     complex_max_pool_2d()
     complex_avg_pool_1d()
     complex_avg_pool()
@@ -491,8 +537,8 @@ def pooling_layers():
 
 @tf.autograph.experimental.do_not_convert
 def test_layers():
-    new_max_unpooling_2d_test()
     pooling_layers()
+    new_max_unpooling_2d_test()
     batch_norm()
     upsampling()
     complex_conv_2d_transpose()

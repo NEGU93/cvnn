@@ -134,13 +134,13 @@ def transform_to_real(x_complex, mode: str = "real_imag"):
     if mode not in REAL_CAST_MODES:
         raise KeyError(f"Unknown real cast mode {mode}")
     if mode == 'real_imag':
-        x_real = np.concatenate((np.real(x_complex), np.imag(x_complex)), axis=-1)
+        ret_value = np.concatenate([np.real(image), np.imag(image)], axis=-1)
     elif mode == 'amplitude_phase':
-        x_real = np.concatenate((np.abs(x_complex), np.angle(x_complex)), axis=-1)
+        ret_value = np.concatenate([np.abs(image), np.angle(image)], axis=-1)
     elif mode == 'amplitude_only':
-        x_real = np.abs(x_complex)
+        ret_value = np.abs(image)
     elif mode == 'real_only':
-        x_real = np.real(x_complex)
+        ret_value = np.real(image)
     else:
         raise KeyError(f"Real cast mode {mode} not implemented")
     return x_real
@@ -209,6 +209,6 @@ if __name__ == "__main__":
 
 
 __author__ = 'J. Agustin BARRACHINA'
-__version__ = '0.0.27'
+__version__ = '0.0.28'
 __maintainer__ = 'J. Agustin BARRACHINA'
 __email__ = 'joseagustin.barra@gmail.com; jose-agustin.barrachina@centralesupelec.fr'
