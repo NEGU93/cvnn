@@ -14,6 +14,15 @@ class ComplexAverageCrossEntropy(Loss):
         return (real_loss + imag_loss) / 2.
 
 
+class ComplexAverageCrossEntropyIgnoreUnlabeled(ComplexAverageCrossEntropy):
+
+    def call(self, y_true, y_pred):
+        mask = tf.reduce_any(y_true, axis=-1)
+        y_true = tf.boolean_mask(y_true, mask)
+        y_pred = tf.boolean_mask(y_pred, mask)
+        return super(ComplexAverageCrossEntropyIgnoreUnlabeled, self).call(y_true, y_pred)
+
+
 class ComplexMeanSquareError(Loss):
 
     def call(self, y_true, y_pred):
@@ -38,6 +47,15 @@ class ComplexWeightedAverageCrossEntropy(ComplexAverageCrossEntropy):
         unweighted_losses = super(ComplexWeightedAverageCrossEntropy, self).call(y_true, y_pred)
         weighted_losses = unweighted_losses * tf.cast(weights, dtype=unweighted_losses.dtype)
         return weighted_losses
+
+
+class ComplexWeightedAverageCrossEntropyIgnoreUnlabeled(ComplexAverageCrossEntropy):
+
+    def call(self, y_true, y_pred):
+        mask = tf.reduce_any(y_true, axis=-1)
+        y_true = tf.boolean_mask(y_true, mask)
+        y_pred = tf.boolean_mask(y_pred, mask)
+        return super(ComplexWeightedAverageCrossEntropyIgnoreUnlabeled, self).call(y_true, y_pred)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-from cvnn.losses import ComplexAverageCrossEntropy, ComplexWeightedAverageCrossEntropy
+from cvnn.losses import ComplexAverageCrossEntropy, ComplexWeightedAverageCrossEntropy, \
+    ComplexAverageCrossEntropyIgnoreUnlabeled
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.losses import CategoricalCrossentropy
-import cvnn.dataset as dp
 from cvnn.layers import ComplexDense, complex_input
 from pdb import set_trace
 
@@ -37,6 +37,24 @@ def averaging_method():
     assert np.mean(two_dim_mean) == mean
 
 
+def no_label_test():
+    y_true = np.array([
+        [[0, 0], [0, 2]]
+    ])
+    y_true_2 = np.array([
+        [[1, 2], [1, 2]]
+    ])
+    y_pred = np.array([
+        [[1, 2], [1, 2]]
+    ])
+    y_true = to_categorical_unlabeled(y_true)
+    y_pred = to_categorical_unlabeled(y_pred)
+    y_true_2 = to_categorical_unlabeled(y_true_2)
+    tf_result = ComplexAverageCrossEntropyIgnoreUnlabeled()(y_pred=tf.complex(y_pred, y_pred), y_true=y_true)
+    tf_result_2 = ComplexAverageCrossEntropyIgnoreUnlabeled()(y_pred=tf.complex(y_pred, y_pred), y_true=y_true_2)
+    assert tf_result == tf_result_2
+
+
 def ace():
     y_pred = np.random.rand(3, 43, 12, 10)
     y_true = np.random.rand(3, 43, 12, 10)
@@ -46,20 +64,6 @@ def ace():
                                                    y_true=y_true)
     assert tf_result == own_real_result, f"ComplexCrossentropy {own_real_result} != CategoricalCrossentropy {tf_result}"
     assert tf_result == own_result, f"ComplexCrossentropy {own_result} != CategoricalCrossentropy {tf_result}"
-    m = 10000
-    n = 128
-    param_list = [
-        [0.3, 1, 1],
-        [-0.3, 1, 1]
-    ]
-    dataset = dp.CorrelatedGaussianCoeffCorrel(m, n, param_list, debug=False)
-    model = tf.keras.models.Sequential([
-        complex_input(shape=(n)),
-        ComplexDense(units=50, activation="cart_relu"),
-        ComplexDense(2, activation="cart_softmax")
-    ])
-    model.compile(loss=ComplexAverageCrossEntropy(), metrics=["accuracy"], optimizer="sgd")
-    model.fit(dataset.x, dataset.y, epochs=6)
 
 
 def weighted_loss():
@@ -93,6 +97,7 @@ def weighted_loss():
 
 
 def test_losses():
+    no_label_test()
     averaging_method()
     # weighted_loss()
     ace()
