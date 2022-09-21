@@ -9,3 +9,4 @@ Complex Layers
     layers/complex_pooling
     layers/complex_upsampling
     layers/dropout
+    layers/complex_bn

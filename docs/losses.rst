@@ -49,6 +49,36 @@ Working example::
     model.fit(dataset.x, dataset.y, epochs=6)
 
 
+Complex Weighted Average Cross Entropy
+--------------------------------------
+
+.. py:class:: ComplexWeightedAverageCrossEntropy
+
+    Assigns a weight to be passed as input to be multiplied to the result as 
+
+    .. math::
+
+        L={l_1, …, l_N}^⊤,
+    
+    with 
+
+    .. math::
+
+        l_n =−w_n J^{ACE}_n
+
+.. py:method:: __init__(self, weights, **kwargs)
+
+    :param weights: List of weights to be applied. Must be same length as total classes.
+
+
+Complex Average Cross Entropy Ignore Unlabeled
+----------------------------------------------
+
+
+Complex Weighted Average Cross Entropy Ignore Unlabeled
+-------------------------------------------------------
+
+
 Complex Mean Square Error
 -------------------------
 

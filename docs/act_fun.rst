@@ -31,33 +31,52 @@ Option 2: Using the function directly::
 List of activation functions::
 
     act_dispatcher = {
-        'linear': Activation(linear),
+        'linear': linear,
         # Complex input, real output
-        'convert_to_real_with_abs': Activation(convert_to_real_with_abs),
-        'sigmoid_real': Activation(sigmoid_real),
-        'softmax_real_with_abs': Activation(softmax_real_with_abs),
-        'softmax_real_with_avg': Activation(softmax_real_with_avg),
-        'softmax_real_with_mult': Activation(softmax_real_with_mult),
-        'softmax_of_softmax_real_with_mult': Activation(softmax_of_softmax_real_with_mult),
-        'softmax_of_softmax_real_with_avg': Activation(softmax_of_softmax_real_with_avg),
-        # multi-valued neuron (MVN)
-        'mvn_activation': Activation(mvn_activation),
+        'cast_to_real': cast_to_real,
+        'convert_to_real_with_abs': convert_to_real_with_abs,
+        'sigmoid_real': sigmoid_real,
+        'softmax_real_with_abs': softmax_real_with_abs,
+        'softmax_real_with_avg': softmax_real_with_avg,
+        'softmax_real_with_mult': softmax_real_with_mult,
+        'softmax_of_softmax_real_with_mult': softmax_of_softmax_real_with_mult,
+        'softmax_of_softmax_real_with_avg': softmax_of_softmax_real_with_avg,
+        'softmax_real_with_polar': softmax_real_with_polar,
+        # Phasor networks
+        'georgiou_cdbp': georgiou_cdbp,
+        'mvn_activation': mvn_activation,
+        'complex_signum': complex_signum,
         # Type A (cartesian)
-        'cart_sigmoid': Activation(cart_sigmoid),
-        'cart_elu': Activation(cart_elu),
-        'cart_exponential': Activation(cart_exponential),
-        'cart_hard_sigmoid': Activation(cart_hard_sigmoid),
-        'cart_relu': Activation(cart_relu),
-        'cart_leaky_relu': Activation(cart_leaky_relu),
-        'cart_selu': Activation(cart_selu),
-        'cart_softplus': Activation(cart_softplus),
-        'cart_softsign': Activation(cart_softsign),
-        'cart_tanh': Activation(cart_tanh),
-        'cart_softmax': Activation(cart_softmax),
+        'cart_sigmoid': cart_sigmoid,
+        'cart_elu': cart_elu,
+        'cart_exponential': cart_exponential,
+        'cart_hard_sigmoid': cart_hard_sigmoid,
+        'cart_relu': cart_relu,
+        'cart_leaky_relu': cart_leaky_relu,
+        'cart_selu': cart_selu,
+        'cart_softplus': cart_softplus,
+        'cart_softsign': cart_softsign,
+        'cart_tanh': cart_tanh,
+        'cart_softmax': cart_softmax,
         # Type B (polar)
-        'pol_tanh': Activation(pol_tanh),
-        'pol_sigmoid': Activation(pol_sigmoid),
-        'pol_selu': Activation(pol_selu)
+        'pol_tanh': pol_tanh,
+        'pol_sigmoid': pol_sigmoid,
+        'pol_selu': pol_selu,
+        # Elementary Transcendental Functions (ETF)
+        'etf_circular_tan': etf_circular_tan,
+        'etf_circular_sin': etf_circular_sin,
+        'etf_inv_circular_atan': etf_inv_circular_atan,
+        'etf_inv_circular_asin': etf_inv_circular_asin,
+        'etf_inv_circular_acos': etf_inv_circular_acos,
+        'etf_circular_tanh': etf_circular_tanh,
+        'etf_circular_sinh': etf_circular_sinh,
+        'etf_inv_circular_atanh': etf_inv_circular_atanh,
+        'etf_inv_circular_asinh': etf_inv_circular_asinh,
+        # ReLU
+        'modrelu': modrelu,
+        'crelu': crelu,
+        'zrelu': zrelu,
+        'complex_cardioid': complex_cardioid
     }
 
 
