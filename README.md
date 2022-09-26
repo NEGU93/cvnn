@@ -9,8 +9,9 @@ This is a library that uses [Tensorflow](https://www.tensorflow.org) as a back-e
 
 Update:
   - Since [v1.12](https://pytorch.org/blog/pytorch-1.12-released/) (28 June 2022), Complex32 and Complex Convolutions in PyTorch.
-  - Since [v1.6](https://pytorch.org/blog/pytorch-1.6-released/#beta-complex-numbers) (28 July 2020), pytorch now supports complex vectors and complex gradient as BETA. But still have the same issues that Tensorflow has, so no reason to migrate yet.
   - Since [v0.2](https://github.com/wavefrontshaping/complexPyTorch/releases/tag/0.2) (25 Jan 2021) [complexPyTorch](https://github.com/wavefrontshaping/complexPyTorch) uses complex64 dtype.
+  - Since [v1.6](https://pytorch.org/blog/pytorch-1.6-released/#beta-complex-numbers) (28 July 2020), pytorch now supports complex vectors and complex gradient as BETA. But still have the same issues that Tensorflow has, so no reason to migrate yet.
+
 
 ## Documentation
 
@@ -49,7 +50,7 @@ pip install cvnn[full]
 
 From "outside" everything is the same as when using Tensorflow.
 
-```
+``` python
 import numpy as np
 import tensorflow as tf
 
@@ -71,7 +72,7 @@ The main difference is that you will be using `cvnn` layers instead of Tensorflo
 There are some options on how to do it as shown here:
 
 ### Sequential API
-```
+``` py
 import cvnn.layers as complex_layers
 
 def get_model():
@@ -90,7 +91,7 @@ def get_model():
     return model
 ```
 ### Functional API
-```
+``` python
 import cvnn.layers as complex_layers
 def get_model():
     inputs = complex_layers.complex_input(shape=(128, 128, 3))
@@ -122,7 +123,7 @@ Alway prefer the [Zenodo](https://zenodo.org/record/4452131/export/hx#.YAkuw-j0m
 
 Next you have a model but beware to change the version and date accordingly.
 
-```
+``` bib
 @software{j_agustin_barrachina_2021_4452131,
   author       = {J Agustin Barrachina},
   title        = {Complex-Valued Neural Networks (CVNN)},
