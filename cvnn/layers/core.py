@@ -527,7 +527,7 @@ class ComplexBatchNormalization(Layer, ComplexLayer):
             out = self._normalize(inputs, self.moving_var, self.moving_mean)
         if self.scale:
             if self.my_dtype.is_complex:
-                gamma = tf.complex(self.gamma_r, self.gamma_i)
+                gamma = tf.complex(self.gamma_r, self.gamma_i)      # TODO: Should this be real valued?
             else:
                 gamma = self.gamma
             out = gamma * out
