@@ -1,10 +1,11 @@
 cff-version: 1.0
 message: "If you use this software, please cite it as below."
 authors:
-  - family-names: BARRACHINA
-    given-names: Jose Agustin
-    orcid: https://orcid.org/0000-0002-2139-514X
+- family-names: "BARRACHINA"
+  given-names: "Jose Agustin"
+  orcid: "https://orcid.org/0000-0002-2139-514X"
 title: "Complex-Valued Neural Networks (CVNN)"
 version: 1.0.3
 doi: https://doi.org/10.5281/zenodo.4452131
-date-released: 2021-01
+date-released: 2019
+url: "https://github.com/NEGU93/cvnn"
