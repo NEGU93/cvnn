@@ -124,15 +124,15 @@ Alway prefer the [Zenodo](https://zenodo.org/record/4452131/export/hx#.YAkuw-j0m
 Next you have a model but beware to change the version and date accordingly.
 
 ``` bib
-@software{j_agustin_barrachina_2021_4452131,
+@software{j_agustin_barrachina_2022_7303587,
   author       = {J Agustin Barrachina},
-  title        = {Complex-Valued Neural Networks (CVNN)},
-  month        = jan,
-  year         = 2021,
+  title        = {NEGU93/cvnn: Complex-Valued Neural Networks},
+  month        = nov,
+  year         = 2022,
   publisher    = {Zenodo},
-  version      = {v1.0.3},
-  doi          = {10.5281/zenodo.4452131},
-  url          = {https://doi.org/10.5281/zenodo.4452131}
+  version      = {v2.0},
+  doi          = {10.5281/zenodo.7303587},
+  url          = {https://doi.org/10.5281/zenodo.7303587}
 }
 ```
 
