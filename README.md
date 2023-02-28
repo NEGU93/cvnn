@@ -91,6 +91,10 @@ def get_model():
     return tf.keras.Model(inputs, out)
 ```
 
+## Project status
+
+I currently work as a full-time employee and therefore the mantainance of this repository has been reduced or stopped. 
+I would happily welcome anyone who wishes to fork the project or volunteer to step in as a maintainer or owner, allowing the project to keep going.
 
 ## About me & Motivation
 
