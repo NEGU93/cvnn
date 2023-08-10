@@ -113,7 +113,7 @@ def softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
     """
     if z.dtype.is_complex:
         return 0.5 * (tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(
-            tf.math.real(z), axis))
+            tf.math.imag(z), axis))
     else:
         return tf.keras.activations.softmax(z, axis)
 
@@ -130,7 +130,7 @@ def softmax_real_with_mult(z: Tensor, axis=-1) -> Tensor:
     :return: Real-valued tensor of the applied activation function
     """
     if z.dtype.is_complex:
-        return tf.keras.activations.softmax(tf.math.real(z), axis) * tf.keras.activations.softmax(tf.math.real(z), axis)
+        return tf.keras.activations.softmax(tf.math.real(z), axis) * tf.keras.activations.softmax(tf.math.imag(z), axis)
     else:
         return tf.keras.activations.softmax(z, axis)
 
@@ -148,7 +148,7 @@ def softmax_of_softmax_real_with_mult(z: Tensor, axis=-1) -> Tensor:
     """
     if z.dtype.is_complex:
         return tf.keras.activations.softmax(
-            tf.keras.activations.softmax(tf.math.real(z), axis) * tf.keras.activations.softmax(tf.math.real(z), axis),
+            tf.keras.activations.softmax(tf.math.real(z), axis) * tf.keras.activations.softmax(tf.math.imag(z), axis),
             axis)
     else:
         return tf.keras.activations.softmax(z, axis)
@@ -167,7 +167,7 @@ def softmax_of_softmax_real_with_avg(z: Tensor, axis=-1) -> Tensor:
     """
     if z.dtype.is_complex:
         return tf.keras.activations.softmax(
-            tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.real(z), axis),
+            tf.keras.activations.softmax(tf.math.real(z), axis) + tf.keras.activations.softmax(tf.math.imag(z), axis),
             axis)
     else:
         return tf.keras.activations.softmax(z, axis)
