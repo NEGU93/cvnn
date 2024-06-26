@@ -1,7 +1,10 @@
 # Complex-Valued Neural Networks (CVNN)
 Done by @NEGU93 - J. Agustin Barrachina
 
-[![Documentation Status](https://readthedocs.org/projects/complex-valued-neural-networks/badge/?version=latest)](https://complex-valued-neural-networks.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/cvnn.svg)](https://badge.fury.io/py/cvnn) [![Anaconda cvnn version](https://img.shields.io/conda/v/NEGU93/cvnn.svg)](https://anaconda.org/negu93/cvnn) [![DOI](https://zenodo.org/badge/296050056.svg)](https://zenodo.org/badge/latestdoi/296050056) [![Downloads](https://pepy.tech/badge/cvnn)](https://pepy.tech/project/cvnn) ![Stars](https://img.shields.io/github/stars/NEGU93/cvnn)
+<a href='https://arxiv.org/abs/2302.08286'><img src='https://img.shields.io/badge/Paper-Arxiv-red'></a>
+[![Documentation Status](https://readthedocs.org/projects/complex-valued-neural-networks/badge/?version=latest)](https://complex-valued-neural-networks.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/cvnn.svg)](https://badge.fury.io/py/cvnn) [![Anaconda cvnn version](https://img.shields.io/conda/v/NEGU93/cvnn.svg)](https://anaconda.org/negu93/cvnn) [![DOI](https://zenodo.org/badge/296050056.svg)](https://zenodo.org/badge/latestdoi/296050056) [![Downloads](https://pepy.tech/badge/cvnn)](https://pepy.tech/project/cvnn) ![Stars](https://img.shields.io/github/stars/NEGU93/cvnn) 
+
+
 
 Using this library, the only difference with a Tensorflow code is that you should use `cvnn.layers` module instead of `tf.keras.layers`.
 
