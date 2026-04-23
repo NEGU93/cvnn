@@ -1,0 +1,10 @@
+tensorflow>=2.0
+tensorflow-probability
+numpy
+six
+packaging
+pandas
+scipy
+colorlog
+openpyxl
+tqdm

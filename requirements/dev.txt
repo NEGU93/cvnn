@@ -1,0 +1,7 @@
+-r runtime.txt
+
+pytest
+pytest-cov
+flake8
+build
+twine
